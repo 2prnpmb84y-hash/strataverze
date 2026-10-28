@@ -6,7 +6,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { PENDING_RULE_PACKS, statutoryRulesFor, type NswRules } from "@/config/statutory";
+import { QLD_RULE_PACK, statutoryRulesFor, type NswRules } from "@/config/statutory";
 import { flaggableDueOnOrBefore, lotDebtsFrom, proceedingsDeadlineFlags, proceedingsDeadlineRule, proceedingsDeadlineWarning, type LotDebt } from "./proceedings-deadline";
 import { NEVER_RECOVERABLE_FROM_OWNER, usageFee } from "@/lib/billing/fee-engine";
 import { feeWordingFor, toFeeView } from "@/lib/billing/disclosure";
@@ -14,7 +14,7 @@ import { TEST_PRICE_BOOK as book } from "@/lib/billing/test-price-book";
 import { auDate } from "@/lib/onboarding/property-onboarding";
 
 const NSW = statutoryRulesFor("NSW") as NswRules;
-const QLD = PENDING_RULE_PACKS.QLD.rules;
+const QLD = QLD_RULE_PACK.rules;
 
 const SCREENS = [
   "app/(portal)/adviser/schemes/[id]/finance/debt-recovery/debt-recovery-client.tsx",

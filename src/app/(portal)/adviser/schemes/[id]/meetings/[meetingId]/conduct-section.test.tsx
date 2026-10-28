@@ -6,7 +6,7 @@
  */
 import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { PENDING_RULE_PACKS, type StatutoryRules } from "@/config/statutory";
+import { QLD_RULE_PACK, type StatutoryRules } from "@/config/statutory";
 import { conductVotingView } from "@/lib/meetings/conduct-tally";
 
 vi.mock("./conduct-actions", () => ({
@@ -17,7 +17,7 @@ vi.mock("./conduct-actions", () => ({
 
 const { ConductSection } = await import("./conduct-section");
 
-const QLD_RULES = PENDING_RULE_PACKS.QLD.rules as unknown as StatutoryRules;
+const QLD_RULES = QLD_RULE_PACK.rules as unknown as StatutoryRules;
 const items = [
   { id: "i1", position: 1, title: "Adopt the budget", outcome: null },
   { id: "i2", position: 2, title: "Approve the new by-law", outcome: null },

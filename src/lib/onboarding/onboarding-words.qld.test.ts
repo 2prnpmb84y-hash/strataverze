@@ -1,16 +1,16 @@
 /**
  * The Add Property words and checks for a Queensland building (QLD wording
- * and onboarding go-live, 27 Oct 2026), from the pending Queensland pack: its
+ * and onboarding go-live, 27 Oct 2026), from the Queensland pack: its
  * module, both lot entitlements, its funds and its contribution and penalty
  * words. NSW gives the words the wizard has always shown.
  */
 import { describe, expect, it } from "vitest";
-import { PENDING_RULE_PACKS, statutoryRulesFor, type StatutoryRules } from "@/config/statutory";
+import { QLD_RULE_PACK, statutoryRulesFor, type StatutoryRules } from "@/config/statutory";
 import { onboardingWordsByState, onboardingWordsFor, planNumberLabel } from "./onboarding-words";
 import { DEFAULT_CHECK_WORDS, checkLotBalances, checkLots, checkOpeningBalances, type FundCents } from "./property-onboarding";
 
 const NSW = statutoryRulesFor("NSW");
-const QLD = PENDING_RULE_PACKS.QLD.rules as unknown as StatutoryRules;
+const QLD = QLD_RULE_PACK.rules as unknown as StatutoryRules;
 const nsw = onboardingWordsFor("NSW", NSW);
 const qld = onboardingWordsFor("QLD", QLD);
 

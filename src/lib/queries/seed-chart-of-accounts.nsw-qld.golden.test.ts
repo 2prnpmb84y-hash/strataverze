@@ -11,10 +11,10 @@ vi.mock("@prisma/orm-postgres/orm-client", async () => (await import("@/test/fak
 vi.mock("@/prisma/db", async () => ({ db: (await import("@/test/fake-orm")).sharedFake.db }));
 vi.mock("@/lib/jurisdiction/scheme-rules", async () => {
   const actual = await vi.importActual<typeof import("@/lib/jurisdiction/scheme-rules")>("@/lib/jurisdiction/scheme-rules");
-  const { PENDING_RULE_PACKS } = await import("@/config/statutory");
+  const { QLD_RULE_PACK } = await import("@/config/statutory");
   const { sharedFake } = await import("@/test/fake-orm");
-  // A Queensland building: the pending Queensland pack (no building can have it yet).
-  const forState = (state: string) => (state === "QLD" ? { pack: null, rules: PENDING_RULE_PACKS.QLD.rules, label: "AU-QLD test" } : actual.rulesForState(state));
+  // A Queensland building: the Queensland pack (live from the switch-on, 28 Oct 2026).
+  const forState = (state: string) => (state === "QLD" ? { pack: null, rules: QLD_RULE_PACK.rules, label: "AU-QLD test" } : actual.rulesForState(state));
   return {
     ...actual,
     rulesForState: forState,

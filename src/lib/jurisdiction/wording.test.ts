@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { PENDING_RULE_PACKS, statutoryRulesFor, type NswRules, type StatutoryRules } from "@/config/statutory";
+import { QLD_RULE_PACK, statutoryRulesFor, type NswRules, type StatutoryRules } from "@/config/statutory";
 import { actName, bodyCorporateName, bodyCorporateShortName, capitalise, graceText, lateChargeWords, noticeLeadText, planLine } from "./wording";
 
 const NSW = statutoryRulesFor("NSW") as NswRules;
-const QLD = PENDING_RULE_PACKS.QLD.rules;
+const QLD = QLD_RULE_PACK.rules;
 
 describe("wording from the rules", () => {
   it("gives the NSW phrases the platform has always used", () => {

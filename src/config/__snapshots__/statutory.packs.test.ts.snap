@@ -1827,7 +1827,7 @@ exports[`Australian Capital Territory pack (pending) > is the rules recorded for
 }
 `;
 
-exports[`Queensland pack (pending) > is the rules recorded for review 1`] = `
+exports[`Queensland pack (active) > is the rules recorded for review 1`] = `
 {
   "AUDIT": {
     "financialYearChangeOncePerYears": 5,
@@ -2221,6 +2221,16 @@ exports[`Queensland pack (pending) > is the rules recorded for review 1`] = `
       "decidedBy": "Matthew Wrigley",
       "decidedOn": "2026-10-27",
       "decision": "Support building and volumetric format plans only: record each building's plan format, share insurance (both premiums) by the interest schedule, and refuse to raise contributions that include insurance for a standard format plan until it is supported.",
+    },
+    {
+      "decidedBy": "Matthew Wrigley",
+      "decidedOn": "2026-10-28",
+      "decision": "Start a new Queensland building's funds on the same default accounting basis as NSW: the administrative fund on a cash basis and the sinking fund on an accrual basis. A StrataVerze choice, not a rule of law.",
+    },
+    {
+      "decidedBy": "Matthew Wrigley",
+      "decidedOn": "2026-10-28",
+      "decision": "Go-live sign-off: the stage 2 FOR_REVIEW points are accepted as built, except that the debtor test for voting is applied per lot (SM s 102(2)), fixed in a separate change, and switch-on is approved.",
     },
   ],
   "DISPUTES": {
@@ -3029,6 +3039,7 @@ exports[`Queensland pack (pending) > is the rules recorded for review 1`] = `
       "perLotDollars": 1100,
     },
   },
+  "defaultAccountingBasis": [Function],
 }
 `;
 

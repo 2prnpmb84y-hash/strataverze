@@ -1,12 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
-import { PENDING_RULE_PACKS, statutoryRulesFor } from "@/config/statutory";
+import { QLD_RULE_PACK, statutoryRulesFor } from "@/config/statutory";
 
 vi.mock("@/prisma/db", () => ({ db: {} }));
 
 const { defaultAccounts } = await import("./seed-chart-of-accounts");
 
 const NSW = statutoryRulesFor("NSW").FUND_CATALOGUE;
-const QLD = PENDING_RULE_PACKS.QLD.rules.FUND_CATALOGUE;
+const QLD = QLD_RULE_PACK.rules.FUND_CATALOGUE;
 
 /** The default chart every NSW building has been given: code, name and fund type. */
 const NSW_CHART = [

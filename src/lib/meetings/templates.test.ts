@@ -8,7 +8,7 @@ import {
   QLD_AGM_TEMPLATE,
   QLD_MOTION_LIBRARY,
 } from "./templates";
-import { PENDING_RULE_PACKS, UnsupportedJurisdictionError } from "@/config/statutory";
+import { QLD_RULE_PACK, UnsupportedJurisdictionError } from "@/config/statutory";
 import { bodyCorporateName } from "@/lib/jurisdiction/wording";
 
 describe("agenda templates", () => {
@@ -73,12 +73,16 @@ describe("resolveAgendaTemplate", () => {
 });
 
 describe("Queensland AGM template (draft for StrataVerze review)", () => {
-  const terms = PENDING_RULE_PACKS.QLD.rules.TERMINOLOGY;
+  const terms = QLD_RULE_PACK.rules.TERMINOLOGY;
   const bodyCorporate = bodyCorporateName(terms, { name: "Seaview", planNumber: "1234" });
 
-  it("is not given while Queensland has no active pack", () => {
-    expect(() => getAgendaTemplate("QLD", "AGM")).toThrow(UnsupportedJurisdictionError);
-    expect(() => getMotionLibrary("QLD", "AGM")).toThrow(UnsupportedJurisdictionError);
+  it("is given to a Queensland building now its pack is active, and never to a state without a pack", () => {
+    expect(getAgendaTemplate("QLD", "AGM")).toBe(QLD_AGM_TEMPLATE);
+    expect(getAgendaTemplate(" qld ", "FIRST_AGM")).toBe(QLD_AGM_TEMPLATE);
+    expect(getMotionLibrary("QLD")).toEqual(QLD_MOTION_LIBRARY);
+    expect(getMotionLibrary("QLD", "AGM").every((m) => QLD_MOTION_LIBRARY.includes(m))).toBe(true);
+    expect(() => getAgendaTemplate("VIC", "AGM")).toThrow(UnsupportedJurisdictionError);
+    expect(() => getMotionLibrary("VIC", "AGM")).toThrow(UnsupportedJurisdictionError);
   });
 
   it("holds the AGM business the pack records, with the committee election last", () => {
@@ -94,11 +98,11 @@ describe("Queensland AGM template (draft for StrataVerze review)", () => {
     const last = QLD_AGM_TEMPLATE[QLD_AGM_TEMPLATE.length - 1];
     expect(last.resolutionCategory).toBeNull();
     expect(last.explanatoryNote).toContain("last business");
-    expect(PENDING_RULE_PACKS.QLD.rules.COMMITTEE.electionIsLastBusiness).toBe(true);
+    expect(QLD_RULE_PACK.rules.COMMITTEE.electionIsLastBusiness).toBe(true);
   });
 
   it("has one item for each statutory motion qld.ts records, with the type it records", () => {
-    const recorded = PENDING_RULE_PACKS.QLD.rules.MEETINGS.statutoryMotions;
+    const recorded = QLD_RULE_PACK.rules.MEETINGS.statutoryMotions;
     expect(recorded.status).toBe("CONFIRMED");
     const keys = recorded.motions.map((m) => m.key);
     expect([...new Set(QLD_AGM_TEMPLATE.flatMap((i) => (i.statutoryMotion ? [i.statutoryMotion] : [])))].sort()).toEqual([...keys].sort());
@@ -107,7 +111,7 @@ describe("Queensland AGM template (draft for StrataVerze review)", () => {
       // Where qld.ts records the type, the item uses it. Where it records none, the draft's ordinary resolution is for review.
       expect(item.resolutionCategory).toBe(m.resolution ?? "ORDINARY");
     }
-    expect(PENDING_RULE_PACKS.QLD.rules.FOR_REVIEW.some((f) => f.where.includes("QLD_AGM_TEMPLATE"))).toBe(true);
+    expect(QLD_RULE_PACK.rules.FOR_REVIEW.some((f) => f.where.includes("QLD_AGM_TEMPLATE"))).toBe(true);
   });
 
   it("words each motion as the body corporate resolving, filled with the pack's legal name", () => {
@@ -127,7 +131,7 @@ describe("Queensland AGM template (draft for StrataVerze review)", () => {
   });
 
   it("uses only Queensland categories and plain wording", () => {
-    const qld = PENDING_RULE_PACKS.QLD.rules.MEETING_RULES;
+    const qld = QLD_RULE_PACK.rules.MEETING_RULES;
     for (const m of QLD_MOTION_LIBRARY) expect(qld.generalMeetingCategories).toContain(m.defaultResolutionCategory);
     const text = [...QLD_AGM_TEMPLATE, ...QLD_MOTION_LIBRARY].flatMap((i) => [i.title, i.resolutionText, i.explanatoryNote ?? ""]).join(" ");
     expect(text).not.toMatch(/[;\u2013\u2014]| - /);

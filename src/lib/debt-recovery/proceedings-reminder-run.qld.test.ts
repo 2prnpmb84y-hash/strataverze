@@ -1,8 +1,9 @@
 /**
  * The 2 year rule's daily reminder, run against the in-memory ORM (QLD
- * go-live gap, 27 Oct 2026). The Queensland pack is pending, so the tests
- * that need it switch it on for "QLD" buildings through the scheme-rules
- * mock, as the other Queensland tests do. NSW keeps its real pack.
+ * go-live gap, 27 Oct 2026). The Queensland pack is live (the switch-on,
+ * 28 Oct 2026), so a "QLD" building has its real pack. The tests that show
+ * what happens while no live pack has the rule leave Queensland out of the
+ * live packs through the scheme-rules mock. NSW keeps its real pack.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -31,12 +32,11 @@ vi.mock("@/lib/email", () => ({
 vi.mock("@/lib/log", () => ({ logError: vi.fn() }));
 vi.mock("@/lib/jurisdiction/scheme-rules", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/jurisdiction/scheme-rules")>();
-  const { PENDING_RULE_PACKS } = await import("@/config/statutory");
-  const qld = { pack: PENDING_RULE_PACKS.QLD, rules: PENDING_RULE_PACKS.QLD.rules, label: "AU-QLD test" } as unknown as ReturnType<typeof actual.rulesForState>;
   return {
     ...actual,
-    liveSchemeRules: vi.fn(() => (switches.qldLive ? [...actual.liveSchemeRules(), qld] : actual.liveSchemeRules())),
-    rulesForState: vi.fn((state: string) => (switches.qldLive && state === "QLD" ? qld : actual.rulesForState(state))),
+    // Queensland is live; qldLive false leaves it out, as before the switch-on.
+    liveSchemeRules: vi.fn(() => (switches.qldLive ? actual.liveSchemeRules() : actual.liveSchemeRules().filter((r) => r.pack.state !== "QLD"))),
+    rulesForState: vi.fn((state: string) => actual.rulesForState(state)),
   };
 });
 
@@ -238,7 +238,7 @@ describe("the 2 year reminder for a Queensland building", () => {
 });
 
 describe("NSW is unaffected", () => {
-  it("no live pack has the rule today, so the run reads nothing and sends nothing", async () => {
+  it("while no live pack has the rule (Queensland left out), the run reads nothing and sends nothing", async () => {
     switches.qldLive = false;
     expect(statesWithProceedingsRule()).toEqual([]);
     expect(await runProceedingsDeadlineReminders(brisbaneNoon("2026-10-27"))).toBe(0);
@@ -246,7 +246,7 @@ describe("NSW is unaffected", () => {
     expect(switches.emails).toEqual([]);
   });
 
-  it("with Queensland switched on, no NSW building is read or emailed", async () => {
+  it("with Queensland live, as it is from the switch-on, no NSW building is read or emailed", async () => {
     expect(statesWithProceedingsRule()).toEqual(["QLD"]);
     for (const day of ["2026-10-27", "2026-11-27", "2026-12-28"]) await runProceedingsDeadlineReminders(brisbaneNoon(day));
     expect(vi.mocked(rulesForState).mock.calls.map(([s]) => s)).not.toContain("NSW");

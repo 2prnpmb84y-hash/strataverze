@@ -14,7 +14,7 @@ const { MIGRATION_TEMPLATES } = await import("@/lib/queries/data-migration");
 const { FIELDS } = await import("./migration-templates");
 const { IMPORT_FIELDS, IMPORT_DATA_TYPES, autoDetectMapping, buildImportRows, importFieldsFor, isImportDataType, missingRequired, parseCsvContent, toServerData } =
   await import("./migration-import-fields");
-const { RULE_PACKS, PENDING_RULE_PACKS } = await import("@/config/statutory");
+const { RULE_PACKS, PENDING_RULE_PACKS, QLD_RULE_PACK } = await import("@/config/statutory");
 const { separateEntitlement } = await import("@/lib/jurisdiction/building-data");
 type ImportField = import("./migration-import-fields").ImportField;
 
@@ -25,8 +25,8 @@ const allServerFields = (dt: keyof typeof IMPORT_FIELDS) => fieldsOf(dt).map((f)
 const serverFields = (dt: keyof typeof IMPORT_FIELDS) => fieldsOf(dt).filter((f) => !f.separateEntitlement).map((f) => f.field).sort();
 const required = (dt: keyof typeof IMPORT_FIELDS) => fieldsOf(dt).filter((f) => f.required).map((f) => f.field).sort();
 
-// Queensland's pack (pending) and its interest schedule, as the migration page's server page passes it.
-const QLD_SEPARATE = separateEntitlement(PENDING_RULE_PACKS.QLD.rules);
+// Queensland's pack (live from 28 Oct 2026) and its interest schedule, as the migration page's server page passes it.
+const QLD_SEPARATE = separateEntitlement(QLD_RULE_PACK.rules);
 const qldSeparate = { field: QLD_SEPARATE!.field!, label: QLD_SEPARATE!.label };
 
 describe("the browser key to server field table", () => {

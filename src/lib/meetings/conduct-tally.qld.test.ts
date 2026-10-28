@@ -8,7 +8,7 @@
  * (SM s 102(2)). NSW counts nothing at conduct.
  */
 import { describe, expect, it } from "vitest";
-import { MEETING_RULES as NSW_RULE_SET, PENDING_RULE_PACKS, statutoryRulesFor, type StatutoryRules } from "@/config/statutory";
+import { MEETING_RULES as NSW_RULE_SET, QLD_RULE_PACK, statutoryRulesFor, type StatutoryRules } from "@/config/statutory";
 import {
   buildConductTally,
   conductVotingView,
@@ -24,7 +24,7 @@ import {
 } from "./conduct-tally";
 import { resolveOutcome, type Outcome } from "./conduct";
 
-const QLD_RULES = PENDING_RULE_PACKS.QLD.rules as unknown as StatutoryRules;
+const QLD_RULES = QLD_RULE_PACK.rules as unknown as StatutoryRules;
 const QLD = QLD_RULES.MEETING_RULES;
 
 // Eight lots: lots 1 to 7 hold 10 each and lot 8 holds 30 (100 in all).

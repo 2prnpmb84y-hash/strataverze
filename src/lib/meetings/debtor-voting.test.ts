@@ -30,21 +30,21 @@ vi.mock("@/prisma/db", () => {
   };
 });
 vi.mock("@prisma/orm-postgres/orm-client", () => ({ and: (...c: unknown[]) => c }));
-// Queensland is not active yet: give it the pending pack, as it will be once it is.
+// A Queensland building has the Queensland pack (live from the switch-on, 28 Oct 2026; given here as before it was).
 vi.mock("@/config/statutory", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/config/statutory")>();
   return {
     ...actual,
     rulePackFor: (state: string) =>
-      state === "QLD" ? { ...actual.PENDING_RULE_PACKS.QLD, rules: actual.PENDING_RULE_PACKS.QLD.rules } : actual.rulePackFor(state),
+      state === "QLD" ? { ...actual.QLD_RULE_PACK, rules: actual.QLD_RULE_PACK.rules } : actual.rulePackFor(state),
   };
 });
 
-import { MEETING_RULES as NSW_RULE_SET, PENDING_RULE_PACKS } from "@/config/statutory";
+import { MEETING_RULES as NSW_RULE_SET, QLD_RULE_PACK } from "@/config/statutory";
 import { checksDebtorVotes, debtorVoteRefusal } from "./debtor-voting";
 import { debtorVoteProblem } from "./debtor-voting-repo";
 
-const QLD = PENDING_RULE_PACKS.QLD.rules.MEETING_RULES;
+const QLD = QLD_RULE_PACK.rules.MEETING_RULES;
 const overdue = { lotId: "lot-1", status: "ISSUED", dueDate: "2020-01-01", balanceOutstanding: "120.00" };
 const paid = { lotId: "lot-2", status: "PAID", dueDate: "2020-01-01", balanceOutstanding: "0" };
 

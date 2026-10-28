@@ -23,11 +23,11 @@ vi.mock("@/prisma/db", async () => ({ db: (await import("@/test/fake-orm")).shar
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("next/headers", () => ({ headers: async () => new Headers() }));
 vi.mock("@/lib/queries/activity-log", () => ({ logActivity: vi.fn(), getAuditTrailForExport: vi.fn(), formatAuditTrailCsv: vi.fn() }));
-// A Queensland-shaped building: the shared rules from the Queensland pack (not yet active).
+// A Queensland-shaped building: the shared rules from the Queensland pack (live from the switch-on, 28 Oct 2026).
 vi.mock("@/lib/jurisdiction/scheme-rules", async () => {
   const actual = await vi.importActual<typeof import("@/lib/jurisdiction/scheme-rules")>("@/lib/jurisdiction/scheme-rules");
-  const { PENDING_RULE_PACKS } = await import("@/config/statutory");
-  const q = PENDING_RULE_PACKS.QLD.rules;
+  const { QLD_RULE_PACK } = await import("@/config/statutory");
+  const q = QLD_RULE_PACK.rules;
   const qld = {
     TERMINOLOGY: q.TERMINOLOGY,
     FUND_CATALOGUE: q.FUND_CATALOGUE,

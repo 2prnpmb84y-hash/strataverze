@@ -4,12 +4,12 @@
  * quorum as data, no pre-meeting e-voting and no retention limit.
  */
 import { describe, expect, it } from "vitest";
-import { MEETING_RULES as NSW_RULE_SET, PENDING_RULE_PACKS } from "@/config/statutory";
+import { MEETING_RULES as NSW_RULE_SET, QLD_RULE_PACK } from "@/config/statutory";
 import { evaluateResolution, isResolutionCategory, type ResolutionTally } from "./rules";
 import { allowedCategoriesForMeetingType, canAddCategoryToMeetingType, validateAgendaItem } from "./agenda";
 import { resolveOutcome } from "./conduct";
 
-const QLD = PENDING_RULE_PACKS.QLD.rules.MEETING_RULES;
+const QLD = QLD_RULE_PACK.rules.MEETING_RULES;
 
 /** 12 lots, total contribution entitlement 1,200. */
 const scheme = { totalLots: 12, totalEntitlement: 1200 };

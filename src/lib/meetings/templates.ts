@@ -260,7 +260,7 @@ export const QLD_MOTION_LIBRARY: MotionLibraryEntry[] = [
  */
 const TEMPLATES_BY_STATE: Readonly<Record<string, { agm: TemplateAgendaItem[]; motions: MotionLibraryEntry[] }>> = {
   NSW: { agm: NSW_AGM_TEMPLATE, motions: NSW_MOTION_LIBRARY },
-  // Draft for StrataVerze review. Refused by templatesFor until Queensland has an active pack.
+  // Draft for StrataVerze review (FOR_REVIEW). Given to Queensland buildings since the pack was switched on (28 Oct 2026).
   QLD: { agm: QLD_AGM_TEMPLATE, motions: QLD_MOTION_LIBRARY },
 };
 

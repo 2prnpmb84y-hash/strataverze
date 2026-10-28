@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { PENDING_RULE_PACKS, statutoryRulesFor } from "@/config/statutory";
+import { QLD_RULE_PACK, statutoryRulesFor } from "@/config/statutory";
 import { FundsCard } from "./funds-card";
 
 const NSW = statutoryRulesFor("NSW").FUND_CATALOGUE;
-const QLD = PENDING_RULE_PACKS.QLD.rules.FUND_CATALOGUE;
+const QLD = QLD_RULE_PACK.rules.FUND_CATALOGUE;
 
 const funds = [
   { id: "a", name: "Administrative Fund", fundType: "ADMINISTRATIVE", balance: 100 },

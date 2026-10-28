@@ -5,7 +5,7 @@
  * schedule, no module and no plan format, so nothing changes for it.
  */
 import { describe, expect, it } from "vitest";
-import { PENDING_RULE_PACKS, statutoryRulesFor, type StatutoryRules } from "@/config/statutory";
+import { QLD_RULE_PACK, statutoryRulesFor, type StatutoryRules } from "@/config/statutory";
 import {
   buildingDataProblems,
   entitlementFor,
@@ -31,7 +31,7 @@ import {
 } from "./building-data";
 
 const NSW = statutoryRulesFor("NSW");
-const QLD = PENDING_RULE_PACKS.QLD.rules as unknown as StatutoryRules;
+const QLD = QLD_RULE_PACK.rules as unknown as StatutoryRules;
 const ALL_USES: EntitlementUse[] = [
   "CONTRIBUTIONS",
   "POLL_VOTE",

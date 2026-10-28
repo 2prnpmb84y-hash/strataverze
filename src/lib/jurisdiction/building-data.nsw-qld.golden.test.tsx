@@ -11,14 +11,14 @@ import { renderToStaticMarkup } from "react-dom/server";
 vi.mock("@prisma/orm-postgres/orm-client", async () => (await import("@/test/fake-orm")).fakeOrmClient);
 vi.mock("@/prisma/db", async () => ({ db: (await import("@/test/fake-orm")).sharedFake.db }));
 
-const { PENDING_RULE_PACKS, statutoryRulesFor } = await import("@/config/statutory");
+const { QLD_RULE_PACK, statutoryRulesFor } = await import("@/config/statutory");
 const { buildingDataProblems } = await import("./building-data");
 const { BuildingDataNotice } = await import("@/app/(portal)/adviser/schemes/[id]/_sections/building-data-notice");
 const { sharedFake } = await import("@/test/fake-orm");
 const { updateScheme } = await import("@/lib/queries/schemes");
 
 const NSW = statutoryRulesFor("NSW");
-const QLD = PENDING_RULE_PACKS.QLD.rules as unknown as typeof NSW;
+const QLD = QLD_RULE_PACK.rules as unknown as typeof NSW;
 
 const lots = (n: number, interest: number | null) => Array.from({ length: n }, (_, i) => ({ lotNumber: String(i + 1), entitlement: 10, interestScheduleEntitlement: interest, lotType: "RESIDENTIAL", occupiable: null }));
 const SCHEMES = {

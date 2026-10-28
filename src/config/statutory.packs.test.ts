@@ -1,12 +1,14 @@
 /**
  * Every pack, active or draft, describes its funds and entitlement schedules
  * in the shared shape (phase 2 foundation, 27 Oct 2026), and a draft pack is
- * never given to a building.
+ * never given to a building. Queensland is active from 2026.10.18 (the
+ * switch-on, 28 Oct 2026).
  */
 import { describe, expect, it } from "vitest";
 import {
   needRule,
   PENDING_RULE_PACKS,
+  QLD_RULE_PACK,
   RULE_PACKS,
   RuleNotInPackError,
   rulePackFor,
@@ -108,13 +110,42 @@ describe("NSW funds", () => {
   });
 });
 
-describe("Queensland pack (pending)", () => {
-  const qld = PENDING_RULE_PACKS.QLD.rules;
+describe("Queensland pack (active)", () => {
+  const qld = QLD_RULE_PACK.rules;
+
+  it("is active: in RULE_PACKS, given to a Queensland building, and no longer pending (switched on 28 Oct 2026)", () => {
+    expect(RULE_PACKS.QLD).toBe(QLD_RULE_PACK);
+    expect(Object.keys(PENDING_RULE_PACKS)).not.toContain("QLD");
+    expect(rulePackFor("QLD")).toBe(QLD_RULE_PACK);
+    expect(statutoryRulesFor("QLD")).toBe(qld);
+    expect(SUPPORTED_SCHEME_STATES).toContain("QLD");
+    expect(schemeStateProblem("QLD")).toBeNull();
+    expect(QLD_RULE_PACK.version).toBe("2026.10.18");
+  });
+
+  it("starts a new building's funds on the NSW accounting basis, as decided on 28 Oct 2026", () => {
+    const nsw = RULE_PACKS.NSW.rules as NswRules;
+    for (const t of ["ADMINISTRATIVE", "CAPITAL_WORKS", "ADMIN", "SINKING", ""]) expect(qld.defaultAccountingBasis(t), t).toBe(nsw.defaultAccountingBasis(t));
+    expect(qld.defaultAccountingBasis("ADMINISTRATIVE")).toBe("CASH");
+    expect(qld.defaultAccountingBasis("CAPITAL_WORKS")).toBe("ACCRUAL");
+    expect(qld.DECISIONS.some((d) => d.decision.startsWith("Start a new Queensland building's funds on the same default accounting basis as NSW") && d.decidedOn === "2026-10-28")).toBe(true);
+  });
+
+  it("records the go-live sign-off of 28 Oct 2026", () => {
+    const signOff = qld.DECISIONS.filter((d) => d.decision.startsWith("Go-live sign-off"));
+    expect(signOff).toHaveLength(1);
+    expect(signOff[0]).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-28" });
+    expect(signOff[0].decision).toContain("FOR_REVIEW points are accepted as built");
+    expect(signOff[0].decision).toContain("debtor test for voting is applied per lot");
+    expect(signOff[0].decision).toContain("switch-on is approved");
+  });
 
   it("is signed off, with its decisions recorded", () => {
-    expect(PENDING_RULE_PACKS.QLD.status).toBe("REVIEWED");
-    expect(PENDING_RULE_PACKS.QLD.reviewedOn).toBe("2026-10-27");
-    expect(qld.DECISIONS.every((d) => d.decidedBy === "Matthew Wrigley" && d.decidedOn === "2026-10-27")).toBe(true);
+    expect(QLD_RULE_PACK.reviewedOn).toBe("2026-10-27");
+    expect(QLD_RULE_PACK.reviewer).toBe("Matthew Wrigley");
+    // The sign-off decisions of 27 Oct 2026, then the go-live decisions of 28 Oct 2026.
+    expect(qld.DECISIONS.every((d) => d.decidedBy === "Matthew Wrigley" && ["2026-10-27", "2026-10-28"].includes(d.decidedOn))).toBe(true);
+    expect(qld.DECISIONS.filter((d) => d.decidedOn === "2026-10-27")).toHaveLength(7);
     expect(qld.LATE_PAYMENT_PENALTY.appliesOnlyAfterResolutionRecorded).toBe(true);
     expect(qld.CONTRIBUTION_DISCOUNT.appliesOnlyAfterResolutionRecorded).toBe(true);
   });
@@ -575,7 +606,7 @@ describe("needRule (stage 2)", () => {
   });
 
   it("refuses a pack without the rule, naming its jurisdiction", () => {
-    const qld = PENDING_RULE_PACKS.QLD.rules;
+    const qld = QLD_RULE_PACK.rules;
     // A pack with only the shared rules.
     const sharedOnly: StatutoryRules = {
       TERMINOLOGY: qld.TERMINOLOGY,
@@ -609,13 +640,13 @@ describe("pack features (stage 2)", () => {
   });
 
   it("switches every NSW workflow off for Queensland, except its own debt recovery steps, inspections and certificate", () => {
-    const features = PENDING_RULE_PACKS.QLD.rules.FEATURES;
+    const features = QLD_RULE_PACK.rules.FEATURES;
     // Stage 2, step 9: Queensland's own certificate has a flag of its own, which the NSW pack leaves out.
     expect(Object.keys(features).sort()).toEqual([...Object.keys(RULE_PACKS.NSW.rules.FEATURES), "bodyCorporateCertificate"].sort());
     // Stage 2, step 8: the Queensland step sequence (draft) exists. Step 9: records inspections under the pack's
-    // INSPECTIONS and the body corporate certificate. The pack is still pending, so nothing is live.
+    // INSPECTIONS and the body corporate certificate. Live since the switch-on (28 Oct 2026).
     expect(Object.entries(features).filter(([, on]) => on).map(([k]) => k).sort()).toEqual(["bodyCorporateCertificate", "debtRecoverySteps", "recordsInspections"]);
-    expect(PENDING_RULE_PACKS.QLD.rules.DEBT_RECOVERY_STEPS.length).toBeGreaterThan(0);
+    expect(QLD_RULE_PACK.rules.DEBT_RECOVERY_STEPS.length).toBeGreaterThan(0);
   });
 });
 

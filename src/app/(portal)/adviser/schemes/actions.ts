@@ -3,6 +3,7 @@ import { LOCKED_MESSAGE, LOCKED_SCHEME_FIELDS, changedLockedFields, requireRoles
 import { defaultTimeZone, PLATFORM_TIME_ZONE, todayIn } from "@/lib/jurisdiction/time-zone";
 import { logError } from "@/lib/log";
 import { db } from "@/prisma/db";
+import { and } from "@prisma/orm-postgres/orm-client";
 
 import { recordSecurityEvent } from "@/lib/audit/security-audit";
 import { redirect } from "next/navigation";
@@ -31,7 +32,7 @@ import {
   type OpeningBalancesInput,
 } from "@/lib/onboarding/property-onboarding";
 import { stageOnboardingCutover } from "@/lib/onboarding/stage-opening-cutover";
-import { AUSTRALIAN_STATES, SCHEME_STATE_OPTIONS, schemeLocationProblems } from "@/config/jurisdictions";
+import { AUSTRALIAN_STATES, SCHEME_STATE_OPTIONS, STATE_NAMES, schemeLocationProblems, type AustralianState } from "@/config/jurisdictions";
 import { UnsupportedJurisdictionError } from "@/config/statutory";
 import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { planFormatChoiceProblem, regulationModuleChoiceProblem } from "@/lib/jurisdiction/building-data";
@@ -266,9 +267,12 @@ export async function createSchemeAction(
     // Buildings are onboarded by StrataVerze administrators only (SEC-002).
     const profile = await requirePlatformAdmin();
 
-    const existing = await db.orm.public.Scheme.where((s) => s.planNumber.eq(data.planNumber)).first();
+    // Plan numbers are unique within each state, not across the platform
+    // (decided 27 Oct 2026; schemes_state_plan_number_key, migration 20261121):
+    // an NSW and a Queensland building may have the same plan number.
+    const existing = await db.orm.public.Scheme.where((s) => and(s.state.eq(data.state), s.planNumber.eq(data.planNumber))).first();
     if (existing) {
-      const message = "A building with this plan number is already registered.";
+      const message = `A ${STATE_NAMES[data.state as AustralianState] ?? data.state} building with this plan number is already registered.`;
       return { fieldErrors: { planNumber: message }, step: "details", stepErrors: [message] };
     }
 
@@ -363,6 +367,14 @@ export async function updateSchemeAction(
         reason: "locked building record",
       });
       return { error: LOCKED_MESSAGE };
+    }
+    // A new plan number or state must not be another building's in that state
+    // (plan numbers are unique within each state, migration 20261121).
+    if (data.planNumber !== String(current.planNumber ?? "").trim() || data.state !== String(current.state ?? "").trim().toUpperCase()) {
+      const clash = await db.orm.public.Scheme.where((s) => and(s.state.eq(data.state), s.planNumber.eq(data.planNumber), s.id.neq(schemeId))).first();
+      if (clash && clash.id !== schemeId) {
+        return { fieldErrors: { planNumber: `A ${STATE_NAMES[data.state as AustralianState] ?? data.state} building with this plan number is already registered.` } };
+      }
     }
 
     await updateScheme(schemeId, data);

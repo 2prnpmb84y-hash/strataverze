@@ -50,11 +50,11 @@ vi.mock("@/lib/levies/load-plan-lots", () => ({ loadPlanLots: vi.fn(async () => 
 // The real split, from the Queensland pack, for a building format plan with $1,000 of insurance in the budget.
 vi.mock("@/lib/levies/contribution-insurance", async () => {
   const { insuranceSplit } = await import("@/lib/levies/contribution-shares");
-  const { PENDING_RULE_PACKS } = await import("@/config/statutory");
+  const { QLD_RULE_PACK } = await import("@/config/statutory");
   return {
     contributionInsurance: vi.fn(async (_id: string, schedule: { levyType?: string; budgetAmount: unknown }, lots: { lotId: string; lotNumber: string; entitlement: number }[]) => ({
       split: insuranceSplit({
-        rules: PENDING_RULE_PACKS.QLD.rules,
+        rules: QLD_RULE_PACK.rules,
         planFormat: "BUILDING",
         lots: lots.map((l, i) => ({ ...l, ownerId: null, interestScheduleEntitlement: [45, 55][i] })),
         totalCents: Math.round(Number(schedule.budgetAmount) * 100),
@@ -66,13 +66,13 @@ vi.mock("@/lib/levies/contribution-insurance", async () => {
     })),
   };
 });
-// Queensland, with the pending Queensland pack.
+// Queensland, with the Queensland pack.
 vi.mock("@/lib/jurisdiction/scheme-rules", async () => {
   const actual = await vi.importActual<typeof import("@/lib/jurisdiction/scheme-rules")>("@/lib/jurisdiction/scheme-rules");
-  const { PENDING_RULE_PACKS } = await import("@/config/statutory");
+  const { QLD_RULE_PACK } = await import("@/config/statutory");
   return {
     ...actual,
-    rulesForState: (s: string | null | undefined) => (s === "QLD" ? { pack: null, rules: PENDING_RULE_PACKS.QLD.rules, label: "AU-QLD test" } : actual.rulesForState(s)),
+    rulesForState: (s: string | null | undefined) => (s === "QLD" ? { pack: null, rules: QLD_RULE_PACK.rules, label: "AU-QLD test" } : actual.rulesForState(s)),
   };
 });
 vi.mock("@/lib/billing/capture", () => ({ transactionFeeTable: vi.fn(async () => null) }));
@@ -122,10 +122,10 @@ const { DebtCollectionSection } = await import("@/app/(portal)/adviser/schemes/[
 const { LevyNoticesView } = await import("@/components/levies/levy-notices-view");
 const { onboardingYears } = await import("@/lib/onboarding/income-budget");
 const { ledgerFundDefinition } = await import("@/lib/jurisdiction/funds");
-const { PENDING_RULE_PACKS, statutoryRulesFor } = await import("@/config/statutory");
+const { QLD_RULE_PACK, statutoryRulesFor } = await import("@/config/statutory");
 const { caseWordsFor, levyFormWords, levySharedBy, sharedLevyWords } = await import("./screen-words");
 type Rules = import("@/config/statutory").StatutoryRules;
-const QLD = PENDING_RULE_PACKS.QLD.rules as unknown as Rules;
+const QLD = QLD_RULE_PACK.rules as unknown as Rules;
 const NSW = statutoryRulesFor("NSW");
 
 const params = (extra: { scheduleId?: string } = {}) => ({ params: Promise.resolve({ id: "s1", scheduleId: "", ...extra }) });

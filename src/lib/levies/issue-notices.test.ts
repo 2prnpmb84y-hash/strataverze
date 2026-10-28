@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { issueDateFor as issueDateWith, issueTiming as issueTimingWith } from "./issue-timing";
-import { PENDING_RULE_PACKS, statutoryRulesFor } from "@/config/statutory";
+import { QLD_RULE_PACK, statutoryRulesFor } from "@/config/statutory";
 
 /** Midday in Sydney on a day (the daily job works out each building's day from the moment it runs). */
 const midday = (day: string) => new Date(`${day}T02:00:00Z`);
@@ -383,7 +383,7 @@ describe("the urgent special levy option (stage 2, step 5)", () => {
 
   it("is refused, with nothing issued, when the pack has no shorter urgent notice", async () => {
     today.value = "2026-05-01";
-    noticeRules.override = PENDING_RULE_PACKS.QLD.rules.NOTICE_RULES;
+    noticeRules.override = QLD_RULE_PACK.rules.NOTICE_RULES;
     const r = await special();
     expect(r).toEqual({ error: "A shorter notice for an urgent special levy is not available for this building. Issue the notice without the urgent option." });
     expect(notices().filter((n) => n.levyScheduleId === "sp1")).toEqual([]);

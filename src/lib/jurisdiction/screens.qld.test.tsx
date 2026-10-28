@@ -1,6 +1,6 @@
 /**
  * Owner and adviser screens for a Queensland building (QLD wording go-live,
- * 27 Oct 2026), with the pending Queensland pack injected as the building's:
+ * 27 Oct 2026), with the Queensland pack injected as the building's (it was pending then):
  * the lot and roll screens name the contribution schedule lot entitlement,
  * the levy screens say contribution and penalty, a debt recovery case shows a
  * waiver request and no statutory payment plan, the fee views say body
@@ -64,20 +64,20 @@ vi.mock("@/lib/actions/debt-recovery", () => ({
 }));
 vi.mock("@/lib/actions/change-owner", () => ({ changeOwnerAction: vi.fn() }));
 vi.mock("@/lib/storage/client-upload", () => ({ stageFormFile: vi.fn(), stageUpload: vi.fn() }));
-// A Queensland building has the pending Queensland pack.
+// A Queensland building has the Queensland pack.
 vi.mock("@/lib/jurisdiction/scheme-rules", async () => {
   const actual = await vi.importActual<typeof import("@/lib/jurisdiction/scheme-rules")>("@/lib/jurisdiction/scheme-rules");
-  const { PENDING_RULE_PACKS } = await import("@/config/statutory");
+  const { QLD_RULE_PACK } = await import("@/config/statutory");
   return {
     ...actual,
-    rulesForState: (s: string | null | undefined) => (s === "QLD" ? { pack: null, rules: PENDING_RULE_PACKS.QLD.rules, label: "AU-QLD test" } : actual.rulesForState(s)),
+    rulesForState: (s: string | null | undefined) => (s === "QLD" ? { pack: null, rules: QLD_RULE_PACK.rules, label: "AU-QLD test" } : actual.rulesForState(s)),
   };
 });
 
 const { sharedFake } = await import("@/test/fake-orm");
-const { PENDING_RULE_PACKS, statutoryRulesFor } = await import("@/config/statutory");
+const { QLD_RULE_PACK, statutoryRulesFor } = await import("@/config/statutory");
 type Rules = import("@/config/statutory").StatutoryRules;
-const QLD = PENDING_RULE_PACKS.QLD.rules as unknown as Rules;
+const QLD = QLD_RULE_PACK.rules as unknown as Rules;
 const NSW = statutoryRulesFor("NSW");
 const { caseWordsFor, lotWordsFor, sharedLevyWords } = await import("./screen-words");
 const { LotsCard } = await import("@/app/(portal)/adviser/schemes/[id]/_sections/lots-card");

@@ -28,7 +28,7 @@ vi.mock("@/lib/billing/capture", () => ({ captureUsageFee: vi.fn() }));
 vi.mock("@/lib/billing/disclosure", () => ({ feeErrorMessage: () => null }));
 vi.mock("@/prisma/db", () => ({ db: { transaction: (fn: (tx: { orm: unknown }) => unknown) => transaction(fn) } }));
 
-const { MEETING_RULES: NSW_RULE_SET, PENDING_RULE_PACKS } = await import("@/config/statutory");
+const { MEETING_RULES: NSW_RULE_SET, QLD_RULE_PACK } = await import("@/config/statutory");
 const { openBallotAction } = await import("./evoting-actions");
 
 beforeEach(() => vi.clearAllMocks());
@@ -41,7 +41,7 @@ describe("openBallotAction", () => {
   });
 
   it("refuses with a plain message, and writes nothing, where the rule set has no pre-meeting e-voting", async () => {
-    ruleSet.current = PENDING_RULE_PACKS.QLD.rules.MEETING_RULES;
+    ruleSet.current = QLD_RULE_PACK.rules.MEETING_RULES;
     const r = await openBallotAction("s1", "m1");
     expect(r.error).toMatch(/^Pre-meeting electronic voting is not offered for buildings in /);
     expect(transaction).not.toHaveBeenCalled();

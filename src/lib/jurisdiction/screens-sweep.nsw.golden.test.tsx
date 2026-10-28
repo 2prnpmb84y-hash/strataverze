@@ -26,6 +26,19 @@ vi.mock("next/navigation", () => ({
     throw new Error(`REDIRECT ${u}`);
   },
 }));
+// The state choices as they were when this golden was recorded: NSW only. Since the
+// Queensland switch-on (28 Oct 2026) the form offers New South Wales and Queensland, asks
+// the state first and names both in its help (checked with the real choices in
+// onboarding.qld.test.tsx). Pinned here so this golden still shows everything else is unchanged.
+vi.mock("@/config/jurisdictions", async () => {
+  const actual = await vi.importActual<typeof import("@/config/jurisdictions")>("@/config/jurisdictions");
+  return {
+    ...actual,
+    SUPPORTED_SCHEME_STATES: ["NSW"],
+    SCHEME_STATE_OPTIONS: [{ value: "NSW", label: "New South Wales" }],
+    SCHEME_STATE_HELP: "Only New South Wales buildings can be set up for now.",
+  };
+});
 vi.mock("@prisma/orm-postgres/orm-client", async () => (await import("@/test/fake-orm")).fakeOrmClient);
 vi.mock("@/prisma/db", async () => ({ db: (await import("@/test/fake-orm")).sharedFake.db }));
 vi.mock("@/lib/queries/profiles", () => ({ getCurrentProfile: vi.fn(async () => ({ id: "owner-1" })) }));

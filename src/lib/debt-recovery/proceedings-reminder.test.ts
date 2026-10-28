@@ -3,12 +3,12 @@
  * stage is due and what the email says, pure.
  */
 import { describe, expect, it } from "vitest";
-import { PENDING_RULE_PACKS, statutoryRulesFor } from "@/config/statutory";
+import { QLD_RULE_PACK, statutoryRulesFor } from "@/config/statutory";
 import { auDate } from "@/lib/onboarding/property-onboarding";
 import { proceedingsDeadlineFlags, proceedingsDeadlineRule, type LotDebt } from "./proceedings-deadline";
 import { PROCEEDINGS_REMINDER_STAGES, proceedingsReminderContent, proceedingsReminderStage, remindable, stagesBefore } from "./proceedings-reminder";
 
-const QLD = PENDING_RULE_PACKS.QLD.rules;
+const QLD = QLD_RULE_PACK.rules;
 const rule = proceedingsDeadlineRule(QLD)!;
 const lot: LotDebt = { lotId: "lot-4", lotNumber: "4", oldestUnpaidDueDate: "2024-10-27", proceedingsStarted: false };
 const flagOn = (today: string) => proceedingsDeadlineFlags(rule, [lot], today)[0];

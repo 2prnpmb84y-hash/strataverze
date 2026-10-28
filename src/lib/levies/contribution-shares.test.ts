@@ -6,11 +6,11 @@
  * never split.
  */
 import { describe, expect, it } from "vitest";
-import { PENDING_RULE_PACKS, statutoryRulesFor, type StatutoryRules } from "@/config/statutory";
+import { QLD_RULE_PACK, statutoryRulesFor, type StatutoryRules } from "@/config/statutory";
 import { allocateCents, planNotices, type LevyFrequency } from "./notice-plan";
 import { ContributionShareError, insuranceBasis, insuranceSplit, type ShareLot } from "./contribution-shares";
 
-const QLD = PENDING_RULE_PACKS.QLD.rules as unknown as StatutoryRules;
+const QLD = QLD_RULE_PACK.rules as unknown as StatutoryRules;
 const NSW = statutoryRulesFor("NSW");
 const NO_DASH_OR_SEMICOLON = /[;–—]| - /;
 

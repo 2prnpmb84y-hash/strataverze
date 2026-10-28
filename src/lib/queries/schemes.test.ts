@@ -12,19 +12,13 @@ vi.mock("./seed-chart-of-accounts", () => ({ seedDefaultChartOfAccounts: vi.fn(a
 const lateCharge = vi.hoisted(() => ({ qld: false }));
 vi.mock("@/lib/jurisdiction/scheme-rules", async () => {
   const actual = await vi.importActual<typeof import("@/lib/jurisdiction/scheme-rules")>("@/lib/jurisdiction/scheme-rules");
-  const { PENDING_RULE_PACKS } = await import("@/config/statutory");
+  const { QLD_RULE_PACK } = await import("@/config/statutory");
   return {
     ...actual,
     rulesForState: (state: string) => {
-      // A Queensland building: the pending Queensland pack. It has no default
-      // accounting basis yet (a go-live gap in qld.ts), so the test lends it
-      // the NSW one to reach the rest of createScheme.
-      if (state === "QLD") {
-        const nsw = actual.rulesForState("NSW").rules;
-        return { pack: null, rules: { ...PENDING_RULE_PACKS.QLD.rules, defaultAccountingBasis: nsw.defaultAccountingBasis }, label: "AU-QLD test" };
-      }
+      // A Queensland building has the real Queensland pack (live from the switch-on, 28 Oct 2026).
       const r = actual.rulesForState(state);
-      return lateCharge.qld ? { ...r, rules: { ...r.rules, LATE_CHARGE: PENDING_RULE_PACKS.QLD.rules.LATE_CHARGE } } : r;
+      return lateCharge.qld ? { ...r, rules: { ...r.rules, LATE_CHARGE: QLD_RULE_PACK.rules.LATE_CHARGE } } : r;
     },
   };
 });

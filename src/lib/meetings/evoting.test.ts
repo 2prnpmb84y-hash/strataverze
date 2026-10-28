@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { MEETING_RULES as NSW_RULE_SET, PENDING_RULE_PACKS } from "@/config/statutory";
+import { MEETING_RULES as NSW_RULE_SET, QLD_RULE_PACK } from "@/config/statutory";
 import {
   computeBallotWindow,
   EvotingNotOfferedError,
@@ -85,7 +85,7 @@ describe("validateCanOpenBallot", () => {
 });
 
 describe("pre-meeting e-voting not in the rule set (Queensland)", () => {
-  const QLD = PENDING_RULE_PACKS.QLD.rules.MEETING_RULES;
+  const QLD = QLD_RULE_PACK.rules.MEETING_RULES;
 
   it("is offered for NSW", () => {
     expect(evotingNotOfferedReason(NSW_RULE_SET, "NSW")).toBeNull();

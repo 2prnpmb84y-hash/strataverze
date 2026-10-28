@@ -1,9 +1,10 @@
 /**
  * One building in a state with no live pack never fails a page that lists
- * several (QLD finance wording review, 28 Oct 2026). Queensland's pack is
- * still pending here, so an owner with an NSW lot and a Queensland lot sees
- * every owner page, and the lists and navigation, in the NSW words, as these
- * pages showed before they took their words from the packs.
+ * several (QLD finance wording review, 28 Oct 2026). Victoria's pack is a
+ * draft, so an owner with an NSW lot and a Victorian lot sees every owner
+ * page, and the lists and navigation, in the NSW words, as these pages showed
+ * before they took their words from the packs. Queensland stood for such a
+ * state here until its pack was switched on (28 Oct 2026).
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -111,26 +112,27 @@ const NOTICE = {
 const PAID = { ...NOTICE, id: "n2", noticeNumber: "LN-2", amountPaid: "400", balanceOutstanding: "0", interestCharged: "0", status: "PAID" };
 
 
-const QLD_SCHEME = {
+const VIC_SCHEME = {
   ...SCHEME,
   id: "s2",
-  name: "Surfers Rise",
-  planNumber: "777",
-  state: "QLD",
-  timeZone: "Australia/Brisbane",
+  name: "Docklands Rise",
+  planNumber: "PS 777",
+  postcode: "3008",
+  state: "VIC",
+  timeZone: "Australia/Melbourne",
   memberships: [{ profileId: "owner-1", role: "OWNER", lotId: "l2", isTreasurer: false, lot: { lotNumber: "2", unitNumber: null } }],
 };
-const QLD_NOTICE = { ...NOTICE, id: "n3", lotId: "l2", schemeId: "s2", noticeNumber: "CN-1" };
+const VIC_NOTICE = { ...NOTICE, id: "n3", lotId: "l2", schemeId: "s2", noticeNumber: "CN-1" };
 
 beforeEach(() => {
-  state.ownerSchemes = [{ ...SCHEME }, QLD_SCHEME];
-  state.notices = [NOTICE, PAID, QLD_NOTICE];
-  state.adviserSchemes = [{ ...SCHEME, memberships: [], lots: [] }, { ...QLD_SCHEME, memberships: [], lots: [] }];
+  state.ownerSchemes = [{ ...SCHEME }, VIC_SCHEME];
+  state.notices = [NOTICE, PAID, VIC_NOTICE];
+  state.adviserSchemes = [{ ...SCHEME, memberships: [], lots: [] }, { ...VIC_SCHEME, memberships: [], lots: [] }];
   state.activity = ["LEVY_CREATED", "LEVY_ISSUED"].flatMap((action, i) =>
     ["s1", "s2"].map((schemeId) => ({ id: `a${i}${schemeId}`, schemeId, action, entityType: "LevySchedule", entityId: null, metadata: null, createdAt: "2026-10-01T00:00:00Z", showActor: false, actor: { firstName: "Ann", lastName: "Lee", email: "a@x" } })),
   );
   sharedFake.reset({
-    Scheme: [{ id: "s1", state: "NSW", name: "Harbour View" }, { id: "s2", state: "QLD", name: "Surfers Rise" }],
+    Scheme: [{ id: "s1", state: "NSW", name: "Harbour View" }, { id: "s2", state: "VIC", name: "Docklands Rise" }],
     SchemeMembership: [
       { id: "m1", profileId: "owner-1", schemeId: "s1", role: "OWNER", isActive: true },
       { id: "m2", profileId: "owner-1", schemeId: "s2", role: "OWNER", isActive: true },
@@ -141,9 +143,9 @@ beforeEach(() => {
 const html = async (page: Promise<React.ReactElement | null>) => renderToStaticMarkup((await page) as React.ReactElement);
 
 describe("an owner with a lot in a state with no live pack", () => {
-  it("Queensland's pack is still pending here", async () => {
+  it("Victoria has no live pack", async () => {
     const { RULE_PACKS } = await import("@/config/statutory");
-    expect(RULE_PACKS.QLD).toBeUndefined();
+    expect(RULE_PACKS.VIC).toBeUndefined();
   });
 
   it("the finance page shows both buildings' notices in the NSW words", async () => {
@@ -165,7 +167,7 @@ describe("an owner with a lot in a state with no live pack", () => {
     expect(out.match(/Levy notice issued/g)?.length).toBe(2);
   });
 
-  it("the treasurer's page for the Queensland building", async () => {
+  it("the treasurer's page for the Victorian building", async () => {
     const selected = await import("@/lib/owner/selected-scheme");
     vi.mocked(selected.getSelectedOwnerScheme).mockResolvedValueOnce({ schemeId: "s2", roles: ["COMMITTEE"], memberships: [{ role: "COMMITTEE", isTreasurer: true }] } as never);
     expect(await html(TreasurerPage())).toContain("Overdue levies");
@@ -181,7 +183,7 @@ describe("an owner with a lot in a state with no live pack", () => {
 
 describe("an adviser with a building in a state with no live pack", () => {
   it("the schemes list, the home and reporting", async () => {
-    await expect(html(AdviserSchemesPage({ searchParams: Promise.resolve({}) }))).resolves.toContain("Surfers Rise");
+    await expect(html(AdviserSchemesPage({ searchParams: Promise.resolve({}) }))).resolves.toContain("Docklands Rise");
     await expect(html(AdviserHome())).resolves.toBeTruthy();
     await expect(html(ReportingPage())).resolves.toContain("Levy collection across all schemes.");
   });

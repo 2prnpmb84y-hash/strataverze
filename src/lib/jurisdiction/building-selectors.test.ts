@@ -5,7 +5,7 @@
  * and Queensland, which have no building selectors, unchanged.
  */
 import { describe, expect, it } from "vitest";
-import { PENDING_RULE_PACKS, statutoryRulesFor, type StatutoryRules } from "@/config/statutory";
+import { PENDING_RULE_PACKS, QLD_RULE_PACK, statutoryRulesFor, type StatutoryRules } from "@/config/statutory";
 import type { DerivedBuildingSelector } from "@/config/statutory";
 import {
   buildingFacts,
@@ -26,7 +26,7 @@ import { buildingDataProblems } from "./building-data";
 const VIC = PENDING_RULE_PACKS.VIC.rules as unknown as StatutoryRules;
 const WA = PENDING_RULE_PACKS.WA.rules as unknown as StatutoryRules;
 const ACT = PENDING_RULE_PACKS.ACT.rules as unknown as StatutoryRules;
-const QLD = PENDING_RULE_PACKS.QLD.rules as unknown as StatutoryRules;
+const QLD = QLD_RULE_PACK.rules as unknown as StatutoryRules;
 const NSW = statutoryRulesFor("NSW");
 
 const derived = (rules: StatutoryRules, key: string) => rules.BUILDING_SELECTORS!.find((s) => s.key === key) as DerivedBuildingSelector;
