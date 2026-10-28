@@ -217,7 +217,7 @@ describe("fund problems for Building data missing", () => {
 
   it("are in the notice, after the selector problems, only for a pack with fund conditions", () => {
     const b = { totalLots: 4, regulationModule: null, planFormat: null };
-    const problems = buildingDataProblems(ACT, b, lots(4), { schemeType: "UNITS_PLAN", retirementVillagePlan: "NO", mixedUsePlan: "NO", classBOnlyPlan: "NO" }, []);
+    const problems = buildingDataProblems(ACT, b, lots(4), { schemeType: "UNITS_PLAN", retirementVillagePlan: "NO", mixedUsePlan: "NO", classBOnlyPlan: "NO", memberBand: "FOUR_OR_MORE" }, []);
     expect(problems).toEqual([
       "This building must have an administrative fund but none is set up. Add it under Manage Funds.",
       "This building must have a sinking fund but none is set up. Required with 4 or more units, with a sinking fund plan. Add it under Manage Funds.",

@@ -102,7 +102,7 @@ export default async function MeetingDetailPage({
   const conductVoting = conductVotingView(
     ruleSet,
     rulesForState(scheme.state).rules,
-    scheme.lots.map((l) => ({ id: l.id, lotNumber: l.lotNumber })),
+    scheme.lots.map((l) => ({ id: l.id, lotNumber: l.lotNumber, lotType: l.lotType })),
     agendaItems.map((a) => ({ id: a.id, resolutionCategory: a.resolutionCategory })),
     meeting.meetingType,
   );

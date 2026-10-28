@@ -37,6 +37,7 @@
  * marked `defaultByLaw: true`.
  */
 
+import type { MeetingRuleSet } from "@/lib/meetings/rules";
 import type {
   BuildingFactDefinition,
   BuildingSelector,
@@ -1203,6 +1204,146 @@ export const RECORD_RETENTION = {
   status: "CONFIRMED" as RuleStatus,
 } as const;
 
+/*
+ * The meeting rules in the shared shape (VIC, ACT and WA stage 2, PR 8a-i,
+ * 28 Oct 2026), from MEETINGS, RESOLUTIONS, SIZE_CLASSES, DEBT_RECOVERY and
+ * RECORD_RETENTION. Each resolution rule carries its source and status;
+ * MEETING_RULES_STATUS gives those of the other parts. What the count at a
+ * meeting records and refuses:
+ * - an ordinary resolution: more than half of the lots for which votes are
+ *   cast, by unit entitlement where that is demanded (a poll); a tie fails
+ *   (s 123(7));
+ * - special, without dissent and unanimous resolutions stay open for 28 days
+ *   after the meeting (s 121), so they are decided when that period closes.
+ *   The meeting cannot record them as resolved or lost (stage 2, PR 8b); the
+ *   tests are held: unanimous, every lot for (s 123(1)); without dissent, no
+ *   vote against, and with 2 lots only if unanimous (s 123(2), (3)); special,
+ *   with 6 or more lots at least 50% of all lots and of all unit entitlement
+ *   for and less than 25% of each against (s 123(4)), with 3, 4 or 5 lots
+ *   2, 3 or 4 lots and at least 50% of unit entitlement for and no against
+ *   test (s 123(6)), and with 2 lots only if unanimous (s 123(5));
+ * - an unfinancial owner votes only on unanimous and without dissent
+ *   resolutions (s 120(2));
+ * - common property rows are not counted as lots.
+ */
+
+const WA_GENERAL_QUORUM = {
+  basis: "PERCENT_OF_LOTS_THEN_THOSE_PRESENT",
+  percent: MEETINGS.quorumPercentOfLots,
+  waitMinutes: MEETINGS.noQuorumWaitMinutes,
+  source: `${STA} s 130`,
+  status: "CONFIRMED",
+} as const;
+
+const WA_TOO_FEW_LOTS = "This resolution needs a scheme of at least 2 lots, and fewer are recorded";
+const WA_MIN_LOTS_FOR = SIZE_CLASSES.THREE_TO_FIVE_LOT.specialResolutionMinLotsFor;
+const WA_SMALL_SPECIAL = (lots: 3 | 4 | 5) => ({
+  when: { lotsAtLeast: lots, lotsAtMost: lots },
+  rule: {
+    basis: "SHARE_OF_ALL_LOTS",
+    forAtLeastLots: WA_MIN_LOTS_FOR[lots],
+    forAtLeastFractionOfAllEntitlement: SIZE_CLASSES.THREE_TO_FIVE_LOT.specialResolutionMinUnitEntitlementPercentFor / 100,
+  },
+  source: `${STA} s 123(6)`,
+  status: "CONFIRMED",
+}) as const;
+
+export const MEETING_RULES: MeetingRuleSet = {
+  state: "WA",
+  version: "WA-2026.1",
+  effectiveFrom: "2026-10-28",
+  // The council's 7 days is a default by-law a scheme may have changed, so it is not held.
+  noticePeriods: { AGM: MEETINGS.noticeDays, EGM: MEETINGS.noticeDays, FIRST_AGM: MEETINGS.noticeDays },
+  // No deadline for distributing minutes was found (MEETINGS.minutesDistributionDeadlineDays).
+  minutesDeadlines: {},
+  quorumRules: { AGM: WA_GENERAL_QUORUM, EGM: WA_GENERAL_QUORUM, FIRST_AGM: WA_GENERAL_QUORUM },
+  resolutionCategories: {
+    ORDINARY: { basis: "COUNT_MAJORITY", source: RESOLUTIONS.ORDINARY.source, status: "CONFIRMED" },
+    SPECIAL: {
+      basis: "BY_VARIANT",
+      votingPeriodDays: RESOLUTIONS.votingPeriodDays,
+      variants: [
+        { when: { lotsAtLeast: 2, lotsAtMost: 2 }, rule: { basis: "SHARE_OF_ALL_LOTS", forAtLeastFractionOfAllLots: 1 }, source: `${STA} s 123(5)`, status: "CONFIRMED" },
+        WA_SMALL_SPECIAL(3),
+        WA_SMALL_SPECIAL(4),
+        WA_SMALL_SPECIAL(5),
+        {
+          when: { lotsAtLeast: 6 },
+          rule: {
+            basis: "SHARE_OF_ALL_LOTS",
+            forAtLeastFractionOfAllLots: RESOLUTIONS.SPECIAL.forMinFractionOfAllLots,
+            forAtLeastFractionOfAllEntitlement: RESOLUTIONS.SPECIAL.forMinFractionOfAllUnitEntitlement,
+            againstLessThanFractionOfAllLots: RESOLUTIONS.SPECIAL.againstLessThanFractionOfAllLots,
+            againstLessThanFractionOfAllEntitlement: RESOLUTIONS.SPECIAL.againstLessThanFractionOfAllUnitEntitlement,
+          },
+          source: RESOLUTIONS.SPECIAL.source,
+          status: "CONFIRMED",
+        },
+      ],
+      noVariantFitsRefusal: WA_TOO_FEW_LOTS,
+      source: `${STA} ss 121, 122, 123(4) to (6)`,
+      status: "CONFIRMED",
+    },
+    WITHOUT_DISSENT: {
+      basis: "BY_VARIANT",
+      votingPeriodDays: RESOLUTIONS.votingPeriodDays,
+      variants: [
+        { when: { lotsAtLeast: 2, lotsAtMost: 2 }, rule: { basis: "SHARE_OF_ALL_LOTS", forAtLeastFractionOfAllLots: 1 }, source: `${STA} s 123(3)`, status: "CONFIRMED" },
+        { when: { lotsAtLeast: 3 }, rule: { basis: "NO_AGAINST" }, source: `${STA} s 123(2)`, status: "CONFIRMED" },
+      ],
+      noVariantFitsRefusal: WA_TOO_FEW_LOTS,
+      source: `${STA} ss 121, 122, 123(2), (3)`,
+      status: "CONFIRMED",
+    },
+    UNANIMOUS: {
+      basis: "SHARE_OF_ALL_LOTS",
+      forAtLeastFractionOfAllLots: 1,
+      votingPeriodDays: RESOLUTIONS.votingPeriodDays,
+      source: `${STA} ss 121, 122, 123(1)`,
+      status: "CONFIRMED",
+    },
+  },
+  retention: { generalYears: 20, secretBallotMonths: null },
+  preMeetingEvoting: null,
+  resolutionLabels: {
+    ORDINARY: { short: "Ordinary", full: "Ordinary Resolution" },
+    SPECIAL: { short: "Special", full: "Special Resolution" },
+    WITHOUT_DISSENT: { short: "Without dissent", full: "Resolution without Dissent" },
+    UNANIMOUS: { short: "Unanimous", full: "Unanimous Resolution" },
+  },
+  generalMeetingCategories: ["ORDINARY", "SPECIAL", "WITHOUT_DISSENT", "UNANIMOUS"],
+  committeeCategories: ["ORDINARY"],
+  committeeCategoryRefusal: "Only an ordinary resolution can go on a council meeting agenda. Put this motion on a general meeting agenda instead.",
+  motionCategories: ["ORDINARY", "SPECIAL", "WITHOUT_DISSENT", "UNANIMOUS"],
+  debtorsMayVoteOn: ["UNANIMOUS", "WITHOUT_DISSENT"],
+  pollCategories: ["ORDINARY"],
+  excludeCommonPropertyRows: true,
+  notes:
+    "Draft, from the Western Australian pack (not signed off), VIC, ACT and WA stage 2, PR 8a-i. Special, without dissent and unanimous resolutions are decided when their 28-day voting period closes, which is not tracked yet.",
+};
+
+/** How far each part of MEETING_RULES not carrying its own status is checked. */
+export const MEETING_RULES_STATUS = {
+  noticePeriods: {
+    status: "CONFIRMED" as RuleStatus,
+    source: `${STA} s 129(1)`,
+    note: "14 days for a general meeting. The council's 7 days (Sch 1 by-law 8(1)) is a default by-law a scheme may have changed, so council notice is not checked.",
+  },
+  minutesDeadlines: { status: "CONFIRMED" as RuleStatus, source: MEETINGS.source, note: "No deadline for distributing minutes was found in the STA or STGR read." },
+  quorumRules: { status: "CONFIRMED" as RuleStatus, source: `${STA} s 130`, note: "Held as data; not evaluated. A 2-lot scheme needs both lots (s 130(2), (4)), which the shared basis does not hold. The council's quorum is a default by-law and is not held." },
+  retention: {
+    status: "STRATAVERZE" as RuleStatus,
+    source: RECORD_RETENTION.source,
+    note: "20 years, the longest period for a meeting's records: special, unanimous and without dissent resolutions are kept 20 years and minutes 7 (reg 83). Keeping the whole meeting record for 20 years is a StrataVerze choice (FOR_REVIEW).",
+  },
+  debtorsMayVoteOn: {
+    status: "CONFIRMED" as RuleStatus,
+    source: `${STA} s 120(2)`,
+    note: "An unfinancial owner votes only on unanimous and without dissent resolutions (and leasehold expiry postponement and termination resolutions, which are not categories). Unfinancial is read as a levy notice issued, past its due date and not paid in full (FOR_REVIEW).",
+  },
+  labelsAndLists: { status: "STRATAVERZE" as RuleStatus, source: "StrataVerze", note: "The names, the categories each meeting and the motions list offer, the poll categories, pre-meeting voting not offered and common property rows not counted are StrataVerze choices (FOR_REVIEW)." },
+} as const;
+
 /**
  * Information and inspection (STA ss 107 to 109, 111; STGR regs 85 to 88). For
  * a person with a proper interest (member, contracted buyer, mortgagee and the
@@ -1482,6 +1623,13 @@ export const FOR_REVIEW = [
   "NOTICE_RULES (stage 2, PR 6a): each notice goes out 35 days before it falls due, never with less than 14 days' notice, as Matthew Wrigley decided on 28 Oct 2026 (DECISIONS). A due date is never moved (s 100(4)(a): the levy decision fixes it), so a notice that can no longer be given 14 days' notice cannot go out: the Adviser is told, and the levy must be decided again with a later date. Recorded here so the decision is visible at sign-off.",
   "NOTICE_RULES: one notice for each instalment as it falls due is a StrataVerze choice (the STA and STGR set no notice rule). Scheme by-laws were not checked: one may set a notice form, content or period, or an early payment discount. Confirm.",
   "NOTICE_RULES, notices that cannot go out because their due date cannot move: the daily job logs them as held (LEVY_NOTICES_HELD) again on every run until the planned notices are stopped, and when the Adviser sends overdue notices they are held while the others go out. When a schedule is first planned, one such instalment refuses the whole schedule (nothing is planned). Decide whether to keep both.",
+  "MEETING_RULES (stage 2, PR 8a-i) is StrataVerze's mapping of MEETINGS, RESOLUTIONS and SIZE_CLASSES to the shared shape. StrataVerze choices: the names (Ordinary, Special, Unanimous Resolution and Resolution without Dissent); a general meeting and the motions list offer all four, and a council meeting ordinary resolutions only; pre-meeting voting and voting outside a meeting (s 120(3)) are not offered; common property rows are not counted as lots; a poll means unit entitlement counting demanded on an ordinary resolution (s 122). Confirm each.",
+  "Special, without dissent and unanimous resolutions stay open for 28 days after the meeting (s 121), and owners with no-one present may still vote by written notice (s 121(2)), so the count at the meeting cannot decide them. Until the voting period is tracked (stage 2, PR 8b), the meeting cannot record them as resolved or lost: the chair is told, and may defer the item.",
+  "A 2-lot special resolution and resolution without dissent are counted as unanimous: every lot for (s 123(3), (5)). Below 2 lots no test fits and the count is refused. The 3 to 5-lot special resolution is read as at least 50% of the total unit entitlement for (s 123(6) says \"unit entitlement\"). Confirm.",
+  "A resolution without dissent with no vote cast at all passes the test (no vote against, s 123(2)). Confirm that reading, once these resolutions are recorded.",
+  "An unfinancial owner (s 120(2)) is read as a lot with a levy notice issued, past its due date and not paid in full on the meeting's date, as for Queensland. A special resolution is measured against all lots, so a lot whose vote is not counted for money owed still counts in the total. Confirm.",
+  "The meeting record is kept 20 years (retention), the period for special, unanimous and without dissent resolutions; minutes alone are kept 7 (reg 83). Confirm.",
+  "Not applied: the scheme developer's exclusion from defect resolutions for 10 years (s 80(2), (3)); council meeting notice (a default by-law); a deadline for minutes (none found).",
 ] as const;
 
 /**

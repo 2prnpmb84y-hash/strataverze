@@ -9,6 +9,7 @@ import {
   evaluateResolution,
   isResolutionCategory,
   type MeetingRuleSet,
+  type ResolutionOutcome,
   type ResolutionTally,
 } from "./rules";
 
@@ -35,13 +36,39 @@ export interface OutcomeResult {
   outcome: Outcome;
   status: string;
   /** Present when a tally was supplied and evaluated. */
-  evaluation?: { passed: boolean; reason: string };
+  evaluation?: ResolutionOutcome;
+  /**
+   * Why the outcome cannot be recorded, where the count gives neither carried
+   * nor lost (the draft packs only: an interim resolution, or one the count
+   * cannot decide). Nothing may be written then. Left out otherwise.
+   */
+  refused?: string;
+}
+
+/** "a" or "an" before a name, by its first sound: "a unanimous resolution", "an interim special resolution". */
+const article = (text: string) => (/^[aeiou]/i.test(text) && !/^(?:unan|uni|use|usu)/i.test(text) ? `an ${text}` : `a ${text}`);
+
+/**
+ * What the chair is told when the count gives neither carried nor lost (VIC,
+ * ACT and WA stage 2, PR 8a-i, 28 Oct 2026). Plain words; the reason comes
+ * from the evaluation.
+ */
+function countRefusal(ruleSet: Pick<MeetingRuleSet, "resolutionLabels">, evaluation: ResolutionOutcome): string {
+  if (evaluation.result === "INTERIM") {
+    const name = evaluation.interimCategory
+      ? (ruleSet.resolutionLabels[evaluation.interimCategory]?.full ?? evaluation.interimCategory).toLowerCase()
+      : "interim resolution";
+    return `The votes recorded make this motion ${article(name)}. ${evaluation.reason}. StrataVerze does not record interim resolutions yet, so this outcome cannot be recorded here. Nothing was saved. The item can be deferred.`;
+  }
+  return `The votes recorded cannot decide this motion. ${evaluation.reason}. Nothing was saved. The item can be deferred.`;
 }
 
 /**
  * Resolve the outcome for an agenda item. If a tally is supplied, the rule set
  * evaluates it for the item's resolution category and the pass/fail drives the
- * outcome (carried vs lost); an explicit DEFERRED is always honoured.
+ * outcome (carried vs lost); an explicit DEFERRED is always honoured. Where
+ * the count gives neither (an interim resolution, or one it cannot decide:
+ * the draft packs only), the result carries `refused` and must not be written.
  */
 export function resolveOutcome(
   ruleSet: MeetingRuleSet,
@@ -64,6 +91,15 @@ export function resolveOutcome(
       params.tally,
       params.pollEntitlement,
     );
+    // Neither carried nor lost (the draft packs only): refused, and nothing is written.
+    if (evaluation.result) {
+      return {
+        outcome: params.requestedOutcome,
+        status: statusForOutcome(params.requestedOutcome),
+        evaluation,
+        refused: countRefusal(ruleSet, evaluation),
+      };
+    }
     const outcome: Outcome = evaluation.passed ? "RESOLVED" : "MOTION_LOST";
     return { outcome, status: statusForOutcome(outcome), evaluation };
   }

@@ -12,7 +12,9 @@ import { canTransition } from "@/lib/meetings/lifecycle";
 import { resolveOutcome, isOutcome, type Outcome } from "@/lib/meetings/conduct";
 import {
   buildConductTally,
+  countNeedsMemberBand,
   countsVotesAtMeeting,
+  laterDecisionRefusal,
   notCountedNotice,
   outcomeDisagreement,
   parseChairVotes,
@@ -179,7 +181,14 @@ async function recordCountedOutcome(p: {
     state: string;
     timeZone: string | null;
     totalLots: number | null;
-    lots: readonly { id: string; lotNumber: string; entitlement: number | null; interestScheduleEntitlement?: number | null; lotEntitlement?: number | null }[];
+    lots: readonly {
+      id: string;
+      lotNumber: string;
+      entitlement: number | null;
+      interestScheduleEntitlement?: number | null;
+      lotEntitlement?: number | null;
+      lotType?: string | null;
+    }[];
   };
   ruleSet: MeetingRuleSet;
   requestedOutcome: Outcome;
@@ -189,13 +198,17 @@ async function recordCountedOutcome(p: {
   // Decided on written votes, which are not recorded yet: refused before anything is read.
   const written = writtenVotesRefusal(p.ruleSet, p.item.resolutionCategory, p.requestedOutcome);
   if (written) return { error: written };
-  // Every lot of the building, as read with it.
+  // Decided when its voting period closes (Western Australia): refused before anything is read.
+  const later = laterDecisionRefusal(p.ruleSet, p.item.resolutionCategory, p.requestedOutcome);
+  if (later) return { error: later };
+  // Every lot of the building, as read with it. Its type lets a draft pack leave common property rows out.
   const lots = p.scheme.lots.map((l) => ({
     id: l.id,
     lotNumber: String(l.lotNumber),
     entitlement: l.entitlement ?? null,
     interestScheduleEntitlement: l.interestScheduleEntitlement ?? null,
     lotEntitlement: l.lotEntitlement ?? null,
+    lotType: l.lotType ?? null,
   }));
   const chairVotes = parseChairVotes(p.votes, lots.length);
   if (!chairVotes || (p.poll != null && typeof p.poll !== "boolean")) {
@@ -212,6 +225,10 @@ async function recordCountedOutcome(p: {
     meetingDay,
     itemId: p.item.id,
     category: p.item.resolutionCategory,
+    // The band of members, read only where the item's test depends on it (the ACT).
+    ...(p.ruleSet.memberBandSelector && countNeedsMemberBand(p.ruleSet, p.item.resolutionCategory)
+      ? { memberBandSelector: p.ruleSet.memberBandSelector }
+      : {}),
   });
   const count = buildConductTally({
     ruleSet: p.ruleSet,
@@ -223,6 +240,7 @@ async function recordCountedOutcome(p: {
     chairVotes,
     poll: p.poll === true,
     owingLotIds: data.owingLotIds,
+    ...(data.memberBand !== undefined ? { memberBand: data.memberBand } : {}),
   });
   if (!count.ok) return { error: count.error };
 
@@ -234,6 +252,8 @@ async function recordCountedOutcome(p: {
     // A poll is counted by the entitlement the pack names (the chair is told it by name).
     ...(tally?.poll ? { pollEntitlement: scheduleFor(rules, "POLL_VOTE").name } : {}),
   });
+  // Neither carried nor lost (an interim resolution, or one the count cannot decide): nothing is written.
+  if (result.refused) return { error: result.refused };
   const disagreement = outcomeDisagreement(p.requestedOutcome, result);
   if (disagreement) return { error: disagreement };
 

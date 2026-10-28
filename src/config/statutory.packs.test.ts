@@ -195,7 +195,7 @@ describe("Australian Capital Territory pack (pending)", () => {
   it("is a draft for review, not signed off, with only the payment order and the notice timing decided", () => {
     expect(pack.code).toBe("AU-ACT");
     expect(pack.state).toBe("ACT");
-    expect(pack.version).toBe("2026.10.6");
+    expect(pack.version).toBe("2026.10.8");
     expect(pack.status).toBe("DRAFT");
     expect(pack.reviewedOn).toBeNull();
     expect(pack.reviewer).toBe("Matthew Wrigley");
@@ -302,7 +302,7 @@ describe("Victorian pack (pending)", () => {
   it("is a draft, not signed off, and never given to a building", () => {
     expect(pack.code).toBe("AU-VIC");
     expect(pack.state).toBe("VIC");
-    expect(pack.version).toBe("2026.10.7");
+    expect(pack.version).toBe("2026.10.8");
     expect(pack.status).toBe("DRAFT");
     expect(pack.reviewedOn).toBeNull();
     expect(rulePackFor("VIC")).toBeNull();
@@ -538,7 +538,7 @@ describe("Western Australia pack (pending)", () => {
   const wa = pack.rules;
 
   it("is a draft, not yet signed off, with only the payment order and the notice timing decided", () => {
-    expect(pack.version).toBe("2026.10.5");
+    expect(pack.version).toBe("2026.10.6");
     expect(pack.status).toBe("DRAFT");
     expect(pack.reviewedOn).toBeNull();
     expect(wa.DECISIONS).toHaveLength(2);
@@ -678,7 +678,7 @@ describe("the checked notice rules of the pending packs (stage 2, PR 6a)", () =>
       expect(decided, code).toHaveLength(1);
       expect(decided[0]).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-28" });
     }
-    expect(PENDING_RULE_PACKS.VIC.rules.DEFERRED_SHARED_SHAPES.map((d) => d.shape)).toEqual(["MEETING_RULES"]);
+    expect(PENDING_RULE_PACKS.VIC.rules.DEFERRED_SHARED_SHAPES).toEqual([]);
   });
 
   it("refuses every Victorian and ACT notice today, each with its reason, and gives WA no notice rule problem", () => {

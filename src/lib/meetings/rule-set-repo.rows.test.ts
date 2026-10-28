@@ -16,13 +16,18 @@ vi.mock("@/config/statutory", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/config/statutory")>();
   return {
     ...actual,
-    rulePackFor: (state: string) =>
-      (state ?? "").trim().toUpperCase() === "QLD" ? actual.QLD_RULE_PACK : actual.rulePackFor(state),
+    rulePackFor: (state: string) => {
+      const key = (state ?? "").trim().toUpperCase();
+      if (key === "QLD") return actual.QLD_RULE_PACK;
+      // A draft pack given as if live (VIC, ACT and WA stage 2, PR 8a-i): it has no buildings yet.
+      if (key === "ACT") return actual.PENDING_RULE_PACKS.ACT;
+      return actual.rulePackFor(state);
+    },
   };
 });
 
 import { getActiveRuleSet } from "./rule-set-repo";
-import { MEETING_RULES as NSW_RULE_SET, QLD_RULE_PACK } from "@/config/statutory";
+import { MEETING_RULES as NSW_RULE_SET, PENDING_RULE_PACKS, QLD_RULE_PACK } from "@/config/statutory";
 
 const QLD = QLD_RULE_PACK.rules.MEETING_RULES;
 
@@ -78,5 +83,21 @@ describe("stored rule set rows", () => {
   it("use the pack's rule set when no row is stored", async () => {
     first.mockResolvedValue(null);
     expect(await getActiveRuleSet("QLD")).toBe(QLD);
+  });
+
+  it("copy a draft pack's common property and band of members keys from its seed, and never give them to NSW or Queensland", async () => {
+    const ACT = PENDING_RULE_PACKS.ACT.rules.MEETING_RULES;
+    first.mockResolvedValue(olderRow("ACT", ACT));
+    const rs = await getActiveRuleSet("ACT");
+    expect(rs.excludeCommonPropertyRows).toBe(true);
+    expect(rs.memberBandSelector).toBe("memberBand");
+    expect(rs.pollCategories).toEqual(["ORDINARY", "SPECIAL"]);
+    expect("debtorsMayVoteOn" in rs).toBe(false);
+    for (const state of ["NSW", "QLD"] as const) {
+      first.mockResolvedValue(olderRow(state, state === "NSW" ? NSW_RULE_SET : QLD));
+      const other = await getActiveRuleSet(state);
+      expect("excludeCommonPropertyRows" in other).toBe(false);
+      expect("memberBandSelector" in other).toBe(false);
+    }
   });
 });

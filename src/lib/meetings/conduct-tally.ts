@@ -26,6 +26,13 @@
  *   entitlement the pack says decides a poll vote (s 110(3)).
  * - Anything missing fails closed: nothing is counted and the chair is told
  *   what to fix.
+ *
+ * The draft packs (VIC, ACT and WA stage 2, PR 8a-i, 28 Oct 2026) count the
+ * same way, with what their own tests need: the totals of every lot, their
+ * entitlement, the votes those present could cast, the lots recorded and the
+ * building's band of members (BASIS_NEEDS). They leave common property rows
+ * out of the lots. A resolution decided only when its voting period closes
+ * (Western Australia) is refused before anything is read.
  */
 import type { StatutoryRules } from "@/config/statutory";
 import {
@@ -37,16 +44,100 @@ import {
   type LotEntitlements,
 } from "@/lib/jurisdiction/building-data";
 import { debtorBarsLot } from "./debtor-voting";
-import { isResolutionCategory, type MeetingRuleSet, type ResolutionCategory, type ResolutionTally } from "./rules";
+import {
+  isResolutionCategory,
+  usesDraftKeys,
+  type MeetingRuleSet,
+  type ResolutionCategory,
+  type ResolutionRule,
+  type ResolutionTally,
+} from "./rules";
 import type { Outcome, OutcomeResult } from "./conduct";
 
-/** The bases that need the scheme's totals, so the votes must be counted. */
-const COUNTED_BASES: readonly string[] = ["TWO_THIRDS_LOTS_AND_ENTITLEMENT_CAPS", "MORE_THAN_HALF_OF_LOTS"];
-
-/** Whether conduct counts the votes for the building: its rule set has a resolution needing the scheme's totals. */
-export function countsVotesAtConduct(ruleSet: Pick<MeetingRuleSet, "resolutionCategories">): boolean {
-  return Object.values(ruleSet.resolutionCategories).some((rule) => !!rule && COUNTED_BASES.includes(rule.basis));
+/** What the count needs for a resolution, beyond the votes. */
+interface CountNeeds {
+  /** The building's number of lots, checked against the lots entered. */
+  totals: boolean;
+  /** The votes those present could cast (AGAINST_SHARE_OF_VOTES_PRESENT). */
+  votesPresent: boolean;
+  /** The lots with a vote recorded (EVERY_LOT_RECORDED_NONE_AGAINST). */
+  lotsRecorded: boolean;
 }
+
+/**
+ * What each basis needs counted. Queensland's two (special and majority
+ * resolutions) need the scheme's totals; the draft packs' as their tests say.
+ * The entitlement totals and the band of members a draft rule needs depend
+ * on its fields and variants (draftNeeds).
+ */
+const BASIS_NEEDS: Readonly<Record<ResolutionRule["basis"], Partial<CountNeeds>>> = {
+  COUNT_MAJORITY: {},
+  UE_AGAINST_THRESHOLD: {},
+  NO_AGAINST: {},
+  TWO_THIRDS_LOTS_AND_ENTITLEMENT_CAPS: { totals: true },
+  MORE_THAN_HALF_OF_LOTS: { totals: true },
+  SHARE_OF_ALL_LOTS: { totals: true },
+  AGAINST_SHARE_OF_VOTES_PRESENT: { votesPresent: true },
+  NONE_AGAINST_AT_LEAST_ONE_FOR: {},
+  EVERY_LOT_RECORDED_NONE_AGAINST: { totals: true, lotsRecorded: true },
+  BY_VARIANT: {},
+};
+
+/** A rule and its variants' rules. */
+const withVariants = (rule: ResolutionRule): ResolutionRule[] => [rule, ...(rule.variants ?? []).map((v) => v.rule)];
+
+/** Whether the count needs the building's totals for this rule (Queensland's special and majority resolutions, and the draft packs' as their tests say). */
+function rulesNeedTotals(rule: ResolutionRule): boolean {
+  return (
+    withVariants(rule).some((r) => !!BASIS_NEEDS[r.basis]?.totals) ||
+    !!rule.variants?.some((v) => v.when.lotsAtLeast != null || v.when.lotsAtMost != null)
+  );
+}
+
+/**
+ * What a draft pack's rule needs beyond Queensland's (VIC, ACT and WA stage 2,
+ * PR 8a-i). All false for an NSW or Queensland rule, so their count is as before.
+ */
+function draftNeeds(rule: ResolutionRule, poll: boolean) {
+  const rules = usesDraftKeys(rule) ? withVariants(rule) : [];
+  return {
+    entitlement: rules.some(
+      (r) =>
+        r.basis === "SHARE_OF_ALL_LOTS" &&
+        (r.forAtLeastFractionOfAllEntitlement != null ||
+          r.againstLessThanFractionOfAllEntitlement != null ||
+          (poll && r.pollForAtLeastFractionOfAllEntitlement != null)),
+    ),
+    entitlementUse: rules.find((r) => r.entitlementUse)?.entitlementUse ?? ("SPECIAL_RESOLUTION" as const),
+    votesPresent: rules.some((r) => !!BASIS_NEEDS[r.basis]?.votesPresent),
+    lotsRecorded: rules.some((r) => !!BASIS_NEEDS[r.basis]?.lotsRecorded),
+    memberBand: !!rule.variants?.some((v) => !!v.when.memberBands),
+  };
+}
+
+/**
+ * Whether a rule is counted at conduct: a basis needing the scheme's totals
+ * (Queensland), or any rule of a draft pack, whose tests are all checked
+ * against the count.
+ */
+function countedRule(rule: ResolutionRule): boolean {
+  return rulesNeedTotals(rule) || usesDraftKeys(rule);
+}
+
+/** Whether conduct counts the votes for the building: its rule set has a resolution needing the scheme's totals, or a draft pack's resolution. */
+export function countsVotesAtConduct(ruleSet: Pick<MeetingRuleSet, "resolutionCategories">): boolean {
+  return Object.values(ruleSet.resolutionCategories).some((rule) => !!rule && countedRule(rule));
+}
+
+/** Whether the count of an item needs the building's band of members (the ACT). */
+export function countNeedsMemberBand(ruleSet: MeetingRuleSet, category: string | null | undefined): boolean {
+  if (!isResolutionCategory(ruleSet, category)) return false;
+  const rule = ruleSet.resolutionCategories[category];
+  return !!rule && draftNeeds(rule, false).memberBand;
+}
+
+/** Whether a lot row is a lot, not the common property (as the building facts read it). */
+const isLotRow = (l: { lotType?: string | null }) => String(l.lotType ?? "").toUpperCase() !== "COMMON";
 
 /** A committee meeting: its members vote, not the lots (Queensland SM ss 60, 68). */
 export function isCommitteeMeeting(meetingType: string | null | undefined): boolean {
@@ -106,6 +197,8 @@ export interface OnlineVote {
 export interface TallyLot extends LotEntitlements {
   id: string;
   lotNumber: string;
+  /** The lot's type, where read: a common property row ("COMMON") is left out where the pack says so. */
+  lotType?: string | null;
 }
 
 export interface CountedVote {
@@ -135,6 +228,9 @@ const orList = (names: readonly string[]) =>
 /** "a" or "an" before a name, by its first letter. */
 const article = (text: string) => (/^[aeiou]/i.test(text) ? `an ${text}` : `a ${text}`);
 
+/** "A" or "An" before a name at the start of a sentence, by its first sound: "A unanimous resolution" (the draft packs' words). */
+const sentenceArticle = (text: string) => (/^[aeiou]/i.test(text) && !/^(?:unan|uni|use|usu)/i.test(text) ? `An ${text}` : `A ${text}`);
+
 /**
  * The tally for one agenda item, from the building's lots and the votes. A
  * category the rule set does not have, a vote for a lot outside the
@@ -142,7 +238,7 @@ const article = (text: string) => (/^[aeiou]/i.test(text) ? `an ${text}` : `a ${
  * pack does not allow, a lot count that differs from the building's, or a
  * missing entitlement the count needs: each refuses, and nothing is counted.
  */
-export function buildConductTally(params: {
+export function buildConductTally(input: {
   ruleSet: MeetingRuleSet;
   rules: Pick<StatutoryRules, "ENTITLEMENT_SCHEDULES">;
   category: string | null | undefined;
@@ -155,7 +251,11 @@ export function buildConductTally(params: {
   poll: boolean;
   /** The lots owing money on the building's today. */
   owingLotIds: ReadonlySet<string>;
+  /** The building's band of members, as its building rules record it, where a rule needs it (the ACT). */
+  memberBand?: string | null;
 }): ConductTallyResult {
+  // A draft pack leaves common property rows out of the lots; NSW and Queensland count every row, as before.
+  const params = input.ruleSet.excludeCommonPropertyRows ? { ...input, lots: input.lots.filter(isLotRow) } : input;
   const { ruleSet } = params;
   const raw = params.category && params.category.trim() ? params.category : null;
   if (raw && !isResolutionCategory(ruleSet, raw)) {
@@ -208,7 +308,8 @@ export function buildConductTally(params: {
   if (!category) return { ok: true, value: { tally: null, counted, notCounted } };
 
   const rule = ruleSet.resolutionCategories[category]!;
-  const needsTotals = COUNTED_BASES.includes(rule.basis);
+  const needsTotals = rulesNeedTotals(rule);
+  const draft = draftNeeds(rule, params.poll);
   if (needsTotals && params.recordedLotCount == null) {
     return {
       ok: false,
@@ -240,9 +341,18 @@ export function buildConductTally(params: {
       tally.totalEntitlement = params.lots.reduce((sum, l) => sum + lotEntitlementFor(params.rules, l, "SPECIAL_RESOLUTION"), 0);
       weigh("SPECIAL_RESOLUTION");
     }
+    // A draft pack's test against the total entitlement (Victoria, Western Australia), by the schedule the pack says decides it.
+    if (draft.entitlement) {
+      tally.totalEntitlement = params.lots.reduce((sum, l) => sum + lotEntitlementFor(params.rules, l, draft.entitlementUse), 0);
+      weigh(draft.entitlementUse);
+    }
     if (params.poll) {
       tally.poll = true;
       weigh("POLL_VOTE");
+    }
+    // The ACT's special resolution on a poll: the entitlement of every lot recorded at the item.
+    if (draft.votesPresent && params.poll) {
+      tally.votesPresentEntitlement = counted.reduce((sum, v) => sum + lotEntitlementFor(params.rules, lotsById.get(v.lotId)!, "POLL_VOTE"), 0);
     }
   } catch (err) {
     if (err instanceof MissingEntitlementError || err instanceof EntitlementRuleError) {
@@ -254,6 +364,12 @@ export function buildConductTally(params: {
   if (rule.basis === "MORE_THAN_HALF_OF_LOTS") {
     tally.eligibleLots = params.lots.filter((l) => !debtorBarred(l.id)).length;
   }
+
+  // The draft packs' counts, each only where the rule needs it (never on an NSW or Queensland tally).
+  // Each lot counted has a vote or an abstention recorded; a lot barred for money owed is not counted.
+  if (draft.votesPresent) tally.votesPresentCount = counted.length;
+  if (draft.lotsRecorded) tally.lotsRecorded = counted.length;
+  if (draft.memberBand && params.memberBand) tally.memberBand = params.memberBand;
 
   return { ok: true, value: { tally, counted, notCounted } };
 }
@@ -269,6 +385,22 @@ export function writtenVotesRefusal(ruleSet: MeetingRuleSet, category: string | 
   if (ruleSet.resolutionCategories[category]?.basis !== "MORE_THAN_HALF_OF_LOTS") return null;
   const name = (ruleSet.resolutionLabels[category]?.full ?? category).toLowerCase();
   return `${article(name).replace(/^a/, "A")} is decided on each lot's written vote, which StrataVerze does not record yet. It cannot be recorded as resolved here. It can be recorded as lost, or deferred.`;
+}
+
+/**
+ * Why the chair cannot record the outcome at the meeting, or null (VIC, ACT
+ * and WA stage 2, PR 8a-i). A resolution whose vote stays open after the
+ * meeting (Western Australia's special, without dissent and unanimous
+ * resolutions) is decided when its voting period closes, which StrataVerze
+ * does not track yet, so neither resolved nor lost can be recorded at the
+ * meeting. Deferring it is still allowed.
+ */
+export function laterDecisionRefusal(ruleSet: MeetingRuleSet, category: string | null | undefined, requested: Outcome): string | null {
+  if (requested === "DEFERRED" || !isResolutionCategory(ruleSet, category)) return null;
+  const days = ruleSet.resolutionCategories[category]?.votingPeriodDays;
+  if (days == null) return null;
+  const name = (ruleSet.resolutionLabels[category]?.full ?? category).toLowerCase();
+  return `${sentenceArticle(name)} is decided when its ${days}-day voting period closes, which StrataVerze does not track yet. It cannot be recorded as resolved or lost at the meeting. It can be deferred.`;
 }
 
 /**
@@ -305,11 +437,13 @@ export interface ConductVotingView {
 export function conductVotingView(
   ruleSet: MeetingRuleSet,
   rules: Pick<StatutoryRules, "ENTITLEMENT_SCHEDULES">,
-  lots: readonly { id: string; lotNumber: string | number }[],
+  lots: readonly { id: string; lotNumber: string | number; lotType?: string | null }[],
   items: readonly { id: string; resolutionCategory: string | null }[],
   meetingType: string | null | undefined,
 ): ConductVotingView | null {
   if (!countsVotesAtMeeting(ruleSet, meetingType)) return null;
+  // A draft pack leaves common property rows out, as the count does.
+  const rows = ruleSet.excludeCommonPropertyRows ? lots.filter(isLotRow) : lots;
   let pollLabel = "Poll asked for";
   try {
     pollLabel = `Poll asked for, counted by ${scheduleFor(rules, "POLL_VOTE").name}`;
@@ -318,7 +452,7 @@ export function conductVotingView(
   }
   const allowed = (list: readonly string[] | undefined, c: string | null) => !!c && !!list?.includes(c);
   return {
-    lots: lots
+    lots: rows
       .map((l) => ({ id: l.id, lotNumber: String(l.lotNumber) }))
       .sort((a, b) => a.lotNumber.localeCompare(b.lotNumber, undefined, { numeric: true })),
     items: Object.fromEntries(
