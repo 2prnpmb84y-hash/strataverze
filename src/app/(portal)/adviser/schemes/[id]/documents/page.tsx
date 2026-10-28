@@ -57,6 +57,7 @@ export default async function DocumentsSectionPage({
     <DocumentsTabContent
       vaultLabels={vaultLabels}
       retention={(await rulesForScheme(id)).rules.DOCUMENT_RETENTION}
+      levy={(await rulesForScheme(id)).rules.TERMINOLOGY.levy}
       timeZone={tz}
       schemeId={id}
       schemePlanNumber={scheme.planNumber}
@@ -84,6 +85,7 @@ export default async function DocumentsSectionPage({
       <IssuedByStrataVerze
         schemeId={id}
         timeZone={tz}
+        levy={(await rulesForScheme(id)).rules.TERMINOLOGY.levy}
         records={vault.issuedByStrataVerze.map((r) => ({ id: r.id, title: r.title, recordType: r.recordType, createdAt: r.createdAt, label: r.latest?.labels[0] ?? null }))}
       />
     )}

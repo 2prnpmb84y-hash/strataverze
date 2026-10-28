@@ -129,7 +129,7 @@ async function prepareLateChargeFirst(input: ReceiptInput, notices: NoticeRow[],
     // Check every notice, as it stands under the lock, before anything is written.
     for (const r of input.receipts) {
       const l = locked.get(r.levyNoticeId);
-      if (!l) throw new LevyReceiptError("Levy notice not found.");
+      if (!l) throw new LevyReceiptError(`${capitalise(pack.rules.TERMINOLOGY.levy)} notice not found.`);
       const n = l.notice;
       if (n.status === "DRAFT" || n.status === "WRITTEN_OFF") throw new LevyReceiptError(`Notice ${String(n.noticeNumber)} is not an issued notice.`);
       const owedCents = toCents(String(n.amountDue)) + toCents(String(n.interestCharged ?? 0)) - toCents(String(n.amountPaid)) + l.position.additionalCents;

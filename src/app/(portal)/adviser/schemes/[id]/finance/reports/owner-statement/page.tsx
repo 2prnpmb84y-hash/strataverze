@@ -8,6 +8,7 @@ import { OwnerStatementClient } from "./owner-statement-client";
 import { getIssuedLevyNoticesForLot, getLevyPaymentsForNotices } from "@/lib/queries/levy-schedules";
 import { buildStatement } from "@/lib/levies/levy-ledger";
 import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { packWordsFor } from "@/lib/jurisdiction/screen-words";
 import { getCreditMovements } from "@/lib/finance/owner-credits";
 import { connection } from "next/server";
 import { formatLotLabel } from "@/lib/format";
@@ -140,6 +141,7 @@ export default async function OwnerStatementPage({
         totalPayments={totalPayments}
         closingBalance={closingBalance}
         statementLines={statementLines}
+        words={packWordsFor(rulesForState(scheme.state).rules)}
       />
     </div>
   );

@@ -7,6 +7,8 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { FREQUENCY_LABELS } from "@/lib/levies/notice-plan";
 import { requirePageAccess } from "@/lib/auth/require-access";
+import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
+import { packWordsFor } from "@/lib/jurisdiction/screen-words";
 
 function formatCurrency(value: number | string | null): string {
   const num = Number(value ?? 0);
@@ -42,10 +44,12 @@ export default async function LevySchedulesPage({
   // Adviser finance: checked here as well as in the layout.
   if (!(await requirePageAccess(id, "finance.write"))) return null;
 
-  const [schedules, overdueNotices] = await Promise.all([
+  const [schedules, overdueNotices, { rules }] = await Promise.all([
     getLevySchedulesForScheme(id),
     getOverdueLevyNotices(id),
+    rulesForScheme(id),
   ]);
+  const w = packWordsFor(rules);
 
   const activeSchedules = schedules.filter(
     (s) => s.status === "ACTIVE" && s.levyType !== "SPECIAL",
@@ -60,20 +64,20 @@ export default async function LevySchedulesPage({
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold text-ink">
-          Levies
+          {w.Levies}
         </h1>
         <div className="flex flex-wrap gap-2">
           <Button
             variant="secondary"
             href={`/adviser/schemes/${id}/finance/levies/special/new`}
           >
-            Raise Special Levy
+            Raise Special {w.Levy}
           </Button>
           <Button
             variant="primary"
             href={`/adviser/schemes/${id}/finance/levies/new`}
           >
-            Create Levy Schedule
+            Create {w.Levy} Schedule
           </Button>
         </div>
       </div>
@@ -99,9 +103,9 @@ export default async function LevySchedulesPage({
       {schedules.length === 0 ? (
         <EmptyState
           icon="calendar"
-          title="No levy schedules"
-          description="Create a levy schedule to start billing lot owners for their contributions."
-          actionLabel="Create Levy Schedule"
+          title={`No ${w.levy} schedules`}
+          description={`Create a ${w.levy} schedule to start billing lot owners for their contributions.`}
+          actionLabel={`Create ${w.Levy} Schedule`}
           actionHref={`/adviser/schemes/${id}/finance/levies/new`}
         />
       ) : (
@@ -114,10 +118,10 @@ export default async function LevySchedulesPage({
                   <div>
                     <h3 className="text-lg font-medium text-ink">
                       {schedule.levyType === "SPECIAL"
-                        ? `Special levy: ${String(schedule.title ?? "Untitled")}`
+                        ? `Special ${w.levy}: ${String(schedule.title ?? "Untitled")}`
                         : schedule.levyType === "BROUGHT_FORWARD"
-                          ? String(schedule.title ?? "Levies brought forward")
-                          : `FY ${schedule.financialYear} budget levy`}
+                          ? String(schedule.title ?? `${w.Levies} brought forward`)
+                          : `FY ${schedule.financialYear} budget ${w.levy}`}
                     </h3>
                     <p className="text-sm text-ink-muted">
                       {schedule.fund.name} &middot;{" "}

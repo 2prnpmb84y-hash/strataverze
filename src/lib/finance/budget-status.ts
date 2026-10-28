@@ -29,11 +29,13 @@ export function levyScheduleActivationProblem(input: {
   financialYear: number;
   fundName: string;
   budgets: { financialYear: number; status: string }[];
+  /** The building's word for levies (TERMINOLOGY.levies). */
+  levies: string;
 }): string | null {
   if (input.levyType === "SPECIAL") return null;
   const adopted = input.budgets.some((b) => b.financialYear === input.financialYear && b.status === "ADOPTED");
   if (adopted) return null;
-  return `The ${input.fundName} budget for FY ${input.financialYear} has not been adopted. Record its adoption at the general meeting before issuing these levies.`;
+  return `The ${input.fundName} budget for FY ${input.financialYear} has not been adopted. Record its adoption at the general meeting before issuing these ${input.levies}.`;
 }
 
 /** Pick the budget in force for each fund and year: the adopted one, else the latest version. */

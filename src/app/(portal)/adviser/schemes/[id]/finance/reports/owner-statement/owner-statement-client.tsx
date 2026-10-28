@@ -5,6 +5,7 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { SelectField, FormField } from "@/components/ui/form-field";
 import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
+import type { PackWords } from "@/lib/jurisdiction/screen-words";
 
 interface StatementLine {
   id: string;
@@ -41,6 +42,7 @@ export function OwnerStatementClient({
   totalPayments,
   closingBalance,
   statementLines,
+  words: w,
   basePath,
 }: {
   schemeId: string;
@@ -55,6 +57,8 @@ export function OwnerStatementClient({
   totalPayments: number;
   closingBalance: number;
   statementLines: StatementLine[];
+  /** The building's words (packWordsFor). */
+  words: Pick<PackWords, "levy">;
   basePath?: string;
 }) {
   const router = useRouter();
@@ -109,7 +113,7 @@ export function OwnerStatementClient({
       {selectedLotId && statementLines.length === 0 && (
         <EmptyState
           title="No transactions"
-          description="There are no levy notices or payments for this lot in the selected period."
+          description={`There are no ${w.levy} notices or payments for this lot in the selected period.`}
         />
       )}
 

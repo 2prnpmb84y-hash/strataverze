@@ -69,17 +69,17 @@ describe("tallyElectronicVotes", () => {
 describe("validateCanOpenBallot", () => {
   it("blocks when the body has not adopted e-voting", () => {
     expect(
-      validateCanOpenBallot({ adopted: false, meetingStatus: "NOTICE_ISSUED" }),
-    ).toBeTruthy();
+      validateCanOpenBallot({ adopted: false, meetingStatus: "NOTICE_ISSUED", ownersCorporation: "owners corporation" }),
+    ).toBe("The owners corporation (or committee) has not resolved to adopt pre-meeting electronic voting.");
   });
   it("allows when adopted and before the meeting", () => {
     expect(
-      validateCanOpenBallot({ adopted: true, meetingStatus: "NOTICE_ISSUED" }),
+      validateCanOpenBallot({ adopted: true, meetingStatus: "NOTICE_ISSUED", ownersCorporation: "owners corporation" }),
     ).toBeNull();
   });
   it("blocks once the meeting is running", () => {
     expect(
-      validateCanOpenBallot({ adopted: true, meetingStatus: "IN_PROGRESS" }),
+      validateCanOpenBallot({ adopted: true, meetingStatus: "IN_PROGRESS", ownersCorporation: "owners corporation" }),
     ).toBeTruthy();
   });
 });

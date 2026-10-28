@@ -8,6 +8,8 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatCard } from "@/components/ui/stat-card";
+import { rulesForScheme, rulesForWords } from "@/lib/jurisdiction/scheme-rules";
+import { packWordsFor } from "@/lib/jurisdiction/screen-words";
 
 const day = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" });
 const PERIOD_STYLE: Record<string, string> = {
@@ -78,7 +80,9 @@ export default async function TreasurerHomePage() {
     );
   }
 
-  const m = await getTreasurerMonth(schemeId);
+  // Words only: a building with no live pack is shown in the default state's words.
+  const [m, rules] = await Promise.all([getTreasurerMonth(schemeId), rulesForScheme(schemeId).then((r) => r.rules, () => rulesForWords(null))]);
+  const w = packWordsFor(rules);
   const more = (shown: number, count: number) => (count > shown ? ` Showing the first ${shown} of ${count}.` : "");
 
   return (
@@ -95,7 +99,7 @@ export default async function TreasurerHomePage() {
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         <StatCard label="Unmatched" value={m.unmatched.count} accent={m.unmatched.count ? "bg-amber-500" : "bg-green-500"} />
         <StatCard label="Awaiting approval" value={m.approvals.count} accent={m.approvals.count ? "bg-amber-500" : "bg-green-500"} />
-        <StatCard label="Overdue levies" value={formatAud(m.overdue.totalCents)} accent={m.overdue.count ? "bg-red-500" : "bg-green-500"} />
+        <StatCard label={`Overdue ${w.levies}`} value={formatAud(m.overdue.totalCents)} accent={m.overdue.count ? "bg-red-500" : "bg-green-500"} />
         <StatCard label="In suspense" value={formatAud(m.suspense.netCents)} accent={m.suspense.count ? "bg-amber-500" : "bg-green-500"} />
         <StatCard
           label="This period"
@@ -138,15 +142,15 @@ export default async function TreasurerHomePage() {
         </Section>
 
         <Section
-          title="Overdue levies"
+          title={`Overdue ${w.levies}`}
           description={
             m.overdue.count
               ? `${m.overdue.count} notice${m.overdue.count === 1 ? "" : "s"} across ${m.overdue.lots} lot${m.overdue.lots === 1 ? "" : "s"}, longest overdue first.${more(m.overdue.items.length, m.overdue.count)}`
-              : "No levies are overdue."
+              : `No ${w.levies} are overdue.`
           }
         >
           <Rows
-            empty="Every issued levy is paid or not yet due."
+            empty={`Every issued ${w.levy} is paid or not yet due.`}
             rows={m.overdue.items.map((n) => ({
               key: n.id,
               left: `Lot ${n.lotNumber}, notice ${n.noticeNumber}`,

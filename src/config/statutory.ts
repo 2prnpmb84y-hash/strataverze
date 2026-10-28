@@ -337,7 +337,11 @@ export const PENDING_RULE_PACKS = {
     // attorneys), and a case closed after judgment not counting as proceedings. The GO-LIVE GAP note on DEBT_RECOVERY
     // says what is applied and that migration 20261119 must be applied before go-live. No rule of law changed, so the
     // status stays REVIEWED.
-    version: "2026.10.16",
+    // 2026.10.17 (28 Oct 2026): QLD finance wording go-live. TERMINOLOGY gains ownersCorporations ("bodies corporate",
+    // the plural where a page lists several buildings; wording only), and FOR_REVIEW gains that word and how buildings
+    // in both states are named together. The finance screens, reports, PDFs and messages take the pack's words. The
+    // legal values are unchanged, so the status stays REVIEWED. The GO-LIVE GAP note on the wording says what remains.
+    version: "2026.10.17",
     status: "REVIEWED",
     reviewer: "Matthew Wrigley",
     reviewedOn: "2026-10-27",

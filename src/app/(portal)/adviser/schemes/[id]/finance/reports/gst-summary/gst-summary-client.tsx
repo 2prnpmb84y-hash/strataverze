@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { Card, CardHeader } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import type { GstSummaryReport } from "@/lib/queries/reports";
+import type { PackWords } from "@/lib/jurisdiction/screen-words";
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("en-AU", {
@@ -20,6 +21,8 @@ interface Props {
   endDate: string;
   quarters: { start: string; end: string; label: string }[];
   report: GstSummaryReport;
+  /** The building's words (packWordsFor). */
+  words: Pick<PackWords, "OwnerContributions" | "OC">;
   basePath?: string;
 }
 
@@ -29,6 +32,7 @@ export function GstSummaryClient({
   endDate,
   quarters,
   report,
+  words: w,
   basePath,
 }: Props) {
   const router = useRouter();
@@ -334,9 +338,9 @@ export function GstSummaryClient({
             before lodging the BAS with the ATO.
           </li>
           <li>
-            Levy contributions from owners are generally not subject to GST.
+            {w.OwnerContributions} from owners are generally not subject to GST.
             Income from other sources (e.g. common property rental) may attract
-            GST if the OC is registered.
+            GST if the {w.OC} is registered.
           </li>
         </ul>
       </div>

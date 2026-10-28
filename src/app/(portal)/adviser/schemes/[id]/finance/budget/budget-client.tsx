@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { FormField, SelectField } from "@/components/ui/form-field";
 import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
+import type { PackWords } from "@/lib/jurisdiction/screen-words";
 import {
   createBudgetLineAction,
   updateBudgetLineAction,
@@ -96,6 +97,7 @@ export function BudgetClient({
   budgetLines,
   selectedFundId,
   budgetVsActual,
+  words: w,
 }: {
   schemeId: string;
   financialYear: number;
@@ -104,6 +106,8 @@ export function BudgetClient({
   budgetLines: BudgetLineData[];
   selectedFundId: string;
   budgetVsActual: BudgetVsActualData | null;
+  /** The building's words (packWordsFor). */
+  words: Pick<PackWords, "levy" | "Levy">;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -287,7 +291,7 @@ export function BudgetClient({
           accent="bg-emerald-500"
         />
         <StatCard
-          label="Quarterly Levy"
+          label={`Quarterly ${w.Levy}`}
           value={formatCurrency(totals.annualLevy / 4)}
           accent="bg-violet-500"
         />
@@ -368,7 +372,7 @@ export function BudgetClient({
           {fundLines.length === 0 && !showAddForm && (
             <EmptyState
               title="No budget lines"
-              description="Add budget lines to set the annual budget for this fund. Budget amounts are used to calculate levy schedules."
+              description={`Add budget lines to set the annual budget for this fund. Budget amounts are used to calculate ${w.levy} schedules.`}
             />
           )}
 

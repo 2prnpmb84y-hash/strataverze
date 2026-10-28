@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { Card, CardHeader } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import type { CashFlowForecast } from "@/lib/queries/reports";
+import type { PackWords } from "@/lib/jurisdiction/screen-words";
 
 const monthOptions = [
   { value: "3", label: "3 months" },
@@ -30,10 +31,12 @@ interface Props {
   schemeId: string;
   monthsAhead: number;
   forecast: CashFlowForecast;
+  /** The building's words (packWordsFor). */
+  words: PackWords;
   basePath?: string;
 }
 
-export function CashFlowClient({ schemeId, monthsAhead, forecast, basePath }: Props) {
+export function CashFlowClient({ schemeId, monthsAhead, forecast, words: w, basePath }: Props) {
   const router = useRouter();
   const reportBase = basePath ?? `/adviser/schemes/${schemeId}/finance/reports`;
 
@@ -128,7 +131,7 @@ export function CashFlowClient({ schemeId, monthsAhead, forecast, basePath }: Pr
             <span className="font-semibold">
               {formatCurrency(lowestBalance)}
             </span>
-            ). Consider reviewing levy schedules or deferring non-essential
+            ). Consider reviewing {w.levy} schedules or deferring non-essential
             expenditure.
           </p>
         </div>
@@ -148,7 +151,7 @@ export function CashFlowClient({ schemeId, monthsAhead, forecast, basePath }: Pr
                   Month
                 </th>
                 <th scope="col" className="px-4 py-3 font-medium text-ink-muted text-right">
-                  Levy Income
+                  {w.Levy} Income
                 </th>
                 <th scope="col" className="px-4 py-3 font-medium text-ink-muted text-right">
                   Other Income
@@ -329,8 +332,8 @@ export function CashFlowClient({ schemeId, monthsAhead, forecast, basePath }: Pr
             balances.
           </li>
           <li>
-            Levy income is based on outstanding levy notices with due dates in
-            each forecast month. Overdue levies are assumed collected in the
+            {w.Levy} income is based on outstanding {w.levy} notices with due dates in
+            each forecast month. Overdue {w.levies} are assumed collected in the
             current month.
           </li>
           <li>
@@ -338,7 +341,7 @@ export function CashFlowClient({ schemeId, monthsAhead, forecast, basePath }: Pr
             dates in each forecast month.
           </li>
           <li>
-            Months without specific levy or invoice data use a proportional
+            Months without specific {w.levy} or invoice data use a proportional
             estimate from the current financial year budget.
           </li>
           <li>

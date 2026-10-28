@@ -4,6 +4,7 @@ import { modeLabel, normalSide } from "@/lib/finance/drill-down";
 import type { EntryBankTransaction, EntryDocument, EntrySourceRecord, EntrySources, ReportCell } from "@/lib/finance/report-drill-down";
 import { Card, CardHeader } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { entryTypeLabel, type PackWords } from "@/lib/jurisdiction/screen-words";
 
 export interface DrillDownLinks {
   /** The journal entry page, where the portal has one. */
@@ -14,10 +15,11 @@ export interface DrillDownLinks {
   bankTransaction?: (txn: EntryBankTransaction) => string | null;
 }
 
-const VIA: Record<string, string> = {
-  LEVY_RECEIPT: "Levy received",
+/** How an entry was recognised, in the building's words. */
+const viaLabels = (w: Pick<PackWords, "Levy">): Record<string, string> => ({
+  LEVY_RECEIPT: `${w.Levy} received`,
   INVOICE_PAYMENT: "Invoice paid",
-};
+});
 
 const longDate = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" });
 
@@ -29,14 +31,16 @@ function period(start: string | null, end: string | null) {
 }
 
 /** The journal entries behind one report figure, each with where it came from. */
-export function ReportCellDrillDown({ cell, sources, links }: { cell: ReportCell; sources: Map<string, EntrySources>; links: DrillDownLinks }) {
+/** `words` are the building's (packWordsFor). */
+export function ReportCellDrillDown({ cell, sources, links, words }: { cell: ReportCell; sources: Map<string, EntrySources>; links: DrillDownLinks; words: Pick<PackWords, "Levy" | "levy" | "levies" | "lateCharge"> }) {
   const side = normalSide(cell.account.accountType);
+  const VIA = viaLabels(words);
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader
           title={`${cell.account.code} ${cell.account.name}`}
-          description={[cell.fund?.name ?? "All funds", period(cell.params.start, cell.params.end), modeLabel(cell.params.mode)].join(" · ")}
+          description={[cell.fund?.name ?? "All funds", period(cell.params.start, cell.params.end), modeLabel(cell.params.mode, words)].join(" · ")}
         />
         <dl className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
           <div>
@@ -108,7 +112,7 @@ export function ReportCellDrillDown({ cell, sources, links }: { cell: ReportCell
                             <p className="text-ink">{s.source.label}</p>
                           )
                         ) : (
-                          <p className="text-ink-muted">{r.sourceType ? `${r.sourceType.toLowerCase().replace(/_/g, " ")} entry` : "Manual entry"}</p>
+                          <p className="text-ink-muted">{r.sourceType ? `${entryTypeLabel(r.sourceType, words).toLowerCase().replace(/_/g, " ")} entry` : "Manual entry"}</p>
                         )}
                         {s?.documents.map((d) => (
                           <a key={d.id} href={links.document(d)} className="block text-xs text-turquoise underline" target="_blank" rel="noreferrer">

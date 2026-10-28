@@ -24,13 +24,27 @@ export type CutoverDataType = "opening_balances" | "levy_arrears" | "unpaid_invo
 
 export const CUTOVER_DATA_TYPES: CutoverDataType[] = ["opening_balances", "levy_arrears", "unpaid_invoices", "owner_credits", "bank_balances"];
 
-export const CUTOVER_LABELS: Record<CutoverDataType, string> = {
-  opening_balances: "Opening trial balance",
-  levy_arrears: "Outstanding levy notices",
-  unpaid_invoices: "Unpaid supplier invoices",
-  owner_credits: "Owner credit balances",
-  bank_balances: "Bank reconciled balances",
-};
+/**
+ * The building's words for a levy and its late charge, lower case, from its
+ * pack's TERMINOLOGY (QLD finance wording, 28 Oct 2026). Only labels and
+ * messages use them; the data types and fields are stored as they are.
+ */
+export type CutoverTerms = { levy: string; levies: string; lateCharge: string };
+const DEFAULT_TERMS: CutoverTerms = { levy: "levy", levies: "levies", lateCharge: "interest" };
+const cap = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
+
+/** Each file's name, in the building's words. */
+export function cutoverLabels(terms: CutoverTerms = DEFAULT_TERMS): Record<CutoverDataType, string> {
+  return {
+    opening_balances: "Opening trial balance",
+    levy_arrears: `Outstanding ${terms.levy} notices`,
+    unpaid_invoices: "Unpaid supplier invoices",
+    owner_credits: "Owner credit balances",
+    bank_balances: "Bank reconciled balances",
+  };
+}
+
+export const CUTOVER_LABELS: Record<CutoverDataType, string> = cutoverLabels();
 
 /** Only the opening trial balance is required. The rest are needed when their control account is not zero. */
 export const REQUIRED_FILES: CutoverDataType[] = ["opening_balances"];
@@ -41,6 +55,8 @@ export interface Lookups {
   lots: Array<{ id: string; lotNumber: string }>;
   suppliers: Array<{ id: string; companyName: string; abn: string | null }>;
   bankAccounts: Array<{ id: string; accountName: string; bsb: string; accountNumber: string }>;
+  /** The building's words for the messages (default: a levy and interest). */
+  terms?: CutoverTerms;
 }
 
 export interface ParsedRow<T> {
@@ -246,10 +262,11 @@ export function parseArrearsRow(row: Record<string, string>, rowNumber: number, 
   const dueDate = cutoverDate(row.dueDate);
   if (!dueDate) errors.push(`Due date "${row.dueDate ?? ""}" is not a date (use DD/MM/YYYY).`);
   else if (dueDate > cutover) warnings.push("Due after the cutover date: it is not yet overdue.");
-  const levy = money(row, "levyOutstanding", "Levy outstanding", errors);
-  const interestCharged = money(row, "interestCharged", "Interest charged", errors);
-  const interestPaid = money(row, "interestPaid", "Interest paid", errors);
-  if (interestPaid > interestCharged) errors.push("Interest paid is more than the interest charged.");
+  const t = lookups.terms ?? DEFAULT_TERMS;
+  const levy = money(row, "levyOutstanding", `${cap(t.levy)} outstanding`, errors);
+  const interestCharged = money(row, "interestCharged", `${cap(t.lateCharge)} charged`, errors);
+  const interestPaid = money(row, "interestPaid", `${cap(t.lateCharge)} paid`, errors);
+  if (interestPaid > interestCharged) errors.push(`${cap(t.lateCharge)} paid is more than the ${t.lateCharge} charged.`);
   if (levy === 0 && interestCharged - interestPaid === 0 && errors.length === 0) errors.push("Nothing is outstanding on this notice.");
   const periodStart = row.periodStart ? cutoverDate(row.periodStart) : null;
   const periodEnd = row.periodEnd ? cutoverDate(row.periodEnd) : null;
@@ -420,7 +437,8 @@ const sumWhere = (lines: OpeningLine[], sub: string, fundId: string | null, debi
  * unpaid invoices, levies in advance by fund against owner credits, and the bank
  * accounts against their last reconciled balances.
  */
-export function controlTieOuts(rows: CutoverRows, funds: Lookups["funds"]): TieOut[] {
+export function controlTieOuts(rows: CutoverRows, funds: Lookups["funds"], terms: CutoverTerms = DEFAULT_TERMS): TieOut[] {
+  const Levies = cap(terms.levies);
   const lines = (rows.opening_balances ?? []).flatMap((r) => (r.value ? [r.value] : []));
   const arrears = (rows.levy_arrears ?? []).flatMap((r) => (r.value ? [r.value] : []));
   const invoices = (rows.unpaid_invoices ?? []).flatMap((r) => (r.value ? [r.value] : []));
@@ -432,10 +450,10 @@ export function controlTieOuts(rows: CutoverRows, funds: Lookups["funds"]): TieO
   for (const f of funds) {
     const ledger = sumWhere(lines, "ACCOUNTS_RECEIVABLE", f.id, true);
     const detail = arrears.filter((a) => a.fundId === f.id).reduce((s, a) => s + a.levyOutstandingCents + a.interestChargedCents - a.interestPaidCents, 0);
-    if (ledger !== 0 || detail !== 0) push({ key: `ar:${f.id}`, control: `Levies receivable, ${f.name}`, fundId: f.id, ledgerCents: ledger, detailCents: detail, needsAcknowledgement: true });
+    if (ledger !== 0 || detail !== 0) push({ key: `ar:${f.id}`, control: `${Levies} receivable, ${f.name}`, fundId: f.id, ledgerCents: ledger, detailCents: detail, needsAcknowledgement: true });
     const advance = sumWhere(lines, "LEVIES_IN_ADVANCE", f.id, false);
     const creditTotal = credits.filter((c) => c.fundId === f.id).reduce((s, c) => s + c.amountCents, 0);
-    if (advance !== 0 || creditTotal !== 0) push({ key: `lia:${f.id}`, control: `Levies paid in advance, ${f.name}`, fundId: f.id, ledgerCents: advance, detailCents: creditTotal, needsAcknowledgement: true });
+    if (advance !== 0 || creditTotal !== 0) push({ key: `lia:${f.id}`, control: `${Levies} paid in advance, ${f.name}`, fundId: f.id, ledgerCents: advance, detailCents: creditTotal, needsAcknowledgement: true });
   }
   const payable = sumWhere(lines, "ACCOUNTS_PAYABLE", null, false);
   const unpaid = invoices.reduce((s, i) => s + i.totalCents - i.paidCents, 0);
@@ -462,12 +480,13 @@ export interface Readiness {
 }
 
 /** Whether the staged files are ready to be signed off. */
-export function cutoverReadiness(input: { files: CutoverFile[]; rows: CutoverRows; funds: Lookups["funds"]; cutoverDate: string | null }): Readiness {
+export function cutoverReadiness(input: { files: CutoverFile[]; rows: CutoverRows; funds: Lookups["funds"]; cutoverDate: string | null; terms?: CutoverTerms }): Readiness {
   const problems: string[] = [];
+  const LABELS = cutoverLabels(input.terms);
   if (!input.cutoverDate) problems.push("Set the cutover date.");
-  for (const t of REQUIRED_FILES) if (!input.files.some((f) => f.dataType === t)) problems.push(`Add the ${CUTOVER_LABELS[t].toLowerCase()}.`);
-  for (const f of input.files) if (f.errorCount > 0) problems.push(`${CUTOVER_LABELS[f.dataType]}: ${f.errorCount} row${f.errorCount === 1 ? " has" : "s have"} errors.`);
-  for (const d of duplicateProblems(input.rows)) problems.push(`${CUTOVER_LABELS[d.dataType]} row ${d.rowNumber}: ${d.message}`);
+  for (const t of REQUIRED_FILES) if (!input.files.some((f) => f.dataType === t)) problems.push(`Add the ${LABELS[t].toLowerCase()}.`);
+  for (const f of input.files) if (f.errorCount > 0) problems.push(`${LABELS[f.dataType]}: ${f.errorCount} row${f.errorCount === 1 ? " has" : "s have"} errors.`);
+  for (const d of duplicateProblems(input.rows)) problems.push(`${LABELS[d.dataType]} row ${d.rowNumber}: ${d.message}`);
   const lines = (input.rows.opening_balances ?? []).flatMap((r) => (r.value ? [r.value] : []));
   const trialBalance = openingTrialBalance(lines);
   if (input.files.some((f) => f.dataType === "opening_balances") && !trialBalance.balanced) {
@@ -482,7 +501,7 @@ export function cutoverReadiness(input: { files: CutoverFile[]; rows: CutoverRow
     const name = input.funds.find((f) => f.id === fundId)?.name ?? "A fund";
     problems.push(`The ${name} opening balances do not net to zero: they are out by $${(Math.abs(gap) / 100).toFixed(2)}. Each fund must balance on its own.`);
   }
-  const tieOuts = controlTieOuts(input.rows, input.funds);
+  const tieOuts = controlTieOuts(input.rows, input.funds, input.terms);
   return { trialBalance, tieOuts, problems, canSignOff: problems.length === 0 };
 }
 

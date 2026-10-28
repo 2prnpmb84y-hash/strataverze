@@ -1,10 +1,18 @@
 import { formatLotLabel } from "@/lib/format";
+import type { LevyFormWords } from "@/lib/jurisdiction/screen-words";
+
+/** The building's levy words, lower case (levyFormWords or packWordsFor). */
+type TimelineWords = Pick<LevyFormWords, "levy" | "levies">;
+
+/** The labels that name a levy, in the building's words. The actions themselves are stored as they are. */
+const levyActionLabels = (w: TimelineWords): Record<string, string> => ({
+  LEVY_CREATED: `created a ${w.levy}`,
+  LEVY_ISSUED: `issued a ${w.levy}`,
+  LEVIES_GENERATED: `generated ${w.levies}`,
+  LEVY_PAYMENT_RECORDED: `recorded a ${w.levy} payment`,
+});
 
 const ACTION_LABELS: Record<string, string> = {
-  LEVY_CREATED: "created a levy",
-  LEVY_ISSUED: "issued a levy",
-  LEVIES_GENERATED: "generated levies",
-  LEVY_PAYMENT_RECORDED: "recorded a levy payment",
   INVITATION_SENT: "sent an invitation",
   INVITATION_ACCEPTED: "accepted an invitation",
   INVITATION_DECLINED: "declined an invitation",
@@ -122,14 +130,14 @@ function formatRelativeTime(dateStr: string): string {
   });
 }
 
-function getMetadataDetail(action: string, metadata: Record<string, unknown> | null): string | null {
+function getMetadataDetail(action: string, metadata: Record<string, unknown> | null, w: TimelineWords): string | null {
   if (!metadata) return null;
 
   switch (action) {
     case "LEVY_CREATED":
     case "LEVIES_GENERATED":
       if (metadata.title) return String(metadata.title);
-      if (metadata.count) return `${metadata.count} levies`;
+      if (metadata.count) return `${metadata.count} ${w.levies}`;
       return null;
     case "LEVY_PAYMENT_RECORDED":
       if (metadata.amount) return `$${Number(metadata.amount).toLocaleString("en-AU", { minimumFractionDigits: 2 })}`;
@@ -163,7 +171,8 @@ function getMetadataDetail(action: string, metadata: Record<string, unknown> | n
   }
 }
 
-export function ActivityTimeline({ activities }: { activities: ActivityEntry[] }) {
+export function ActivityTimeline({ activities, words }: { activities: ActivityEntry[]; /** The building's words. */ words: TimelineWords }) {
+  const labels = { ...ACTION_LABELS, ...levyActionLabels(words) };
   if (activities.length === 0) {
     return (
       <p className="text-sm text-ink-muted">
@@ -178,11 +187,12 @@ export function ActivityTimeline({ activities }: { activities: ActivityEntry[] }
         const actorName =
           `${activity.actor.firstName} ${activity.actor.lastName}`.trim() ||
           activity.actor.email;
-        const label = ACTION_LABELS[activity.action] ?? activity.action.toLowerCase().replace(/_/g, " ");
+        const label = labels[activity.action] ?? activity.action.toLowerCase().replace(/_/g, " ");
         const icon = ACTION_ICONS[activity.action] ?? "📌";
         const detail = getMetadataDetail(
           activity.action,
           activity.metadata as Record<string, unknown> | null,
+          words,
         );
         const isLast = i === activities.length - 1;
 

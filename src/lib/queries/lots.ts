@@ -4,6 +4,7 @@ import { and } from "@prisma/orm-postgres/orm-client";
 import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
 
 import { effectiveStatus, noticeLabel } from "@/lib/levies/levy-ledger";
+import type { Terms } from "@/lib/jurisdiction/wording";
 import { toIsoDay } from "@/lib/levies/notice-plan";
 import { lotFinancialStatus } from "@/lib/levies/financial-status";
 
@@ -175,7 +176,7 @@ export async function removeOwnerFromLot(membershipId: string) {
 /**
  * Fetch full lot detail with owners, levy items, and computed financials.
  */
-export async function getLotDetail(lotId: string) {
+export async function getLotDetail(lotId: string, terms: Pick<Terms, "levy"> = { levy: "levy" }) {
   let lot;
   try {
     lot = await db.orm.public.Lot
@@ -223,7 +224,7 @@ export async function getLotDetail(lotId: string) {
     .sort((a, b) => toIsoDay(b.dueDate).localeCompare(toIsoDay(a.dueDate)))
     .map((n) => ({
       id: n.id,
-      levyTitle: `${noticeLabel(n)} (${String(n.noticeNumber)})`,
+      levyTitle: `${noticeLabel(n, terms)} (${String(n.noticeNumber)})`,
       levyType: isSpecialNotice(n) ? "SPECIAL" : "ORDINARY",
       dueDate: n.dueDate,
       amount: Number(n.amountDue ?? 0) + Number(n.interestCharged ?? 0),

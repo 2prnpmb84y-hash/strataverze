@@ -79,12 +79,22 @@ describe("planNotices", () => {
 
 describe("checkPlan", () => {
   it("passes when registered entitlement matches the total", () => {
-    expect(checkPlan({ lots, totalEntitlement: 100, totalCents: 1 })).toEqual([]);
+    expect(checkPlan({ lots, totalEntitlement: 100, totalCents: 1, words: { levy: "levy", entitlement: "unit entitlement" } })).toEqual([]);
   });
 
   it("blocks when lots are missing", () => {
-    const issues = checkPlan({ lots: lots.slice(0, 2), totalEntitlement: 100, totalCents: 1 });
+    const issues = checkPlan({ lots: lots.slice(0, 2), totalEntitlement: 100, totalCents: 1, words: { levy: "levy", entitlement: "unit entitlement" } });
     expect(issues.map((i) => i.kind)).toEqual(["ENTITLEMENT_MISMATCH"]);
+    expect(issues[0].message).toBe("Registered lots hold 66 unit entitlement, but the schedule's total is 100. Register every lot (or correct the total) so each lot is levied its proper share.");
+  });
+
+  it("names the entitlement and the levy in the building's words", () => {
+    const words = { levy: "contribution", entitlement: "contribution schedule lot entitlement" };
+    const issues = checkPlan({ lots: lots.slice(0, 2), totalEntitlement: 100, totalCents: 0, words });
+    expect(issues.map((i) => i.message)).toEqual([
+      "The contribution amount must be greater than zero.",
+      "Registered lots hold 66 contribution schedule lot entitlement, but the schedule's total is 100. Register every lot (or correct the total) so each lot is levied its proper share.",
+    ]);
   });
 });
 

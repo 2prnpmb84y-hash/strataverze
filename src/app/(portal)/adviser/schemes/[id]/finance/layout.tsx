@@ -4,6 +4,7 @@ import { getSchemeById } from "@/lib/queries/schemes";
 import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { PageHeader } from "@/components/ui/page-header";
 import { FinanceTabs } from "./finance-tabs";
+import { packWordsFor } from "@/lib/jurisdiction/screen-words";
 
 export default async function FinanceLayout({
   children,
@@ -27,7 +28,11 @@ export default async function FinanceLayout({
   return (
     <div>
       <PageHeader title="Financial Management" />
-      <FinanceTabs schemeId={id} capitalWorksPlan={rulesForState(scheme.state).rules.FEATURES.capitalWorksFundPlan} />
+      <FinanceTabs
+        schemeId={id}
+        capitalWorksPlan={rulesForState(scheme.state).rules.FEATURES.capitalWorksFundPlan}
+        words={packWordsFor(rulesForState(scheme.state).rules)}
+      />
       {children}
     </div>
   );

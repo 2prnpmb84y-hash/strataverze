@@ -148,6 +148,8 @@ export interface IncomeBudgetContext {
   takeoverDate: string;
   years: OnboardingYears;
   funds: ContextFund[];
+  /** The building's words for a levy, lower case (TERMINOLOGY), for the messages. Default: "levy", "levies". */
+  words?: { levy: string; levies: string };
 }
 
 // ─── Checks ─────────────────────────────────────────────────────────────────
@@ -207,6 +209,7 @@ export function checkIncomeBudget(input: IncomeBudgetInput, ctx: IncomeBudgetCon
   const notes: string[] = [];
   const { lastYear, budgetYear, takeoverAtYearEnd } = ctx.years;
   const parsedFunds: ParsedFund[] = [];
+  const w = ctx.words ?? { levy: "levy", levies: "levies" };
 
   if (!takeoverAtYearEnd) {
     notes.push(
@@ -320,13 +323,13 @@ export function checkIncomeBudget(input: IncomeBudgetInput, ctx: IncomeBudgetCon
     if (budgetExpenseCents === 0 && budgetIncomeCents === 0) {
       list.push(`Enter the ${fund.name} budget for ${yearLabel(budgetYear)}.`);
     } else if (!fund.levyIncomeAccountId) {
-      list.push(`The ${fund.name} has no levy income account. Add one in the chart of accounts first.`);
+      list.push(`The ${fund.name} has no ${w.levy} income account. Add one in the chart of accounts first.`);
     } else if (levyCents === 0) {
       const levyAccount = fund.accounts.find((a) => a.id === fund.levyIncomeAccountId);
       if (fund.fundType === "ADMINISTRATIVE") {
-        list.push(`Enter the levies to be raised for the year on the ${levyAccount ? `${levyAccount.code} ${levyAccount.name}` : "levy income"} line of the budget.`);
+        list.push(`Enter the ${w.levies} to be raised for the year on the ${levyAccount ? `${levyAccount.code} ${levyAccount.name}` : `${w.levy} income`} line of the budget.`);
       } else {
-        notes.push(`No levies are budgeted for the ${fund.name}, so no levy schedule will be made for it.`);
+        notes.push(`No ${w.levies} are budgeted for the ${fund.name}, so no ${w.levy} schedule will be made for it.`);
       }
     }
 
@@ -359,8 +362,8 @@ export function checkIncomeBudget(input: IncomeBudgetInput, ctx: IncomeBudgetCon
   let levies: ParsedIncomeBudget["levies"] | null = null;
   const frequency = LEVY_FREQUENCIES.find((f) => f === input.levies.frequency);
   const raised = input.levies.raisedBeforeTakeover;
-  if (raised !== "none" && raised !== "some") problems.push(`Say whether the previous manager raised the levies for ${yearLabel(budgetYear)} before the takeover.`);
-  if (!frequency) problems.push("Choose how often levies are raised.");
+  if (raised !== "none" && raised !== "some") problems.push(`Say whether the previous manager raised the ${w.levies} for ${yearLabel(budgetYear)} before the takeover.`);
+  if (!frequency) problems.push(`Choose how often ${w.levies} are raised.`);
   let raisedInstalments: number[] = [];
   if (raised === "some" && frequency) {
     const count = INSTALMENTS_PER_YEAR[frequency];
@@ -368,13 +371,13 @@ export function checkIncomeBudget(input: IncomeBudgetInput, ctx: IncomeBudgetCon
     if (!raisedInstalments.length) problems.push("Tick the instalments the previous manager raised.");
     else if (raisedInstalments.length === count) {
       notes.push(
-        `Every instalment for ${yearLabel(budgetYear)} was raised before the takeover, so none is raised again and no levy schedule is made. ` +
-          `Bring every unpaid notice across in the cutover's outstanding levy notices, including those not yet due, with their original due dates.`,
+        `Every instalment for ${yearLabel(budgetYear)} was raised before the takeover, so none is raised again and no ${w.levy} schedule is made. ` +
+          `Bring every unpaid notice across in the cutover's outstanding ${w.levy} notices, including those not yet due, with their original due dates.`,
       );
     } else {
       notes.push(
         `Instalment${raisedInstalments.length === 1 ? "" : "s"} ${raisedInstalments.join(", ")} ${raisedInstalments.length === 1 ? "was" : "were"} raised before the takeover and ${raisedInstalments.length === 1 ? "is" : "are"} not raised again; StrataVerze plans the rest. ` +
-          `Bring the unpaid ones across in the cutover's outstanding levy notices, with their original due dates.`,
+          `Bring the unpaid ones across in the cutover's outstanding ${w.levy} notices, with their original due dates.`,
       );
     }
   }

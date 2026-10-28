@@ -10,6 +10,8 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { connection } from "next/server";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { packWordsFor } from "@/lib/jurisdiction/screen-words";
 
 function formatCurrency(value: number): string {
   if (value < 0) {
@@ -43,6 +45,7 @@ export default async function AccountantAgedArrearsPage({
   if (!scheme) notFound();
 
   const notices = await getIssuedLevyNoticesForScheme(id);
+  const w = packWordsFor(rulesForState(scheme.state).rules);
   // Arrears as at today in the building's time zone.
   const tz = timeZoneOf(scheme);
   const now = new Date();
@@ -101,7 +104,7 @@ export default async function AccountantAgedArrearsPage({
       {rows.length === 0 ? (
         <EmptyState
           title="No outstanding arrears"
-          description="All levies are fully paid or no levies have been issued."
+          description={`All ${w.levies} are fully paid or no ${w.levies} have been issued.`}
         />
       ) : (
         <>

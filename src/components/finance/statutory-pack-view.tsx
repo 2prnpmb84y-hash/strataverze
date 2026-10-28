@@ -2,6 +2,7 @@ import { formatAud } from "@/lib/billing/money";
 import type { StatutoryPack } from "@/lib/finance/statutory-pack";
 import { drillDownHref } from "@/lib/finance/drill-down";
 import { Card, CardHeader } from "@/components/ui/card";
+import type { PackWords } from "@/lib/jurisdiction/screen-words";
 
 const Row = ({ label, cents, strong = false, href }: { label: string; cents: number; strong?: boolean; href?: string }) => (
   <tr className={strong ? "font-semibold" : undefined}>
@@ -20,7 +21,8 @@ const Row = ({ label, cents, strong = false, href }: { label: string; cents: num
 
 /** The statutory statements pack, fund by fund. */
 /** `reportsBase` (the portal's reports path) turns each account line into a link to its drill-down. */
-export function StatutoryPackView({ pack, reportsBase }: { pack: StatutoryPack; reportsBase?: string }) {
+/** `words` are the building's (packWordsFor). */
+export function StatutoryPackView({ pack, reportsBase, words: w }: { pack: StatutoryPack; reportsBase?: string; words: Pick<PackWords, "Levy"> }) {
   const kfi = pack.rules.keyFinancialInformation;
   const rows = kfi.rows;
   return (
@@ -113,7 +115,7 @@ export function StatutoryPackView({ pack, reportsBase }: { pack: StatutoryPack; 
           </Card>
 
           <Card>
-            <CardHeader title="Levy register and arrears at year end" description={`${f.levyRegister.length} notices due in the year.`} />
+            <CardHeader title={`${w.Levy} register and arrears at year end`} description={`${f.levyRegister.length} notices due in the year.`} />
             {f.arrearsByLot.length === 0 ? (
               <p className="text-sm text-ink-muted">No contributions were unpaid at the end of the year.</p>
             ) : (

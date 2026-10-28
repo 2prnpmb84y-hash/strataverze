@@ -12,6 +12,13 @@ type UploadFile = {
 
 type Step = "files" | "metadata";
 
+/** The document types, with a levy notice in the building's words, where it has always been listed. */
+function documentTypesFor(levy: string) {
+  const notice = { value: "LEVY_NOTICE", label: `${levy ? levy[0].toUpperCase() + levy.slice(1) : levy} Notice` };
+  const at = DOCUMENT_TYPES.findIndex((c) => c.value === "AUDIT_REPORT") + 1;
+  return [...DOCUMENT_TYPES.slice(0, at), notice, ...DOCUMENT_TYPES.slice(at)];
+}
+
 const CATEGORIES = [
   { value: "MINUTES", label: "Minutes" },
   { value: "INSURANCE", label: "Insurance" },
@@ -32,7 +39,7 @@ const DOCUMENT_TYPES = [
   { value: "BUDGET", label: "Budget" },
   { value: "FINANCIAL_STATEMENT", label: "Financial Statement" },
   { value: "AUDIT_REPORT", label: "Audit Report" },
-  { value: "LEVY_NOTICE", label: "Levy Notice" },
+  // LEVY_NOTICE is added here in the building's words (documentTypesFor).
   { value: "FIRE_SAFETY", label: "Fire Safety" },
   { value: "COMPLIANCE_CERTIFICATE", label: "Compliance Certificate" },
   { value: "WORK_ORDER", label: "Work Order" },
@@ -49,12 +56,16 @@ export function DocumentUploadModal({
   onClose,
   onFilesReady,
   schemePlanNumber,
+  levy,
 }: {
   open: boolean;
   onClose: () => void;
   onFilesReady: (files: File[], metadata: DocumentMetadata) => void;
   schemePlanNumber: string;
+  /** The building's word for a levy (TERMINOLOGY.levy), for the notice category. */
+  levy: string;
 }) {
+  const documentTypes = documentTypesFor(levy);
   const [files, setFiles] = useState<UploadFile[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const [step, setStep] = useState<Step>("files");
@@ -351,7 +362,7 @@ export function DocumentUploadModal({
                   onChange={(e) => updateMetadata("documentType", e.target.value)}
                   className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-turquoise"
                 >
-                  {DOCUMENT_TYPES.map((dt) => (
+                  {documentTypes.map((dt) => (
                     <option key={dt.value} value={dt.value}>{dt.label}</option>
                   ))}
                 </select>

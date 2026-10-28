@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { FundSummaryClient } from "./fund-summary-client";
 import { connection } from "next/server";
 import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { packWordsFor } from "@/lib/jurisdiction/screen-words";
 
 export default async function FundSummaryPage({
   params,
@@ -54,6 +55,7 @@ export default async function FundSummaryPage({
         endDate={endDate}
         summaries={summaries}
         catalogue={rulesForState(scheme.state).rules.FUND_CATALOGUE}
+        words={packWordsFor(rulesForState(scheme.state).rules)}
       />
     </div>
   );

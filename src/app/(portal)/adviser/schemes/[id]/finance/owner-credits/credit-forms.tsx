@@ -156,7 +156,8 @@ export function ApplyCreditNowButton({ schemeId }: { schemeId: string }) {
   );
 }
 
-export function AutoApplyToggle({ schemeId, enabled }: { schemeId: string; enabled: boolean }) {
+/** `levy` is the building's word for a levy (packWordsFor). */
+export function AutoApplyToggle({ schemeId, enabled, levy }: { schemeId: string; enabled: boolean; levy: string }) {
   const { pending, error, run } = useSimpleAction();
   return (
     <label className="flex items-start gap-2 text-sm text-ink">
@@ -171,7 +172,7 @@ export function AutoApplyToggle({ schemeId, enabled }: { schemeId: string; enabl
         className="mt-1"
       />
       <span>
-        Apply an owner&apos;s credit to their next levy notice automatically when notices are issued.
+        Apply an owner&apos;s credit to their next {levy} notice automatically when notices are issued.
         {error && <span className="block text-xs text-red-600">{error}</span>}
       </span>
     </label>

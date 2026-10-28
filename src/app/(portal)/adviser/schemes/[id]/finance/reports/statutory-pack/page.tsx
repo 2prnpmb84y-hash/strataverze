@@ -10,6 +10,7 @@ import { formatAud } from "@/lib/billing/money";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { StatutoryPackView } from "@/components/finance/statutory-pack-view";
+import { packWordsFor } from "@/lib/jurisdiction/screen-words";
 import { AdoptPackForm, FundBasisSelect } from "./pack-controls";
 
 export default async function StatutoryPackPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ year?: string }> }) {
@@ -21,7 +22,9 @@ export default async function StatutoryPackPage({ params, searchParams }: { para
   const scheme = await getSchemeById(id);
   if (!scheme) notFound();
   if (!scheme.memberships.some((m) => m.profileId === profile.id && m.role === "ADVISER")) notFound();
-  if (!rulesForState(scheme.state).rules.FEATURES.keyFinancialInformation) notFound();
+  const { rules } = rulesForState(scheme.state);
+  if (!rules.FEATURES.keyFinancialInformation) notFound();
+  const w = packWordsFor(rules);
 
   const today = await schemeToday(id);
   // Default: the last financial year that has ended.
@@ -35,7 +38,7 @@ export default async function StatutoryPackPage({ params, searchParams }: { para
     <div className="space-y-6">
       <PageHeader
         title="Statutory Statements"
-        description={`Financial year ${pack.start} to ${pack.end}. The statement of key financial information, income and expenditure, balance sheet, levy register and notes, per fund.`}
+        description={`Financial year ${pack.start} to ${pack.end}. The statement of key financial information, income and expenditure, balance sheet, ${w.levy} register and notes, per fund.`}
         backHref={`/adviser/schemes/${id}/finance/reports`}
         backLabel="Reports"
       />
@@ -71,8 +74,8 @@ export default async function StatutoryPackPage({ params, searchParams }: { para
           title={pack.audit.required ? "An audit is required" : "Audit"}
           description={
             pack.audit.required
-              ? `This scheme must have its accounts audited (${pack.audit.byLots ? `more than ${pack.rules.auditThreshold.lotsMoreThan} lots, not counting ${pack.rules.auditThreshold.excludedLotsLabel ?? "excluded lots"}` : `levies raised for the year of ${formatAud(pack.audit.annualBudgetCents)} are more than ${formatAud(pack.rules.auditThreshold.leviesRaisedMoreThanCents)}`}).${pack.rules.auditThreshold.timing ? ` The audit must be done ${pack.rules.auditThreshold.timing}, in accordance with ${pack.rules.auditThreshold.standard}.` : ""} Give the auditor the audit export.`
-              : `Not required by size (levies raised for the year ${formatAud(pack.audit.annualBudgetCents)}, ${pack.audit.lotsCounted ?? pack.scheme.lots} lots${pack.audit.lotsExcluded ? ` counted, ${pack.audit.lotsExcluded} ${pack.rules.auditThreshold.excludedLotsLabel ?? "excluded lots"} not counted` : ""}). The AGM must consider whether to have the accounts audited.`
+              ? `This scheme must have its accounts audited (${pack.audit.byLots ? `more than ${pack.rules.auditThreshold.lotsMoreThan} lots, not counting ${pack.rules.auditThreshold.excludedLotsLabel ?? "excluded lots"}` : `${w.levies} raised for the year of ${formatAud(pack.audit.annualBudgetCents)} are more than ${formatAud(pack.rules.auditThreshold.leviesRaisedMoreThanCents)}`}).${pack.rules.auditThreshold.timing ? ` The audit must be done ${pack.rules.auditThreshold.timing}, in accordance with ${pack.rules.auditThreshold.standard}.` : ""} Give the auditor the audit export.`
+              : `Not required by size (${w.levies} raised for the year ${formatAud(pack.audit.annualBudgetCents)}, ${pack.audit.lotsCounted ?? pack.scheme.lots} lots${pack.audit.lotsExcluded ? ` counted, ${pack.audit.lotsExcluded} ${pack.rules.auditThreshold.excludedLotsLabel ?? "excluded lots"} not counted` : ""}). The AGM must consider whether to have the accounts audited.`
           }
         />
       </Card>
@@ -86,7 +89,7 @@ export default async function StatutoryPackPage({ params, searchParams }: { para
         </div>
       </Card>
 
-      <StatutoryPackView pack={pack} reportsBase={`/adviser/schemes/${id}/finance/reports`} />
+      <StatutoryPackView pack={pack} reportsBase={`/adviser/schemes/${id}/finance/reports`} words={w} />
 
       {!pack.adopted && (
         <Card>

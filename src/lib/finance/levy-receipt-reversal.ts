@@ -7,6 +7,7 @@
  */
 import { db } from "@/prisma/db";
 import { schemeToday } from "@/lib/jurisdiction/scheme-time";
+import { messageTermsFor } from "@/lib/jurisdiction/scheme-rules";
 import { and } from "@prisma/orm-postgres/orm-client";
 import type { Numeric, TimestampString, Varchar } from "@prisma/orm-postgres/target/codec-types";
 import { toCents, fromCents } from "@/lib/billing/money";
@@ -58,9 +59,10 @@ export async function getLevyReceipt(schemeId: string, journalEntryId: string) {
 
 export type LevyReceipt = NonNullable<Awaited<ReturnType<typeof getLevyReceipt>>>;
 
-/** Why a receipt cannot be reversed for this reason, or null. */
-export function receiptReversalProblem(r: LevyReceipt, reason: ReversalReason): string | null {
+/** Why a receipt cannot be reversed for this reason, or null. `levy` is the building's word for a levy (TERMINOLOGY.levy). */
+export function receiptReversalProblem(r: LevyReceipt, reason: ReversalReason, levy?: string): string | null {
   return reversalProblem({
+    levy,
     entryStatus: String(r.entry.status),
     sourceType: r.entry.sourceType,
     payments: r.payments.map((p) => ({ id: p.id, reversedAt: p.reversedAt })),
@@ -88,7 +90,7 @@ export async function reverseLevyReceipt(input: {
 }): Promise<{ reversalEntryId: string; feeEntryId: string | null; bankTransactionIds: string[] }> {
   const r = await getLevyReceipt(input.schemeId, input.journalEntryId);
   if (!r) throw new ReceiptReversalError("Journal entry not found.");
-  const problem = receiptReversalProblem(r, input.reason);
+  const problem = receiptReversalProblem(r, input.reason, (await messageTermsFor(input.schemeId)).levy);
   if (problem) throw new ReceiptReversalError(problem);
   const date = input.reversalDate || (await schemeToday(input.schemeId));
   if (!ISO.test(date)) throw new ReceiptReversalError("The reversal date is not a date.");
@@ -261,7 +263,7 @@ export async function reallocateLevyReceipt(input: {
 }): Promise<{ reversalEntryId: string; newJournalEntryId: string | null }> {
   const r = await getLevyReceipt(input.schemeId, input.journalEntryId);
   if (!r) throw new ReceiptReversalError("Journal entry not found.");
-  const problem = receiptReversalProblem(r, "WRONG_LOT");
+  const problem = receiptReversalProblem(r, "WRONG_LOT", (await messageTermsFor(input.schemeId)).levy);
   if (problem) throw new ReceiptReversalError(problem);
   const totalCents = r.payments.reduce((s, p) => s + toCents(String(p.amount)), 0) + r.credits.reduce((s, c) => s + c.amountCents, 0);
   const moveProblem = reallocationProblem(totalCents, input.receipts);

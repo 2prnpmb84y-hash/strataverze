@@ -390,6 +390,20 @@ export interface SharedTerminology {
    */
   lateChargeGeneral?: string;
   /**
+   * The body that owns the common property, plural, where a page lists
+   * several (the schemes list, the adviser home): "bodies corporate" (QLD
+   * finance wording go-live, 28 Oct 2026). Optional: a pack without it (NSW)
+   * adds an "s" to ownersCorporation ("owners corporations"), as the screens
+   * have always said, so its pack is unchanged.
+   */
+  ownersCorporations?: string;
+  /**
+   * What a scheme is called, lower case: "community titles scheme" (QLD
+   * finance wording review, 28 Oct 2026). Optional: a pack without it (NSW)
+   * keeps the screens' "strata scheme".
+   */
+  scheme?: string;
+  /**
    * What the platform calls a lot, lower case, where the pack's law uses
    * another word (the ACT's "unit"), with its plural. Optional: a pack
    * without them keeps "lot" and "lots" (NSW and Queensland are unchanged).

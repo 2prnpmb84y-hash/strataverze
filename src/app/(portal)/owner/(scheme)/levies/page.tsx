@@ -12,7 +12,7 @@ import { LevyNoticesView } from "@/components/levies/levy-notices-view";
 import { PageHeader } from "@/components/ui/page-header";
 import { formatLotLabel } from "@/lib/format";
 import { Button } from "@/components/ui/button";
-import { sharedLevyWords } from "@/lib/jurisdiction/screen-words";
+import { leviesAndContributions, sharedLevyWords } from "@/lib/jurisdiction/screen-words";
 import { DEFAULT_SCHEME_STATE } from "@/config/jurisdictions";
 
 /** "Levies", "Contributions", "Levies and Contributions". */
@@ -68,7 +68,7 @@ export default async function OwnerLeviesPage() {
     <div className="space-y-6">
       <PageHeader
         title={`My ${titleCase(words.levies)}`}
-        description="Levies and contributions due for your lots."
+        description={`${leviesAndContributions(words.levies)} due for your lots.`}
       />
 
       <LevyNoticesView

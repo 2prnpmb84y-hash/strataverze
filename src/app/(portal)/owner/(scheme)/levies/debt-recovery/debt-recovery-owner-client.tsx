@@ -38,7 +38,7 @@ const STATUS_VARIANT: Record<string, "success" | "warning" | "danger" | "default
 const STATUS_LABEL: Record<string, string> = {
   OPEN: "Open",
   IN_PROGRESS: "In Progress",
-  PAYMENT_PLAN: "Payment Plan",
+  // PAYMENT_PLAN is labelled in each building's words (caseWords).
   REFERRED_LEGAL: "Legal Referral",
   CLOSED_PAID: "Closed (Paid)",
   CLOSED_WRITTEN_OFF: "Written Off",
@@ -176,7 +176,7 @@ export function DebtRecoveryOwnerClient({
                         {c.caseNumber}
                       </p>
                       <StatusChip
-                        status={c.status === "PAYMENT_PLAN" ? (caseWords[c.schemeId]?.paymentPlan ?? STATUS_LABEL[c.status]) : (STATUS_LABEL[c.status] ?? c.status)}
+                        status={c.status === "PAYMENT_PLAN" ? (caseWords[c.schemeId]?.paymentPlan ?? c.status) : (STATUS_LABEL[c.status] ?? c.status)}
                         variant={STATUS_VARIANT[c.status] ?? "default"}
                       />
                       {c.priority === "HIGH" && (

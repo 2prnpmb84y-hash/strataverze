@@ -11,7 +11,9 @@ import { getSelectedOwnerScheme } from "@/lib/owner/selected-scheme";
 import { getStrataRollData } from "@/lib/queries/lots";
 import { StrataRollTable } from "@/app/(portal)/adviser/schemes/[id]/strata-roll-table";
 import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
-import { lotWordsFor } from "@/lib/jurisdiction/screen-words";
+import { lotWordsFor, packWordsFor } from "@/lib/jurisdiction/screen-words";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { DEFAULT_SCHEME_STATE } from "@/config/jurisdictions";
 
 export default async function OwnerSchemePage() {
   await connection();
@@ -35,7 +37,7 @@ export default async function OwnerSchemePage() {
       <div className="max-w-4xl">
         <PageHeader
           title="My Scheme"
-          description="View details of your Owners Corporation."
+          description={`View details of your ${packWordsFor(rulesForState(DEFAULT_SCHEME_STATE).rules).OwnersCorporationTitle}.`}
         />
         <EmptyState
           icon={

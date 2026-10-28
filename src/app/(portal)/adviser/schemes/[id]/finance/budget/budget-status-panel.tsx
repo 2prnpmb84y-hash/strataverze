@@ -89,12 +89,13 @@ function Row({ schemeId, row, meetings }: { schemeId: string; row: FundBudgetSta
 }
 
 /** Each fund's budget for the year: its version, status and adoption. */
-export function BudgetStatusPanel({ schemeId, rows, meetings }: { schemeId: string; rows: FundBudgetStatus[]; meetings: ResolutionMeetingOption[] }) {
+/** `levies` is the building's word for levies (packWordsFor). */
+export function BudgetStatusPanel({ schemeId, rows, meetings, levies }: { schemeId: string; rows: FundBudgetStatus[]; meetings: ResolutionMeetingOption[]; levies: string }) {
   return (
     <div className="rounded-[var(--radius-card)] border border-line bg-white p-6">
       <p className="font-medium text-ink">Budget adoption</p>
       <p className="mt-1 text-sm text-ink-muted">
-        Budget levies can only be issued once the budget for that fund and year is adopted at a general meeting. An adopted budget is
+        Budget {levies} can only be issued once the budget for that fund and year is adopted at a general meeting. An adopted budget is
         read-only; start a revision to change it, and adopt the revision at a later meeting.
       </p>
       <ul className="divide-y divide-line">

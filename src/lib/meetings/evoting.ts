@@ -117,9 +117,11 @@ export function tallyElectronicVotes(
 export function validateCanOpenBallot(params: {
   adopted: boolean;
   meetingStatus: string;
+  /** The building's word for its owners corporation (TERMINOLOGY.ownersCorporation). */
+  ownersCorporation: string;
 }): string | null {
   if (!params.adopted)
-    return "The owners corporation (or committee) has not resolved to adopt pre-meeting electronic voting.";
+    return `The ${params.ownersCorporation} (or committee) has not resolved to adopt pre-meeting electronic voting.`;
   if (
     params.meetingStatus !== "NOTICE_ISSUED" &&
     params.meetingStatus !== "DRAFT"

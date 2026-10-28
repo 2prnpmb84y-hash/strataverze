@@ -61,10 +61,14 @@ describe("budget lifecycle", () => {
   });
 
   it("only activates budget levies against an adopted budget", () => {
-    const base = { levyType: "BUDGET", financialYear: 2026, fundName: "Administrative Fund" };
+    const base = { levyType: "BUDGET", financialYear: 2026, fundName: "Administrative Fund", levies: "levies" };
     expect(levyScheduleActivationProblem({ ...base, budgets: [{ financialYear: 2026, status: "PROPOSED" }] })).toMatch(/not been adopted/);
     expect(levyScheduleActivationProblem({ ...base, budgets: [{ financialYear: 2026, status: "ADOPTED" }] })).toBeNull();
     expect(levyScheduleActivationProblem({ ...base, levyType: "SPECIAL", budgets: [] })).toBeNull();
+    expect(levyScheduleActivationProblem({ ...base, budgets: [] })).toBe(
+      "The Administrative Fund budget for FY 2026 has not been adopted. Record its adoption at the general meeting before issuing these levies.",
+    );
+    expect(levyScheduleActivationProblem({ ...base, levies: "contributions", budgets: [] })).toMatch(/before issuing these contributions\.$/);
   });
 
   it("uses the adopted version, else the latest", () => {
