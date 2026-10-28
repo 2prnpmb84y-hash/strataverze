@@ -853,7 +853,7 @@ exports[`Australian Capital Territory pack (pending) > is the rules recorded for
     "Every ACT contribution notice is refused until StrataVerze notices state what UTMA ss 79(2) and 90(2) require beyond the usual items: the contribution for each other unit, the fund or funds with the split and totals (the year's sinking fund total), the unit's proportion and how it is worked out, the instalment dates, any discount for early payment and the interest for late payment. A discount needs a record of the s 93 ordinary resolution, which StrataVerze does not hold yet. The interest is refused while it cannot be stated: its accrual values are NOT_CONFIRMED (LATE_CHARGE), and notices cannot state an annual-rate interest yet. The every-unit contents on the PDF and email are a later PR (6b).",
     "The unit's proportion would be stated as its share by unit entitlement only (UTMA ss 78(2)(a), 89(2)(a)): a method set by special resolution (s 78(2)(b)) is not held yet, so a building with one must not have it stated as unit entitlement. Confirm before the contents are added.",
     "Form 1 (AF2012-112) was not read, so whether ACT contribution notices must be in an approved form is not recorded (NOTICE_RULES.checked.form is null). Check it before any ACT notice is issued.",
-    "A notice that goes out late states a later due date, 14 days after it goes out and within the 28 days, read from UTMA s 80 (payable on the date stated in the notice). Confirm.",
+    "A notice that goes out late states a later due date, 14 days after it goes out and within the 28 days: StrataVerze's reading of UTMA ss 80, 91 (the notes say only that a contribution is payable on the date stated in the notice), recorded as STRATAVERZE, not CONFIRMED. Confirm.",
   ],
   "FUND_CATALOGUE": [
     {
@@ -1330,9 +1330,9 @@ exports[`Australian Capital Territory pack (pending) > is the rules recorded for
   "NOTICE_RULES": {
     "checked": {
       "dueDateMayMove": {
-        "note": "A contribution is payable on the date stated in the notice, so a notice that goes out late states a later date, within the 28 days.",
+        "note": "StrataVerze's reading: the notes say only that a contribution is payable on the date stated in the notice, so a notice that goes out late states a later date, within the 28 days. FOR_REVIEW.",
         "source": "Unit Titles (Management) Act 2011 (ACT) ss 80, 91",
-        "status": "CONFIRMED",
+        "status": "STRATAVERZE",
         "value": true,
       },
       "form": null,
@@ -7472,6 +7472,7 @@ exports[`Western Australia pack (pending) > is the rules recorded for review 1`]
     "PAYMENT_ALLOCATION_ORDER: contributions, then interest, then recovery costs, as NSW. Decided by Matthew Wrigley on 28 Oct 2026 as a StrataVerze choice (DECISIONS), since the notes record no order. Recorded here so the decision is visible at sign-off.",
     "NOTICE_RULES (stage 2, PR 6a): each notice goes out 35 days before it falls due, never with less than 14 days' notice, as Matthew Wrigley decided on 28 Oct 2026 (DECISIONS). A due date is never moved (s 100(4)(a): the levy decision fixes it), so a notice that can no longer be given 14 days' notice cannot go out: the Adviser is told, and the levy must be decided again with a later date. Recorded here so the decision is visible at sign-off.",
     "NOTICE_RULES: one notice for each instalment as it falls due is a StrataVerze choice (the STA and STGR set no notice rule). Scheme by-laws were not checked: one may set a notice form, content or period, or an early payment discount. Confirm.",
+    "NOTICE_RULES, notices that cannot go out because their due date cannot move: the daily job logs them as held (LEVY_NOTICES_HELD) again on every run until the planned notices are stopped, and when the Adviser sends overdue notices they are held while the others go out. When a schedule is first planned, one such instalment refuses the whole schedule (nothing is planned). Decide whether to keep both.",
   ],
   "FUND_CATALOGUE": [
     {

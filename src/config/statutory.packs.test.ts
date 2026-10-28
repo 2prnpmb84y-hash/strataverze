@@ -661,10 +661,12 @@ describe("the checked notice rules of the pending packs (stage 2, PR 6a)", () =>
   it("records each pack's timing as Matthew Wrigley decided it on 28 Oct 2026", () => {
     const timing = (code: "ACT" | "VIC" | "WA") => noticeTimingFor(PENDING_RULE_PACKS[code].rules.NOTICE_RULES);
     expect(timing("ACT")).toMatchObject({ minimumDays: 14, leadDays: 28, maximumDays: 28, dueDateMayMove: true, minimumIsStatutory: false });
-    expect(timing("VIC")).toMatchObject({ minimumDays: 28, leadDays: 35, maximumDays: null, dueDateMayMove: true, minimumIsStatutory: true });
+    // The Victorian maximum is not confirmed, so the lead is never beyond the pack's safest 28 days (the decided 35 is kept in `checked`).
+    expect(timing("VIC")).toMatchObject({ minimumDays: 28, leadDays: 28, maximumDays: null, dueDateMayMove: true, minimumIsStatutory: true });
+    expect(PENDING_RULE_PACKS.VIC.rules.NOTICE_RULES.checked!.issueDaysBeforeDue.value).toBe(35);
     expect(timing("WA")).toMatchObject({ minimumDays: 14, leadDays: 35, maximumDays: null, dueDateMayMove: false, minimumIsStatutory: false });
     const act = PENDING_RULE_PACKS.ACT.rules.NOTICE_RULES.checked!;
-    expect([act.minimumNoticeDays.status, act.issueDaysBeforeDue.status, act.maximumNoticeDays?.status, act.dueDateMayMove.status]).toEqual(["STRATAVERZE", "STRATAVERZE", "CONFIRMED", "CONFIRMED"]);
+    expect([act.minimumNoticeDays.status, act.issueDaysBeforeDue.status, act.maximumNoticeDays?.status, act.dueDateMayMove.status]).toEqual(["STRATAVERZE", "STRATAVERZE", "CONFIRMED", "STRATAVERZE"]);
     const vic = PENDING_RULE_PACKS.VIC.rules.NOTICE_RULES.checked!;
     expect([vic.minimumNoticeDays.status, vic.issueDaysBeforeDue.status, vic.maximumNoticeDays?.status]).toEqual(["CONFIRMED", "STRATAVERZE", "NOT_CONFIRMED"]);
     expect(vic.minimumNoticeDays.note).toContain("StrataVerze's reading of s 31(2)(a)");

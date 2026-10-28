@@ -1280,11 +1280,22 @@ export async function issueScheduleNoticesAction(
       list.map((n) => ({ lotId: n.lotId, lotNumber: n.lotNumber, ownerId: n.ownerId, noticeNumber: n.noticeNumber, dueDate: n.dueDate, amountCents: n.amountCents }));
     const now = numbered.filter(goesNow);
     const later = numbered.filter((n) => !goesNow(n));
+    // Where the law sets the most notice (a pack's checked rules, the ACT), each later notice is checked
+    // from the day it goes out, so the maximum is measured from its own date. Without one (NSW and
+    // Queensland), the later notices are checked together from the first of those days, as always.
+    const laterGroups =
+      levyTiming.maximumDays != null
+        ? [...new Set(later.map((n) => n.issueOn))].sort().map((issueOn) => ({ noticeDate: issueOn, notices: later.filter((n) => n.issueOn === issueOn) }))
+        : later.length
+          ? [{ noticeDate: later.map((n) => n.issueOn).sort()[0], notices: later }]
+          : [];
+    const laterMissing = [];
+    for (const g of laterGroups) {
+      laterMissing.push(...(await checkPlannedNotices({ schemeId, fundId: schedule.fundId, issuerId: profile.id, noticeDate: g.noticeDate, notices: toContent(g.notices) })));
+    }
     const missing = [
       ...(now.length ? await checkPlannedNotices({ schemeId, fundId: schedule.fundId, issuerId: profile.id, noticeDate: today, isUrgentSpecialLevy: urgentSpecialLevy, notices: toContent(now) }) : []),
-      ...(later.length
-        ? await checkPlannedNotices({ schemeId, fundId: schedule.fundId, issuerId: profile.id, noticeDate: later.map((n) => n.issueOn).sort()[0], notices: toContent(later) })
-        : []),
+      ...laterMissing,
     ].filter((m, i, all) => all.findIndex((x) => x.code === m.code && x.message === m.message) === i);
     if (missing.length > 0) {
       return {
@@ -1374,7 +1385,8 @@ export async function issueOverdueNoticesAction(
     }
     revalidatePath(financePath(schemeId, "/levies"));
     revalidatePath(financePath(schemeId, `/levies/${scheduleId}`));
-    return { success: true, data: { count: r.count, emailed: r.emailed } };
+    // Notices whose due date the building's rules do not let move (a pack's checked rules, WA) are held, with why.
+    return { success: true, data: { count: r.count, emailed: r.emailed, ...(r.held.length ? { held: r.held } : {}) } };
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
     // A closed or locked period: the levy could not be posted, so the notices stay planned.

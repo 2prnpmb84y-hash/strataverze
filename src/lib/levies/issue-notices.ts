@@ -418,7 +418,7 @@ export async function issueDueNotices(now: Date = new Date()): Promise<DueRunRes
           entityId: schedule.id,
           metadata: { count: notices.length, missing: missing.map((m) => m.message) },
         });
-        results.push({ scheduleId: schedule.id, schemeId: schedule.schemeId, issued: 0, held: missing.map((m) => m.message), awaitingConfirmation: late.length });
+        results.push({ scheduleId: schedule.id, schemeId: schedule.schemeId, issued: 0, held: [...missing.map((m) => m.message), ...stuckLines], awaitingConfirmation: late.length });
         continue;
       }
       const r = await issueNoticeBatch({ schemeId: schedule.schemeId, scheduleId: schedule.id, fundId: schedule.fundId, issuerId, noticeDate: today, notices });
@@ -464,14 +464,19 @@ export async function overdueDrafts(schemeId: string, scheduleId: string, today:
  * days from today instead.
  */
 export async function issueOverdueDrafts(input: { schemeId: string; scheduleId: string; fundId: string; issuerId: string; today: string }) {
-  const list = await overdueDrafts(input.schemeId, input.scheduleId, input.today);
-  if (!list.length) return { count: 0, emailed: 0, missing: [] as string[] };
-  // A notice whose due date the building's rules do not let move (WA) cannot go out: nothing is sent, and the Adviser is told why.
-  const stuck = list.filter(({ t }) => t.kind === "cannotMove");
-  if (stuck.length) {
-    const rule = (await rulesForScheme(input.schemeId)).rules.NOTICE_RULES;
-    return { count: 0, emailed: 0, missing: [...new Set(stuck.map(({ n, t }) => lateMessage(t, `Notices due ${toIsoDay(n.dueDate).split("-").reverse().join("/")}`, rule)!))] };
-  }
+  const all = await overdueDrafts(input.schemeId, input.scheduleId, input.today);
+  if (!all.length) return { count: 0, emailed: 0, missing: [] as string[], held: [] as string[] };
+  // A notice whose due date the building's rules do not let move (a pack's checked rules, WA) cannot go out:
+  // it is held, with why, and the others are sent.
+  const stuck = all.filter(({ t }) => t.kind === "cannotMove");
+  const held = stuck.length
+    ? await (async () => {
+        const rule = (await rulesForScheme(input.schemeId)).rules.NOTICE_RULES;
+        return [...new Set(stuck.map(({ n, t }) => lateMessage(t, `Notices due ${toIsoDay(n.dueDate).split("-").reverse().join("/")}`, rule)!))];
+      })()
+    : [];
+  const list = all.filter(({ t }) => t.kind !== "cannotMove");
+  if (!list.length) return { count: 0, emailed: 0, missing: [] as string[], held };
   const lots = await db.orm.public.Lot.where((l) => l.id.in([...new Set(list.map((x) => x.n.lotId))])).limit(5000).all();
   const notices: BatchNotice[] = list.map(({ n, t }) => ({
     id: n.id,
@@ -483,9 +488,9 @@ export async function issueOverdueDrafts(input: { schemeId: string; scheduleId: 
     amountCents: toCents(String(n.amountDue)),
   }));
   const missing = await checkPlannedNotices({ schemeId: input.schemeId, fundId: input.fundId, issuerId: input.issuerId, noticeDate: input.today, notices });
-  if (missing.length) return { count: 0, emailed: 0, missing: missing.map((m) => m.message) };
+  if (missing.length) return { count: 0, emailed: 0, missing: [...missing.map((m) => m.message), ...held], held };
   const r = await issueNoticeBatch({ ...input, noticeDate: input.today, notices });
-  return { count: r.count, emailed: r.emailed, missing: [] as string[] };
+  return { count: r.count, emailed: r.emailed, missing: [] as string[], held };
 }
 
 // ─── 2. Sending failed emails again ─────────────────────────────────────────

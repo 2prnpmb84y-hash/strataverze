@@ -68,7 +68,9 @@ export function lateMessage(t: IssueTiming, label: string, rule: NoticeTimingRul
  * Why an urgent special levy cannot be given the shorter notice, or null when
  * the building's pack has one (`NOTICE_RULES.urgentNoticeDays`).
  */
-export function urgentNoticeProblem(rule: Pick<NoticeRules, "urgentNoticeDays">, terms: { levy: string }): string | null {
-  if (rule.urgentNoticeDays != null) return null;
+export function urgentNoticeProblem(rule: Pick<NoticeRules, "urgentNoticeDays"> & Partial<Pick<NoticeRules, "checked">>, terms: { levy: string }): string | null {
+  // A pack with checked notice rules has no checked shorter notice, so none is offered (as noticeTimingFor gives none).
+  const urgent = rule.checked ? null : rule.urgentNoticeDays;
+  if (urgent != null) return null;
   return `A shorter notice for an urgent special ${terms.levy} is not available for this building. Issue the notice without the urgent option.`;
 }

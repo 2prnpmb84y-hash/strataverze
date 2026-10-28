@@ -412,7 +412,8 @@ export const PENDING_RULE_PACKS = {
     // 2026.10.6 (28 Oct 2026): the notice rules (stage 2, PR 6a). NOTICE_RULES added in the shared shape, from
     // CONTRIBUTION_NOTICES unchanged, with checked values: the due date not later than 28 days after the notice is the
     // most notice (ss 79(2)(e), 90(2)(e), CONFIRMED); the 14-day least notice and the 28-day lead are StrataVerze choices
-    // Matthew Wrigley made on 28 Oct 2026, recorded in DECISIONS; a late notice may state a later date (ss 80, 91). The
+    // Matthew Wrigley made on 28 Oct 2026, recorded in DECISIONS; a late notice may state a later date (a StrataVerze
+    // reading of ss 80, 91, for review: the notes say only that a contribution is payable on the date stated). The
     // general fund is given one notice for each instalment (a StrataVerze reading, FOR LEGAL REVIEW against s 79(2)(f));
     // the sinking fund's yearly notice within 1 month after the AGM (s 90(1)) is refused until StrataVerze can give it.
     // Every notice is refused while StrataVerze notices cannot state what ss 79(2) and 90(2) require (each other unit's

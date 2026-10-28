@@ -631,7 +631,7 @@ const NOTICE_CONTENTS: readonly NoticeContentRequirement[] = [
  * the 14-day floor and the 28-day lead are StrataVerze choices Matthew
  * Wrigley made on 28 Oct 2026 (DECISIONS). A contribution is payable on the
  * date the notice states (ss 80, 91), so a late notice may fall due 14 days
- * after it goes out, within the 28. The general fund is given one notice for
+ * after it goes out, within the 28 (a StrataVerze reading, FOR_REVIEW). The general fund is given one notice for
  * each instalment (a StrataVerze reading, FOR LEGAL REVIEW against
  * s 79(2)(f)); the sinking fund notice is given once a year, within 1 month
  * after the AGM (s 90(1)), which StrataVerze cannot give yet, so sinking fund
@@ -672,9 +672,9 @@ export const NOTICE_RULES: NoticeRules = {
     },
     dueDateMayMove: {
       value: true,
-      status: "CONFIRMED",
+      status: "STRATAVERZE",
       source: `${UTMA} ss 80, 91`,
-      note: "A contribution is payable on the date stated in the notice, so a notice that goes out late states a later date, within the 28 days.",
+      note: "StrataVerze's reading: the notes say only that a contribution is payable on the date stated in the notice, so a notice that goes out late states a later date, within the 28 days. FOR_REVIEW.",
     },
     noticeMode: {
       ADMINISTRATIVE: {
@@ -1727,7 +1727,7 @@ export const FOR_REVIEW = [
   "Every ACT contribution notice is refused until StrataVerze notices state what UTMA ss 79(2) and 90(2) require beyond the usual items: the contribution for each other unit, the fund or funds with the split and totals (the year's sinking fund total), the unit's proportion and how it is worked out, the instalment dates, any discount for early payment and the interest for late payment. A discount needs a record of the s 93 ordinary resolution, which StrataVerze does not hold yet. The interest is refused while it cannot be stated: its accrual values are NOT_CONFIRMED (LATE_CHARGE), and notices cannot state an annual-rate interest yet. The every-unit contents on the PDF and email are a later PR (6b).",
   "The unit's proportion would be stated as its share by unit entitlement only (UTMA ss 78(2)(a), 89(2)(a)): a method set by special resolution (s 78(2)(b)) is not held yet, so a building with one must not have it stated as unit entitlement. Confirm before the contents are added.",
   "Form 1 (AF2012-112) was not read, so whether ACT contribution notices must be in an approved form is not recorded (NOTICE_RULES.checked.form is null). Check it before any ACT notice is issued.",
-  "A notice that goes out late states a later due date, 14 days after it goes out and within the 28 days, read from UTMA s 80 (payable on the date stated in the notice). Confirm.",
+  "A notice that goes out late states a later due date, 14 days after it goes out and within the 28 days: StrataVerze's reading of UTMA ss 80, 91 (the notes say only that a contribution is payable on the date stated in the notice), recorded as STRATAVERZE, not CONFIRMED. Confirm.",
 ] as const;
 
 /**

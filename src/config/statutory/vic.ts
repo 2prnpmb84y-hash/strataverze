@@ -980,7 +980,8 @@ export const FEE_NOTICES = {
  *
  * The fields outside `checked` hold the safest values for a reader that knows
  * only them: the 28-day minimum, and a lead of 28 days, since the most notice
- * is not confirmed.
+ * is not confirmed. Until the most notice is checked, notices are timed with
+ * that 28-day lead, never the decided 35 (noticeLeadDays).
  */
 export const NOTICE_RULES: NoticeRules = {
   minimumNoticeDays: FEE_NOTICES.feeNotice.payWithinDaysAfterNotice,

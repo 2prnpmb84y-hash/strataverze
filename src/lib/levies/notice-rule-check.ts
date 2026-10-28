@@ -45,13 +45,18 @@ export interface NoticeTiming {
   checked: boolean;
 }
 
-/** How many days before it falls due a notice goes out, from the checked lead where the pack has one (never beyond the maximum). */
+/**
+ * How many days before it falls due a notice goes out, from the checked lead
+ * where the pack has one: never beyond the maximum, and, where the maximum is
+ * not confirmed (VIC), never beyond the pack's own safest lead either.
+ */
 export function noticeLeadDays(rule: { issueDaysBeforeDue: number; checked?: CheckedNoticeRules }): number {
   const c = rule.checked;
   if (!c) return rule.issueDaysBeforeDue;
   const lead = c.issueDaysBeforeDue.value ?? rule.issueDaysBeforeDue;
-  const max = c.maximumNoticeDays?.value ?? null;
-  return max != null ? Math.min(lead, max) : lead;
+  if (c.maximumNoticeDays == null) return lead;
+  const max = c.maximumNoticeDays.value;
+  return Math.min(lead, max ?? rule.issueDaysBeforeDue);
 }
 
 /**
@@ -77,7 +82,8 @@ export function noticeTimingFor(rule: NoticeTimingRule): NoticeTiming {
   return {
     minimumDays: c.minimumNoticeDays.value ?? rule.minimumNoticeDays,
     leadDays: noticeLeadDays(rule),
-    urgentDays: rule.urgentNoticeDays,
+    // The checked rules have no shorter urgent notice, so none is offered (noticeRuleProblems refuses a pack that sets one).
+    urgentDays: null,
     maximumDays: c.maximumNoticeDays?.value ?? null,
     dueDateMayMove: c.dueDateMayMove.value === true,
     minimumIsStatutory: c.minimumNoticeDays.status === "CONFIRMED",
@@ -116,7 +122,7 @@ const FUND_WORDS: Record<string, string> = { ADMINISTRATIVE: "the administrative
  * empty for a pack without `checked` (NSW, Queensland), and for one whose
  * rules allow the notice. Each problem names what is missing.
  */
-export function noticeRuleProblems(rule: Pick<NoticeRules, "checked">, ctx: NoticeRuleContext = {}): NoticeRuleProblem[] {
+export function noticeRuleProblems(rule: Pick<NoticeRules, "checked"> & Partial<Pick<NoticeRules, "urgentNoticeDays">>, ctx: NoticeRuleContext = {}): NoticeRuleProblem[] {
   const c = rule.checked;
   if (!c) return [];
   const problems: NoticeRuleProblem[] = [];
@@ -132,6 +138,10 @@ export function noticeRuleProblems(rule: Pick<NoticeRules, "checked">, ctx: Noti
   const maxMissing = c.maximumNoticeDays ? unconfirmed("maximumNoticeDays", "the most notice to pay the law allows", c.maximumNoticeDays) : false;
   const leadMissing = unconfirmed("issueDaysBeforeDue", "how long before the due date each notice goes out", c.issueDaysBeforeDue);
   unconfirmed("dueDateMayMove", "whether a late notice may fall due later than planned", c.dueDateMayMove);
+  // A shorter urgent notice is not in the checked shape, so one set outside it is never relied on.
+  if (rule.urgentNoticeDays != null) {
+    add("urgentNoticeDays", `This building's rules give a shorter notice for an urgent special levy (${rule.urgentNoticeDays} days) that is not among their checked values. No notice can be issued until a pack version records it as checked or removes it.`);
+  }
   const min = c.minimumNoticeDays.value;
   const lead = c.issueDaysBeforeDue.value;
   const max = c.maximumNoticeDays?.value ?? null;

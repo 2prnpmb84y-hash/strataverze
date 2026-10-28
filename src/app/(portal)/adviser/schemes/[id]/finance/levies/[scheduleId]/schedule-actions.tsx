@@ -153,6 +153,7 @@ export function OverdueNoticesForm({ schemeId, scheduleId, count, timing }: { sc
   const [state, formAction, pending] = useActionState<ActionState, FormData>(issueOverdueNoticesAction.bind(null, schemeId, scheduleId), {});
   const late = Array.isArray(state.data?.late) ? (state.data.late as string[]) : [];
   const missing = Array.isArray(state.data?.missing) ? (state.data.missing as { code: string; message: string }[]) : [];
+  const held = Array.isArray(state.data?.held) ? (state.data.held as string[]) : [];
   return (
     <form action={formAction} className="space-y-3 rounded-[var(--radius-card)] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
       <p className="font-medium">
@@ -183,6 +184,16 @@ export function OverdueNoticesForm({ schemeId, scheduleId, count, timing }: { sc
       </label>
       {state.error && <p role="alert" className="text-red-700">{state.error}</p>}
       {state.success && <p className="text-green-700">{String(state.data?.count ?? 0)} notice(s) sent, {String(state.data?.emailed ?? 0)} emailed to owners.</p>}
+      {state.success && held.length > 0 && (
+        <div role="status" className="space-y-1">
+          <p className="font-medium">These notices were not sent:</p>
+          <ul className="list-disc space-y-1 pl-5">
+            {held.map((m) => (
+              <li key={m}>{m}</li>
+            ))}
+          </ul>
+        </div>
+      )}
       <Button type="submit" disabled={pending}>{pending ? "Sending..." : "Send them now"}</Button>
     </form>
   );

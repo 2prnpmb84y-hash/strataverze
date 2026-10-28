@@ -488,15 +488,46 @@ describe("a pack whose due dates never move (WA-shaped)", () => {
     expect((await issueDueNotices(midday("2026-06-10")))[0]).toMatchObject({ issued: 0, held: null, awaitingConfirmation: 2 });
     // 11 days left: held, never sent.
     const held = await issueDueNotices(midday("2026-06-20"));
-    expect(held[0]).toMatchObject({ issued: 0, awaitingConfirmation: 0, held: ["Notices due 01/07/2026: due 01/07/2026, fewer than 14 days away. Its due date cannot be moved under this building's rules, so it cannot go out."] });
+    const line = "Notices due 01/07/2026: due 01/07/2026, fewer than 14 days away. Its due date cannot be moved under this building's rules, so it cannot go out.";
+    expect(held[0]).toMatchObject({ issued: 0, awaitingConfirmation: 0, held: [line] });
     expect(notices().every((n) => n.status === "DRAFT")).toBe(true);
     today.value = "2026-06-20";
     const fd = new FormData();
     fd.set("confirmLate", "on");
-    const r = await issueOverdueNoticesAction("s1", "ls1", {}, fd);
-    expect(r.error).toContain("cannot be issued yet");
-    expect(r.data?.missing).toEqual([expect.objectContaining({ message: expect.stringContaining("Its due date cannot be moved") })]);
+    // Confirmed: nothing can go out, and the Adviser is told why (a warning, not an error).
+    expect(await issueOverdueNoticesAction("s1", "ls1", {}, fd)).toEqual({ success: true, data: { count: 0, emailed: 0, held: [line] } });
     expect(notices().every((n) => n.status === "DRAFT")).toBe(true);
     expect(sent.notices).toEqual([]);
+  });
+
+  it("sends the overdue notices that can still go out, holding only those that cannot", async () => {
+    today.value = "2026-05-01";
+    noticeRules.override = waShaped;
+    await generate();
+    // 1 Sep: the first instalment's due date has passed (cannot go out); the second has 30 days left (late, sendable).
+    today.value = "2026-09-01";
+    const fd = new FormData();
+    fd.set("confirmLate", "on");
+    const r = await issueOverdueNoticesAction("s1", "ls1", {}, fd);
+    expect(r).toEqual({
+      success: true,
+      data: { count: 2, emailed: 2, held: ["Notices due 01/07/2026: due 01/07/2026, fewer than 14 days away. Its due date cannot be moved under this building's rules, so it cannot go out."] },
+    });
+    expect(notices().filter((n) => n.status === "ISSUED").map((n) => n.dueDate)).toEqual(["2026-10-01", "2026-10-01"]);
+  });
+
+  it("keeps the held lines when the daily job's content check also fails", async () => {
+    today.value = "2026-05-01";
+    noticeRules.override = waShaped;
+    await generate();
+    content.missing = [{ code: "PAYMENT_DETAILS", message: "How to pay" }];
+    // 27 Nov: the third instalment is on time; the first two can no longer go out.
+    const r = await issueDueNotices(midday("2026-11-27"));
+    expect(r[0]).toMatchObject({ issued: 0, awaitingConfirmation: 0 });
+    expect(r[0].held).toEqual([
+      "How to pay",
+      "Notices due 01/07/2026: due 01/07/2026, fewer than 14 days away. Its due date cannot be moved under this building's rules, so it cannot go out.",
+      "Notices due 01/10/2026: due 01/10/2026, fewer than 14 days away. Its due date cannot be moved under this building's rules, so it cannot go out.",
+    ]);
   });
 });

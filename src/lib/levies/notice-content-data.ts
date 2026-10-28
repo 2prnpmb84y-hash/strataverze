@@ -115,6 +115,15 @@ export async function checkPlannedNotices(input: {
       }
     }
   }
+  // The PDF and email state the late charge through noticeLateCharge, which cannot word an annual-rate one
+  // yet (VIC, ACT and WA): such a notice would be issued and posted but never sent, so it is refused here,
+  // whatever the pack requires the notice to state. Every issuing path checks its notices here first.
+  if (rules.LATE_CHARGE.annual) {
+    seen.set("LATE_CHARGE_WORDING", {
+      code: "LATE_CHARGE_WORDING",
+      message: `Notices cannot state this building's ${rules.TERMINOLOGY.lateCharge} yet (${rules.LATE_CHARGE.source}), so no notice can be issued until they can.`,
+    });
+  }
   return [...seen.values()];
 }
 

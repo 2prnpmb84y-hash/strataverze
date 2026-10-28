@@ -359,7 +359,9 @@ describe("checking notices for a pack with checked notice rules (stage 2, PR 6a)
     };
     seed("ADMINISTRATIVE", annual, { interestMode: "STATUTORY" });
     const missing = await check();
-    expect(missing.map((m) => m.code)).toEqual(["INTEREST_WARNING", "NOTICE_RULES_NOT_CONFIRMED", "NOTICE_RULES_NOT_CONFIRMED"]);
+    expect(missing.map((m) => m.code)).toEqual(["INTEREST_WARNING", "NOTICE_RULES_NOT_CONFIRMED", "NOTICE_RULES_NOT_CONFIRMED", "LATE_CHARGE_WORDING"]);
     expect(missing[2].message).toContain("the interest payable for late payment (Test Act s 4(i))");
+    // Refused whatever the pack requires: the PDF and email cannot word an annual-rate late charge yet.
+    expect(missing[3]).toEqual({ code: "LATE_CHARGE_WORDING", message: "Notices cannot state this building's penalty yet (Test Act s 1), so no notice can be issued until they can." });
   });
 });

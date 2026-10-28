@@ -11,7 +11,7 @@ import { describe, expect, it } from "vitest";
 import type { StatutoryRules } from "@/config/statutory";
 import { validateLevyNoticeContent, type LevyNoticeContentInput } from "@/lib/finance/levy-notice-content";
 import { noticeLeadMark, noticeLeadText, noticeTimingWords } from "@/lib/jurisdiction/wording";
-import { issueDateFor, issueTiming, lateMessage } from "./issue-timing";
+import { issueDateFor, issueTiming, lateMessage, urgentNoticeProblem } from "./issue-timing";
 import { noticeRuleProblems, noticeTimingFor, type CheckedNoticeRules } from "./notice-rule-check";
 
 type NoticeRules = StatutoryRules["NOTICE_RULES"];
@@ -45,6 +45,21 @@ const rule = (checked: Partial<CheckedNoticeRules> = {}, legacy: Partial<NoticeR
   checked: { ...CHECKED, ...checked },
 });
 const ADMIN = { ledgerFund: "ADMINISTRATIVE" as const };
+const COMPLETE: LevyNoticeContentInput = {
+  scheme: { name: "Harbour View", planNumber: "12345" },
+  lotNumber: "7",
+  ownerNames: ["Alex Nguyen"],
+  noticeDate: "2026-10-01",
+  dueDate: "2026-10-29",
+  fundName: "Administrative fund",
+  amountCents: 82_509,
+  payment: { accountName: "The Owners", bsb: "062-000", accountNumber: "12345678", reference: "LN-0042" },
+  contact: { name: "Sam Adviser", emailOrPhone: "sam@example.com" },
+  includesInterestWarning: true,
+  includesHardshipStatement: false,
+  includesLedgerAccess: true,
+  ledgerFund: "ADMINISTRATIVE",
+};
 const points = (r: NoticeRules, ctx: Parameters<typeof noticeRuleProblems>[1] = ADMIN) => noticeRuleProblems(r, ctx).map((p) => p.point);
 
 describe("a pack without checked notice rules (NSW, Queensland)", () => {
@@ -163,6 +178,29 @@ describe("checked notice rules: the gate", () => {
   });
 });
 
+describe("checked notice rules: what is not checked is never relied on", () => {
+  it("never times a notice beyond the pack's own safest lead while the maximum is not confirmed", () => {
+    const vicShaped = rule({ maximumNoticeDays: none("not in the notes"), issueDaysBeforeDue: has(35, "STRATAVERZE"), minimumNoticeDays: has(28) }, { minimumNoticeDays: 28, issueDaysBeforeDue: 28 });
+    expect(noticeTimingFor(vicShaped).leadDays).toBe(28);
+    expect(issueDateFor("2026-12-01", vicShaped)).toBe("2026-11-03");
+    expect(noticeLeadText(vicShaped)).toBe("4 weeks");
+    // With no maximum in law (null), the decided lead.
+    expect(noticeTimingFor(rule({ maximumNoticeDays: null, issueDaysBeforeDue: has(35, "STRATAVERZE") })).leadDays).toBe(35);
+  });
+
+  it("offers no shorter urgent notice, and refuses a pack that sets one outside its checked values", () => {
+    const urgent = rule({}, { urgentNoticeDays: 7 });
+    expect(noticeTimingFor(urgent).urgentDays).toBeNull();
+    expect(noticeTimingWords(urgent).urgentDays).toBeNull();
+    expect(points(urgent)).toEqual(["urgentNoticeDays"]);
+    expect(urgentNoticeProblem(urgent, { levy: "contribution" })).toBe("A shorter notice for an urgent special contribution is not available for this building. Issue the notice without the urgent option.");
+    // A legacy pack's urgent notice is offered, as always.
+    expect(urgentNoticeProblem(LEGACY, { levy: "levy" })).toBeNull();
+    // An urgent notice cannot shorten a checked pack's minimum.
+    expect(validateLevyNoticeContent({ ...COMPLETE, dueDate: "2026-10-09", isUrgentSpecialLevy: true }, urgent).map((m) => m.code)).toEqual(["NOTICE_PERIOD", "NOTICE_RULES_NOT_CONFIRMED"]);
+  });
+});
+
 describe("checked notice rules: the timing", () => {
   it("reads the checked values, never a lead beyond the maximum, and never moves a due date it is not told it may", () => {
     expect(noticeTimingFor(rule())).toEqual({ minimumDays: 14, leadDays: 28, urgentDays: null, maximumDays: 28, dueDateMayMove: true, minimumIsStatutory: false, checked: true });
@@ -263,7 +301,7 @@ describe("checked notice rules: the content check", () => {
 });
 
 describe("the notice timing numbers are read through noticeTimingFor", () => {
-  /** Where `.minimumNoticeDays`, `.issueDaysBeforeDue` and `.urgentNoticeDays` may be read outside src/config. */
+  /** Where `minimumNoticeDays`, `issueDaysBeforeDue` and `urgentNoticeDays` may be named outside src/config (and tests). */
   const READERS = new Set(["lib/levies/issue-timing.ts", "lib/finance/levy-notice-content.ts", "lib/jurisdiction/wording.ts", "lib/levies/notice-rule-check.ts"]);
   const SRC = join(__dirname, "..", "..");
   const files = (dir: string): string[] =>
@@ -279,7 +317,8 @@ describe("the notice timing numbers are read through noticeTimingFor", () => {
       const rel = relative(SRC, file);
       if (rel.startsWith("config/") || READERS.has(rel)) continue;
       readFileSync(file, "utf8").split("\n").forEach((line, i) => {
-        if (/\.(minimumNoticeDays|issueDaysBeforeDue|urgentNoticeDays)\b/.test(line)) found.push(`${rel}:${i + 1} ${line.trim().slice(0, 100)}`);
+        // The bare names, so destructuring or bracket access cannot read them either.
+        if (/\b(minimumNoticeDays|issueDaysBeforeDue|urgentNoticeDays)\b/.test(line)) found.push(`${rel}:${i + 1} ${line.trim().slice(0, 100)}`);
       });
     }
     expect(found).toEqual([]);
