@@ -71,6 +71,18 @@ vi.mock("@/lib/queries/works", () => {
     getWorksRfqById: one,
     getWorksAuditEvents: vi.fn(async () => fx.list),
     getWorksRfqsForScheme: vi.fn(async () => fx.list),
+    getWorksRequestsForScheme: vi.fn(async () => fx.list),
+    getWorksDashboardData: vi.fn(async () => ({
+      requests: { total: 1, urgent: 0, overdue: 0 },
+      contracts: { active: 0, totalValue: 0 },
+      invoices: { pending: 0, outstanding: 0, totalClaimed: 0, totalPaid: 0 },
+    })),
+    getApprovalRoutes: vi.fn(async () => []),
+    getPendingApprovals: vi.fn(async () => []),
+    getDelegations: vi.fn(async () => fx.list),
+    getComplianceRequirementById: one,
+    getContractorBusinessById: one,
+    isContractorVisibleToScheme: vi.fn(async () => true),
   };
 });
 vi.mock("@/lib/actions/works", () => new Proxy({}, { get: (_t, name) => (name === "then" ? undefined : vi.fn()) }));
@@ -82,6 +94,7 @@ vi.mock("@/lib/works/settings", () => ({ approvedContractors: vi.fn(async () => 
 vi.mock("@/lib/works/marketplace", () => ({ contractorsForDirectInvite: vi.fn(async () => []), rfqForCommittee: vi.fn(async () => null) }));
 vi.mock("@/lib/works/completion", () => ({ closeOutForCommittee: vi.fn(async () => null) }));
 vi.mock("@/app/(portal)/adviser/schemes/[id]/works/[requestId]/works-request-actions", () => ({ WorksRequestActions: () => null }));
+vi.mock("@/components/billing/contractor-billing-note", () => ({ ContractorBillingNote: () => null }));
 vi.mock("@/app/(portal)/admin/security/reset-mfa-form", () => ({ ResetMfaForm: () => null }));
 vi.mock("@/app/(portal)/admin/security/sign-out-user-form", () => ({ SignOutUserForm: () => null }));
 
@@ -94,6 +107,10 @@ const { default: WorkOrderPage } = await import("@/app/(portal)/adviser/schemes/
 const { default: RfqsPage } = await import("@/app/(portal)/adviser/schemes/[id]/works/rfqs/page");
 const { default: RfqPage } = await import("@/app/(portal)/adviser/schemes/[id]/works/rfqs/[rfqId]/page");
 const { default: SecurityPage } = await import("@/app/(portal)/admin/security/page");
+const { default: WorksDashboardPage } = await import("@/app/(portal)/adviser/schemes/[id]/works/page");
+const { default: ApprovalsPage } = await import("@/app/(portal)/adviser/schemes/[id]/works/approvals/page");
+const { default: CompliancePage } = await import("@/app/(portal)/adviser/schemes/[id]/works/compliance/[requirementId]/page");
+const { default: ContractorPage } = await import("@/app/(portal)/adviser/schemes/[id]/works/contractors/[contractorId]/page");
 
 const person = { firstName: "Ann", lastName: "Lee" };
 /** A page's props: the building's id and the record's (each page names its own). */
@@ -122,6 +139,7 @@ async function expectZoned(page: () => Promise<unknown>, want: { dateTimes: numb
     if (want.dates !== undefined) {
       // Each date and time also contains the date.
       expect(count(text, SHOWN[zone].date) - want.dateTimes, `${zone} dates`).toBe(want.dates);
+      expect(text).not.toContain(SHOWN[other].date);
     }
     if (want.days) expect(count(text, "5 Nov 2026"), `${zone} calendar days`).toBe(want.days);
   }
@@ -292,10 +310,64 @@ describe("works pages show times in the building's time zone", () => {
       invitations: [{ id: "inv1", status: "ACCEPTED", invitedAt: AT, invitedBy: person, respondedAt: AT, declineReason: null, contractorBusiness: { id: "cb1", companyName: "Acme" } }],
       addenda: [{ id: "a1", addendumNumber: 1, title: "Change", description: "", issuedAt: AT, issuedBy: person }],
       clarifications: [{ id: "cl1", question: "When?", answer: "Soon", isPublic: true, askedAt: AT, askedBy: person, answeredAt: AT, answeredBy: person }],
-      quotations: [{ id: "qt1", quotationNumber: "QT-1", status: "SUBMITTED", submittedAt: AT, validUntil: AT, subtotal: "90", totalAmount: "100", estimatedDuration: null, contractorBusiness: { companyName: "Acme" } }],
+      // validUntil is a calendar day stored at UTC midnight (marketplace.ts).
+      quotations: [{ id: "qt1", quotationNumber: "QT-1", status: "SUBMITTED", submittedAt: AT, validUntil: `${DAY}T00:00:00.000Z`, subtotal: "90", totalAmount: "100", estimatedDuration: null, contractorBusiness: { companyName: "Acme" } }],
       evaluations: [{ id: "ev1", evaluatedAt: AT, evaluator: person, overallScore: 80, comments: null, criteria: [] }],
     };
-    await expectZoned(() => RfqPage(params({ rfqId: "q1" })), { dateTimes: 10, dates: 1 });
+    await expectZoned(() => RfqPage(params({ rfqId: "q1" })), { dateTimes: 10, dates: 0, days: 1 });
+    // Every Australian zone is east of UTC, so the day would survive a zone
+    // shift there; a zone west of UTC shows it is not shifted at all.
+    expect(await render("America/Los_Angeles" as Zone, () => RfqPage(params({ rfqId: "q1" })))).toContain("Valid until: 5 Nov 2026");
+  });
+
+  it("the works dashboard (the day each request was raised)", async () => {
+    fx.list = [{ id: "r1", requestNumber: "WR-1", title: "Leak", status: "SUBMITTED", priority: "NORMAL", isEmergency: false, estimatedCost: null, createdAt: AT, category: null, raisedBy: person, assignedTo: null }];
+    await expectZoned(() => WorksDashboardPage(params()), { dateTimes: 0, dates: 1 });
+  });
+
+  it("the approvals page (a delegation's start and end, which are timestamps)", async () => {
+    fx.list = [{ id: "d1", authorityType: "APPROVE", isActive: true, maxAmount: "1000", startDate: AT, endDate: AT, delegatedBy: person, delegatedTo: person }];
+    await expectZoned(() => ApprovalsPage(params()), { dateTimes: 0, dates: 2 });
+  });
+
+  it("a compliance requirement (the day a check was verified; its expiry is a day at UTC midnight)", async () => {
+    fx.record = {
+      id: "cr1",
+      schemeId: "s1",
+      name: "Public liability",
+      description: null,
+      documentType: "INSURANCE",
+      layer: "SCHEME",
+      isActive: true,
+      isMandatory: true,
+      tradeCategories: [],
+      validityPeriod: null,
+      checks: [{ id: "ck1", status: "VERIFIED", documentName: "cert.pdf", contractorBusiness: { companyName: "Acme" }, verifiedAt: AT, verifiedBy: person, expiryDate: `${DAY}T00:00:00.000Z`, rejectionReason: null }],
+    };
+    await expectZoned(() => CompliancePage(params({ requirementId: "cr1" })), { dateTimes: 0, dates: 1, days: 1 });
+  });
+
+  it("a contractor (the day a compliance check was verified; licence and insurance expiries are calendar days)", async () => {
+    fx.record = {
+      id: "cb1",
+      companyName: "Acme",
+      tradingName: null,
+      abn: "1",
+      acn: null,
+      email: "a@x",
+      phone: null,
+      website: null,
+      registeredAddress: null,
+      gstRegistered: true,
+      status: "APPROVED",
+      tradeCategories: [],
+      notes: null,
+      contacts: [],
+      licences: [{ id: "l1", licenceType: "Builder", licenceNumber: "1", status: "VERIFIED", expiryDate: DAY }],
+      insurances: [{ id: "i1", policyType: "Public liability", insurer: "X", policyNumber: "1", status: "VERIFIED", expiryDate: DAY }],
+      complianceChecks: [{ id: "ck1", status: "VERIFIED", verifiedAt: AT, requirement: { schemeId: "s1", name: "Public liability" } }],
+    };
+    await expectZoned(() => ContractorPage(params({ contractorId: "cb1" })), { dateTimes: 0, dates: 1, days: 2 });
   });
 });
 

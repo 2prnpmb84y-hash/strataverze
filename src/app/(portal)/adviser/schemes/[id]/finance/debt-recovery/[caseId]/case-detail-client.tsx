@@ -120,12 +120,13 @@ function currency(value: number): string {
   }).format(value);
 }
 
-/** A calendar day (YYYY-MM-DD, such as an instalment's due date), as it is stored: not moved to a time zone. */
+/** A calendar day (YYYY-MM-DD, such as an instalment's due date), as it is stored (read at UTC midnight and shown in UTC, so no zone moves it). */
 function fmtDay(date: string): string {
   return new Date(date).toLocaleDateString("en-AU", {
     day: "numeric",
     month: "short",
     year: "numeric",
+    timeZone: "UTC",
   });
 }
 

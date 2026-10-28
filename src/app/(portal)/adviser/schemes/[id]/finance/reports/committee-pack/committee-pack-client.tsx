@@ -116,12 +116,13 @@ function fundTypeLabel(catalogue: FundCatalogue, fundType: string): string {
   }
 }
 
-/** A calendar day (YYYY-MM-DD, such as a bank account's last reconciled date), as it is stored: not moved to a time zone. */
+/** A calendar day (YYYY-MM-DD, such as a bank account's last reconciled date), as it is stored (read at UTC midnight and shown in UTC, so no zone moves it). */
 function formatDay(value: string): string {
   return new Date(value).toLocaleDateString("en-AU", {
     day: "2-digit",
     month: "short",
     year: "numeric",
+    timeZone: "UTC",
   });
 }
 

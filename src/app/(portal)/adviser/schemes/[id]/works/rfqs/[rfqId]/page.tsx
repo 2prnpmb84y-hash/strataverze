@@ -370,7 +370,7 @@ export default async function RfqDetailPage({
                   </p>
                   {q.validUntil && (
                     <p className="text-xs text-ink-muted">
-                      Valid until: {formatDateIn(tz, String(q.validUntil))}
+                      Valid until: {formatDateIn("UTC", String(q.validUntil))}
                     </p>
                   )}
                   {q.estimatedDuration && (

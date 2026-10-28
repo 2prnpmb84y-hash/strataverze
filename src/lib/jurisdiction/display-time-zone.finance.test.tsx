@@ -36,6 +36,24 @@ const AUDIT_WORDS = auditLabelWords(NSW);
 const text = (html: string) => html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
 const count = (s: string, part: string) => s.split(part).length - 1;
 
+/**
+ * Runs `fn` with the process in a zone west of UTC, as a browser in Los
+ * Angeles would render a client component (Node applies a TZ change at
+ * runtime). A calendar day read at UTC midnight and shown in the local zone
+ * would show there as the day before.
+ */
+function westOfUtc<T>(fn: () => T): T {
+  const before = process.env.TZ;
+  process.env.TZ = "America/Los_Angeles";
+  try {
+    // Check the change took effect, so the guard cannot pass vacuously.
+    expect(new Date("2026-11-05T00:00:00Z").getDate()).toBe(4);
+    return fn();
+  } finally {
+    process.env.TZ = before;
+  }
+}
+
 afterEach(() => cleanup());
 
 describe("the audit trail", () => {
@@ -86,6 +104,9 @@ describe("the committee pack", () => {
   it("shows the last reconciled date (a calendar day) as it is stored", () => {
     expect(show(SYDNEY)).toContain("Last Reconciled 05 Nov 2026");
     expect(show(PERTH)).toContain("Last Reconciled 05 Nov 2026");
+    const west = westOfUtc(() => show(SYDNEY));
+    expect(west).toContain("Last Reconciled 05 Nov 2026");
+    expect(west).not.toContain("04 Nov 2026");
   });
 });
 
@@ -220,5 +241,8 @@ describe("a debt recovery case", () => {
   it("shows an instalment's due date (a calendar day) as it is stored", () => {
     expect(show(SYDNEY).payment).toContain("5 Nov 2026");
     expect(show(PERTH).payment).toContain("5 Nov 2026");
+    const west = westOfUtc(() => show(SYDNEY).payment);
+    expect(west).toContain("5 Nov 2026");
+    expect(west).not.toContain("4 Nov 2026");
   });
 });

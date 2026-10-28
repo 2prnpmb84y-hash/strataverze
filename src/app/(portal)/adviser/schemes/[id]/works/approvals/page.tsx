@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { requirePageAccess } from "@/lib/auth/require-access";
 import { getSchemeById } from "@/lib/queries/schemes";
+import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
+import { formatDateIn } from "@/lib/jurisdiction/time-zone";
 import {
   getApprovalRoutes,
   getPendingApprovals,
@@ -21,15 +23,6 @@ function formatCurrency(value: number | string | null): string {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(Number(value));
-}
-
-function formatDate(date: Date | string | null): string {
-  if (!date) return "—";
-  return new Date(String(date)).toLocaleDateString("en-AU", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
 }
 
 const entityTypeLabel: Record<string, string> = {
@@ -64,6 +57,7 @@ export default async function ApprovalsPage({
 
   const scheme = await getSchemeById(id);
   if (!scheme) notFound();
+  const tz = timeZoneOf(scheme);
 
   const [approvalRoutes, pendingApprovals, delegations] = await Promise.all([
     getApprovalRoutes(id),
@@ -210,8 +204,8 @@ export default async function ApprovalsPage({
                       {del.maxAmount && <> &middot; Up to {formatCurrency(del.maxAmount)}</>}
                     </p>
                     <p className="text-xs text-ink-muted">
-                      {formatDate(del.startDate)}
-                      {del.endDate && <> – {formatDate(del.endDate)}</>}
+                      {formatDateIn(tz, String(del.startDate))}
+                      {del.endDate && <> – {formatDateIn(tz, String(del.endDate))}</>}
                     </p>
                   </div>
                   <StatusChip

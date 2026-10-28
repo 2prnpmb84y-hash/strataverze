@@ -2,6 +2,8 @@ import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { requirePageAccess } from "@/lib/auth/require-access";
 import { getSchemeById } from "@/lib/queries/schemes";
+import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
+import { formatDateIn } from "@/lib/jurisdiction/time-zone";
 import { getContractorBusinessById, isContractorVisibleToScheme } from "@/lib/queries/works";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -40,6 +42,7 @@ export default async function ContractorDetailPage({
 
   const scheme = await getSchemeById(id);
   if (!scheme) notFound();
+  const tz = timeZoneOf(scheme);
 
   // Contractor businesses are platform wide: a scheme sees only approved
   // contractors and those linked to it by its works records.
@@ -276,7 +279,7 @@ export default async function ContractorDetailPage({
                     {check.requirement.name}
                   </p>
                   <p className="text-xs text-ink-muted">
-                    Verified: {formatDate(check.verifiedAt)}
+                    Verified: {check.verifiedAt ? formatDateIn(tz, String(check.verifiedAt)) : "—"}
                   </p>
                 </div>
                 <StatusChip status={check.status} />
