@@ -12,10 +12,10 @@ vi.mock("@/lib/queries/activity-log", () => ({ logActivity: vi.fn() }));
 
 const { MIGRATION_TEMPLATES } = await import("@/lib/queries/data-migration");
 const { FIELDS } = await import("./migration-templates");
-const { IMPORT_FIELDS, IMPORT_DATA_TYPES, autoDetectMapping, buildImportRows, importFieldsFor, isImportDataType, missingRequired, parseCsvContent, toServerData } =
+const { IMPORT_FIELDS, IMPORT_DATA_TYPES, autoDetectMapping, buildImportRows, importFieldsFor, isImportDataType, mappingProblem, missingRequired, parseCsvContent, toServerData } =
   await import("./migration-import-fields");
 const { RULE_PACKS, PENDING_RULE_PACKS } = await import("@/config/statutory");
-const { separateEntitlement } = await import("@/lib/jurisdiction/building-data");
+const { onLotImportHeading, separateEntitlement } = await import("@/lib/jurisdiction/building-data");
 type ImportField = import("./migration-import-fields").ImportField;
 
 const fieldsOf = (dt: keyof typeof IMPORT_FIELDS) => IMPORT_FIELDS[dt] as readonly ImportField[];
@@ -112,26 +112,68 @@ describe("the browser key to server field table", () => {
     expect(missingRequired("lots", { lotNumber: "1", entitlement: "5" })).toEqual([]);
   });
 
-  it("shows Victoria's lot entitlement column for a Victorian building only, required, and sends it under its own key (stage 2, PR 4)", () => {
-    const vicSeparate = separateEntitlement(PENDING_RULE_PACKS.VIC.rules as Parameters<typeof separateEntitlement>[0])!;
+  describe("a Victorian building (stage 2, PR 4)", () => {
+    const vicRules = PENDING_RULE_PACKS.VIC.rules as Parameters<typeof separateEntitlement>[0];
+    const vicSeparate = separateEntitlement(vicRules)!;
     const vic = { field: vicSeparate.field!, label: vicSeparate.label };
-    expect(vic).toEqual({ field: "lotEntitlement", label: "Lot Entitlement" });
-    const fields = importFieldsFor("lots", vic);
-    expect(fields.filter((f) => f.separateEntitlement).map((f) => [f.key, f.field, f.label, f.required])).toEqual([["lot_entitlement", "lotEntitlement", "Lot Entitlement", true]]);
-    // Neither second column for NSW, and only its own for Queensland.
-    expect(importFieldsFor("lots").map((f) => f.field)).not.toContain("lotEntitlement");
-    expect(importFieldsFor("lots", qldSeparate).map((f) => f.field)).not.toContain("lotEntitlement");
+    const onLot = onLotImportHeading(vicRules);
 
-    const headers = ["Lot", "Lot Liability", "Lot Entitlement"];
-    const mapping = autoDetectMapping("lots", headers, vic);
-    expect(mapping).toEqual({ lot_entitlement: "Lot Entitlement" });
-    const rows = buildImportRows("lots", headers, [["1", "1", "60"], ["2", "1", ""]], { ...mapping, lot_number: "Lot", entitlement: "Lot Liability" }, vic);
-    expect(rows.map((r) => [r.data, r.errors])).toEqual([
-      [{ lot_number: "1", entitlement: "1", lot_entitlement: "60" }, []],
-      // An empty one is refused by the server against the pack (validateLots), for the preview and the import alike, as Queensland's is.
-      [{ lot_number: "2", entitlement: "1", lot_entitlement: "" }, []],
-    ]);
-    expect(toServerData("lots", rows[0].data)).toEqual({ lotNumber: "1", entitlement: "1", lotEntitlement: "60" });
+    it("names lot liability from the pack and requires the lot entitlement column, under its own key", () => {
+      expect(vic).toEqual({ field: "lotEntitlement", label: "Lot Entitlement" });
+      expect(onLot).toEqual({ label: "Lot Liability", aliases: ["lot liability"] });
+      const fields = importFieldsFor("lots", vic, onLot);
+      expect(fields.filter((f) => f.field === "entitlement" || f.separateEntitlement).map((f) => [f.key, f.field, f.label, f.required])).toEqual([
+        ["entitlement", "entitlement", "Lot Liability", true],
+        ["lot_entitlement", "lotEntitlement", "Lot Entitlement", true],
+      ]);
+      // NSW and Queensland keep the import's own word and never see Victoria's column.
+      expect(onLotImportHeading(RULE_PACKS.NSW.rules)).toBeNull();
+      expect(onLotImportHeading(PENDING_RULE_PACKS.QLD.rules as Parameters<typeof separateEntitlement>[0])).toBeNull();
+      expect(importFieldsFor("lots").find((f) => f.field === "entitlement")?.label).toBe("Entitlement");
+      expect(importFieldsFor("lots", qldSeparate).map((f) => f.field)).not.toContain("lotEntitlement");
+      expect(missingRequired("lots", { lotNumber: "1", entitlement: "" }, onLot)).toEqual(["Lot Liability is required"]);
+    });
+
+    it.each([
+      [["Lot", "Lot Liability", "Lot Entitlement"], { entitlement: "Lot Liability", lot_entitlement: "Lot Entitlement" }],
+      [["Lot Entitlement", "Lot Liability"], { entitlement: "Lot Liability", lot_entitlement: "Lot Entitlement" }],
+      [["Lot Liability", "Lot Entitlements"], { entitlement: "Lot Liability", lot_entitlement: "Lot Entitlements" }],
+      [["Lot Entitlement (LE)", "Lot Liability (LL)"], { lot_entitlement: "Lot Entitlement (LE)" }],
+      [["Lot Entitlements"], { lot_entitlement: "Lot Entitlements" }],
+      [["Lot Entitlement (LE)"], { lot_entitlement: "Lot Entitlement (LE)" }],
+      [["Entitlement", "Lot Entitlement"], { entitlement: "Entitlement", lot_entitlement: "Lot Entitlement" }],
+    ])("matches %j", (headers, expected) => {
+      const mapping = autoDetectMapping("lots", headers, vic, onLot);
+      expect(mapping).toEqual(expected);
+      // A header holding the lot entitlement's words is never read as lot liability.
+      expect(mapping.entitlement ?? "").not.toMatch(/lot entitlement/i);
+    });
+
+    it("never reads a lot entitlement header as lot liability, even when the lot entitlement column is taken", () => {
+      expect(autoDetectMapping("lots", ["Lot Entitlement", "Lot Entitlements (LE)"], vic, onLot)).toEqual({ lot_entitlement: "Lot Entitlement" });
+    });
+
+    it("refuses one column mapped to two fields", () => {
+      expect(mappingProblem("lots", { entitlement: "Lot Entitlement", lot_entitlement: "Lot Entitlement" }, vic, onLot)).toBe(
+        'The column "Lot Entitlement" is mapped to Lot Liability and Lot Entitlement. Map each column to one field only.',
+      );
+      expect(mappingProblem("lots", { entitlement: "Lot Liability", lot_entitlement: "Lot Entitlement" }, vic, onLot)).toBeNull();
+      // The same refusal for every building: NSW and Queensland mappings that were valid stay valid.
+      expect(mappingProblem("lots", { lot_number: "Lot", entitlement: "Lot" })).toBe('The column "Lot" is mapped to Lot Number and Entitlement. Map each column to one field only.');
+      expect(mappingProblem("lots", autoDetectMapping("lots", ["Lot Number", "Unit Number", "Entitlement"]))).toBeNull();
+    });
+
+    it("builds rows under each field's key", () => {
+      const headers = ["Lot", "Lot Liability", "Lot Entitlement"];
+      const mapping = { ...autoDetectMapping("lots", headers, vic, onLot), lot_number: "Lot" };
+      const rows = buildImportRows("lots", headers, [["1", "1", "60"], ["2", "", ""]], mapping, vic, onLot);
+      expect(rows.map((r) => [r.data, r.errors])).toEqual([
+        [{ lot_number: "1", entitlement: "1", lot_entitlement: "60" }, []],
+        // An empty lot entitlement is refused by the server against the pack (validateLots), as Queensland's is.
+        [{ lot_number: "2", entitlement: "", lot_entitlement: "" }, ["Lot Liability is required"]],
+      ]);
+      expect(toServerData("lots", rows[0].data)).toEqual({ lotNumber: "1", entitlement: "1", lotEntitlement: "60" });
+    });
   });
 
   it("is the only list of columns: the page keeps no key list of its own", () => {

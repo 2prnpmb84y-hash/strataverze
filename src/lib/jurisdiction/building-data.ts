@@ -161,6 +161,17 @@ export function onLotEntitlementWords(rules: ScheduleRules): { label: string | n
 const titleCase = (s: string) => s.replace(/\b\w/g, (c) => c.toUpperCase());
 
 /**
+ * The CSV lot import's heading for the entitlement held on each lot, where
+ * the pack gives one (Victoria's "Lot Liability", stage 2, PR 4), matched by
+ * that heading and the schedule's name. Null keeps the import's own word
+ * (NSW and Queensland). Plain data a server page can pass to the browser.
+ */
+export function onLotImportHeading(rules: ScheduleRules): { label: string; aliases: string[] } | null {
+  const schedule = rules.ENTITLEMENT_SCHEDULES.find((s) => s.onLot);
+  return schedule?.importLabel ? { label: schedule.importLabel, aliases: [schedule.name] } : null;
+}
+
+/**
  * Reads an entitlement typed into a form or an import: a positive whole
  * number (each entitlement is a whole number, not 0). Empty gives null.
  */

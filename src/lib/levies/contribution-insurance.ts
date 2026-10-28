@@ -3,9 +3,11 @@
  * side; QLD go-live gap, insurance in contributions, 27 Oct 2026). Gathers
  * what ./contribution-shares.ts needs: the building's plan format, the fund,
  * the insurance in the fund's adopted budget and each lot's separately held
- * entitlement (Queensland's interest schedule lot entitlement, Victoria's lot
- * entitlement). The generate action and the schedule page both use it, so
- * the preview is what is issued.
+ * entitlement (Queensland's interest schedule lot entitlement; each lot's
+ * held fields are passed, so a pack reads only its own). The generate action
+ * and the schedule page both use it, so the preview is what is issued.
+ * Victoria has no CONTRIBUTION_INSURANCE yet, so a Victorian fee returns at
+ * once like an NSW levy (stage 2, PR 4 review).
  *
  * For a building whose pack has no CONTRIBUTION_INSURANCE (NSW) it returns at
  * once, reading nothing more: the levy is shared by unit entitlement as it

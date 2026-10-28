@@ -29,7 +29,7 @@ const QLD = PENDING_RULE_PACKS.QLD.rules as unknown as StatutoryRules;
 const NSW = statutoryRulesFor("NSW");
 
 const LIABILITY: EntitlementUse[] = ["CONTRIBUTIONS"];
-const ENTITLEMENT: EntitlementUse[] = ["POLL_VOTE", "SPECIAL_RESOLUTION", "UNANIMOUS_RESOLUTION", "QUORUM", "COMMON_PROPERTY_SHARE", "INSURANCE_PREMIUM_FEE"];
+const ENTITLEMENT: EntitlementUse[] = ["POLL_VOTE", "SPECIAL_RESOLUTION", "UNANIMOUS_RESOLUTION", "QUORUM_FALLBACK", "COMMON_PROPERTY_SHARE", "INSURANCE_PREMIUM_FEE"];
 const NOT_LISTED: EntitlementUse[] = ["INSURANCE_COMMON_PROPERTY", "INSURANCE_BUILDINGS", "TERMINATION_INTEREST", "VALUE_BASED_RATES"];
 
 describe("which Victorian schedule decides each use", () => {
@@ -58,7 +58,7 @@ describe("which Victorian schedule decides each use", () => {
   });
 
   it("leaves the new uses unlisted for NSW's one schedule and refuses them for Queensland", () => {
-    for (const use of ["UNANIMOUS_RESOLUTION", "QUORUM", "INSURANCE_PREMIUM_FEE"] as const) {
+    for (const use of ["UNANIMOUS_RESOLUTION", "QUORUM_FALLBACK", "INSURANCE_PREMIUM_FEE"] as const) {
       expect(scheduleFor(NSW, use).key).toBe(NSW.ENTITLEMENT_SCHEDULES[0].key);
       expect(() => scheduleFor(QLD, use)).toThrow(EntitlementRuleError);
     }

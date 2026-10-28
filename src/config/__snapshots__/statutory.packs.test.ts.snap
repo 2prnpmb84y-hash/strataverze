@@ -3514,18 +3514,6 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
     "status": "CONFIRMED",
     "termUntil": "a new committee is elected",
   },
-  "CONTRIBUTION_INSURANCE": {
-    "insuranceLineRequired": {
-      "status": "STRATAVERZE",
-      "value": false,
-    },
-    "paidFrom": "ADMINISTRATIVE",
-    "source": "Owners Corporations Act 2006 (Vic) ss 23(1), (3), 23A, 24(2)",
-    "status": "NOT_CONFIRMED",
-    "uses": [
-      "INSURANCE_PREMIUM_FEE",
-    ],
-  },
   "DATED_RULES": {
     "ARREARS_CARVE_OUTS": {
       "title": "Not in arrears with a payment plan request or plan",
@@ -4147,6 +4135,7 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
         "CONTRIBUTIONS",
       ],
       "help": "From the owners corporation register. Enter a whole number of at least 1.",
+      "importLabel": "Lot Liability",
       "key": "LOT_LIABILITY",
       "label": "Lot Liability",
       "name": "lot liability",
@@ -4166,7 +4155,7 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
         "POLL_VOTE",
         "SPECIAL_RESOLUTION",
         "UNANIMOUS_RESOLUTION",
-        "QUORUM",
+        "QUORUM_FALLBACK",
         "COMMON_PROPERTY_SHARE",
         "INSURANCE_PREMIUM_FEE",
       ],
@@ -4180,10 +4169,10 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
       "usedFor": [
         "special and unanimous resolutions on a ballot or poll (ss 95, 96)",
         "polls on ordinary resolutions (s 89(3))",
-        "the quorum where 50% of the lots is not available (s 77)",
+        "the quorum, only where 50% of the lots is not available (s 77)",
         "each owner's share of the common property, as tenants in common (SA s 30)",
         "the insurance premium fee (s 23A)",
-        "calling a special general meeting or arranging a ballot by owners holding at least 25% of lot entitlements (ss 74, 83 to 85)",
+        "nominating, by owners holding at least 25% of lot entitlements, the lot owner or manager who convenes a special general meeting, or the owner who arranges a ballot (ss 74, 83 to 85)",
         "VCAT consent to a change for members who did not consent (SA s 34D(3)(ba))",
       ],
     },
@@ -4545,7 +4534,7 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
       "before": "sign-off",
       "key": "ENTITLEMENT_DECIDES",
       "kind": "LEGAL",
-      "point": "Which schedule decides each use (ENTITLEMENT_SCHEDULES \`decides\`, stage 2 PR 4), read from the notes: lot liability decides CONTRIBUTIONS (annual, special and upgrading fees, ss 23(3), 24(2), 53(1A)); lot entitlement decides POLL_VOTE (s 89(3)), SPECIAL_RESOLUTION and UNANIMOUS_RESOLUTION on a ballot or poll (ss 95, 96), QUORUM where 50% of the lots is not available (s 77), COMMON_PROPERTY_SHARE (SA s 30) and INSURANCE_PREMIUM_FEE (s 23A). The cap on contributions (s 28(2)), administrator costs (s 175), the 25% of lot entitlements that may call a meeting or arrange a ballot (ss 74, 83 to 85) and VCAT consent (SA s 34D(3)(ba)) stay in \`usedFor\` with no key, as no feature reads them. A "benefits more pays more" fee (ss 23(3A), 24(2A)) is not shared by either schedule and is not offered. Confirm the mapping.",
+      "point": "Which schedule decides each use (ENTITLEMENT_SCHEDULES \`decides\`, stage 2 PR 4), read from the notes: lot liability decides CONTRIBUTIONS (annual, special and upgrading fees, ss 23(3), 24(2), 53(1A)); lot entitlement decides POLL_VOTE (s 89(3)), SPECIAL_RESOLUTION and UNANIMOUS_RESOLUTION on a ballot or poll (ss 95, 96), QUORUM_FALLBACK only where 50% of the lots is not available (s 77: lots are counted first), COMMON_PROPERTY_SHARE (SA s 30) and INSURANCE_PREMIUM_FEE (s 23A, read by nothing until CONTRIBUTION_INSURANCE_S23A is decided). The cap on contributions (s 28(2)), administrator costs (s 175), the nomination by owners holding at least 25% of lot entitlements of the person who convenes a special general meeting or arranges a ballot (ss 74, 83 to 85) and VCAT consent (SA s 34D(3)(ba)) stay in \`usedFor\` with no key, as no feature reads them. A "benefits more pays more" fee (ss 23(3A), 24(2A)) is not shared by either schedule and is not offered. Confirm the mapping.",
     },
     {
       "before": "Victorian buildings are set up",
@@ -4554,10 +4543,10 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
       "point": "Each lot's lot entitlement is held in lots.lot_entitlement and its lot liability in lots.entitlement, each as a whole number of at least 1 (the shape of the columns). The notes do not say either is a whole number, so a register with fractions would need the columns changed. Lot entitlement is locked like lot liability: StrataVerze enters and changes it, on the lot form, the CSV lot import or the Add Property wizard. A lot without it is flagged in Building data missing, and anything that needs it is refused, never worked out from lot liability. Whether a 2-lot owners corporation, whose initial allocation needs no surveyor (SA s 27EA), always has a lot entitlement is not in the notes: it is flagged like any other. A change of the building's state clears each lot's lot entitlement. Confirm.",
     },
     {
-      "before": "Victorian fees are raised",
+      "before": "the s 23A fee is applied to Victorian fees",
       "key": "CONTRIBUTION_INSURANCE_S23A",
       "kind": "LEGAL",
-      "point": "The insurance part of an annual fee to the administrative fund (the insurance lines of its adopted budget) is shared by lot entitlement and the rest by lot liability, each exact to the cent, and the notice shows the insurance part (CONTRIBUTION_INSURANCE). Not in the notes (NOT_CONFIRMED): (1) whether an owners corporation must raise the reinstatement and replacement premium as the s 23A fee, or may keep it in annual fees by lot liability (s 23(1), (3)); (2) whether the s 23A fee may be on the annual fee notice or needs a fee notice of its own; (3) the basis for the public liability premium (s 60), which the Insurance account holds with the reinstatement premium, so it is shared by lot entitlement too. StrataVerze choices: insurance is paid from the administrative fund, so an insurance line in the maintenance fund budget is refused; a budget with no insurance line is not refused and the whole fee is shared by lot liability (2-lot and services only owners corporations need not insure, ss 7A, 8, and others may insure another way, ss 61A, 63, 64); a special fee is shared by lot liability only (s 24(2)); recovery from a culpable owner (s 23A) is not offered. Decide each before Victorian fees are raised.",
+      "point": "The s 23A insurance premium fee is NOT applied yet: the pack has no CONTRIBUTION_INSURANCE, so the whole of every Victorian fee, insurance included, is shared by lot liability (s 23(3), CONFIRMED). The notes limit s 23A to the reinstatement and replacement premium (the s 59 cover), shared by lot entitlement. Public liability (s 60) and any other policy stay in annual fees by lot liability. To apply it, decide: (1) whether an owners corporation must raise the reinstatement premium as the s 23A fee, or may keep it in annual fees by lot liability (not in the notes); (2) whether the s 23A fee may be on the annual fee notice or needs a fee notice of its own (not in the notes); (3) how the reinstatement premium is held apart from the other policies, since the budget's Insurance account holds them together; (4) the StrataVerze choices that would come with it: insurance paid from the administrative fund, a budget with no reinstatement premium not refused (2-lot and services only owners corporations need not insure, ss 7A, 8, and others may insure another way, ss 61A, 63, 64), a special fee shared by lot liability only (s 24(2)), and no recovery from a culpable owner (s 23A) offered yet. The shared engine (src/lib/levies/contribution-shares.ts) is ready for INSURANCE_PREMIUM_FEE once these are decided.",
     },
   ],
   "FUND_CATALOGUE": [

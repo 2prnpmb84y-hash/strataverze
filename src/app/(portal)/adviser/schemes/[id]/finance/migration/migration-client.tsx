@@ -9,7 +9,9 @@ import {
   autoDetectMapping,
   buildImportRows,
   importFieldsFor,
+  mappingProblem,
   parseCsvContent,
+  type BuildingOnLotEntitlement,
   type BuildingSeparateEntitlement,
   type ImportDataType,
 } from "@/lib/finance/migration-import-fields";
@@ -42,6 +44,8 @@ interface MigrationClientProps {
    * lots file. Null for NSW.
    */
   separateEntitlement?: BuildingSeparateEntitlement;
+  /** The pack's heading for the entitlement on each lot (Victoria's "Lot Liability", stage 2, PR 4), or null. */
+  onLotEntitlement?: BuildingOnLotEntitlement;
 }
 
 // ── Constants ────────────────────────────────────────────────────
@@ -113,8 +117,8 @@ interface TargetField {
  * the keys each row is sent under, come from the shared table the server also
  * translates with (migration-import-fields).
  */
-function targetFieldsFor(dataType: DataType, separate: BuildingSeparateEntitlement): readonly TargetField[] {
-  return importFieldsFor(dataType, separate);
+function targetFieldsFor(dataType: DataType, separate: BuildingSeparateEntitlement, onLot: BuildingOnLotEntitlement = null): readonly TargetField[] {
+  return importFieldsFor(dataType, separate, onLot);
 }
 
 const STEP_LABELS: { step: MigrationStep; label: string }[] = [
@@ -128,7 +132,7 @@ const STEP_LABELS: { step: MigrationStep; label: string }[] = [
 
 // ── Component ────────────────────────────────────────────────────
 
-export function MigrationClient({ schemeId, schemeName, separateEntitlement = null }: MigrationClientProps) {
+export function MigrationClient({ schemeId, schemeName, separateEntitlement = null, onLotEntitlement = null }: MigrationClientProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -225,7 +229,7 @@ export function MigrationClient({ schemeId, schemeName, separateEntitlement = nu
 
         // Auto-detect column mappings
         if (dataType) {
-          const detected = autoDetectMapping(dataType, headers, separateEntitlement);
+          const detected = autoDetectMapping(dataType, headers, separateEntitlement, onLotEntitlement);
           setColumnMapping(detected);
         }
 
@@ -233,7 +237,7 @@ export function MigrationClient({ schemeId, schemeName, separateEntitlement = nu
       };
       reader.readAsText(file);
     },
-    [dataType, separateEntitlement],
+    [dataType, separateEntitlement, onLotEntitlement],
   );
 
   function handleFileDrop(e: React.DragEvent<HTMLDivElement>) {
@@ -258,7 +262,7 @@ export function MigrationClient({ schemeId, schemeName, separateEntitlement = nu
     setError(undefined);
 
     // Check required mappings
-    const fields = targetFieldsFor(dataType, separateEntitlement);
+    const fields = targetFieldsFor(dataType, separateEntitlement, onLotEntitlement);
     const missingRequired = fields.filter(
       (f) => f.required && !columnMapping[f.key],
     );
@@ -267,6 +271,13 @@ export function MigrationClient({ schemeId, schemeName, separateEntitlement = nu
       setError(
         `Please map the required columns: ${missingRequired.map((f) => f.label).join(", ")}`,
       );
+      return;
+    }
+
+    // One column read as two fields (lot entitlement as lot liability too) is refused.
+    const doubled = mappingProblem(dataType, columnMapping, separateEntitlement, onLotEntitlement);
+    if (doubled) {
+      setError(doubled);
       return;
     }
 
@@ -282,6 +293,7 @@ export function MigrationClient({ schemeId, schemeName, separateEntitlement = nu
       csvRows,
       columnMapping,
       separateEntitlement,
+      onLotEntitlement,
     );
 
     setMigrationRows(rows);
@@ -616,7 +628,7 @@ export function MigrationClient({ schemeId, schemeName, separateEntitlement = nu
                 Column Mapping
               </p>
               <div className="space-y-3">
-                {targetFieldsFor(dataType, separateEntitlement).map((field) => (
+                {targetFieldsFor(dataType, separateEntitlement, onLotEntitlement).map((field) => (
                   <div
                     key={field.key}
                     className="flex items-center gap-4"
@@ -763,7 +775,7 @@ export function MigrationClient({ schemeId, schemeName, separateEntitlement = nu
                     <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-ink-muted uppercase">
                       Row
                     </th>
-                    {targetFieldsFor(dataType, separateEntitlement).map((field) => (
+                    {targetFieldsFor(dataType, separateEntitlement, onLotEntitlement).map((field) => (
                       <th
                         key={field.key}
                         className="px-3 py-2 text-left text-xs font-medium text-ink-muted uppercase"
@@ -795,7 +807,7 @@ export function MigrationClient({ schemeId, schemeName, separateEntitlement = nu
                         <td className="px-3 py-2 text-ink-muted tabular-nums">
                           {row.rowNumber}
                         </td>
-                        {targetFieldsFor(dataType, separateEntitlement).map((field) => (
+                        {targetFieldsFor(dataType, separateEntitlement, onLotEntitlement).map((field) => (
                           <td
                             key={field.key}
                             className="px-3 py-2 text-ink"

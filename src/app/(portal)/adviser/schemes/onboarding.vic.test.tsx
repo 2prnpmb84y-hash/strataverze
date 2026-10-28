@@ -148,6 +148,22 @@ describe("the wizard's words for a Victorian building", () => {
   });
 });
 
+describe("a second schedule StrataVerze does not hold yet", () => {
+  // Victoria's pack with its lot entitlement under a key StrataVerze has no lot field for.
+  const unheld = { ...VIC, ENTITLEMENT_SCHEDULES: VIC.ENTITLEMENT_SCHEDULES.map((s) => (s.onLot ? s : { ...s, key: "UNHELD" })) } as Rules;
+
+  it("is refused by the wizard's words, never left out", () => {
+    expect(() => onboardingWordsFor("VIC", unheld)).toThrow("StrataVerze does not hold each lot's lot entitlement yet, so a building with it cannot be set up.");
+  });
+
+  it("is refused by checkLots, never set up without it", () => {
+    const check = checkLots([row("1", "1", "60"), row("2", "1", "40")], 2, 2, { ...words, separate: { ...words.separate!, field: null } });
+    expect(check.ok).toBe(false);
+    expect(check.errors).toContain("StrataVerze does not hold each lot's lot entitlement yet, so a building with it cannot be set up.");
+    expect(check.lots.every((l) => !("lotEntitlement" in l))).toBe(true);
+  });
+});
+
 describe("createSchemeAction for a Victorian building", () => {
   it("refuses a lot without its lot entitlement, in Victorian words, saving nothing", async () => {
     const result = await createSchemeAction({}, form([row("1", "1", ""), row("2", "1", "x")]));

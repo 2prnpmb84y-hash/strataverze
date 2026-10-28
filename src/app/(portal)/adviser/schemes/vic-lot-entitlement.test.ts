@@ -2,8 +2,8 @@
  * A Victorian lot's lot entitlement on the fake database (VIC, ACT and WA
  * stage 2, PR 4): captured on lot create and edit (locked like lot
  * liability), by the CSV lot import and by createScheme; cleared when the
- * building's state changes; and read for the insurance part of an annual
- * fee. Victoria cannot have buildings until its pack is switched on, so the
+ * building's state changes; and not read for a fee, whose insurance is
+ * shared by lot liability until the s 23A fee is decided. Victoria cannot have buildings until its pack is switched on, so the
  * pending pack is injected for a "VIC" building, as the Queensland tests did.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -247,7 +247,7 @@ describe("a Victorian building moved to another state", () => {
   });
 });
 
-describe("the insurance part of a Victorian annual fee, from the building's data", () => {
+describe("a Victorian annual fee with insurance in its budget, from the building's data", () => {
   function seed(opts: { lotEntitlement?: ReadonlyArray<number | null>; insurance?: string | null } = {}) {
     const held = opts.lotEntitlement ?? [50, 30, 20];
     sharedFake.reset({
@@ -271,24 +271,14 @@ describe("the insurance part of a Victorian annual fee, from the building's data
   const planLots = [1, 1, 2].map((entitlement, i) => ({ lotId: `l${i + 1}`, lotNumber: String(i + 1), entitlement, ownerId: null }));
   const schedule = { fundId: "admin", financialYear: 2026, levyType: "ORDINARY", budgetAmount: "1000.00" };
 
-  it("shares the budget's insurance by lot entitlement and the rest by lot liability, summing exactly", async () => {
+  it("shares the whole fee by lot liability, insurance included, until the s 23A fee is decided", async () => {
     seed();
-    const { split, problem } = await contributionInsurance("s1", schedule, planLots);
-    expect(problem).toBeNull();
-    expect(split?.insuranceSchedule.key).toBe("LOT_ENTITLEMENT");
-    expect(split?.shares.reduce((a, s) => a + s.insuranceCents, 0)).toBe(33_333);
-    expect(split?.shares.reduce((a, s) => a + s.totalCents, 0)).toBe(100_000);
+    expect(await contributionInsurance("s1", schedule, planLots)).toEqual({ split: null, problem: null });
   });
 
-  it("refuses a lot without a lot entitlement, with a plain message", async () => {
+  it("does not need lot entitlement for a fee, so a lot without one does not stop it", async () => {
     seed({ lotEntitlement: [50, null, 20] });
-    expect(await contributionInsurance("s1", schedule, planLots)).toEqual({
-      split: null,
-      problem: "Lot 2 has no lot entitlement recorded, so its share cannot be worked out. StrataVerze enters it from the building's records. The fees were not issued.",
-    });
-  });
-
-  it("shares the whole fee by lot liability when the budget has no insurance", async () => {
+    expect(await contributionInsurance("s1", schedule, planLots)).toEqual({ split: null, problem: null });
     seed({ insurance: null, lotEntitlement: [null, null, null] });
     expect(await contributionInsurance("s1", schedule, planLots)).toEqual({ split: null, problem: null });
   });

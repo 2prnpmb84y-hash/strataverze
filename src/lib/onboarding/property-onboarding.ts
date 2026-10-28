@@ -44,9 +44,11 @@ export interface OnboardingCheckWords {
   entitlement: string;
   /**
    * A second entitlement each lot holds, as the pack names it, with the lot
-   * field it is held and sent in, or null where the pack has none.
+   * field it is held and sent in, or null where the pack has none. A null
+   * field is a schedule StrataVerze does not hold yet: checkLots refuses the
+   * building rather than leave it out.
    */
-  separate: { name: string; field: SeparateEntitlementField } | null;
+  separate: { name: string; field: SeparateEntitlementField | null } | null;
   /** "levies" */
   levies: string;
   /** "interest" */
@@ -262,7 +264,7 @@ export function checkLots(
     else if (!Number.isInteger(entitlement) || entitlement < 1) problems.push(`The ${ent} must be a whole number of at least 1.`);
     else if (entitlement > MAX_ENTITLEMENT) problems.push(`The ${ent} is too large.`);
     let second = NaN;
-    if (separate) {
+    if (separate?.field) {
       const text = String(row[separate.field] ?? "").trim().replace(/,/g, "");
       second = /^\d+$/.test(text) ? Number(text) : NaN;
       if (!text) problems.push(`Enter the ${separate.name}.`);
@@ -276,10 +278,12 @@ export function checkLots(
 
     if (Number.isInteger(entitlement) && entitlement > 0) entitlementSum += entitlement;
     if (problems.length) rowErrors[i] = problems;
-    else lots.push({ lotNumber, unitNumber: unitNumber || null, entitlement, ownerName: ownerName || null, ...(separate ? { [separate.field]: second } : {}) });
+    else lots.push({ lotNumber, unitNumber: unitNumber || null, entitlement, ownerName: ownerName || null, ...(separate?.field ? { [separate.field]: second } : {}) });
   });
 
   const count = rows.length;
+  // A second schedule StrataVerze does not hold yet: the building cannot be set up, never set up without it.
+  if (separate && !separate.field) errors.push(`StrataVerze does not hold each lot's ${separate.name} yet, so a building with it cannot be set up.`);
   if (!Number.isInteger(totalLots) || totalLots < 1) errors.push("Enter the building's total number of lots on the Property Details step.");
   else if (count !== totalLots)
     errors.push(`You have entered ${count} ${count === 1 ? "lot" : "lots"}, but the building has ${totalLots}. The number of lots must match.`);

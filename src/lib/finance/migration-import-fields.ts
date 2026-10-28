@@ -101,18 +101,61 @@ export function isImportDataType(value: string): value is ImportDataType {
 export type BuildingSeparateEntitlement = { field: string; label: string } | null;
 
 /**
+ * The heading the building's pack gives the entitlement held on each lot in
+ * the import, with any other headers to match it by (Victoria's "Lot
+ * Liability", stage 2, PR 4), or null to keep the import's own word,
+ * "Entitlement" (NSW and Queensland).
+ */
+export type BuildingOnLotEntitlement = { label: string; aliases?: readonly string[] } | null;
+
+/** The field every lot's own entitlement is read into (lots.entitlement). */
+const ON_LOT_FIELD = "entitlement";
+
+/**
  * The columns the page shows for one building. A `separateEntitlement` field
  * appears only when the building's pack holds that schedule in that field,
  * under the pack's label and required, since every lot needs it; otherwise
- * it is left out (NSW). The other fields come as the table has them.
+ * it is left out (NSW). The entitlement on each lot takes the pack's heading
+ * where it gives one (`onLot`, Victoria's lot liability). The other fields
+ * come as the table has them.
  */
-export function importFieldsFor(dataType: ImportDataType, separate: BuildingSeparateEntitlement = null): readonly ImportField[] {
+export function importFieldsFor(
+  dataType: ImportDataType,
+  separate: BuildingSeparateEntitlement = null,
+  onLot: BuildingOnLotEntitlement = null,
+): readonly ImportField[] {
   const out: ImportField[] = [];
   for (const f of IMPORT_FIELDS[dataType] as readonly ImportField[]) {
-    if (!f.separateEntitlement) out.push(f);
-    else if (separate && separate.field === f.field) out.push({ ...f, label: separate.label, required: true });
+    if (f.separateEntitlement) {
+      if (separate && separate.field === f.field) out.push({ ...f, label: separate.label, required: true });
+    } else if (onLot && dataType === "lots" && f.field === ON_LOT_FIELD) {
+      out.push({ ...f, label: onLot.label, aliases: [...(f.aliases ?? []), ...(onLot.aliases ?? [])] });
+    } else out.push(f);
   }
   return out;
+}
+
+/**
+ * Why a column mapping cannot be used, or null: one column mapped to two
+ * fields (for example lot entitlement read as lot liability too). The page
+ * refuses it before anything is checked or imported.
+ */
+export function mappingProblem(
+  dataType: ImportDataType,
+  columnMapping: Record<string, string>,
+  separate: BuildingSeparateEntitlement = null,
+  onLot: BuildingOnLotEntitlement = null,
+): string | null {
+  const labelOf = new Map(importFieldsFor(dataType, separate, onLot).map((f) => [f.key, f.label]));
+  const byHeader = new Map<string, string[]>();
+  for (const [key, header] of Object.entries(columnMapping)) {
+    if (!header || !labelOf.has(key)) continue;
+    byHeader.set(header, [...(byHeader.get(header) ?? []), labelOf.get(key)!]);
+  }
+  for (const [header, labels] of byHeader) {
+    if (labels.length > 1) return `The column "${header}" is mapped to ${labels.slice(0, -1).join(", ")} and ${labels[labels.length - 1]}. Map each column to one field only.`;
+  }
+  return null;
 }
 
 /**
@@ -129,8 +172,8 @@ export function toServerData(dataType: ImportDataType, data: Record<string, unkn
 }
 
 /** An error for each required field that is empty, in the words the preview shows. */
-export function missingRequired(dataType: ImportDataType, serverData: Record<string, string>): string[] {
-  return importFieldsFor(dataType)
+export function missingRequired(dataType: ImportDataType, serverData: Record<string, string>, onLot: BuildingOnLotEntitlement = null): string[] {
+  return importFieldsFor(dataType, null, onLot)
     .filter((f) => f.required && !(serverData[f.field] ?? "").trim())
     .map((f) => `${f.label} is required`);
 }
@@ -144,14 +187,28 @@ const compact = (h: string) => h.toLowerCase().replace(/[^a-z0-9]/g, "");
  * one of its short aliases. Then a header that holds every word of the key,
  * the shortest first, so "Account Type" wins over "Account Sub Type". Each
  * column feeds at most one field. Pass the building's second lot entitlement
- * (importFieldsFor) to match its column too.
+ * (importFieldsFor) to match its column too: it is matched before the
+ * entitlement on each lot, and a header holding its words ("Lot
+ * Entitlements") is never taken as the entitlement on each lot. Pass the
+ * pack's heading for the entitlement on each lot (`onLot`) to match it by
+ * that heading.
  */
 export function autoDetectMapping(
   dataType: ImportDataType,
   headers: string[],
   separate: BuildingSeparateEntitlement = null,
+  onLot: BuildingOnLotEntitlement = null,
 ): Record<string, string> {
-  const fields = importFieldsFor(dataType, separate);
+  const listed = importFieldsFor(dataType, separate, onLot);
+  // The second lot entitlement first, so its column is taken before the entitlement on each lot can claim it.
+  const fields = [...listed.filter((f) => f.separateEntitlement), ...listed.filter((f) => !f.separateEntitlement)];
+  const separateField = listed.find((f) => f.separateEntitlement);
+  const separateWords = separateField
+    ? [separateField.key.split("_"), words(separateField.label).split(" ")].filter((w) => w.length > 0 && w.every(Boolean))
+    : [];
+  // A header holding every word of the second entitlement's key or label is never the entitlement on each lot.
+  const allowed = (field: ImportField, header: string) =>
+    !(dataType === "lots" && field.field === ON_LOT_FIELD && separateWords.some((parts) => parts.every((part) => words(header).includes(part))));
   const mapping: Record<string, string> = {};
   const used = new Set<number>();
   const take = (field: ImportField, index: number) => {
@@ -160,7 +217,7 @@ export function autoDetectMapping(
   };
   for (const field of fields) {
     const exact = new Set([field.key, field.label, ...(field.aliases ?? [])].map(compact));
-    const index = headers.findIndex((h, i) => !used.has(i) && exact.has(compact(h)));
+    const index = headers.findIndex((h, i) => !used.has(i) && exact.has(compact(h)) && allowed(field, h));
     if (index >= 0) take(field, index);
   }
   for (const field of fields) {
@@ -168,7 +225,7 @@ export function autoDetectMapping(
     const parts = field.key.split("_");
     const candidates = headers
       .map((h, i) => ({ i, text: words(h) }))
-      .filter((c) => !used.has(c.i) && parts.every((part) => c.text.includes(part)))
+      .filter((c) => !used.has(c.i) && parts.every((part) => c.text.includes(part)) && allowed(field, headers[c.i]))
       .sort((a, b) => a.text.length - b.text.length || a.i - b.i);
     if (candidates.length) take(field, candidates[0].i);
   }
@@ -220,8 +277,9 @@ export function buildImportRows(
   csvRows: string[][],
   columnMapping: Record<string, string>,
   separate: BuildingSeparateEntitlement = null,
+  onLot: BuildingOnLotEntitlement = null,
 ): ImportRow[] {
-  const fields = importFieldsFor(dataType, separate);
+  const fields = importFieldsFor(dataType, separate, onLot);
   return csvRows.map((csvRow, idx) => {
     const data: Record<string, string> = {};
     for (const field of fields) {
@@ -234,7 +292,7 @@ export function buildImportRows(
     return {
       rowNumber: idx + 2, // Rows count from 1 and the header is row 1.
       data,
-      errors: missingRequired(dataType, toServerData(dataType, data)),
+      errors: missingRequired(dataType, toServerData(dataType, data), onLot),
       warnings: [],
     };
   });

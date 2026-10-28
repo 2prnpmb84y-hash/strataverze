@@ -326,18 +326,15 @@ describe("Victorian pack (pending)", () => {
     expect(vic.ENTITLEMENT_SCHEDULES.find((s) => !s.onLot)?.key).toBe("LOT_ENTITLEMENT");
   });
 
-  it("says which schedule decides each use, and shares the s 23A fee by lot entitlement (stage 2, PR 4)", () => {
+  it("says which schedule decides each use, and does not apply the s 23A fee yet (stage 2, PR 4)", () => {
     expect(vic.ENTITLEMENT_SCHEDULES.map((s) => [s.key, s.label, s.decides])).toEqual([
       ["LOT_LIABILITY", "Lot Liability", ["CONTRIBUTIONS"]],
-      ["LOT_ENTITLEMENT", "Lot Entitlement", ["POLL_VOTE", "SPECIAL_RESOLUTION", "UNANIMOUS_RESOLUTION", "QUORUM", "COMMON_PROPERTY_SHARE", "INSURANCE_PREMIUM_FEE"]],
+      ["LOT_ENTITLEMENT", "Lot Entitlement", ["POLL_VOTE", "SPECIAL_RESOLUTION", "UNANIMOUS_RESOLUTION", "QUORUM_FALLBACK", "COMMON_PROPERTY_SHARE", "INSURANCE_PREMIUM_FEE"]],
     ]);
-    expect(vic.CONTRIBUTION_INSURANCE).toEqual({
-      paidFrom: "ADMINISTRATIVE",
-      insuranceLineRequired: { value: false, status: "STRATAVERZE" },
-      uses: ["INSURANCE_PREMIUM_FEE"],
-      source: "Owners Corporations Act 2006 (Vic) ss 23(1), (3), 23A, 24(2)",
-      status: "NOT_CONFIRMED",
-    });
+    expect(vic.ENTITLEMENT_SCHEDULES.find((s) => s.onLot)?.importLabel).toBe("Lot Liability");
+    // No insurance split until FOR_REVIEW CONTRIBUTION_INSURANCE_S23A is decided: every fee goes by lot liability.
+    expect("CONTRIBUTION_INSURANCE" in vic).toBe(false);
+    expect(vic.FOR_REVIEW.find((r) => r.key === "CONTRIBUTION_INSURANCE_S23A")?.point).toMatch(/^The s 23A insurance premium fee is NOT applied yet/);
     expect(vic.FOR_REVIEW.map((r) => r.key)).toEqual(expect.arrayContaining(["ENTITLEMENT_DECIDES", "SECOND_SCHEDULE_HELD", "CONTRIBUTION_INSURANCE_S23A"]));
     // ACT and WA are unchanged: one schedule, no separate insurance share.
     for (const code of ["ACT", "WA"] as const) {
