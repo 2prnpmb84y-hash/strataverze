@@ -655,6 +655,11 @@ exports[`Australian Capital Territory pack (pending) > is the rules recorded for
       "decidedOn": "2026-10-28",
       "decision": "Apply a payment to contributions first, then interest, then recovery costs, as NSW (PAYMENT_ALLOCATION_ORDER). A StrataVerze choice: the notes record no order.",
     },
+    {
+      "decidedBy": "Matthew Wrigley",
+      "decidedOn": "2026-10-28",
+      "decision": "Notice timing (NOTICE_RULES): each contribution notice goes out 28 days before it falls due, the most the law allows (UTMA ss 79(2)(e), 90(2)(e)), and is never given less than 14 days' notice. Matthew Wrigley's StrataVerze decision of 28 Oct 2026: the ACT sets no least notice, so the 14 days and the 28-day lead are StrataVerze choices, not rules of law.",
+    },
   ],
   "DISCOUNTS": {
     "by": "ORDINARY",
@@ -842,6 +847,13 @@ exports[`Australian Capital Territory pack (pending) > is the rules recorded for
     "DATED_RULES restates the Bill's quorum and absentee vote changes as NOT LAW values that are never applied, beside the in-force values from R25 (26 Jun 2026; earlier days have no value). When the Bill passes and pt 6 is notified, a new pack version restates them as enacted with the day they commence. Confirm both choices.",
     "LATE_CHARGE (stage 2, PR 5): 10% a year by default and 0 to 20% by special resolution are from the notes (s 94(1)). Three accrual values are NOT_CONFIRMED, so no interest is charged until a pack version records them: the day interest starts (the due date, or the day after), any grace period, and the days a year's rate is shared over (365, or another basis). The special resolution is checked against the motion's recorded category (SPECIAL) and outcome (CARRIED). GO-LIVE GAP: the meeting engine's CARRIED does not apply the sch 3 s 3.16 special resolution test yet, so the recorded outcome is relied on until it does. Rounding (once, half up, to the cent, on the sum of the days, as NSW interest) and applying each payment to the contribution first are StrataVerze choices. Confirm each.",
     "PAYMENT_ALLOCATION_ORDER: contributions, then interest, then recovery costs, as NSW. Decided by Matthew Wrigley on 28 Oct 2026 as a StrataVerze choice (DECISIONS), since the notes record no order. Recorded here so the decision is visible at sign-off.",
+    "NOTICE_RULES (stage 2, PR 6a): each notice goes out 28 days before it falls due and never with less than 14 days' notice, as Matthew Wrigley decided on 28 Oct 2026 (DECISIONS); the 28 days is the most the law allows (UTMA ss 79(2)(e), 90(2)(e)). A due date more than 28 days after the notice is refused, and a special contribution due further away is planned 28 days before it falls due. Recorded here so the decision is visible at sign-off.",
+    "FOR LEGAL REVIEW: whether a general fund contribution payable by instalments is given one notice for each instalment as it falls due (StrataVerze's reading, NOTICE_RULES.checked.noticeMode) or one notice that states every instalment date (UTMA s 79(2)(f)).",
+    "Sinking fund notices are refused until StrataVerze can give the yearly notice within 1 month after an AGM (UTMA s 90(1)); notices are given one instalment at a time only.",
+    "Every ACT contribution notice is refused until StrataVerze notices state what UTMA ss 79(2) and 90(2) require beyond the usual items: the contribution for each other unit, the fund or funds with the split and totals (the year's sinking fund total), the unit's proportion and how it is worked out, the instalment dates, any discount for early payment and the interest for late payment. A discount needs a record of the s 93 ordinary resolution, which StrataVerze does not hold yet. The interest is refused while it cannot be stated: its accrual values are NOT_CONFIRMED (LATE_CHARGE), and notices cannot state an annual-rate interest yet. The every-unit contents on the PDF and email are a later PR (6b).",
+    "The unit's proportion would be stated as its share by unit entitlement only (UTMA ss 78(2)(a), 89(2)(a)): a method set by special resolution (s 78(2)(b)) is not held yet, so a building with one must not have it stated as unit entitlement. Confirm before the contents are added.",
+    "Form 1 (AF2012-112) was not read, so whether ACT contribution notices must be in an approved form is not recorded (NOTICE_RULES.checked.form is null). Check it before any ACT notice is issued.",
+    "A notice that goes out late states a later due date, 14 days after it goes out and within the 28 days, read from UTMA s 80 (payable on the date stated in the notice). Confirm.",
   ],
   "FUND_CATALOGUE": [
     {
@@ -1314,6 +1326,118 @@ exports[`Australian Capital Territory pack (pending) > is the rules recorded for
     ],
     "source": "Unit Titles (Management) Act 2011 (ACT) s 39A",
     "status": "CONFIRMED",
+  },
+  "NOTICE_RULES": {
+    "checked": {
+      "dueDateMayMove": {
+        "note": "A contribution is payable on the date stated in the notice, so a notice that goes out late states a later date, within the 28 days.",
+        "source": "Unit Titles (Management) Act 2011 (ACT) ss 80, 91",
+        "status": "CONFIRMED",
+        "value": true,
+      },
+      "form": null,
+      "issueDaysBeforeDue": {
+        "note": "Each notice goes out 28 days before it falls due, the most notice the law allows.",
+        "source": "Matthew Wrigley's StrataVerze decision of 28 Oct 2026 (DECISIONS)",
+        "status": "STRATAVERZE",
+        "value": 28,
+      },
+      "maximumNoticeDays": {
+        "note": "The full-payment date must be not later than 28 days after the date of the notice.",
+        "source": "Unit Titles (Management) Act 2011 (ACT) ss 79(2)(e), 90(2)(e)",
+        "status": "CONFIRMED",
+        "value": 28,
+      },
+      "minimumNoticeDays": {
+        "note": "The ACT sets no least notice (UTMA s 78(1): contributions are determined from time to time). 14 days is StrataVerze's floor, not a rule of law.",
+        "source": "Matthew Wrigley's StrataVerze decision of 28 Oct 2026 (DECISIONS)",
+        "status": "STRATAVERZE",
+        "value": 14,
+      },
+      "noticeMode": {
+        "ADMINISTRATIVE": {
+          "note": "One notice for each instalment as it falls due is StrataVerze's reading. FOR LEGAL REVIEW: s 79(2)(f) has one notice state the instalment dates, which may mean one notice for the whole contribution.",
+          "source": "Unit Titles (Management) Act 2011 (ACT) ss 78(1), 79(2)(f)",
+          "status": "STRATAVERZE",
+          "value": "PER_INSTALMENT",
+        },
+        "CAPITAL_WORKS": {
+          "note": "The sinking fund notice is given within 1 month after an AGM, for the financial year in which the meeting is held.",
+          "source": "Unit Titles (Management) Act 2011 (ACT) s 90(1)",
+          "status": "CONFIRMED",
+          "value": {
+            "annualWithinMonthsAfterAgm": 1,
+          },
+        },
+      },
+      "requiredContents": [
+        {
+          "key": "EVERY_LOT_CONTRIBUTION",
+          "source": "Unit Titles (Management) Act 2011 (ACT) ss 79(2)(b), 90(2)(b)",
+          "status": "CONFIRMED",
+          "words": "the contribution payable for each other unit",
+        },
+        {
+          "key": "FUND_TOTAL",
+          "ledgerFunds": [
+            "ADMINISTRATIVE",
+          ],
+          "source": "Unit Titles (Management) Act 2011 (ACT) s 79(2)(c)",
+          "status": "CONFIRMED",
+          "words": "the fund or funds the contribution is for, the split between them and the totals",
+        },
+        {
+          "key": "FUND_TOTAL",
+          "ledgerFunds": [
+            "CAPITAL_WORKS",
+          ],
+          "source": "Unit Titles (Management) Act 2011 (ACT) s 90(2)(c)",
+          "status": "CONFIRMED",
+          "words": "the total sinking fund contribution for the year",
+        },
+        {
+          "key": "PROPORTION_AND_METHOD",
+          "source": "Unit Titles (Management) Act 2011 (ACT) ss 79(2)(d), 90(2)(d)",
+          "status": "CONFIRMED",
+          "words": "the unit's proportion and how it is worked out",
+        },
+        {
+          "key": "INSTALMENT_DATES",
+          "source": "Unit Titles (Management) Act 2011 (ACT) ss 79(2)(f), 90(2)(f)",
+          "status": "CONFIRMED",
+          "words": "the instalment dates, if the contribution may be paid by instalments",
+        },
+        {
+          "key": "EARLY_PAYMENT_DISCOUNT",
+          "source": "Unit Titles (Management) Act 2011 (ACT) ss 79(2)(h), 90(2)(h), 93",
+          "status": "CONFIRMED",
+          "words": "any discount for paying early",
+        },
+        {
+          "key": "LATE_CHARGE_STATEMENT",
+          "source": "Unit Titles (Management) Act 2011 (ACT) ss 79(2)(i), 90(2)(i), 94",
+          "status": "CONFIRMED",
+          "words": "the interest payable for late payment",
+        },
+      ],
+      "source": "Unit Titles (Management) Act 2011 (ACT) ss 78(1), 79, 80, 90, 91, 93, 94",
+    },
+    "contents": [
+      "the unit's contribution",
+      "the contributions payable for each other unit",
+      "the fund or funds, the split between them and the totals",
+      "the unit's proportion and how it is worked out",
+      "the due date if paid in full (not later than 28 days after the date of the notice)",
+      "instalment dates, if any",
+      "how to pay",
+      "any discount for early payment",
+      "interest for late payment",
+    ],
+    "hardship": null,
+    "issueDaysBeforeDue": 28,
+    "minimumNoticeDays": 14,
+    "source": "Unit Titles (Management) Act 2011 (ACT) ss 78(1), 79(2), 90",
+    "urgentNoticeDays": null,
   },
   "NOT_CONFIRMED": [
     "Community title governance details (body corporate name, committee, meetings): only the Community Title Act 2001 register page was read.",
@@ -4012,12 +4136,14 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
       "decision": "Apply a payment to fees first, then interest, then recovery costs, as NSW (PAYMENT_ALLOCATION_ORDER). A StrataVerze choice: the notes record no order in force before s 32I.",
       "proposedOn": "2026-10-28",
     },
+    {
+      "decidedBy": "Matthew Wrigley",
+      "decidedOn": "2026-10-28",
+      "decision": "Notice timing (NOTICE_RULES): each fee notice goes out 35 days before it falls due, a StrataVerze choice, and never with less than 28 days' notice, StrataVerze's reading of s 31(2)(a) kept as the legal rule. Matthew Wrigley's StrataVerze decision of 28 Oct 2026.",
+      "proposedOn": "2026-10-28",
+    },
   ],
   "DEFERRED_SHARED_SHAPES": [
-    {
-      "reason": "The 28-day fee notice rule is held in FEE_NOTICES. The shape also needs a StrataVerze lead time for issuing notices (none chosen yet) and a hardship start date (the approved forms' start date is not confirmed).",
-      "shape": "NOTICE_RULES",
-    },
     {
       "reason": "MEETING_RULES is now a shared rule (MeetingRuleSet); a pending pack need not give it, and the ACT draft does not. A Victorian set needs a minutes deadline for ordinary meetings (not found in the notes), Victoria's interim resolutions and ballots mapped to its categories, and StrataVerze choices on wording and pre-meeting voting. Until then Victoria's meeting, resolution and proxy rules are held as data in MEETINGS, RESOLUTIONS and PROXIES.",
       "shape": "MEETING_RULES",
@@ -4537,13 +4663,13 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
       "before": "historical notices are checked against the form",
       "key": "APPROVED_FORMS_DATE",
       "kind": "LEGAL",
-      "point": "The date the current approved fee notice forms applied from (the 28 April 2025 date is not confirmed).",
+      "point": "The date the current approved fee notice forms applied from (the 28 April 2025 date is not confirmed). NOTICE_RULES.checked.form.appliedFrom has no value until it is (stage 2, PR 6a).",
     },
     {
       "before": "Victorian fee notices are generated",
       "key": "APPROVED_FORMS_USE",
       "kind": "STRATAVERZE",
-      "point": "How the platform reproduces the approved fee and final fee notice forms, changing only layout and adding only reference numbers, manager details and web or email details.",
+      "point": "How the platform reproduces the approved fee and final fee notice forms, changing only layout and adding only reference numbers, manager details and web or email details. Since stage 2, PR 6a this blocks every fee notice: NOTICE_RULES requires the approved form (s 31(1)) and StrataVerze has no renderer for it, so each Victorian fee notice is refused with that reason.",
     },
     {
       "before": "any manager contract feature for Victorian buildings",
@@ -4609,7 +4735,7 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
       "before": "the pack moves to RULE_PACKS",
       "key": "DEFERRED_SHARED_SHAPES",
       "kind": "STRATAVERZE",
-      "point": "NOTICE_RULES and MEETING_RULES are deferred (DEFERRED_SHARED_SHAPES). LATE_CHARGE and PAYMENT_ALLOCATION_ORDER are given since stage 2, PR 5.",
+      "point": "MEETING_RULES is deferred (DEFERRED_SHARED_SHAPES). LATE_CHARGE and PAYMENT_ALLOCATION_ORDER are given since stage 2, PR 5, and NOTICE_RULES since stage 2, PR 6a.",
     },
     {
       "before": "sign-off",
@@ -4669,6 +4795,48 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
       "key": "CONTRIBUTION_INSURANCE_S23A",
       "kind": "LEGAL",
       "point": "The s 23A insurance premium fee is NOT applied yet: the pack has no CONTRIBUTION_INSURANCE, so the whole of every Victorian fee, insurance included, is shared by lot liability (s 23(3), CONFIRMED). The notes limit s 23A to the reinstatement and replacement premium (the s 59 cover), shared by lot entitlement. Public liability (s 60) and any other policy stay in annual fees by lot liability. To apply it, decide: (1) whether an owners corporation must raise the reinstatement premium as the s 23A fee, or may keep it in annual fees by lot liability (not in the notes); (2) whether the s 23A fee may be on the annual fee notice or needs a fee notice of its own (not in the notes); (3) how the reinstatement premium is held apart from the other policies, since the budget's Insurance account holds them together; (4) the StrataVerze choices that would come with it: insurance paid from the administrative fund, a budget with no reinstatement premium not refused (2-lot and services only owners corporations need not insure, ss 7A, 8, and others may insure another way, ss 61A, 63, 64), a special fee shared by lot liability only (s 24(2)), and no recovery from a culpable owner (s 23A) offered yet. The shared engine (src/lib/levies/contribution-shares.ts) is ready for INSURANCE_PREMIUM_FEE once these are decided.",
+    },
+    {
+      "before": "Victorian fee notices are generated",
+      "key": "NOTICE_RULES",
+      "kind": "STRATAVERZE",
+      "point": "NOTICE_RULES (stage 2, PR 6a). Every Victorian fee notice is refused today, each with its reason: the approved form (s 31(1); APPROVED_FORMS_USE), the obligation to pay within 28 days (s 31(2)(a)), the interest rate (s 31(2)(b): notices cannot state an annual-rate interest yet) and the dispute resolution process (s 31(2)(c)) are not on StrataVerze notices, and the most notice a fee notice may give is not confirmed. The 35-day lead is Matthew Wrigley's decision of 28 Oct 2026 (DECISIONS). Recorded here so it is visible at sign-off.",
+    },
+    {
+      "before": "Victorian fee notices are generated",
+      "key": "NOTICE_MINIMUM",
+      "kind": "LEGAL",
+      "point": "The 28-day least notice is StrataVerze's reading of s 31(2)(a) (the obligation to pay within 28 days after the date of the notice), recorded as CONFIRMED and kept as the legal rule by Matthew Wrigley's decision of 28 Oct 2026. Confirm the reading.",
+    },
+    {
+      "before": "Victorian fee notices are generated",
+      "key": "NOTICE_MAXIMUM",
+      "kind": "LEGAL",
+      "point": "Whether a fee notice may give more than 28 days to pay: the approved form says "within 28 days of the date of this notice or by the due date specified below" (guidance only), so NOTICE_RULES records no maximum and refuses every notice until one is checked (a number, or none).",
+    },
+    {
+      "before": "Victorian fee notices are generated",
+      "key": "NOTICE_DISPUTE_PROCESS",
+      "kind": "STRATAVERZE",
+      "point": "The fee notice must describe the dispute resolution process under the owners corporation's rules (s 31(2)(c)). That needs each building's own dispute rule, or the model rule where it has made none (OCR Sch 2 rule 7; DISPUTE_MEETING_PERIOD), which StrataVerze does not hold yet.",
+    },
+    {
+      "before": "Victorian fee notices are generated",
+      "key": "NOTICE_DUE_DATE_MOVE",
+      "kind": "STRATAVERZE",
+      "point": "A fee notice that goes out late falls due 28 days after it is given (StrataVerze's reading of s 31(2)(a)), and each fee notice is given for one instalment (CAV guidance allows one notice with several due dates). Both are StrataVerze choices, not decided. Confirm.",
+    },
+    {
+      "before": "Victorian fee notices are generated",
+      "key": "NOTICE_TIER_5",
+      "kind": "LEGAL",
+      "point": "Tier 5 owners corporations (2-lot subdivisions and services only) are exempt from ss 31 and 32 (ss 7A(1)(a), 8). The exemption is not applied yet: their notices are refused like every other Victorian fee notice.",
+    },
+    {
+      "before": "Victorian fee recovery is offered",
+      "key": "FINAL_FEE_NOTICE",
+      "kind": "STRATAVERZE",
+      "point": "The final fee notice (s 32) is a later PR (stage 2, PR 9). Its rules stay in FEE_NOTICES.finalNotice.",
     },
   ],
   "FUND_CATALOGUE": [
@@ -5343,6 +5511,96 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
       "guidanceSource": "CAV, Multiple owners corporations (last updated 9 Apr 2026)",
       "status": "NOT_CONFIRMED",
     },
+  },
+  "NOTICE_RULES": {
+    "checked": {
+      "dueDateMayMove": {
+        "note": "StrataVerze's reading: a fee notice that goes out late falls due 28 days after it is given, the s 31(2)(a) period. FOR_REVIEW NOTICE_DUE_DATE_MOVE.",
+        "source": "Owners Corporations Act 2006 (Vic) s 31(2)(a)",
+        "status": "STRATAVERZE",
+        "value": true,
+      },
+      "form": {
+        "appliedFrom": {
+          "guidance": "April 2025",
+          "note": "the day the current approved forms applied from is not confirmed (April 2025 in guidance; the 28 April 2025 date was found in no official source).",
+          "source": "Premier of Victoria, New Financial Support For Apartment And Unit Residents (media release, 24 Apr 2025); CAV approved forms, Owners corporation fee notice and Owners corporation final fee notice (Word, no date on the forms)",
+          "status": "NOT_CONFIRMED",
+          "value": null,
+        },
+        "reference": "https://www.consumer.vic.gov.au/library/forms/housing-and-accommodation/owners-corporations/fee-notice.docx",
+        "required": {
+          "source": "Owners Corporations Act 2006 (Vic) s 31(1)",
+          "status": "CONFIRMED",
+          "value": true,
+        },
+        "source": "Owners Corporations Act 2006 (Vic) ss 31(1), 200; CAV approved forms, Owners corporation fee notice and Owners corporation final fee notice (Word, no date on the forms)",
+        "title": "Owners corporation fee notice",
+      },
+      "issueDaysBeforeDue": {
+        "note": "Each fee notice goes out 35 days before it falls due, as NSW and Queensland notices do. Not a rule of law.",
+        "source": "Matthew Wrigley's StrataVerze decision of 28 Oct 2026 (DECISIONS)",
+        "status": "STRATAVERZE",
+        "value": 35,
+      },
+      "maximumNoticeDays": {
+        "note": "whether a fee notice may give more than 28 days to pay is not confirmed. The approved form says payment is due within 28 days of the date of the notice "or by the due date specified below", which is guidance only.",
+        "source": "Owners Corporations Act 2006 (Vic) s 31(2)(a); CAV approved forms, Owners corporation fee notice and Owners corporation final fee notice (Word, no date on the forms)",
+        "status": "NOT_CONFIRMED",
+        "value": null,
+      },
+      "minimumNoticeDays": {
+        "note": "StrataVerze's reading of s 31(2)(a): a fee notice states the obligation to pay within 28 days after the date of the notice, read as the least notice. Kept as the legal rule by Matthew Wrigley's decision of 28 Oct 2026 (DECISIONS); FOR_REVIEW NOTICE_MINIMUM.",
+        "source": "Owners Corporations Act 2006 (Vic) s 31(2)(a)",
+        "status": "CONFIRMED",
+        "value": 28,
+      },
+      "noticeMode": {
+        "ADMINISTRATIVE": {
+          "note": "One fee notice for each instalment as it falls due, as NSW: a StrataVerze choice. CAV guidance allows one notice with several due dates. FOR_REVIEW NOTICE_MODE.",
+          "source": "Owners Corporations Act 2006 (Vic) s 31; CAV approved forms, Owners corporation fee notice and Owners corporation final fee notice (Word, no date on the forms)",
+          "status": "STRATAVERZE",
+          "value": "PER_INSTALMENT",
+        },
+        "CAPITAL_WORKS": {
+          "note": "One fee notice for each instalment as it falls due, as NSW: a StrataVerze choice. CAV guidance allows one notice with several due dates. FOR_REVIEW NOTICE_MODE.",
+          "source": "Owners Corporations Act 2006 (Vic) s 31; CAV approved forms, Owners corporation fee notice and Owners corporation final fee notice (Word, no date on the forms)",
+          "status": "STRATAVERZE",
+          "value": "PER_INSTALMENT",
+        },
+      },
+      "requiredContents": [
+        {
+          "key": "PAY_WITHIN_DAYS_STATEMENT",
+          "source": "Owners Corporations Act 2006 (Vic) s 31(2)(a)",
+          "status": "CONFIRMED",
+          "words": "the obligation to pay within 28 days after the date of the notice",
+        },
+        {
+          "key": "LATE_CHARGE_STATEMENT",
+          "source": "Owners Corporations Act 2006 (Vic) s 31(2)(b)",
+          "status": "CONFIRMED",
+          "words": "the interest rate, if interest is charged",
+        },
+        {
+          "key": "DISPUTE_PROCESS",
+          "source": "Owners Corporations Act 2006 (Vic) s 31(2)(c)",
+          "status": "CONFIRMED",
+          "words": "the dispute resolution process for disputed fees under the owners corporation's rules",
+        },
+      ],
+      "source": "Owners Corporations Act 2006 (Vic) ss 31, 200; CAV approved forms, Owners corporation fee notice and Owners corporation final fee notice (Word, no date on the forms)",
+    },
+    "contents": [
+      "the obligation to pay within 28 days after the date of the notice",
+      "the interest rate, if applicable",
+      "details of the dispute resolution process under the rules for disputed fees",
+    ],
+    "hardship": null,
+    "issueDaysBeforeDue": 28,
+    "minimumNoticeDays": 28,
+    "source": "Owners Corporations Act 2006 (Vic) s 31(1), (2)",
+    "urgentNoticeDays": null,
   },
   "NOT_CONFIRMED": [
     "The penalty interest rate: 10% since 1 Feb 2017 is from the Supreme Court page (published Feb 2020); the DJCS page returned "no longer exists" and the Government Gazette notice was not checked.",
@@ -7036,6 +7294,11 @@ exports[`Western Australia pack (pending) > is the rules recorded for review 1`]
       "decidedOn": "2026-10-28",
       "decision": "Apply a payment to contributions first, then interest, then recovery costs, as NSW (PAYMENT_ALLOCATION_ORDER). A StrataVerze choice: the notes record no order.",
     },
+    {
+      "decidedBy": "Matthew Wrigley",
+      "decidedOn": "2026-10-28",
+      "decision": "Notice timing (NOTICE_RULES): each levy notice goes out 35 days before it falls due and is never given less than 14 days' notice, and a due date is never moved, because the decision to make the levy fixes it (STA s 100(4)(a)). Matthew Wrigley's StrataVerze decision of 28 Oct 2026: the STA and STGR set no notice rule, so these are StrataVerze choices, not rules of law.",
+    },
   ],
   "DESIGNATED_STATUS": {
     "held": "DERIVED",
@@ -7207,6 +7470,8 @@ exports[`Western Australia pack (pending) > is the rules recorded for review 1`]
     "Scheme size (SCHEME_SIZE): no class is worked out for fewer than 2 lots, because the notes give none.",
     "LATE_CHARGE (stage 2, PR 5): a one-case waiver is refused on a notice that already has interest charged, until a way to reverse a charge exists. 11% a year simple interest from the due date, with no grace period, is from the notes (s 100(4)(b); reg 78). Who in the strata company determines no interest or a lesser rate, generally or in a particular case, is NOT_CONFIRMED, so neither a lower rate (from 0, which is no interest, up to but not including 11%) nor a one-case waiver can be recorded until a pack version records it. How a day's share of the yearly rate is worked out (365 days or another basis) is NOT_CONFIRMED, so no interest is charged at all until that is recorded. A lesser rate in a particular case is not offered: only waiving all of the interest on one notice. Rounding (once, half up, to the cent, on the sum of the days, as NSW interest) and applying each payment to the contribution first are StrataVerze choices. Confirm each.",
     "PAYMENT_ALLOCATION_ORDER: contributions, then interest, then recovery costs, as NSW. Decided by Matthew Wrigley on 28 Oct 2026 as a StrataVerze choice (DECISIONS), since the notes record no order. Recorded here so the decision is visible at sign-off.",
+    "NOTICE_RULES (stage 2, PR 6a): each notice goes out 35 days before it falls due, never with less than 14 days' notice, as Matthew Wrigley decided on 28 Oct 2026 (DECISIONS). A due date is never moved (s 100(4)(a): the levy decision fixes it), so a notice that can no longer be given 14 days' notice cannot go out: the Adviser is told, and the levy must be decided again with a later date. Recorded here so the decision is visible at sign-off.",
+    "NOTICE_RULES: one notice for each instalment as it falls due is a StrataVerze choice (the STA and STGR set no notice rule). Scheme by-laws were not checked: one may set a notice form, content or period, or an early payment discount. Confirm.",
   ],
   "FUND_CATALOGUE": [
     {
@@ -7617,6 +7882,52 @@ exports[`Western Australia pack (pending) > is the rules recorded for review 1`]
     "source": "Strata Titles Act 1985 (WA) ss 77, 104(1)(b), 120(3), (8), 127 to 132; Strata Titles (General) Regulations 2019 (WA) regs 83, 89",
     "status": "CONFIRMED",
     "votingOutsideMeeting": true,
+  },
+  "NOTICE_RULES": {
+    "checked": {
+      "dueDateMayMove": {
+        "note": "StrataVerze's reading of s 100(4)(a): a contribution is due as the decision to make the levy says, so StrataVerze never moves a due date.",
+        "source": "Matthew Wrigley's StrataVerze decision of 28 Oct 2026 (DECISIONS); Strata Titles Act 1985 (WA) s 100(4)(a)",
+        "status": "STRATAVERZE",
+        "value": false,
+      },
+      "form": null,
+      "issueDaysBeforeDue": {
+        "note": "Each notice goes out 35 days before it falls due, as NSW and Queensland notices do. Not a rule of law.",
+        "source": "Matthew Wrigley's StrataVerze decision of 28 Oct 2026 (DECISIONS)",
+        "status": "STRATAVERZE",
+        "value": 35,
+      },
+      "maximumNoticeDays": null,
+      "minimumNoticeDays": {
+        "note": "The STA and STGR set no least notice for a levy (s 100(4)(a)). 14 days is StrataVerze's floor, not a rule of law.",
+        "source": "Matthew Wrigley's StrataVerze decision of 28 Oct 2026 (DECISIONS)",
+        "status": "STRATAVERZE",
+        "value": 14,
+      },
+      "noticeMode": {
+        "ADMINISTRATIVE": {
+          "note": "One notice for each instalment as it falls due, as NSW: a StrataVerze choice, since the Act sets no notice rule. FOR_REVIEW.",
+          "source": "Strata Titles Act 1985 (WA) ss 100(4)(a), 204(b)(v)",
+          "status": "STRATAVERZE",
+          "value": "PER_INSTALMENT",
+        },
+        "CAPITAL_WORKS": {
+          "note": "One notice for each instalment as it falls due, as NSW: a StrataVerze choice, since the Act sets no notice rule. FOR_REVIEW.",
+          "source": "Strata Titles Act 1985 (WA) ss 100(4)(a), 204(b)(v)",
+          "status": "STRATAVERZE",
+          "value": "PER_INSTALMENT",
+        },
+      },
+      "requiredContents": [],
+      "source": "Strata Titles Act 1985 (WA) s 100(4)(a), Sch 1 by-law 10(a); Strata Titles (General) Regulations 2019 (WA) (searched)",
+    },
+    "contents": [],
+    "hardship": null,
+    "issueDaysBeforeDue": 35,
+    "minimumNoticeDays": 14,
+    "source": "Strata Titles Act 1985 (WA) s 100, Sch 1 by-law 10(a); Strata Titles (General) Regulations 2019 (WA) (searched)",
+    "urgentNoticeDays": null,
   },
   "NOT_CONFIRMED": [
     "Who decides, inside the strata company, to start debt recovery proceedings (council or general meeting). The Act only bars the strata manager (s 143(5)(e)).",

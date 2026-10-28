@@ -4,8 +4,12 @@
  * mandatory from 27 October 2025; the other items are the NSW Government's
  * recommended contents for levy notices, which this platform treats as
  * required so every notice is complete. Sources in src/config/statutory.ts.
+ * A pack with checked notice rules (VIC, ACT and WA stage 2, PR 6a) also has
+ * its most notice checked and its gate applied (noticeRuleProblems in
+ * src/lib/levies/notice-rule-check.ts); NSW and Queensland have neither.
  */
 import type { StatutoryRules } from "@/config/statutory";
+import { noticeRuleProblems, noticeTimingFor, type NoticeContentKey, type NoticeLedgerFund } from "@/lib/levies/notice-rule-check";
 
 /** The notice rules of a building's rule pack (`rules.NOTICE_RULES`). */
 export type NoticeRules = StatutoryRules["NOTICE_RULES"];
@@ -40,6 +44,18 @@ export interface LevyNoticeContentInput {
   lateChargeApplies?: boolean;
   includesHardshipStatement: boolean;
   includesLedgerAccess: boolean;
+  /**
+   * The ledger fund the notice's fund is kept in (`ledgerFundOf(fund.fundType)`),
+   * for a pack's checked notice rules (VIC, ACT and WA stage 2, PR 6a). A pack
+   * without them does not read it.
+   */
+  ledgerFund?: NoticeLedgerFund | null;
+  /**
+   * What the notice states beyond the items above, by content key, for a
+   * pack's checked notice rules. A key not true is not stated, so a pack that
+   * requires it refuses the notice.
+   */
+  states?: Partial<Record<NoticeContentKey, boolean>>;
 }
 
 export interface MissingItem {
@@ -94,15 +110,27 @@ export function validateLevyNoticeContent(
     need(n.includesHardshipStatement, "HARDSHIP_STATEMENT", "The Financial Hardship Information Statement.");
   }
 
+  // The building's timing: its own numbers, or its checked rules (VIC, ACT and WA).
+  const timing = noticeTimingFor(rule);
   if (/^\d{4}-\d{2}-\d{2}$/.test(n.noticeDate) && /^\d{4}-\d{2}-\d{2}$/.test(n.dueDate)) {
     // Without a shorter urgent notice in the pack, an urgent levy needs the usual notice.
-    const minimum = n.isUrgentSpecialLevy && rule.urgentNoticeDays != null ? rule.urgentNoticeDays : rule.minimumNoticeDays;
+    const minimum = n.isUrgentSpecialLevy && timing.urgentDays != null ? timing.urgentDays : timing.minimumDays;
     if (daysBetween(n.noticeDate, n.dueDate) < minimum) {
       missing.push({
         code: "NOTICE_PERIOD",
         message: `At least ${minimum} days' notice to pay. The due date is ${daysBetween(n.noticeDate, n.dueDate)} days after the notice date.`,
       });
     }
+    // Where the law sets the most notice (the ACT's 28 days), never more.
+    const maximum = timing.maximumDays;
+    if (maximum != null && daysBetween(n.noticeDate, n.dueDate) > maximum) {
+      missing.push({
+        code: "NOTICE_PERIOD_MAX",
+        message: `The due date must be no later than ${maximum} days after the date of the notice (${rule.checked?.maximumNoticeDays?.source ?? rule.source}). The due date is ${daysBetween(n.noticeDate, n.dueDate)} days after the notice date.`,
+      });
+    }
   }
+  // A pack's checked notice rules: anything not confirmed, or not yet stated, refuses the notice.
+  for (const p of noticeRuleProblems(rule, { ledgerFund: n.ledgerFund ?? null, states: n.states })) missing.push({ code: p.code, message: p.message });
   return missing;
 }

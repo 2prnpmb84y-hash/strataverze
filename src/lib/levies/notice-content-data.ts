@@ -1,4 +1,4 @@
-import { ledgerFundDefinition } from "@/lib/jurisdiction/funds";
+import { ledgerFundDefinition, ledgerFundOf } from "@/lib/jurisdiction/funds";
 import type { StatutoryRules } from "@/config/statutory";
 import { logError } from "@/lib/log";
 /**
@@ -59,8 +59,17 @@ export async function checkPlannedNotices(input: {
   const rule = rules.NOTICE_RULES;
   // The late charge the notices state, from the pack's LATE_CHARGE and the building's setting.
   const setting = await getSchemeInterestSetting(input.schemeId);
-  const lateCharge = noticeLateCharge(rules.LATE_CHARGE, setting);
-  const statesLateCharge = lateChargeSentence(lateCharge, rules.TERMINOLOGY) != null;
+  // An annual-rate late charge (VIC, ACT and WA) has no notice wording yet (noticeLateCharge refuses it):
+  // the notice states none, so the check below asks for it rather than throwing.
+  const lateCharge = rules.LATE_CHARGE.annual ? null : noticeLateCharge(rules.LATE_CHARGE, setting);
+  const statesLateCharge = lateCharge != null && lateChargeSentence(lateCharge, rules.TERMINOLOGY) != null;
+  // What a pack's checked notice rules may require beyond the usual items (VIC, ACT and WA stage 2, PR 6a).
+  // The notice states the late charge where it can (never an annual-rate one yet), and none of the others
+  // (each other lot's contribution, the fund totals, the proportion and method, the instalment dates, a
+  // discount, the obligation to pay within a number of days, the dispute process), so a pack that requires
+  // one refuses the notice.
+  const states = { LATE_CHARGE_STATEMENT: statesLateCharge };
+  const ledgerFund = ledgerFundOf(fund?.fundType ?? null);
   const owners = await ownerNames(input.notices.map((n) => n.ownerId).filter((x): x is string => !!x));
   const rollNames = await rollOwnerNames(input.notices.map((n) => n.lotId));
   const seen = new Map<string, MissingItem>();
@@ -90,9 +99,12 @@ export async function checkPlannedNotices(input: {
       lateChargeApplies: lateChargeApplies(rules.LATE_CHARGE, setting),
       includesHardshipStatement: rule.hardship != null,
       includesLedgerAccess: true,
+      ledgerFund,
+      states,
     }, rule, rules.TERMINOLOGY, noticeFundWords(rules));
     for (const item of items) {
-      const key = item.code;
+      // Each point a pack's checked notice rules refuse on is listed (they share one code).
+      const key = item.code === "NOTICE_RULES_NOT_CONFIRMED" ? `${item.code}:${item.message}` : item.code;
       if (item.code === "OWNER") {
         seen.set(`OWNER:${n.lotNumber}`, {
           code: "OWNER",

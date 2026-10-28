@@ -29,6 +29,12 @@ const PATTERNS = [
   // The NSW rule values written out.
   /\$30,000/,
   /\b14 days instead of 30\b/,
+  // The VIC, ACT and WA notice rules (stage 2, PR 6a): the Acts and the forms come from the pack too.
+  /UTMA/,
+  /Unit Titles/,
+  /Owners Corporations Act/,
+  /Owners corporation (final )?fee notice/,
+  /not later than 28 days/,
 ];
 
 /** Allowed, with the reason. */

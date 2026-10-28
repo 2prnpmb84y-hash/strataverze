@@ -106,12 +106,14 @@ import { levyScheduleActivationProblem } from "@/lib/finance/budget-status";
 import type { Numeric, TimestampString } from "@prisma/orm-postgres/target/codec-types";
 import { checkPlannedNotices } from "@/lib/levies/notice-content-data";
 import { issueNoticeBatch, issueOverdueDrafts, overdueDrafts } from "@/lib/levies/issue-notices";
-import { issueTiming, lateMessage, urgentNoticeProblem, type IssueTiming } from "@/lib/levies/issue-timing";
+import { daysBetween, issueTiming, lateMessage, urgentNoticeProblem, type IssueTiming } from "@/lib/levies/issue-timing";
+import { noticeTimingFor } from "@/lib/levies/notice-rule-check";
 import { getLatestBankDetailVersion, getPaymentSettings, recordBankDetailChange } from "@/lib/queries/payment-controls";
 import { afterFinanceChange, contractorOfSupplier } from "@/lib/works/finance-link";
 import { loadPlanLots } from "@/lib/levies/load-plan-lots";
 import { contributionInsurance } from "@/lib/levies/contribution-insurance";
 import {
+  addDays,
   checkPlan,
   financialYearStart,
   fromCents,
@@ -1250,7 +1252,18 @@ export async function issueScheduleNoticesAction(
     const urgentSpecialLevy = isSpecial && formData.get("urgentSpecialLevy") === "on";
     const urgentProblem = urgentSpecialLevy ? urgentNoticeProblem(levyRule, schemeRules.TERMINOLOGY) : null;
     if (urgentProblem) return { error: urgentProblem };
-    const timed = plan.map((n) => ({ n, t: isSpecial ? ({ kind: "planned", issueOn: today, dueDate: n.dueDate } as IssueTiming) : issueTiming(n.dueDate, today, levyRule) }));
+    // Where the law sets the most notice (the ACT's 28 days, a pack's checked rules), a special levy due
+    // further away than that is planned for its lead before the due date, and the daily job sends it.
+    // NSW and Queensland set none, so a special levy goes out today, as it always has.
+    const levyTiming = noticeTimingFor(levyRule);
+    const specialIssueOn = (dueDate: string) =>
+      levyTiming.maximumDays != null && daysBetween(today, dueDate) > levyTiming.maximumDays ? addDays(dueDate, -levyTiming.leadDays) : today;
+    const timed = plan.map((n) => ({ n, t: isSpecial ? ({ kind: "planned", issueOn: specialIssueOn(n.dueDate), dueDate: n.dueDate } as IssueTiming) : issueTiming(n.dueDate, today, levyRule) }));
+    // An instalment the rules do not let move (WA: the levy decision fixes its due date) cannot go out at all.
+    const stuck = [...new Map(timed.filter((x) => x.t.kind === "cannotMove").map((x) => [x.n.instalment, lateMessage(x.t, `Instalment ${x.n.instalment}`, levyRule)!])).values()];
+    if (stuck.length) {
+      return { error: `Some instalments are too close to their due date to be given notice, and this building's rules do not let a due date move. Record a new ${(await messageTermsFor(schemeId)).levy} schedule with later due dates.`, data: { missing: stuck.map((message) => ({ code: "DUE_DATE_CANNOT_MOVE", message })) } };
+    }
     const late = [...new Map(timed.filter((x) => x.t.kind !== "planned").map((x) => [x.n.instalment, lateMessage(x.t, `Instalment ${x.n.instalment}`, levyRule)!])).values()];
     if (late.length && formData.get("confirmLate") !== "on") {
       return { error: `Some instalments cannot be given ${noticeLeadText(levyRule)}' notice. Check them below and confirm to go ahead.`, data: { late } };

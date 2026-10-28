@@ -20,6 +20,7 @@ import {
 } from "./statutory";
 import { schemeStateProblem, SUPPORTED_SCHEME_STATES } from "./jurisdictions";
 import { fundConditionSelectors } from "@/lib/jurisdiction/funds";
+import { noticeRuleProblems, noticeTimingFor } from "@/lib/levies/notice-rule-check";
 import type { BuildingSelector, EntitlementScheduleDefinition, FundDefinition, RuleStatus, SelectorCondition } from "./statutory/types";
 
 const STATUSES: RuleStatus[] = ["CONFIRMED", "GUIDANCE", "STRATAVERZE", "NOT_CONFIRMED"];
@@ -191,16 +192,17 @@ describe("Australian Capital Territory pack (pending)", () => {
   const pack = PENDING_RULE_PACKS.ACT;
   const act = pack.rules;
 
-  it("is a draft for review, not signed off, with only the payment order decided", () => {
+  it("is a draft for review, not signed off, with only the payment order and the notice timing decided", () => {
     expect(pack.code).toBe("AU-ACT");
     expect(pack.state).toBe("ACT");
-    expect(pack.version).toBe("2026.10.5");
+    expect(pack.version).toBe("2026.10.6");
     expect(pack.status).toBe("DRAFT");
     expect(pack.reviewedOn).toBeNull();
     expect(pack.reviewer).toBe("Matthew Wrigley");
-    expect(act.DECISIONS).toHaveLength(1);
-    expect(act.DECISIONS[0]).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-28" });
+    expect(act.DECISIONS).toHaveLength(2);
+    for (const d of act.DECISIONS) expect(d).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-28" });
     expect(act.DECISIONS[0].decision).toContain("PAYMENT_ALLOCATION_ORDER");
+    expect(act.DECISIONS[1].decision).toContain("NOTICE_RULES");
   });
 
   it("holds exactly one entitlement schedule on each lot: unit entitlement", () => {
@@ -300,7 +302,7 @@ describe("Victorian pack (pending)", () => {
   it("is a draft, not signed off, and never given to a building", () => {
     expect(pack.code).toBe("AU-VIC");
     expect(pack.state).toBe("VIC");
-    expect(pack.version).toBe("2026.10.6");
+    expect(pack.version).toBe("2026.10.7");
     expect(pack.status).toBe("DRAFT");
     expect(pack.reviewedOn).toBeNull();
     expect(rulePackFor("VIC")).toBeNull();
@@ -315,17 +317,17 @@ describe("Victorian pack (pending)", () => {
     expect(packs.map(([code]) => code)).toContain("AU-VIC");
   });
 
-  it("has proposed decisions, none decided but the payment order (Matthew Wrigley, 28 Oct 2026)", () => {
+  it("has proposed decisions, none decided but the payment order and the notice timing (Matthew Wrigley, 28 Oct 2026)", () => {
     expect(vic.DECISIONS.length).toBeGreaterThan(1);
     for (const d of vic.DECISIONS) {
-      if (d.decision.includes("PAYMENT_ALLOCATION_ORDER")) {
+      if (d.decision.includes("PAYMENT_ALLOCATION_ORDER") || d.decision.includes("NOTICE_RULES")) {
         expect(d).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-28" });
         continue;
       }
       expect(d.decidedBy).toBeNull();
       expect(d.decidedOn).toBeNull();
     }
-    expect(vic.DECISIONS.filter((d) => d.decidedBy != null)).toHaveLength(1);
+    expect(vic.DECISIONS.filter((d) => d.decidedBy != null)).toHaveLength(2);
   });
 
   it("switches every NSW workflow off, with the same keys", () => {
@@ -535,12 +537,13 @@ describe("Western Australia pack (pending)", () => {
   const pack = PENDING_RULE_PACKS.WA;
   const wa = pack.rules;
 
-  it("is a draft, not yet signed off, with only the payment order decided", () => {
-    expect(pack.version).toBe("2026.10.4");
+  it("is a draft, not yet signed off, with only the payment order and the notice timing decided", () => {
+    expect(pack.version).toBe("2026.10.5");
     expect(pack.status).toBe("DRAFT");
     expect(pack.reviewedOn).toBeNull();
-    expect(wa.DECISIONS).toHaveLength(1);
-    expect(wa.DECISIONS[0]).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-28" });
+    expect(wa.DECISIONS).toHaveLength(2);
+    for (const d of wa.DECISIONS) expect(d).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-28" });
+    expect(wa.DECISIONS[1].decision).toContain("NOTICE_RULES");
     expect(wa.NOT_CONFIRMED.length).toBeGreaterThan(0);
     expect(wa.FOR_REVIEW.length).toBeGreaterThan(0);
   });
@@ -622,6 +625,101 @@ describe("Western Australia pack (pending)", () => {
 
   it("is the rules recorded for review", () => {
     expect(wa).toMatchSnapshot();
+  });
+});
+
+describe("the checked notice rules of the pending packs (stage 2, PR 6a)", () => {
+  const pending = [PENDING_RULE_PACKS.ACT, PENDING_RULE_PACKS.VIC, PENDING_RULE_PACKS.WA] as const;
+  const STATUSES_WITH_VALUE = ["CONFIRMED", "STRATAVERZE"];
+
+  it.each(pending.map((p) => [p.code, p.rules.NOTICE_RULES] as const))("%s: every value is checked, and the checked values fit together", (_code, rule) => {
+    const c = rule.checked!;
+    expect(c).toBeDefined();
+    const values = [c.minimumNoticeDays, c.issueDaysBeforeDue, c.dueDateMayMove, ...(c.maximumNoticeDays ? [c.maximumNoticeDays] : []), ...Object.values(c.noticeMode)];
+    for (const v of values) {
+      // A value is held only where it is confirmed or a StrataVerze choice; anything else has none and says why.
+      if (v!.value != null) expect(STATUSES_WITH_VALUE).toContain(v!.status);
+      else expect(v!.note!.length).toBeGreaterThan(10);
+      expect(v!.source.length).toBeGreaterThan(5);
+    }
+    const min = c.minimumNoticeDays.value!;
+    const lead = c.issueDaysBeforeDue.value!;
+    const max = c.maximumNoticeDays?.value ?? null;
+    expect(min).toBeLessThanOrEqual(lead);
+    if (max != null) expect(lead).toBeLessThanOrEqual(max);
+    // The numbers outside `checked` are the safest: the floor, and a lead never beyond the most notice.
+    expect(rule.minimumNoticeDays).toBe(min);
+    if (max != null) expect(rule.issueDaysBeforeDue).toBeLessThanOrEqual(max);
+    expect(rule.issueDaysBeforeDue).toBeGreaterThanOrEqual(rule.minimumNoticeDays);
+    expect(rule.urgentNoticeDays).toBeNull();
+    expect(rule.hardship).toBeNull();
+    for (const r of c.requiredContents) expect(STATUSES).toContain(r.status);
+    // No invariant problem in any pack.
+    expect(noticeRuleProblems(rule, { ledgerFund: "ADMINISTRATIVE" }).filter((p) => p.point === "invariants")).toEqual([]);
+  });
+
+  it("records each pack's timing as Matthew Wrigley decided it on 28 Oct 2026", () => {
+    const timing = (code: "ACT" | "VIC" | "WA") => noticeTimingFor(PENDING_RULE_PACKS[code].rules.NOTICE_RULES);
+    expect(timing("ACT")).toMatchObject({ minimumDays: 14, leadDays: 28, maximumDays: 28, dueDateMayMove: true, minimumIsStatutory: false });
+    expect(timing("VIC")).toMatchObject({ minimumDays: 28, leadDays: 35, maximumDays: null, dueDateMayMove: true, minimumIsStatutory: true });
+    expect(timing("WA")).toMatchObject({ minimumDays: 14, leadDays: 35, maximumDays: null, dueDateMayMove: false, minimumIsStatutory: false });
+    const act = PENDING_RULE_PACKS.ACT.rules.NOTICE_RULES.checked!;
+    expect([act.minimumNoticeDays.status, act.issueDaysBeforeDue.status, act.maximumNoticeDays?.status, act.dueDateMayMove.status]).toEqual(["STRATAVERZE", "STRATAVERZE", "CONFIRMED", "CONFIRMED"]);
+    const vic = PENDING_RULE_PACKS.VIC.rules.NOTICE_RULES.checked!;
+    expect([vic.minimumNoticeDays.status, vic.issueDaysBeforeDue.status, vic.maximumNoticeDays?.status]).toEqual(["CONFIRMED", "STRATAVERZE", "NOT_CONFIRMED"]);
+    expect(vic.minimumNoticeDays.note).toContain("StrataVerze's reading of s 31(2)(a)");
+    const wa = PENDING_RULE_PACKS.WA.rules.NOTICE_RULES.checked!;
+    expect(wa.maximumNoticeDays).toBeNull();
+    expect([wa.minimumNoticeDays.status, wa.issueDaysBeforeDue.status, wa.dueDateMayMove.status]).toEqual(["STRATAVERZE", "STRATAVERZE", "STRATAVERZE"]);
+    for (const code of ["ACT", "VIC", "WA"] as const) {
+      const decided = PENDING_RULE_PACKS[code].rules.DECISIONS.filter((d) => d.decision.includes("NOTICE_RULES"));
+      expect(decided, code).toHaveLength(1);
+      expect(decided[0]).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-28" });
+    }
+    expect(PENDING_RULE_PACKS.VIC.rules.DEFERRED_SHARED_SHAPES.map((d) => d.shape)).toEqual(["MEETING_RULES"]);
+  });
+
+  it("refuses every Victorian and ACT notice today, each with its reason, and gives WA no notice rule problem", () => {
+    // What a notice states today: no annual-rate late charge, none of the other contents.
+    const today = { states: { LATE_CHARGE_STATEMENT: false } };
+    const points = (code: "ACT" | "VIC" | "WA", ledgerFund: "ADMINISTRATIVE" | "CAPITAL_WORKS") =>
+      noticeRuleProblems(PENDING_RULE_PACKS[code].rules.NOTICE_RULES, { ...today, ledgerFund }).map((p) => p.point);
+    expect(points("VIC", "ADMINISTRATIVE")).toEqual([
+      "maximumNoticeDays",
+      "requiredContents.PAY_WITHIN_DAYS_STATEMENT",
+      "requiredContents.LATE_CHARGE_STATEMENT",
+      "requiredContents.DISPUTE_PROCESS",
+      "form",
+    ]);
+    expect(points("ACT", "ADMINISTRATIVE")).toEqual([
+      "requiredContents.EVERY_LOT_CONTRIBUTION",
+      "requiredContents.FUND_TOTAL",
+      "requiredContents.PROPORTION_AND_METHOD",
+      "requiredContents.INSTALMENT_DATES",
+      "requiredContents.EARLY_PAYMENT_DISCOUNT",
+      "requiredContents.LATE_CHARGE_STATEMENT",
+    ]);
+    expect(points("ACT", "CAPITAL_WORKS")).toEqual([
+      "noticeMode",
+      "requiredContents.EVERY_LOT_CONTRIBUTION",
+      "requiredContents.FUND_TOTAL",
+      "requiredContents.PROPORTION_AND_METHOD",
+      "requiredContents.INSTALMENT_DATES",
+      "requiredContents.EARLY_PAYMENT_DISCOUNT",
+      "requiredContents.LATE_CHARGE_STATEMENT",
+    ]);
+    expect(points("WA", "ADMINISTRATIVE")).toEqual([]);
+    expect(points("WA", "CAPITAL_WORKS")).toEqual([]);
+    // Even with everything stated, the ACT sinking fund and the Victorian form still refuse.
+    const all = { EVERY_LOT_CONTRIBUTION: true, FUND_TOTAL: true, PROPORTION_AND_METHOD: true, INSTALMENT_DATES: true, EARLY_PAYMENT_DISCOUNT: true, LATE_CHARGE_STATEMENT: true, PAY_WITHIN_DAYS_STATEMENT: true, DISPUTE_PROCESS: true };
+    expect(noticeRuleProblems(PENDING_RULE_PACKS.ACT.rules.NOTICE_RULES, { ledgerFund: "CAPITAL_WORKS", states: all }).map((p) => p.point)).toEqual(["noticeMode"]);
+    expect(noticeRuleProblems(PENDING_RULE_PACKS.ACT.rules.NOTICE_RULES, { ledgerFund: "ADMINISTRATIVE", states: all })).toEqual([]);
+    expect(noticeRuleProblems(PENDING_RULE_PACKS.VIC.rules.NOTICE_RULES, { ledgerFund: "ADMINISTRATIVE", states: all }).map((p) => p.point)).toEqual(["maximumNoticeDays", "form"]);
+    // The reasons name what is missing, in the pack's words.
+    const vic = noticeRuleProblems(PENDING_RULE_PACKS.VIC.rules.NOTICE_RULES, { ...today, ledgerFund: "ADMINISTRATIVE" }).map((p) => p.message);
+    expect(vic.at(-1)).toContain('the approved form "Owners corporation fee notice"');
+    expect(vic[0]).toContain("the most notice to pay the law allows");
+    expect(vic[0]).toContain("No notice can be issued until a pack version records it.");
   });
 });
 

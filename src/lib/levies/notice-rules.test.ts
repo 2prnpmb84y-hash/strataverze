@@ -27,12 +27,18 @@ const qldShaped: StatutoryRules = {
   MEETING_RULES: QLD.MEETING_RULES,
 };
 
-// For the content check against the database: the building's pack is the Queensland-shaped one.
+// For the content check against the database: the building's pack is the Queensland-shaped one,
+// or (state CHECKED) one with checked notice rules (stage 2, PR 6a).
+const checkedPack = vi.hoisted(() => ({ rules: null as unknown }));
 vi.mock("@prisma/orm-postgres/orm-client", async () => (await import("@/test/fake-orm")).fakeOrmClient);
 vi.mock("@/prisma/db", async () => ({ db: (await import("@/test/fake-orm")).sharedFake.db }));
 vi.mock("@/lib/jurisdiction/scheme-rules", async () => {
   const actual = await vi.importActual<typeof import("@/lib/jurisdiction/scheme-rules")>("@/lib/jurisdiction/scheme-rules");
-  return { ...actual, rulesForState: (state: string) => (state === "QLD-SHAPED" ? { pack: null, rules: qldShaped, label: "test" } : actual.rulesForState(state)) };
+  return {
+    ...actual,
+    rulesForState: (state: string) =>
+      state === "QLD-SHAPED" ? { pack: null, rules: qldShaped, label: "test" } : state === "CHECKED" ? { pack: null, rules: checkedPack.rules, label: "test" } : actual.rulesForState(state),
+  };
 });
 const { sharedFake } = await import("@/test/fake-orm");
 const { checkPlannedNotices } = await import("./notice-content-data");
@@ -261,5 +267,99 @@ describe("a Queensland notice's late charge (step 6)", () => {
     const terms = NSW.TERMINOLOGY;
     expect(lateChargeSentence({ noInterest: false, interest: NSW.STATUTORY_INTEREST }, terms)).toBe(lateChargeSentence(nsw, terms));
     expect(levyNoticeBlocks({ ...doc, ...nsw, terms })).toEqual(levyNoticeBlocks({ ...doc, noInterest: false, interest: NSW.STATUTORY_INTEREST, terms }));
+  });
+});
+
+describe("checking notices for a pack with checked notice rules (stage 2, PR 6a)", () => {
+  const SRC = "Test Act s 1";
+  const has = (value: unknown, status = "STRATAVERZE") => ({ value, status, source: SRC }) as never;
+  const checkedRules = (over: Partial<NonNullable<StatutoryRules["NOTICE_RULES"]["checked"]>> = {}): StatutoryRules["NOTICE_RULES"] => ({
+    minimumNoticeDays: 14,
+    issueDaysBeforeDue: 28,
+    urgentNoticeDays: null,
+    hardship: null,
+    contents: [],
+    source: SRC,
+    checked: {
+      minimumNoticeDays: has(14),
+      maximumNoticeDays: has(28, "CONFIRMED"),
+      issueDaysBeforeDue: has(28),
+      dueDateMayMove: has(true, "CONFIRMED"),
+      noticeMode: { ADMINISTRATIVE: has("PER_INSTALMENT"), CAPITAL_WORKS: has({ annualWithinMonthsAfterAgm: 1 }, "CONFIRMED") },
+      requiredContents: [
+        { key: "EVERY_LOT_CONTRIBUTION", words: "the contribution payable for each other unit", status: "CONFIRMED", source: "Test Act s 4(b)" },
+        { key: "LATE_CHARGE_STATEMENT", words: "the interest payable for late payment", status: "CONFIRMED", source: "Test Act s 4(i)" },
+      ],
+      form: null,
+      source: SRC,
+      ...over,
+    },
+  });
+  const seed = (fundType: string, lateCharge: StatutoryRules["LATE_CHARGE"], scheme: Record<string, unknown> = {}) => {
+    sharedFake.reset({
+      Scheme: [{ id: "c1", state: "CHECKED", name: "Harbour View", planNumber: "12345", timeZone: "Australia/Sydney", ...scheme }],
+      Fund: [{ id: "f1", schemeId: "c1", name: "Fund", fundType }],
+      Profile: [{ id: "adviser", firstName: "Sam", lastName: "Adviser", email: "sam@example.com" }],
+      SchemeBankAccount: [{ id: "b1", schemeId: "c1", isActive: true, isOperating: true, accountName: "The Owners", bsb: "062-000", accountNumber: "1" }],
+      LotDetail: [{ id: "d1", lotId: "l1", rollOwnerName: "Alex Nguyen" }],
+    });
+    checkedPack.rules = { ...qldShaped, NOTICE_RULES: checkedRules(), LATE_CHARGE: lateCharge };
+  };
+  const check = (noticeDate = "2026-10-01", dueDate = "2026-10-29") =>
+    checkPlannedNotices({
+      schemeId: "c1",
+      fundId: "f1",
+      issuerId: "adviser",
+      noticeDate,
+      notices: [
+        { lotId: "l1", lotNumber: "7", ownerId: null, noticeNumber: "LN-0001", dueDate, amountCents: 100 },
+        { lotId: "l1", lotNumber: "7", ownerId: null, noticeNumber: "LN-0002", dueDate, amountCents: 100 },
+      ],
+    });
+
+  it("lists each point the rules refuse on once, by its own message, for the notice's fund", async () => {
+    seed("ADMINISTRATIVE", QLD.LATE_CHARGE, { interestMode: "RESOLVED_RATE", lateChargeMonthlyRatePercent: "2.50" });
+    // The late charge is stated (a monthly penalty here), each other unit's contribution is not.
+    expect(await check()).toEqual([
+      {
+        code: "NOTICE_RULES_NOT_CONFIRMED",
+        message: "The notice must state the contribution payable for each other unit (Test Act s 4(b)). StrataVerze notices cannot state it yet, so no notice can be issued.",
+      },
+    ]);
+    // A sinking fund notice: its yearly mode refuses too.
+    seed("CAPITAL_WORKS", QLD.LATE_CHARGE, { interestMode: "RESOLVED_RATE", lateChargeMonthlyRatePercent: "2.50" });
+    expect((await check()).map((m) => m.message.slice(0, 40))).toEqual(["Notices for the capital works or sinking", "The notice must state the contribution p"]);
+    // A special fund has no ledger fund, so no notice mode: refused.
+    seed("SPECIAL", QLD.LATE_CHARGE, { interestMode: "RESOLVED_RATE", lateChargeMonthlyRatePercent: "2.50" });
+    expect((await check()).map((m) => m.code)).toEqual(["NOTICE_RULES_NOT_CONFIRMED", "NOTICE_RULES_NOT_CONFIRMED"]);
+  });
+
+  it("refuses a due date beyond the maximum", async () => {
+    seed("ADMINISTRATIVE", QLD.LATE_CHARGE, { interestMode: "RESOLVED_RATE", lateChargeMonthlyRatePercent: "2.50" });
+    expect((await check("2026-10-01", "2026-10-30")).map((m) => m.code)).toEqual(["NOTICE_PERIOD_MAX", "NOTICE_RULES_NOT_CONFIRMED"]);
+  });
+
+  it("does not throw for an annual-rate late charge: the notice cannot state it, so it is refused with that reason", async () => {
+    const annual: StatutoryRules["LATE_CHARGE"] = {
+      method: "ANNUAL_RATE",
+      modes: ["STATUTORY"],
+      defaultMode: "STATUTORY",
+      resolutionRequiredFor: [],
+      annualRatePercent: null,
+      maxMonthlyRatePercent: null,
+      graceMonths: 0,
+      source: SRC,
+      annual: {
+        statutoryRatePercent: has(10, "CONFIRMED"),
+        resolvedRate: null,
+        accrual: { from: has("DUE_DATE", "CONFIRMED"), graceMonths: has(0, "CONFIRMED"), simple: has(true, "CONFIRMED"), daysInYear: has(365, "CONFIRMED") },
+        waiver: null,
+        source: SRC,
+      },
+    };
+    seed("ADMINISTRATIVE", annual, { interestMode: "STATUTORY" });
+    const missing = await check();
+    expect(missing.map((m) => m.code)).toEqual(["INTEREST_WARNING", "NOTICE_RULES_NOT_CONFIRMED", "NOTICE_RULES_NOT_CONFIRMED"]);
+    expect(missing[2].message).toContain("the interest payable for late payment (Test Act s 4(i))");
   });
 });

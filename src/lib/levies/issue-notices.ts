@@ -40,6 +40,7 @@ import { checkPlannedNotices, sendIssuedNotices } from "./notice-content-data";
 import { loadPlanLots } from "./load-plan-lots";
 import { addDays, toCents, toIsoDay } from "./notice-plan";
 import { issueDateFor, issueTiming, lateMessage } from "./issue-timing";
+import { noticeTimingFor } from "./notice-rule-check";
 import { RULE_PACKS, UnsupportedJurisdictionError } from "@/config/statutory";
 import { messageTermsFor, rulesForScheme, rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { platformToday, storedDayIn, todayIn } from "@/lib/jurisdiction/time-zone";
@@ -340,7 +341,7 @@ export async function issueDueNotices(now: Date = new Date()): Promise<DueRunRes
   const schedules = await db.orm.public.LevySchedule.where((s) => s.status.eq("ACTIVE")).limit(5000).all();
   if (!schedules.length) return [];
   // Read far enough ahead for every rule pack; each building's own rule decides below.
-  const lookAhead = Math.max(...Object.values(RULE_PACKS).map((p) => p.rules.NOTICE_RULES.issueDaysBeforeDue));
+  const lookAhead = Math.max(...Object.values(RULE_PACKS).map((p) => noticeTimingFor(p.rules.NOTICE_RULES).leadDays));
   // A day of margin, since a building's today can be ahead of StrataVerze's.
   const horizon = addDays(platformToday(now), lookAhead + 1);
   const due = await draftNoticesDue(schedules.map((s) => s.id), horizon);
@@ -369,7 +370,20 @@ export async function issueDueNotices(now: Date = new Date()): Promise<DueRunRes
       }
       // On time: today is the 5-week mark. Past it: the Adviser confirms first.
       const onTime = inWindow.filter((n) => issueTiming(toIsoDay(n.dueDate), today, rule).kind === "planned");
-      const late = inWindow.filter((n) => issueTiming(toIsoDay(n.dueDate), today, rule).kind !== "planned");
+      // Past the mark and the rules do not let the due date move (a pack's checked rules, WA): held, never sent.
+      const stuck = inWindow.filter((n) => issueTiming(toIsoDay(n.dueDate), today, rule).kind === "cannotMove");
+      const late = inWindow.filter((n) => !["planned", "cannotMove"].includes(issueTiming(toIsoDay(n.dueDate), today, rule).kind));
+      const stuckLines = [...new Set(stuck.map((n) => lateMessage(issueTiming(toIsoDay(n.dueDate), today, rule), `Notices due ${toIsoDay(n.dueDate).split("-").reverse().join("/")}`, rule)!))];
+      if (stuck.length) {
+        await logActivity({
+          schemeId: schedule.schemeId,
+          actorId: issuerId,
+          action: "LEVY_NOTICES_HELD",
+          entityType: "LevySchedule",
+          entityId: schedule.id,
+          metadata: { count: stuck.length, reason: `Their due date cannot be moved under this building's rules, so they cannot go out. Stop the planned notices on the ${scheduleRules.TERMINOLOGY.levy} schedule if the ${scheduleRules.TERMINOLOGY.levy} is to be raised again.`, missing: stuckLines },
+        });
+      }
       if (late.length) {
         const lines = [...new Set(late.map((n) => lateMessage(issueTiming(toIsoDay(n.dueDate), today, rule), `Notices due ${toIsoDay(n.dueDate).split("-").reverse().join("/")}`, rule)!))];
         await logActivity({
@@ -391,7 +405,7 @@ export async function issueDueNotices(now: Date = new Date()): Promise<DueRunRes
         amountCents: toCents(String(n.amountDue)),
       }));
       if (!notices.length) {
-        results.push({ scheduleId: schedule.id, schemeId: schedule.schemeId, issued: 0, held: null, awaitingConfirmation: late.length });
+        results.push({ scheduleId: schedule.id, schemeId: schedule.schemeId, issued: 0, held: stuck.length ? stuckLines : null, awaitingConfirmation: late.length });
         continue;
       }
       const missing = await checkPlannedNotices({ schemeId: schedule.schemeId, fundId: schedule.fundId, issuerId, noticeDate: today, notices });
@@ -408,7 +422,7 @@ export async function issueDueNotices(now: Date = new Date()): Promise<DueRunRes
         continue;
       }
       const r = await issueNoticeBatch({ schemeId: schedule.schemeId, scheduleId: schedule.id, fundId: schedule.fundId, issuerId, noticeDate: today, notices });
-      results.push({ scheduleId: schedule.id, schemeId: schedule.schemeId, issued: r.count, held: null, awaitingConfirmation: late.length });
+      results.push({ scheduleId: schedule.id, schemeId: schedule.schemeId, issued: r.count, held: stuck.length ? stuckLines : null, awaitingConfirmation: late.length });
     } catch (err) {
       logError(`[levy-notices] schedule ${schedule.id} could not be issued:`, err);
       // A closed or locked period is the Adviser's to fix: say so in the building's activity.
@@ -452,6 +466,12 @@ export async function overdueDrafts(schemeId: string, scheduleId: string, today:
 export async function issueOverdueDrafts(input: { schemeId: string; scheduleId: string; fundId: string; issuerId: string; today: string }) {
   const list = await overdueDrafts(input.schemeId, input.scheduleId, input.today);
   if (!list.length) return { count: 0, emailed: 0, missing: [] as string[] };
+  // A notice whose due date the building's rules do not let move (WA) cannot go out: nothing is sent, and the Adviser is told why.
+  const stuck = list.filter(({ t }) => t.kind === "cannotMove");
+  if (stuck.length) {
+    const rule = (await rulesForScheme(input.schemeId)).rules.NOTICE_RULES;
+    return { count: 0, emailed: 0, missing: [...new Set(stuck.map(({ n, t }) => lateMessage(t, `Notices due ${toIsoDay(n.dueDate).split("-").reverse().join("/")}`, rule)!))] };
+  }
   const lots = await db.orm.public.Lot.where((l) => l.id.in([...new Set(list.map((x) => x.n.lotId))])).limit(5000).all();
   const notices: BatchNotice[] = list.map(({ n, t }) => ({
     id: n.id,

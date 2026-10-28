@@ -7,9 +7,9 @@
  * applied to any building: `rulePackFor` returns active packs only, and
  * Western Australia is not in SUPPORTED_SCHEME_STATES or the database's state
  * check. Every value below comes from the research notes of 27 Oct 2026 and
- * keeps their status (see RuleStatus in ./types). The one StrataVerze
- * decision so far is the payment order (DECISIONS, 28 Oct 2026), and the
- * points to decide are in FOR_REVIEW.
+ * keeps their status (see RuleStatus in ./types). The StrataVerze decisions
+ * so far are the payment order and the notice timing (DECISIONS,
+ * 28 Oct 2026), and the points to decide are in FOR_REVIEW.
  *
  * Sources, read on 27 Oct 2026:
  * - the STA, consolidated HTML on legislation.wa.gov.au, version 08-a0-00,
@@ -44,6 +44,7 @@ import type {
   EntitlementScheduleDefinition,
   FundDefinition,
   LateChargeRules,
+  NoticeRules,
   PackFeatures,
   PaymentAllocationPart,
   RecordedBuildingSelector,
@@ -570,8 +571,8 @@ export const CONTRIBUTIONS = {
  * (searched for "levy", "instalment", "discount", "hardship"). The default
  * by-law makes the treasurer responsible for notifying owners of
  * contributions levied (Sch 1 by-law 10(a)). No discount for early payment
- * was found (by-laws not checked). Recorded as plain data; the shared notice
- * rules shape is being changed elsewhere.
+ * was found (by-laws not checked). The shared NOTICE_RULES below is built
+ * from it (stage 2, PR 6a).
  */
 export const LEVY_NOTICES = {
   statutoryContentRule: false,
@@ -583,6 +584,69 @@ export const LEVY_NOTICES = {
   source: `${STA} s 100, Sch 1 by-law 10(a); ${STGR} (searched)`,
   status: "CONFIRMED" as RuleStatus,
 } as const;
+
+/** Who decided WA's notice timing, as DECISIONS records it. */
+const NOTICE_DECISION = "Matthew Wrigley's StrataVerze decision of 28 Oct 2026 (DECISIONS)";
+
+/**
+ * The levy notice rules in the shared shape (stage 2, PR 6a, 28 Oct 2026),
+ * from LEVY_NOTICES and the notes only. The STA and STGR set no notice form,
+ * content, least or most notice (CONFIRMED absent; by-laws not checked). A
+ * contribution is due as the decision to make the levy says (s 100(4)(a)), so
+ * a notice's due date is never moved: one that cannot be given 14 days'
+ * notice cannot go out. The 35-day lead, the 14-day floor and never moving a
+ * due date are StrataVerze choices Matthew Wrigley made on 28 Oct 2026
+ * (DECISIONS); one notice for each instalment is a StrataVerze choice for
+ * review. No hardship statement is required (HARDSHIP_STATEMENT).
+ */
+export const NOTICE_RULES: NoticeRules = {
+  minimumNoticeDays: 14,
+  issueDaysBeforeDue: 35,
+  urgentNoticeDays: null,
+  hardship: null,
+  // No statutory content: the notice states what every StrataVerze notice states.
+  contents: [],
+  source: LEVY_NOTICES.source,
+  checked: {
+    minimumNoticeDays: {
+      value: 14,
+      status: "STRATAVERZE",
+      source: NOTICE_DECISION,
+      note: "The STA and STGR set no least notice for a levy (s 100(4)(a)). 14 days is StrataVerze's floor, not a rule of law.",
+    },
+    // The STA and STGR set no most notice (CONFIRMED absent; by-laws not checked).
+    maximumNoticeDays: null,
+    issueDaysBeforeDue: {
+      value: 35,
+      status: "STRATAVERZE",
+      source: NOTICE_DECISION,
+      note: "Each notice goes out 35 days before it falls due, as NSW and Queensland notices do. Not a rule of law.",
+    },
+    dueDateMayMove: {
+      value: false,
+      status: "STRATAVERZE",
+      source: `${NOTICE_DECISION}; ${STA} s 100(4)(a)`,
+      note: "StrataVerze's reading of s 100(4)(a): a contribution is due as the decision to make the levy says, so StrataVerze never moves a due date.",
+    },
+    noticeMode: {
+      ADMINISTRATIVE: {
+        value: "PER_INSTALMENT",
+        status: "STRATAVERZE",
+        source: `${STA} ss 100(4)(a), 204(b)(v)`,
+        note: "One notice for each instalment as it falls due, as NSW: a StrataVerze choice, since the Act sets no notice rule. FOR_REVIEW.",
+      },
+      CAPITAL_WORKS: {
+        value: "PER_INSTALMENT",
+        status: "STRATAVERZE",
+        source: `${STA} ss 100(4)(a), 204(b)(v)`,
+        note: "One notice for each instalment as it falls due, as NSW: a StrataVerze choice, since the Act sets no notice rule. FOR_REVIEW.",
+      },
+    },
+    requiredContents: [],
+    form: null,
+    source: `${STA} s 100(4)(a), Sch 1 by-law 10(a); ${STGR} (searched)`,
+  },
+};
 
 /** No hardship or payment plan statement is required on levy notices: CONFIRMED absent from the STA and STGR ("hardship" returned no hits). By-laws, Consumer Protection policy and court practice not checked. */
 export const HARDSHIP_STATEMENT = {
@@ -1381,12 +1445,18 @@ export const NOT_CONFIRMED = [
 ] as const;
 
 /**
- * StrataVerze's decisions. The pack as a whole has not been reviewed; the one
- * decision so far is the payment order (28 Oct 2026).
+ * StrataVerze's decisions. The pack as a whole has not been reviewed; the
+ * decisions so far are the payment order and the notice timing (28 Oct 2026).
  */
 export const DECISIONS: readonly { decision: string; decidedBy: string; decidedOn: string }[] = [
   {
     decision: "Apply a payment to contributions first, then interest, then recovery costs, as NSW (PAYMENT_ALLOCATION_ORDER). A StrataVerze choice: the notes record no order.",
+    decidedBy: "Matthew Wrigley",
+    decidedOn: "2026-10-28",
+  },
+  {
+    decision:
+      "Notice timing (NOTICE_RULES): each levy notice goes out 35 days before it falls due and is never given less than 14 days' notice, and a due date is never moved, because the decision to make the levy fixes it (STA s 100(4)(a)). Matthew Wrigley's StrataVerze decision of 28 Oct 2026: the STA and STGR set no notice rule, so these are StrataVerze choices, not rules of law.",
     decidedBy: "Matthew Wrigley",
     decidedOn: "2026-10-28",
   },
@@ -1409,6 +1479,8 @@ export const FOR_REVIEW = [
   "Scheme size (SCHEME_SIZE): no class is worked out for fewer than 2 lots, because the notes give none.",
   "LATE_CHARGE (stage 2, PR 5): a one-case waiver is refused on a notice that already has interest charged, until a way to reverse a charge exists. 11% a year simple interest from the due date, with no grace period, is from the notes (s 100(4)(b); reg 78). Who in the strata company determines no interest or a lesser rate, generally or in a particular case, is NOT_CONFIRMED, so neither a lower rate (from 0, which is no interest, up to but not including 11%) nor a one-case waiver can be recorded until a pack version records it. How a day's share of the yearly rate is worked out (365 days or another basis) is NOT_CONFIRMED, so no interest is charged at all until that is recorded. A lesser rate in a particular case is not offered: only waiving all of the interest on one notice. Rounding (once, half up, to the cent, on the sum of the days, as NSW interest) and applying each payment to the contribution first are StrataVerze choices. Confirm each.",
   "PAYMENT_ALLOCATION_ORDER: contributions, then interest, then recovery costs, as NSW. Decided by Matthew Wrigley on 28 Oct 2026 as a StrataVerze choice (DECISIONS), since the notes record no order. Recorded here so the decision is visible at sign-off.",
+  "NOTICE_RULES (stage 2, PR 6a): each notice goes out 35 days before it falls due, never with less than 14 days' notice, as Matthew Wrigley decided on 28 Oct 2026 (DECISIONS). A due date is never moved (s 100(4)(a): the levy decision fixes it), so a notice that can no longer be given 14 days' notice cannot go out: the Adviser is told, and the levy must be decided again with a later date. Recorded here so the decision is visible at sign-off.",
+  "NOTICE_RULES: one notice for each instalment as it falls due is a StrataVerze choice (the STA and STGR set no notice rule). Scheme by-laws were not checked: one may set a notice form, content or period, or an early payment discount. Confirm.",
 ] as const;
 
 /**

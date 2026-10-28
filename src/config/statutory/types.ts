@@ -768,6 +768,95 @@ export interface NoticeRules {
   /** What a notice states, in plain words. */
   contents: readonly string[];
   source: string;
+  /**
+   * The notice rules with every value checked (VIC, ACT and WA stage 2,
+   * PR 6a, 28 Oct 2026). Absent for NSW and Queensland, whose rules are the
+   * fields above. Where present it decides (read it with `noticeTimingFor`
+   * and `noticeRuleProblems`, src/lib/levies/notice-rule-check.ts), and the
+   * fields above hold the safest values for a reader that knows only them:
+   * `minimumNoticeDays` the floor, `issueDaysBeforeDue` no more than the
+   * maximum. A value with no value refuses every notice (fails closed).
+   */
+  checked?: CheckedNoticeRules;
+}
+
+/** The ledger fund a notice is for (FundDefinition.ledgerFund). */
+export type NoticeLedgerFund = FundDefinition["ledgerFund"];
+
+/**
+ * What a pack may require a notice to state beyond the items every notice
+ * carries (the plan, the lot, the owner, the dates, the fund, the amount,
+ * how to pay, who to contact and the ledger), stage 2 PR 6a:
+ * - EVERY_LOT_CONTRIBUTION: the contribution payable for each other lot;
+ * - FUND_TOTAL: the fund or funds, the split between them and the totals;
+ * - PROPORTION_AND_METHOD: the lot's proportion and how it is worked out;
+ * - INSTALMENT_DATES: the instalment dates, if any;
+ * - EARLY_PAYMENT_DISCOUNT: any discount for paying early;
+ * - LATE_CHARGE_STATEMENT: the late charge (interest) for paying late;
+ * - PAY_WITHIN_DAYS_STATEMENT: the obligation to pay within a number of days after the date of the notice;
+ * - DISPUTE_PROCESS: how a disputed amount is resolved under the building's rules.
+ */
+export type NoticeContentKey =
+  | "EVERY_LOT_CONTRIBUTION"
+  | "FUND_TOTAL"
+  | "PROPORTION_AND_METHOD"
+  | "INSTALMENT_DATES"
+  | "EARLY_PAYMENT_DISCOUNT"
+  | "LATE_CHARGE_STATEMENT"
+  | "PAY_WITHIN_DAYS_STATEMENT"
+  | "DISPUTE_PROCESS";
+
+/** One thing a notice must state, in the pack's words, for the funds listed (every fund where absent). */
+export interface NoticeContentRequirement {
+  key: NoticeContentKey;
+  words: string;
+  ledgerFunds?: readonly NoticeLedgerFund[];
+  status: RuleStatus;
+  source: string;
+}
+
+/** The approved form a notice must be in, where the law sets one. */
+export interface NoticeFormRule {
+  /** Whether the notice must be in the form; with no value, whether it must is not confirmed. */
+  required: CheckedValue<boolean>;
+  /** The form's own title. */
+  title: string;
+  /** Where the form is published. */
+  reference: string;
+  /** The day the current form applied from (YYYY-MM-DD). */
+  appliedFrom: CheckedValue<string>;
+  source: string;
+}
+
+/**
+ * How notices for a fund are given: one for each instalment as it falls due
+ * (PER_INSTALMENT), or one a year within a number of months after the annual
+ * general meeting (the ACT sinking fund, UTMA s 90(1)).
+ */
+export type NoticeMode = "PER_INSTALMENT" | { annualWithinMonthsAfterAgm: number };
+
+/**
+ * The checked notice rules (VIC, ACT and WA stage 2, PR 6a). Every value is a
+ * CheckedValue: read in the in-force text (CONFIRMED) or a StrataVerze choice
+ * (STRATAVERZE). One with no value (NOT_CONFIRMED, GUIDANCE) refuses every
+ * notice until a pack version records it.
+ */
+export interface CheckedNoticeRules {
+  /** The least notice between the notice and the due date, in days. */
+  minimumNoticeDays: CheckedValue<number>;
+  /** The most notice the law allows, in days, or null where the law sets none. */
+  maximumNoticeDays: CheckedValue<number> | null;
+  /** How many days before it falls due each notice goes out: at least the minimum and at most the maximum. */
+  issueDaysBeforeDue: CheckedValue<number>;
+  /** Whether a notice that cannot be given the minimum notice may fall due later (the minimum after the day it goes out). */
+  dueDateMayMove: CheckedValue<boolean>;
+  /** How notices for each ledger fund are given; a fund not listed has no notice rule, so its notices are refused. */
+  noticeMode: Readonly<Partial<Record<NoticeLedgerFund, CheckedValue<NoticeMode>>>>;
+  /** What a notice must state beyond the items every notice carries. */
+  requiredContents: readonly NoticeContentRequirement[];
+  /** The approved form the notice must be in, or null where the law sets none. */
+  form: NoticeFormRule | null;
+  source: string;
 }
 
 /**
