@@ -8,7 +8,12 @@
  *   overdue confirm send them;
  * - the real WA pending pack is refused on every path, because notices cannot
  *   state an annual-rate late charge yet (otherwise they would be issued and
- *   posted but never sent).
+ *   posted but never sent);
+ * - (PR 6b) an ACT-shaped pack that requires each other unit's contribution,
+ *   the fund total and the proportion has them stated where the data is there
+ *   (and refuses otherwise), and the email states them without the PDF; the
+ *   real ACT pending pack is then refused only for the instalment dates, the
+ *   discount and the interest (and a sinking fund notice for its yearly mode).
  */
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -17,8 +22,8 @@ vi.mock("@/prisma/db", async () => ({ db: (await import("@/test/fake-orm")).shar
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("next/headers", () => ({ headers: async () => new Headers() }));
 
-const sent = vi.hoisted(() => ({ emails: [] as string[], activity: [] as Array<{ action: string; metadata: unknown }> }));
-const packs = vi.hoisted(() => ({ ACT_SHAPED: null as unknown }));
+const sent = vi.hoisted(() => ({ emails: [] as string[], html: [] as string[], activity: [] as Array<{ action: string; metadata: unknown }> }));
+const packs = vi.hoisted(() => ({ ACT_SHAPED: null as unknown, ACT_CONTENTS: null as unknown }));
 
 vi.mock("@/lib/auth/mfa-enforcement", () => ({
   requireRecentMfa: vi.fn(async () => {}),
@@ -43,8 +48,9 @@ vi.mock("@/lib/queries/activity-log", () => ({
   formatAuditTrailCsv: vi.fn(),
 }));
 vi.mock("@/lib/email", () => ({
-  sendEmail: vi.fn(async (e: { subject: string }) => {
+  sendEmail: vi.fn(async (e: { subject: string; html: string }) => {
     sent.emails.push(e.subject);
+    sent.html.push(e.html);
     return true;
   }),
 }));
@@ -73,9 +79,13 @@ vi.mock("@/lib/jurisdiction/scheme-rules", async () => {
   const forState = (state: string | null | undefined) =>
     state === "ACT-SHAPED"
       ? { pack: null, rules: packs.ACT_SHAPED, label: "AU-ACT test" }
-      : state === "WA"
-        ? { pack: null, rules: PENDING_RULE_PACKS.WA.rules, label: "AU-WA test" }
-        : actual.rulesForState(state);
+      : state === "ACT-CONTENTS"
+        ? { pack: null, rules: packs.ACT_CONTENTS, label: "AU-ACT contents test" }
+        : state === "ACT"
+          ? { pack: null, rules: PENDING_RULE_PACKS.ACT.rules, label: "AU-ACT draft" }
+          : state === "WA"
+            ? { pack: null, rules: PENDING_RULE_PACKS.WA.rules, label: "AU-WA test" }
+            : actual.rulesForState(state);
   const forScheme = async (schemeId: string) => {
     const { sharedFake } = await import("@/test/fake-orm");
     return forState(sharedFake.table("Scheme").find((s) => s.id === schemeId)?.state as string);
@@ -118,8 +128,29 @@ packs.ACT_SHAPED = {
   },
 };
 
+// The same, requiring each other unit's contribution, the fund total and the proportion (stage 2, PR 6b),
+// with each lot's contribution shared by its entitlement alone (no insurance split).
+const ACT_SHAPED_RULES = packs.ACT_SHAPED as typeof QLD_RULE_PACK.rules;
+const ACT_CONTENTS = {
+  ...Object.fromEntries(Object.entries(ACT_SHAPED_RULES).filter(([key]) => key !== "CONTRIBUTION_INSURANCE")),
+  NOTICE_RULES: {
+    ...ACT_SHAPED_RULES.NOTICE_RULES,
+    checked: {
+      ...ACT_SHAPED_RULES.NOTICE_RULES.checked!,
+      requiredContents: [
+        { key: "EVERY_LOT_CONTRIBUTION", words: "the contribution for each other unit", status: "CONFIRMED", source: "Test Act s 4(b)" },
+        { key: "FUND_TOTAL", words: "the fund and the totals", ledgerFunds: ["ADMINISTRATIVE"], status: "CONFIRMED", source: "Test Act s 4(c)" },
+        { key: "PROPORTION_AND_METHOD", words: "the unit's proportion and how it is worked out", status: "CONFIRMED", source: "Test Act s 4(d)" },
+      ],
+    },
+  },
+};
+packs.ACT_CONTENTS = ACT_CONTENTS;
+
 const A = "act-shaped";
 const WA = "wa-real";
+const C = "act-contents";
+const R = "act-real";
 const at = (day: string) => vi.setSystemTime(new Date(`${day}T02:00:00.000Z`));
 const confirm = () => {
   const fd = new FormData();
@@ -128,25 +159,32 @@ const confirm = () => {
 };
 const notices = (schemeId: string) => sharedFake.table("LevyNotice").filter((n) => n.schemeId === schemeId);
 
+const STATE: Record<string, string> = { [A]: "ACT-SHAPED", [WA]: "WA", [C]: "ACT-CONTENTS", [R]: "ACT" };
+
 function seed() {
-  const ids = [A, WA];
+  const ids = [A, WA, C, R];
   sharedFake.reset({
     Scheme: ids.map((id) => ({
       id,
-      state: id === A ? "ACT-SHAPED" : "WA",
+      state: STATE[id],
       name: "Harbour View",
       planNumber: "SP 1",
       timeZone: "Australia/Sydney",
       financialYearEnd: "06-30",
       autoApplyOwnerCredit: true,
-      interestMode: id === A ? "RESOLVED_RATE" : "STATUTORY",
-      lateChargeMonthlyRatePercent: id === A ? "2.50" : null,
+      interestMode: id === A || id === C ? "RESOLVED_RATE" : "STATUTORY",
+      lateChargeMonthlyRatePercent: id === A || id === C ? "2.50" : null,
     })),
-    Fund: ids.map((s) => ({ id: `${s}-admin`, schemeId: s, name: "Administrative fund", fundType: "ADMINISTRATIVE", isActive: true })),
+    Fund: ids.flatMap((s) => [
+      { id: `${s}-admin`, schemeId: s, name: "Administrative fund", fundType: "ADMINISTRATIVE", isActive: true },
+      { id: `${s}-sinking`, schemeId: s, name: "Sinking fund", fundType: "CAPITAL_WORKS", isActive: true },
+    ]),
     SchemeBankAccount: ids.map((s) => ({ id: `${s}-bank`, schemeId: s, isActive: true, isOperating: true, accountName: "The Owners", bsb: "062-000", accountNumber: "1" })),
     Lot: ids.flatMap((s) => [
       { id: `${s}-l1`, schemeId: s, lotNumber: "1", entitlement: 60 },
       { id: `${s}-l2`, schemeId: s, lotNumber: "2", entitlement: 40 },
+      // Common property is not a unit: never listed, its entitlement nil.
+      ...(s === C || s === R ? [{ id: `${s}-cp`, schemeId: s, lotNumber: "CP", entitlement: 0, lotType: "COMMON" }] : []),
     ]),
     LotDetail: ids.map((s) => ({ id: `${s}-d2`, lotId: `${s}-l2`, rollOwnerName: "Robin Roll" })),
     Profile: [
@@ -177,6 +215,7 @@ function seed() {
   });
   sharedFake.setRelations({ LevySchedule: { levyNotices: { table: "LevyNotice", foreignKey: "levyScheduleId" } } });
   sent.emails = [];
+  sent.html = [];
   sent.activity = [];
 }
 
@@ -268,5 +307,135 @@ describe("the real WA pending pack", () => {
     expect(r.data?.missing).toContainEqual({ code: REASON, message: REASON });
     expect(notices(WA).every((n) => n.status === "DRAFT")).toBe(true);
     expect(sent.emails).toEqual([]);
+  });
+});
+
+describe("an ACT-shaped pack that requires each other unit's contribution, the fund total and the proportion (PR 6b)", () => {
+  const planned = (lotId: string, over: Record<string, unknown> = {}) => ({
+    lotId: `${C}-${lotId}`,
+    lotNumber: lotId === "l1" ? "1" : "2",
+    ownerId: lotId === "l1" ? "o1" : null,
+    noticeNumber: `LN-${lotId}`,
+    dueDate: "2026-07-01",
+    amountCents: lotId === "l1" ? 600_000 : 400_000,
+    periodStart: "2026-07-01",
+    ...over,
+  });
+  const check = (input: Record<string, unknown> = {}) =>
+    checkPlannedNotices({ schemeId: C, fundId: `${C}-admin`, issuerId: "adviser", noticeDate: "2026-06-03", levyScheduleId: `${C}-q`, notices: [planned("l1"), planned("l2")], ...input });
+  const refusedFor = (missing: { code: string; message: string }[]) =>
+    missing.filter((m) => m.code === "NOTICE_RULES_NOT_CONFIRMED").map((m) => m.message.match(/\(Test Act s 4\((\w)\)\)/)?.[1]);
+
+  it("states them for planned notices of the schedule, so nothing is missing", async () => {
+    at("2026-05-01");
+    expect(await check()).toEqual([]);
+  });
+
+  it("refuses each where its data is not there", async () => {
+    at("2026-05-01");
+    // No schedule, or no period: none of the three.
+    expect(refusedFor(await check({ levyScheduleId: undefined }))).toEqual(["b", "c", "d"]);
+    expect(refusedFor(await check({ notices: [planned("l1", { periodStart: undefined })] }))).toEqual(["b", "c", "d"]);
+    // A schedule of another fund, or another building.
+    sharedFake.table("LevySchedule").find((s) => s.id === `${C}-q`)!.fundId = `${C}-sinking`;
+    expect(refusedFor(await check())).toEqual(["b", "c", "d"]);
+    seed();
+    expect(refusedFor(await check({ levyScheduleId: `${A}-q` }))).toEqual(["b", "c", "d"]);
+    // Two notices for one unit in the period.
+    expect(refusedFor(await check({ notices: [planned("l1"), planned("l1", { noticeNumber: "LN-x" })] }))).toEqual(["b", "c", "d"]);
+    // A pack that shares insurance by another schedule: only the proportion.
+    packs.ACT_CONTENTS = { ...ACT_CONTENTS, CONTRIBUTION_INSURANCE: ACT_SHAPED_RULES.CONTRIBUTION_INSURANCE };
+    expect(refusedFor(await check())).toEqual(["d"]);
+    packs.ACT_CONTENTS = ACT_CONTENTS;
+    // The units' entitlements no longer add up to the schedule's total: only the proportion.
+    sharedFake.table("Lot").find((l) => l.id === `${C}-l2`)!.entitlement = 50;
+    expect(refusedFor(await check())).toEqual(["d"]);
+  });
+
+  it("plans the schedule, and the daily job emails each unit's contribution, the totals and the proportion, with no other owner named", async () => {
+    at("2026-05-01");
+    const r = await issueScheduleNoticesAction(C, `${C}-q`, {}, new FormData());
+    expect(r).toMatchObject({ success: true, data: { count: 0, planned: 8 } });
+    at("2026-06-03");
+    expect((await issueDueNotices(new Date("2026-06-03T02:00:00.000Z"))).find((x) => x.schemeId === C)).toMatchObject({ issued: 2, held: null });
+    // Only unit 1 has an owner with an email. The PDF is not attached (the mock gives none), so the email states it all.
+    expect(sent.html).toHaveLength(1);
+    const html = sent.html[0];
+    for (const s of ["Contribution for each lot", "1 (this lot)", "$6,000.00", "$4,000.00", "Total, all lots", "$10,000.00", "The year, all lots", "$40,000.00", "60 of 100 (60%)"]) {
+      expect(html).toContain(s);
+    }
+    expect(html).not.toContain(">CP<");
+    expect(html).not.toContain("Robin Roll");
+    expect(html.match(/Alex Nguyen/g)).toHaveLength(1);
+  });
+
+  it("gives the PDF the same content, and a unit with no notice for the period as nil", async () => {
+    at("2026-05-01");
+    await issueScheduleNoticesAction(C, `${C}-q`, {}, new FormData());
+    // Unit 2's first notice is gone (as if never raised): it shows as nil.
+    const table = sharedFake.table("LevyNotice");
+    const first = table.find((n) => n.lotId === `${C}-l1` && String(n.periodStart) === "2026-07-01")!;
+    table.splice(table.findIndex((n) => n.lotId === `${C}-l2` && String(n.periodStart) === "2026-07-01"), 1);
+    first.issuedAt = "2026-06-03T02:00:00.000Z";
+    const { levyNoticeData } = await vi.importActual<typeof import("@/lib/pdf/generate")>("@/lib/pdf/generate");
+    const loaded = await levyNoticeData(String(first.id), "adviser");
+    expect(loaded?.data.everyLot).toEqual({
+      words: { lot: "lot", lots: "lots", levy: QLD_RULE_PACK.rules.TERMINOLOGY.levy, entitlement: "contribution schedule lot entitlement" },
+      rows: [
+        { lotNumber: "1", cents: 600_000, thisLot: true },
+        { lotNumber: "2", cents: null, thisLot: false },
+      ],
+      totalCents: 600_000,
+      fund: { name: "Administrative fund", scheduleTotalCents: 4_000_000, wholeYear: true },
+      proportion: { entitlement: 60, totalEntitlement: 100 },
+    });
+    expect(JSON.stringify(loaded?.data.everyLot)).not.toContain("Robin Roll");
+    // A pack that does not require it has no everyLot key at all (as NSW and Queensland).
+    const other = { ...first, id: "other", schemeId: A, levyScheduleId: `${A}-q`, lotId: `${A}-l1`, fundId: `${A}-admin` };
+    table.push(other);
+    expect("everyLot" in (await levyNoticeData("other", "adviser"))!.data).toBe(false);
+  });
+});
+
+describe("the real ACT pending pack after PR 6b", () => {
+  const check = (fundId: string) =>
+    checkPlannedNotices({
+      schemeId: R,
+      fundId,
+      issuerId: "adviser",
+      noticeDate: "2026-06-03",
+      levyScheduleId: `${R}-q`,
+      notices: [
+        { lotId: `${R}-l1`, lotNumber: "1", ownerId: "o1", noticeNumber: "LN-1", dueDate: "2026-07-01", amountCents: 600_000, periodStart: "2026-07-01" },
+        { lotId: `${R}-l2`, lotNumber: "2", ownerId: null, noticeNumber: "LN-2", dueDate: "2026-07-01", amountCents: 400_000, periodStart: "2026-07-01" },
+      ],
+    });
+  const act = PENDING_RULE_PACKS.ACT.rules;
+  const words = (key: string) => act.NOTICE_RULES.checked!.requiredContents.find((r) => r.key === key)!;
+  const refusal = (key: string) => `The notice must state ${words(key).words} (${words(key).source}). StrataVerze notices cannot state it yet, so no notice can be issued.`;
+  const LATE = { code: "LATE_CHARGE_WORDING", message: `Notices cannot state this building's interest yet (${act.LATE_CHARGE.source}), so no notice can be issued until they can.` };
+
+  it("refuses an administrative fund notice only for the instalment dates, the discount and the interest", async () => {
+    at("2026-05-01");
+    expect(await check(`${R}-admin`)).toEqual([
+      { code: "NOTICE_RULES_NOT_CONFIRMED", message: refusal("INSTALMENT_DATES") },
+      { code: "NOTICE_RULES_NOT_CONFIRMED", message: refusal("EARLY_PAYMENT_DISCOUNT") },
+      { code: "NOTICE_RULES_NOT_CONFIRMED", message: refusal("LATE_CHARGE_STATEMENT") },
+      LATE,
+    ]);
+  });
+
+  it("refuses a sinking fund notice for its yearly mode too, and states its year's total from a budget schedule", async () => {
+    at("2026-05-01");
+    sharedFake.table("LevySchedule").find((s) => s.id === `${R}-q`)!.fundId = `${R}-sinking`;
+    const missing = await check(`${R}-sinking`);
+    expect(missing.map((m) => m.message.slice(0, 40))).toEqual([
+      "Notices for the capital works or sinking",
+      refusal("INSTALMENT_DATES").slice(0, 40),
+      refusal("EARLY_PAYMENT_DISCOUNT").slice(0, 40),
+      refusal("LATE_CHARGE_STATEMENT").slice(0, 40),
+      LATE.message.slice(0, 40),
+    ]);
+    expect(missing.some((m) => m.message.includes("each other unit") || m.message.includes("proportion") || m.message.includes("sinking fund contribution for the year"))).toBe(false);
   });
 });

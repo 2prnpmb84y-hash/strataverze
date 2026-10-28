@@ -408,7 +408,16 @@ export async function issueDueNotices(now: Date = new Date()): Promise<DueRunRes
         results.push({ scheduleId: schedule.id, schemeId: schedule.schemeId, issued: 0, held: stuck.length ? stuckLines : null, awaitingConfirmation: late.length });
         continue;
       }
-      const missing = await checkPlannedNotices({ schemeId: schedule.schemeId, fundId: schedule.fundId, issuerId, noticeDate: today, notices });
+      // Each notice's period, so a pack that requires each other unit's contribution (the ACT) can have it stated.
+      const periodOf = new Map(onTime.map((n) => [n.id, toIsoDay(n.periodStart)]));
+      const missing = await checkPlannedNotices({
+        schemeId: schedule.schemeId,
+        fundId: schedule.fundId,
+        issuerId,
+        noticeDate: today,
+        levyScheduleId: schedule.id,
+        notices: notices.map((x) => ({ ...x, periodStart: periodOf.get(x.id) })),
+      });
       if (missing.length) {
         await logActivity({
           schemeId: schedule.schemeId,
@@ -487,7 +496,15 @@ export async function issueOverdueDrafts(input: { schemeId: string; scheduleId: 
     dueDate: t.dueDate,
     amountCents: toCents(String(n.amountDue)),
   }));
-  const missing = await checkPlannedNotices({ schemeId: input.schemeId, fundId: input.fundId, issuerId: input.issuerId, noticeDate: input.today, notices });
+  const periodOf = new Map(list.map(({ n }) => [n.id, toIsoDay(n.periodStart)]));
+  const missing = await checkPlannedNotices({
+    schemeId: input.schemeId,
+    fundId: input.fundId,
+    issuerId: input.issuerId,
+    noticeDate: input.today,
+    levyScheduleId: input.scheduleId,
+    notices: notices.map((x) => ({ ...x, periodStart: periodOf.get(x.id) })),
+  });
   if (missing.length) return { count: 0, emailed: 0, missing: [...missing.map((m) => m.message), ...held], held };
   const r = await issueNoticeBatch({ ...input, noticeDate: input.today, notices });
   return { count: r.count, emailed: r.emailed, missing: [] as string[], held };

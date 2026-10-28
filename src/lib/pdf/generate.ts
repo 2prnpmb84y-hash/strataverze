@@ -9,7 +9,8 @@ import { siteUrl } from "@/lib/site-url";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { toCents } from "@/lib/billing/money";
 import { formatLotLabel } from "@/lib/format";
-import { noticeContext, noticeOwnerNames, ownerNames, rollOwnerNames } from "@/lib/levies/notice-content-data";
+import { loadEveryLot, noticeContext, noticeOwnerNames, ownerNames, rollOwnerNames } from "@/lib/levies/notice-content-data";
+import { everyLotRequired } from "@/lib/levies/every-lot";
 import { getSchemeInterestSetting } from "@/lib/finance/interest-setting";
 import { storedDayIn, todayIn } from "@/lib/jurisdiction/time-zone";
 import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
@@ -56,6 +57,19 @@ export async function levyNoticeData(noticeId: string, issuerId: string): Promis
   const owners = n.ownerId ? await ownerNames([n.ownerId]) : new Map();
   const owner = n.ownerId ? owners.get(n.ownerId) : null;
   const rollNames = await rollOwnerNames([n.lotId]);
+  // Each unit's contribution for the same schedule and period, the fund and its totals, and the unit's
+  // proportion, only where the pack requires them (the ACT, stage 2 PR 6b); never on any other notice.
+  const everyLot = everyLotRequired(setting.rules.rules.NOTICE_RULES)
+    ? ((
+        await loadEveryLot({
+          schemeId: n.schemeId,
+          rules: setting.rules.rules,
+          fund: fund ? { id: fund.id, name: fund.name ?? null } : null,
+          levyScheduleId: n.levyScheduleId,
+          notices: [{ lotId: n.lotId, periodStart: isoDay(n.periodStart) }],
+        })
+      )[0] ?? null)
+    : undefined;
   return {
     schemeId: n.schemeId,
     lotId: n.lotId,
@@ -91,6 +105,7 @@ export async function levyNoticeData(noticeId: string, issuerId: string): Promis
       ...(n.insuranceAmount != null
         ? { insurance: { cents: toCents(String(n.insuranceAmount)), basis: insuranceBasis(setting.rules.rules) } }
         : {}),
+      ...(everyLot !== undefined ? { everyLot } : {}),
     },
   };
 }

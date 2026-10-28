@@ -195,7 +195,7 @@ describe("Australian Capital Territory pack (pending)", () => {
   it("is a draft for review, not signed off, with only the payment order and the notice timing decided", () => {
     expect(pack.code).toBe("AU-ACT");
     expect(pack.state).toBe("ACT");
-    expect(pack.version).toBe("2026.10.6");
+    expect(pack.version).toBe("2026.10.7");
     expect(pack.status).toBe("DRAFT");
     expect(pack.reviewedOn).toBeNull();
     expect(pack.reviewer).toBe("Matthew Wrigley");
