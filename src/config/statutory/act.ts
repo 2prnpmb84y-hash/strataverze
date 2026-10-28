@@ -50,7 +50,17 @@
  * left out because the notes record no order (NOT_CONFIRMED).
  */
 
-import type { DatedRules, EntitlementScheduleDefinition, FundDefinition, PackFeatures, RuleStatus, SchemeSelector, SharedTerminology } from "./types";
+import type {
+  BuildingSelector,
+  DatedRules,
+  DerivedBuildingSelector,
+  EntitlementScheduleDefinition,
+  FundDefinition,
+  PackFeatures,
+  RecordedBuildingSelector,
+  RuleStatus,
+  SharedTerminology,
+} from "./types";
 
 const UTMA = "Unit Titles (Management) Act 2011 (ACT)";
 const UTMR = "Unit Titles (Management) Regulation 2011 (ACT)";
@@ -90,8 +100,10 @@ export const SOURCES = [
  * records one by one. So no size-class selector is given; the number of units
  * decides each threshold.
  */
-export const SCHEME_TYPE: SchemeSelector = {
+export const SCHEME_TYPE: RecordedBuildingSelector = {
   key: "schemeType",
+  // Recorded by the adviser in the Building rules section (stage 2, PR 2).
+  held: "RECORDED",
   label: "Scheme type",
   help: "A units plan under the Unit Titles Act 2001. Community title schemes are governed by a different Act.",
   options: [
@@ -159,6 +171,172 @@ export const SCHEME_VARIANTS = {
   source: `${UTMA} ss 39A, 75(5), 101(2); sch 3 ss 3.6(3), 3.9(1)(a)(i)`,
   status: "CONFIRMED" as RuleStatus,
 } as const;
+
+/*
+ * Building selectors (stage 2, PR 2, 28 Oct 2026). The plan variants in
+ * SCHEME_VARIANTS are recorded by the adviser, one yes or no each. Which
+ * answers are `supported` is a StrataVerze proposal, not law (FOR_REVIEW):
+ * StrataVerze applies none of the variants' rules yet. The unit thresholds in
+ * SIZE_THRESHOLDS are worked out from the number of units (the building's
+ * lots other than common property rows). Thresholds counted by members are
+ * not: members are not the same as units (each part-owner is a member).
+ */
+
+const variant = (key: string, label: string, help: string, no: string, yesNote: string, provision: string): RecordedBuildingSelector => ({
+  key,
+  held: "RECORDED",
+  label,
+  help,
+  options: [
+    { value: "NO", label: no, supported: true },
+    { value: "YES", label, supported: false, note: yesNote },
+  ],
+  source: `${UTMA} ${provision}`,
+  status: SCHEME_VARIANTS.status,
+});
+
+export const RETIREMENT_VILLAGE_PLAN = variant(
+  "retirementVillagePlan",
+  "Retirement village units plan",
+  `Whether the units plan is a retirement village units plan. Its standard quorum is 1/3 of units instead of 1/2, and its budget and AGM notice timing follow the ${SCHEME_VARIANTS.retirementVillage.budgetAndAgmNoticeTimingUnder}.`,
+  "Not a retirement village units plan",
+  `The ${SCHEME_VARIANTS.retirementVillage.budgetAndAgmNoticeTimingUnder} was not read, so StrataVerze does not apply these rules yet.`,
+  "s 75(5); sch 3 ss 3.6(3), 3.9(1)(a)(i)",
+);
+
+export const MIXED_USE_PLAN = variant(
+  "mixedUsePlan",
+  "Mixed use units plan",
+  "Whether the units plan is mixed use. Its executive committee must then include, if feasible, at least 1 owner of a residential unit and 1 owner of a unit that is not residential.",
+  "Not a mixed use units plan",
+  "StrataVerze does not check the executive committee for this yet.",
+  "s 39A",
+);
+
+export const CLASS_B_ONLY_PLAN = variant(
+  "classBOnlyPlan",
+  "Class B units only",
+  "Whether every unit in the units plan is a class B unit. The owners corporation may then exempt itself from building insurance for buildings on class B units by unanimous resolution.",
+  "Not class B units only",
+  "StrataVerze does not apply the building insurance exemption yet.",
+  "s 101(2)",
+);
+
+const T = SIZE_THRESHOLDS;
+const [BANK_FROM, BANK_TO] = [Math.min(...T.bankAccountExemptionUnits), Math.max(...T.bankAccountExemptionUnits)];
+const unitRule = (value: string, when: DerivedBuildingSelector["rules"][number]["when"], provision: string) => ({ value, when, provision: `${UTMA} ${provision}`, status: T.status });
+
+export const BANK_ACCOUNT_EXEMPTION: DerivedBuildingSelector = {
+  key: "bankAccountExemption",
+  held: "DERIVED",
+  label: "Bank account exemption",
+  help: `Worked out from the number of units. Only a units plan of ${BANK_FROM} or ${BANK_TO} units may exempt itself from the bank account requirement, by unopposed resolution.`,
+  options: [
+    { value: "MAY_EXEMPT", label: "May exempt itself", supported: true },
+    { value: "MAY_NOT_EXEMPT", label: "May not exempt itself", supported: true },
+  ],
+  rules: [
+    unitRule("MAY_EXEMPT", { number: "LOT_COUNT", atLeast: BANK_FROM, atMost: BANK_TO }, "s 68(2)"),
+    unitRule("MAY_NOT_EXEMPT", { any: [{ number: "LOT_COUNT", lessThan: BANK_FROM }, { number: "LOT_COUNT", moreThan: BANK_TO }] }, "s 68(2)"),
+  ],
+  noRuleFits: "The bank account exemption could not be worked out from the units recorded.",
+  source: `${UTMA} s 68(2)`,
+  status: T.status,
+};
+
+export const SINKING_FUND_REQUIRED: DerivedBuildingSelector = {
+  key: "sinkingFundRequired",
+  held: "DERIVED",
+  label: "Sinking fund",
+  help: `Worked out from the number of units. With ${T.sinkingFundRequiredFromUnits} or more units a sinking fund and a sinking fund plan are required.`,
+  options: [
+    { value: "REQUIRED", label: "Sinking fund and plan required", supported: true },
+    { value: "NOT_REQUIRED", label: "Not required", supported: true },
+  ],
+  rules: [
+    unitRule("REQUIRED", { number: "LOT_COUNT", atLeast: T.sinkingFundRequiredFromUnits }, "ss 81(1), 82(1)"),
+    unitRule("NOT_REQUIRED", { number: "LOT_COUNT", lessThan: T.sinkingFundRequiredFromUnits }, "ss 81(1), 82(1)"),
+  ],
+  noRuleFits: "Whether a sinking fund is required could not be worked out from the units recorded.",
+  source: `${UTMA} ss 81(1), 82(1)`,
+  status: T.status,
+};
+
+export const COMMUNICATIONS_OFFICER: DerivedBuildingSelector = {
+  key: "communicationsOfficer",
+  held: "DERIVED",
+  label: "Communications officer",
+  help: `Worked out from the number of units. With ${T.communicationsOfficerFromUnits} or more units a communications officer may be appointed by ordinary resolution.`,
+  options: [
+    { value: "MAY_APPOINT", label: "May be appointed", supported: true },
+    { value: "MAY_NOT_APPOINT", label: "May not be appointed", supported: true },
+  ],
+  rules: [
+    unitRule("MAY_APPOINT", { number: "LOT_COUNT", atLeast: T.communicationsOfficerFromUnits }, "s 66"),
+    unitRule("MAY_NOT_APPOINT", { number: "LOT_COUNT", lessThan: T.communicationsOfficerFromUnits }, "s 66"),
+  ],
+  noRuleFits: "Whether a communications officer may be appointed could not be worked out from the units recorded.",
+  source: `${UTMA} s 66`,
+  status: T.status,
+};
+
+export const PROXY_LIMIT_BAND: DerivedBuildingSelector = {
+  key: "proxyLimit",
+  held: "DERIVED",
+  label: "Proxy limit",
+  help: `Worked out from the number of units. With more than ${T.proxyPercentAboveUnits} units a proxy holder may exercise proxies for no more than 5% of the total number of units. With ${T.proxyPercentAboveUnits} units or fewer the limit is 1 proxy.`,
+  options: [
+    { value: "ONE_PROXY", label: "1 proxy", supported: true },
+    { value: "FIVE_PERCENT_OF_UNITS", label: "No more than 5% of the units", supported: true },
+  ],
+  rules: [
+    unitRule("FIVE_PERCENT_OF_UNITS", { number: "LOT_COUNT", moreThan: T.proxyPercentAboveUnits }, "sch 3 s 3.26(3)"),
+    unitRule("ONE_PROXY", { number: "LOT_COUNT", atMost: T.proxyPercentAboveUnits }, "sch 3 s 3.26(3)"),
+  ],
+  noRuleFits: "The proxy limit could not be worked out from the units recorded.",
+  source: `${UTMA} sch 3 s 3.26(3)`,
+  status: T.status,
+};
+
+/**
+ * The unit leg of the audit test only (sch 2 ss 2.1(1)(g), 2.1A): more than
+ * 100 units requires an audit. At 100 or fewer the annual budget decides,
+ * which StrataVerze does not hold as a fact, so the value says so.
+ */
+export const AUDIT_BY_UNITS: DerivedBuildingSelector = {
+  key: "auditByUnits",
+  held: "DERIVED",
+  label: "Audit",
+  help: `Worked out from the number of units. With more than ${T.auditAboveUnits} units the financial records must be audited before the AGM. Otherwise an audit is required only if the annual budget is over $${(T.auditAboveAnnualBudgetCents / 100).toLocaleString("en-AU")}.`,
+  options: [
+    { value: "REQUIRED", label: "Audit required", supported: true },
+    { value: "BUDGET_DECIDES", label: `Required only if the annual budget is over $${(T.auditAboveAnnualBudgetCents / 100).toLocaleString("en-AU")}`, supported: true },
+  ],
+  rules: [
+    unitRule("REQUIRED", { number: "LOT_COUNT", moreThan: T.auditAboveUnits }, "sch 2 ss 2.1(1)(g), 2.1A"),
+    unitRule("BUDGET_DECIDES", { number: "LOT_COUNT", atMost: T.auditAboveUnits }, "sch 2 ss 2.1(1)(g), 2.1A"),
+  ],
+  noRuleFits: "Whether an audit is required could not be worked out from the units recorded.",
+  source: `${UTMA} sch 2 ss 2.1(1)(g), 2.1A`,
+  status: T.status,
+};
+
+/**
+ * The building selectors (stage 2, PR 2): the scheme type and the plan
+ * variants, recorded by the adviser, and the unit thresholds, worked out from
+ * the number of units.
+ */
+export const BUILDING_SELECTORS: readonly BuildingSelector[] = [
+  SCHEME_TYPE,
+  RETIREMENT_VILLAGE_PLAN,
+  MIXED_USE_PLAN,
+  CLASS_B_ONLY_PLAN,
+  BANK_ACCOUNT_EXEMPTION,
+  SINKING_FUND_REQUIRED,
+  COMMUNICATIONS_OFFICER,
+  PROXY_LIMIT_BAND,
+  AUDIT_BY_UNITS,
+];
 
 /** The owners corporation itself (notes section A). */
 export const IDENTITY = {
@@ -1215,6 +1393,9 @@ export const TERMINOLOGY = {
   /** Access Canberra's term for a manager (GUIDANCE). */
   managerGuidanceTerm: "owners corporation managing agent",
   owner: "unit owner",
+  /** What the platform calls a lot (stage 2, PR 2): the UTMA's word, as the notes use it. */
+  lot: "unit",
+  lots: "units",
   scheme: "units plan",
   unitClasses: ["class A (in a building)", "class B (land)"],
   entitlement: "unit entitlement",
@@ -1352,6 +1533,7 @@ export const FOR_REVIEW = [
   "The sinking fund is marked `required: false` in FUND_CATALOGUE because the shared FundDefinition has only a yes or no `required`. The Act requires a sinking fund and sinking fund plan only with 4 or more units (UTMA ss 81(1), 82(1)); the threshold is FUND_RULES.sinkingFundRequiredFromUnits. Before the pack applies, decide how the platform requires the fund for buildings of 4 or more units (for example, a size threshold in the shared fund shape).",
   "FEATURES switches off the certificate (strataInformationCertificate) and records inspection (recordsInspections) workflows for this draft. Those switches run the NSW workflows; the ACT has its own certificates (SALE_CERTIFICATE) and records inspection rules (RECORDS), which need ACT workflows before they can be switched on.",
   "FOR LEGAL REVIEW: what the opening words of UTMA s 94(1), \"unless otherwise decided by ordinary resolution\", let an ordinary resolution do (INTEREST.openingWords).",
+  "BUILDING_SELECTORS: the scheme type and the three plan variants (retirement village, mixed use, class B units only) are recorded by the adviser or StrataVerze in the Building rules section, outside the locked building record. Each variant's \"yes\" is marked not supported because StrataVerze applies none of their rules yet (a StrataVerze proposal). The unit thresholds (bank account exemption, sinking fund, communications officer, proxy limit, the unit leg of the audit test) are worked out from the number of units: the building's lots other than common property rows, read only where it matches the building's total lots. The member thresholds (1 to 3 members, 4 or more members) are not worked out, because members are not units. The annual budget leg of the audit test is not a recorded fact, so at 100 units or fewer the value says the budget decides.",
   "DATED_RULES restates the Bill's quorum and absentee vote changes as NOT LAW values that are never applied, beside the in-force values from R25 (26 Jun 2026; earlier days have no value). When the Bill passes and pt 6 is notified, a new pack version restates them as enacted with the day they commence. Confirm both choices.",
 ] as const;
 

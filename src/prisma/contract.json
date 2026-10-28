@@ -408,6 +408,10 @@
       "model": "SchemePaymentPolicy",
       "namespace": "public"
     },
+    "scheme_selector_values": {
+      "model": "SchemeSelectorValue",
+      "namespace": "public"
+    },
     "scheme_subscriptions": {
       "model": "SchemeSubscription",
       "namespace": "public"
@@ -12429,6 +12433,13 @@
                   "kind": "scalar"
                 }
               },
+              "occupiable": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
               "schemeId": {
                 "nullable": false,
                 "type": {
@@ -12788,6 +12799,9 @@
                 },
                 "lotType": {
                   "column": "lot_type"
+                },
+                "occupiable": {
+                  "column": "occupiable"
                 },
                 "schemeId": {
                   "column": "scheme_id"
@@ -21159,6 +21173,24 @@
                   "kind": "scalar"
                 }
               },
+              "replacementCost": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 14,
+                    "scale": 2
+                  }
+                }
+              },
+              "servicesOnly": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
               "state": {
                 "nullable": false,
                 "type": {
@@ -21777,6 +21809,21 @@
                   "namespace": "public"
                 }
               },
+              "selectorValues": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "schemeId"
+                  ]
+                },
+                "to": {
+                  "model": "SchemeSelectorValue",
+                  "namespace": "public"
+                }
+              },
               "supplierInvoices": {
                 "cardinality": "1:N",
                 "on": {
@@ -22170,6 +22217,12 @@
                 },
                 "regulationModule": {
                   "column": "regulation_module"
+                },
+                "replacementCost": {
+                  "column": "replacement_cost"
+                },
+                "servicesOnly": {
+                  "column": "services_only"
                 },
                 "state": {
                   "column": "state"
@@ -22841,6 +22894,94 @@
               },
               "namespaceId": "public",
               "table": "scheme_payment_policies"
+            }
+          },
+          "SchemeSelectorValue": {
+            "fields": {
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "key": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "recordedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "recordedBy": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "schemeId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "value": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "scheme": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "schemeId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Scheme",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "id": {
+                  "column": "id"
+                },
+                "key": {
+                  "column": "key"
+                },
+                "recordedAt": {
+                  "column": "recorded_at"
+                },
+                "recordedBy": {
+                  "column": "recorded_by"
+                },
+                "schemeId": {
+                  "column": "scheme_id"
+                },
+                "value": {
+                  "column": "value"
+                }
+              },
+              "namespaceId": "public",
+              "table": "scheme_selector_values"
             }
           },
           "SchemeSubscription": {
@@ -45487,6 +45628,11 @@
                   },
                   "nullable": false
                 },
+                "occupiable": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "nullable": true
+                },
                 "scheme_id": {
                   "codecId": "pg/uuid@1",
                   "dataType": "pg/uuid",
@@ -50598,6 +50744,87 @@
               },
               "uniques": []
             },
+            "scheme_selector_values": {
+              "columns": {
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "default": {
+                    "expression": "gen_random_uuid()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "key": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "recorded_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "recorded_by": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "scheme_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "value": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "scheme_selector_values_scheme_id_key_key"
+                  },
+                  "onDelete": "cascade",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "scheme_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "scheme_selector_values"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "schemes"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "scheme_id",
+                    "key"
+                  ],
+                  "name": "scheme_selector_values_scheme_id_key_key",
+                  "unique": true
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
             "scheme_subscriptions": {
               "columns": {
                 "created_at": {
@@ -50887,6 +51114,20 @@
                 "regulation_module": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
+                  "nullable": true
+                },
+                "replacement_cost": {
+                  "codecId": "pg/numeric@1",
+                  "dataType": "pg/numeric",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 14,
+                    "scale": 2
+                  }
+                },
+                "services_only": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
                   "nullable": true
                 },
                 "state": {
@@ -61158,7 +61399,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "f744c7f59e261f84b916a43c5f4dc98b8ce489fac27ae60ae574a2b8dae69eac"
+    "storageHash": "7d4f8fdcb3e333b289efde33f9c59d8e96d382cd52ccc3c8e7a87b0744862b03"
   },
   "execution": {
     "executionHash": "8c9cb0b046b1bd7cbabff3729749064a4319da7e3f83be98fb8c1e93574f50c8",

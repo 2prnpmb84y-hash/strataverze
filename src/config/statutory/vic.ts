@@ -54,7 +54,23 @@
  * PENDING_CHANGES and MEETINGS, RESOLUTIONS and PROXIES.
  */
 
-import type { DatedRules, DatedValue, EntitlementScheduleDefinition, NoStatutoryRule, FundDefinition, PackFeatures, PaymentAllocationPart, RuleStatus, SchemeSelector, SharedTerminology } from "./types";
+import type {
+  BuildingFactDefinition,
+  BuildingSelector,
+  DatedRules,
+  DatedValue,
+  DerivedBuildingSelector,
+  DerivedSelectorRule,
+  EntitlementScheduleDefinition,
+  NoStatutoryRule,
+  FundDefinition,
+  PackFeatures,
+  PaymentAllocationPart,
+  RecordedBuildingSelector,
+  RecordedFactKey,
+  RuleStatus,
+  SharedTerminology,
+} from "./types";
 
 const OCA = "Owners Corporations Act 2006 (Vic)";
 const OCR = "Owners Corporations Regulations 2018 (Vic)";
@@ -179,8 +195,10 @@ export const MULTIPLE_OWNERS_CORPORATIONS = {
  * s 27(2)). Which options are supported is a StrataVerze choice for this draft,
  * not a rule of law (FOR_REVIEW, DECISIONS).
  */
-export const OWNERS_CORPORATION_TYPE: SchemeSelector = {
+export const OWNERS_CORPORATION_TYPE: RecordedBuildingSelector = {
   key: "ownersCorporationType",
+  // Recorded by the adviser in the Building rules section (stage 2, PR 2).
+  held: "RECORDED",
   label: "Owners corporation type",
   help: "Whether the plan of subdivision makes this owners corporation unlimited or limited.",
   options: [
@@ -319,6 +337,170 @@ export const DUTIES_BY_TIER = {
   /** Payment plans would apply to tiers 1 to 4 ("specified owners corporation") once commenced; not in force (PENDING_CHANGES). */
   paymentPlansPending: { wouldApplyTo: [1, 2, 3, 4], wouldNotApplyTo: [5], inForce: false, source: `${CLAA} s 33 (def. specified owners corporation)`, status: "CONFIRMED" as RuleStatus },
 } as const;
+
+/**
+ * The facts the tier is worked out from (stage 2, PR 2, 28 Oct 2026): each
+ * lot's answer to whether it is occupiable (s 3), and whether the owners
+ * corporation is services only (s 3). Words from TIERS.
+ */
+export const BUILDING_FACTS: Partial<Readonly<Record<RecordedFactKey, BuildingFactDefinition>>> = {
+  LOT_OCCUPIABLE: {
+    label: "Occupiable lot",
+    help: `An occupiable lot is ${TIERS.occupiableLot}. A lot is not occupiable if it is ${TIERS.nonOccupiableLot.slice(0, -1).join(", ")} or ${TIERS.nonOccupiableLot[TIERS.nonOccupiableLot.length - 1]}.`,
+    yesLabel: "Occupiable",
+    noLabel: "Not occupiable",
+    // A car park or a storage locker is not occupiable (s 3). Reading StrataVerze's PARKING and STORAGE lot types as
+    // those is a StrataVerze choice (FOR_REVIEW BUILDING_FACTS_RECORDED_BY).
+    neverForLotTypes: { lotTypes: ["PARKING", "STORAGE"], status: "STRATAVERZE" },
+    source: `${OCA} s 3`,
+    status: "CONFIRMED",
+  },
+  SERVICES_ONLY: {
+    label: "Services only owners corporation",
+    help: `No land or building is designated as common property, and either ${TIERS.servicesOnly.andEitherOf[0]}, or ${TIERS.servicesOnly.andEitherOf[1]}.`,
+    yesLabel: "Services only",
+    noLabel: "Not services only",
+    source: `${OCA} s 3`,
+    status: "CONFIRMED",
+  },
+};
+
+/**
+ * Whether this owners corporation is one of several on its plan (SA s 27(1);
+ * MULTIPLE_OWNERS_CORPORATIONS). Recorded by the adviser. How the tier is
+ * assessed for a plan with several is NOT CONFIRMED, so the tier is refused
+ * for one (stage 2, PR 2).
+ */
+export const SEVERAL_OWNERS_CORPORATIONS: RecordedBuildingSelector = {
+  key: "severalOwnersCorporations",
+  held: "RECORDED",
+  label: "Owners corporations on the plan",
+  help: "Whether the plan of subdivision creates more than one owners corporation.",
+  options: [
+    { value: "NO", label: "This is the only owners corporation on the plan", supported: true },
+    {
+      value: "YES",
+      label: "One of several owners corporations on the plan",
+      supported: false,
+      note: "How the tier is assessed for a plan with several owners corporations is not confirmed, so StrataVerze does not work it out.",
+    },
+  ],
+  source: `${SA} s 27(1); ${OCA} s 7`,
+  status: "CONFIRMED",
+};
+
+const [TIER_1, TIER_2, TIER_3, TIER_4, TIER_5] = TIERS.tiers;
+const [MOSTLY_NON_OCCUPIABLE, ONLY_NON_OCCUPIABLE] = TIERS.countingRules;
+const tierValue = (tier: number) => `TIER_${tier}`;
+/** Tiers 1 to 4: the occupiable lot range, and not services only (s 7(2) to (5)). */
+const countedTier = (t: typeof TIER_1 | typeof TIER_2 | typeof TIER_3 | typeof TIER_4): DerivedSelectorRule => ({
+  value: tierValue(t.tier),
+  when: {
+    all: [
+      { flag: "SERVICES_ONLY", is: false },
+      t.occupiableLotsMax == null
+        ? { number: "OCCUPIABLE_LOT_COUNT", atLeast: t.occupiableLotsMin }
+        : { number: "OCCUPIABLE_LOT_COUNT", atLeast: t.occupiableLotsMin, atMost: t.occupiableLotsMax },
+    ],
+  },
+  provision: `${OCA} ${t.provision}`,
+  status: TIERS.status,
+});
+
+/**
+ * The tier (OCA s 7), worked out from the building's facts. Read in this
+ * order:
+ * 1. one of several owners corporations on the plan: refused, because the
+ *    notes do not confirm how the tier is assessed (MULTIPLE_OWNERS_CORPORATIONS,
+ *    NOT_CONFIRMED);
+ * 2. services only: tier 5 (s 7(6)). Tiers 1 to 4 exclude services only owners
+ *    corporations (s 7(2) to (5)), and the counting rules of s 7(7) only apply
+ *    tiers 1 and 2, so this is read before them. That order is a StrataVerze
+ *    reading (FOR_REVIEW BUILDING_SELECTORS_TIER);
+ * 3. the counting rules for plans with mostly or only non-occupiable lots
+ *    (s 7(7), (8)): refused, because the notes do not say how the
+ *    non-occupiable lots are counted with the occupiable ones (a StrataVerze
+ *    choice);
+ * 4. a 2-lot subdivision, "comprising of 2 occupiable lots" (s 7(6); s 3): tier
+ *    5 where the plan has those 2 lots and no other. With 2 occupiable lots and
+ *    other lots it is refused until Matthew Wrigley decides (a StrataVerze
+ *    choice: the notes do not say whether other lots count);
+ * 5. tiers 1 to 4 by occupiable lots, not services only.
+ * A tier is never worked out while a fact a rule needs is missing.
+ */
+export const TIER: DerivedBuildingSelector = {
+  key: "tier",
+  held: "DERIVED",
+  label: "Tier",
+  help: "Worked out from the number of occupiable lots, whether the owners corporation is services only, and whether it is the only one on the plan.",
+  options: TIERS.tiers.map((t) => ({ value: tierValue(t.tier), label: `Tier ${t.tier}`, supported: true, note: `${t.words[0].toUpperCase()}${t.words.slice(1)}.` })),
+  rules: [
+    {
+      value: null,
+      when: { selector: SEVERAL_OWNERS_CORPORATIONS.key, in: ["YES"] },
+      refusal: "This owners corporation is one of several on its plan. How the tier is assessed then is not confirmed, so StrataVerze does not work it out.",
+      provision: `${OCA} s 7; ${SA} s 27(1)`,
+      status: MULTIPLE_OWNERS_CORPORATIONS.tierForMultipleOwnersCorporations.status,
+    },
+    {
+      value: tierValue(TIER_5.tier),
+      when: { all: [{ selector: SEVERAL_OWNERS_CORPORATIONS.key, in: ["NO"] }, { flag: "SERVICES_ONLY", is: true }] },
+      provision: `${OCA} s 7(2) to (6)`,
+      status: "STRATAVERZE",
+    },
+    {
+      value: null,
+      when: { all: [{ number: "OCCUPIABLE_LOT_COUNT", atMost: 0 }, { number: "NON_OCCUPIABLE_LOT_COUNT", atLeast: 1 }] },
+      refusal: "Every lot is recorded as not occupiable. The tier is then worked out counting the lots that are not occupiable, which StrataVerze does not do yet.",
+      provision: `${OCA} ${ONLY_NON_OCCUPIABLE.provision}`,
+      status: "STRATAVERZE",
+    },
+    {
+      value: null,
+      when: {
+        all: [
+          { number: "OCCUPIABLE_LOT_COUNT", lessThan: MOSTLY_NON_OCCUPIABLE.occupiableLotsFewerThan },
+          { number: "NON_OCCUPIABLE_LOT_COUNT", moreThan: MOSTLY_NON_OCCUPIABLE.nonOccupiableLotsMoreThan },
+        ],
+      },
+      refusal: `Fewer than ${MOSTLY_NON_OCCUPIABLE.occupiableLotsFewerThan} lots are occupiable and more than ${MOSTLY_NON_OCCUPIABLE.nonOccupiableLotsMoreThan} are not. Tiers 1 and 2 are then worked out counting the lots that are not occupiable, which StrataVerze does not do yet.`,
+      provision: `${OCA} ${MOSTLY_NON_OCCUPIABLE.provision}`,
+      status: "STRATAVERZE",
+    },
+    {
+      value: tierValue(TIER_5.tier),
+      when: {
+        all: [
+          { number: "OCCUPIABLE_LOT_COUNT", atLeast: TIER_5.occupiableLotsMin, atMost: TIER_5.occupiableLotsMax },
+          { number: "NON_OCCUPIABLE_LOT_COUNT", atMost: 0 },
+        ],
+      },
+      provision: `${OCA} ${TIER_5.provision}`,
+      status: TIERS.status,
+    },
+    {
+      value: null,
+      when: { all: [{ number: "OCCUPIABLE_LOT_COUNT", atLeast: TIER_5.occupiableLotsMin, atMost: TIER_5.occupiableLotsMax }, { number: "NON_OCCUPIABLE_LOT_COUNT", atLeast: 1 }] },
+      refusal: `The plan has ${TIER_5.occupiableLotsMin} occupiable lots and other lots that are not occupiable. Whether it is then a 2-lot subdivision is for StrataVerze to decide, so the tier is not worked out yet.`,
+      provision: `${OCA} ${TIER_5.provision}`,
+      status: "STRATAVERZE",
+    },
+    countedTier(TIER_1),
+    countedTier(TIER_2),
+    countedTier(TIER_3),
+    countedTier(TIER_4),
+  ],
+  noRuleFits: "No tier fits the lots recorded. Check each lot's occupiable answer.",
+  source: `${OCA} ss 3, 7; ${SA} s 27(1)`,
+  status: "CONFIRMED",
+};
+
+/**
+ * The building selectors (stage 2, PR 2): the owners corporation type and
+ * whether it is the only one on the plan, recorded by the adviser, and the
+ * tier, worked out from those and the facts above.
+ */
+export const BUILDING_SELECTORS: readonly BuildingSelector[] = [OWNERS_CORPORATION_TYPE, SEVERAL_OWNERS_CORPORATIONS, TIER];
 
 /**
  * Tests the Act words by a count of lots, not by tier (OCA ss 77, 89D, 100).
@@ -2289,6 +2471,19 @@ export const FOR_REVIEW = [
     point: "The financial year (no statutory definition found) and the tier of an owners corporation on a plan with several.",
     before: "Victorian buildings are set up",
     kind: "LEGAL",
+  },
+  {
+    key: "BUILDING_SELECTORS_TIER",
+    point:
+      "How TIER is worked out. (1) An owners corporation recorded as one of several on its plan is refused: the notes do not confirm how its tier is assessed (FINANCIAL_YEAR_AND_MULTI_OC_TIERS). (2) A services only owners corporation is tier 5 before s 7(7) and (8) are read, because tiers 1 to 4 exclude services only and s 7(7) applies tiers 1 and 2 only; that order is a StrataVerze reading. (3) Where s 7(7) or (8) applies (mostly or only non-occupiable lots) the tier is refused, because the notes do not say how the non-occupiable lots are counted with the occupiable ones. (4) A plan with 2 occupiable lots and no other lots is tier 5 (a 2-lot subdivision, \"comprising of 2 occupiable lots\"); with 2 occupiable lots and other lots it is refused until decided, because the notes do not say whether the other lots count. (5) Every tier is marked supported as a StrataVerze proposal.",
+    before: "any rule reads the tier",
+    kind: "LEGAL",
+  },
+  {
+    key: "BUILDING_FACTS_RECORDED_BY",
+    point:
+      "Who records each lot's occupiable answer, the services only answer and whether the owners corporation is the only one on its plan: the adviser or StrataVerze, in the Building rules section, outside the locked building record. The lot form and the data import do not ask for them yet, so a new lot is flagged until it is answered. A lot of StrataVerze's PARKING or STORAGE type answered occupiable is flagged and the tier refused, reading those types as the car park and storage locker of s 3 (a StrataVerze choice).",
+    before: "Victorian buildings are set up",
   },
 ] as const;
 

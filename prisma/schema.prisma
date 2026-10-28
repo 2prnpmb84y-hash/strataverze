@@ -176,6 +176,12 @@ model Scheme {
   /// Module ss 198, 199, 201). Null for every other building. It decides how a Queensland contribution's insurance
   /// part is shared; a standard format plan, or none recorded, is refused (src/lib/levies/contribution-shares.ts).
   planFormat          String?             @map("plan_format")
+  /// Whether the building is a services only owners corporation (Victoria, OCA s 3), a fact the pack's derived tier
+  /// reads (BUILDING_FACTS SERVICES_ONLY). Null for every other building and until recorded; the tier is then refused.
+  servicesOnly        Boolean?            @map("services_only")
+  /// The replacement cost the Western Australian designated strata company test reads (STGR reg 79; BUILDING_FACTS
+  /// REPLACEMENT_COST), in dollars. Null for every other building and until recorded.
+  replacementCost     Decimal?            @db.Decimal(14, 2) @map("replacement_cost")
   defaultPaymentTerms Int?                @map("default_payment_terms") // days for supplier invoices
   organisationId      String?             @map("organisation_id") @db.Uuid
   createdAt           DateTime            @default(now()) @db.Timestamptz @map("created_at")
@@ -237,6 +243,7 @@ model Scheme {
   committeeTraining           CommitteeTraining[]
   annualReports               AnnualReport[]
   proceedingsDeadlineReminders ProceedingsDeadlineReminder[]
+  selectorValues     SchemeSelectorValue[]
   saleCertificates            SaleCertificate[]
   recordsInspections          RecordsInspection[]
 
@@ -268,6 +275,9 @@ model Lot {
   entitlement        Int                 // the schedule the pack holds on each lot (NSW unit entitlement, Queensland contribution schedule)
   /// The Queensland interest schedule lot entitlement (BCCMA s 46), the pack's second schedule; positive when set, null for NSW.
   interestScheduleEntitlement Int?       @map("interest_schedule_entitlement")
+  /// Whether the lot is occupiable (Victoria, OCA s 3: ordinarily used for residential or business purposes), a fact the
+  /// pack's derived tier reads (BUILDING_FACTS LOT_OCCUPIABLE). Null for every other building and until answered.
+  occupiable         Boolean?
   floorArea          Float?              @map("floor_area")
   lotType            String              @default("RESIDENTIAL") @map("lot_type")
 
@@ -4407,6 +4417,24 @@ model AnnualReport {
 
   @@unique([schemeId, agmOn])
   @@map("annual_reports")
+}
+
+/// A building selector value an adviser recorded (VIC, ACT and WA stage 2, PR 2), for a selector the building's rule pack
+/// lists in BUILDING_SELECTORS as RECORDED. The allowed values are checked in the app from the pack
+/// (src/lib/jurisdiction/building-selectors.ts); a state change deletes the building's rows. Queensland's regulation
+/// module and plan format keep their own columns on schemes.
+model SchemeSelectorValue {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId   String   @map("scheme_id") @db.Uuid
+  key        String // the selector's key in the pack, for example "schemeType"
+  value      String // one of the selector's option values, for example "STRATA"
+  recordedBy String?  @map("recorded_by") @db.Uuid
+  recordedAt DateTime @default(now()) @db.Timestamptz @map("recorded_at")
+
+  scheme     Scheme   @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+
+  @@unique([schemeId, key])
+  @@map("scheme_selector_values")
 }
 
 /// The daily reminder for the deadline to start proceedings for a long

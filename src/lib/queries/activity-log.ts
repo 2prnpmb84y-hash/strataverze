@@ -189,7 +189,9 @@ export type ActivityAction =
   // The building's regulation module (Queensland, stage 2, step 10). Advisers only: not in any owner feed.
   | "REGULATION_MODULE_CHANGED"
   // The building's plan format (Queensland, insurance in contributions). Advisers only: not in any owner feed.
-  | "PLAN_FORMAT_CHANGED";
+  | "PLAN_FORMAT_CHANGED"
+  // The building rules: recorded selectors and the facts derived ones read (VIC, ACT and WA stage 2, PR 2). Advisers only.
+  | "BUILDING_RULES_CHANGED";
 
 export type ActivityEntityType =
   | "MigrationBatch"
