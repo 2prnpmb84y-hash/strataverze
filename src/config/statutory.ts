@@ -25,6 +25,9 @@ import * as VIC from "./statutory/vic";
 import * as WA from "./statutory/wa";
 import type { MeetingRuleSet } from "@/lib/meetings/rules";
 import type {
+  BuildingFactDefinition,
+  BuildingSelector,
+  RecordedFactKey,
   CertificateRules,
   ContributionInsuranceRules,
   DatedRules,
@@ -71,6 +74,16 @@ export interface SharedRules {
    * is not supported may still be recorded: what depends on it is refused.
    */
   PLAN_FORMAT?: SchemeSelector;
+  /**
+   * The building settings that decide which of the pack's rules apply (VIC,
+   * ACT and WA stage 2, PR 2, 28 Oct 2026), each recorded by an adviser or
+   * worked out from the building's facts (see BuildingSelector). Shown in the
+   * adviser's Building rules section. A pack without the key has none (NSW;
+   * Queensland keeps REGULATION_MODULE and PLAN_FORMAT above).
+   */
+  BUILDING_SELECTORS?: readonly BuildingSelector[];
+  /** The facts the pack's derived selectors ask advisers to record, with their words. */
+  BUILDING_FACTS?: Partial<Readonly<Record<RecordedFactKey, BuildingFactDefinition>>>;
   /**
    * The insurance part of a contribution, shared by its own schedule
    * (Queensland, SM s 162(5)). A pack without it shares the whole levy by the
@@ -145,6 +158,9 @@ export { needRule, RuleNotInPackError } from "./statutory/need-rule";
 
 /** The dated rule shapes (types only, no rules), for the reader in src/lib/jurisdiction/dated-rules.ts. */
 export type { DatedLegalStatus, DatedRule, DatedRules, DatedValue, NoStatutoryRule, PendingDatedValue } from "./statutory/types";
+
+/** The building selector shapes (types only, no rules), for the reader in src/lib/jurisdiction/building-selectors.ts. */
+export type { BuildingFactKey, BuildingSelector, DerivedBuildingSelector, RecordedFactKey, SelectorCondition } from "./statutory/types";
 
 export interface RulePack {
   /** Jurisdiction code, for example AU-NSW. */
@@ -337,7 +353,14 @@ export const PENDING_RULE_PACKS = {
     // vote changes are restated as NOT LAW values that are never applied, beside the in-force values from MEETINGS
     // (R25, from 26 Jun 2026); the commencement words follow the Bill's record. FOR_REVIEW gains that point. No legal
     // value or status changed; still a draft.
-    version: "2026.10.2",
+    // 2026.10.3 (28 Oct 2026): BUILDING_SELECTORS added (the building selector shape, stage 2 PR 2). SCHEME_TYPE becomes a
+    // recorded selector with its values unchanged. The plan variants of SCHEME_VARIANTS (retirement village, mixed use, class B
+    // units only) become recorded yes or no selectors, each "yes" marked not supported (a StrataVerze proposal: none of their
+    // rules is applied yet). The unit thresholds of SIZE_THRESHOLDS (bank account exemption, sinking fund, communications
+    // officer, proxy limit, the unit leg of the audit test) become selectors worked out from the number of units, with the
+    // thresholds unchanged. Member thresholds are not worked out. TERMINOLOGY gains lot and lots ("unit", "units", wording
+    // only), so the building rules say units. FOR_REVIEW gains that point. No legal value or status changed; still a draft.
+    version: "2026.10.3",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",
     reviewedOn: null,
@@ -357,7 +380,16 @@ export const PENDING_RULE_PACKS = {
     // s 32I (NOT_CONFIRMED: the notes record none). FOR_REVIEW gains DATED_RULES and FIXED_DATE_COMMENCEMENT. No legal
     // value or status changed; still a draft. SR 53/2026 (25 Nov 2026) stays off until a pack version records that it
     // commenced, and from that day the reader refuses the manager fees until then.
-    version: "2026.10.2",
+    // 2026.10.3 (28 Oct 2026): BUILDING_SELECTORS and BUILDING_FACTS added (the building selector shape, stage 2 PR 2).
+    // OWNERS_CORPORATION_TYPE becomes a recorded selector with its values unchanged, and SEVERAL_OWNERS_CORPORATIONS records
+    // whether the owners corporation is one of several on its plan (SA s 27(1)). TIER is worked out from each lot's occupiable
+    // answer and the services only answer (s 3), with the lot ranges, the 2-lot subdivision and the counting rules taken
+    // unchanged from TIERS (s 7). Refused: one of several owners corporations (NOT_CONFIRMED in the notes), s 7(7) or (8)
+    // (a StrataVerze choice: the notes do not say how the lots are counted there), and 2 occupiable lots with other lots (a
+    // StrataVerze choice until decided). Services only is read as tier 5 before s 7(7) and (8) (a StrataVerze reading). A
+    // PARKING or STORAGE lot answered occupiable is flagged (a StrataVerze reading of s 3). FOR_REVIEW gains
+    // BUILDING_SELECTORS_TIER and BUILDING_FACTS_RECORDED_BY. No legal value or status changed; still a draft.
+    version: "2026.10.3",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",
     reviewedOn: null,
@@ -368,7 +400,13 @@ export const PENDING_RULE_PACKS = {
     state: "WA",
     name: "Western Australia",
     // 2026.10.1 (27 Oct 2026): strata schemes, researched from the in-force STA (08-a0-00) and STGR (00-w0-00), as a draft for review.
-    version: "2026.10.1",
+    // 2026.10.2 (28 Oct 2026): BUILDING_SELECTORS and BUILDING_FACTS added (the building selector shape, stage 2 PR 2).
+    // SCHEME_TYPE and TENURE become recorded selectors with their values unchanged. SCHEME_SIZE is worked out from the number
+    // of lots (s 3(1): 2, 3 to 5, 6 or more; none below 2). DESIGNATED_STATUS is worked out from DESIGNATED_STRATA_COMPANY
+    // unchanged (s 100(7), reg 79: 10 or more lots, or a replacement cost of more than $5,000,000 for the scheme type), with
+    // the replacement cost as a recorded fact. No override, as the notes record none. FOR_REVIEW gains three points. No legal
+    // value or status changed; still a draft.
+    version: "2026.10.2",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",
     reviewedOn: null,

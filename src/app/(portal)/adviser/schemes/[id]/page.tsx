@@ -34,7 +34,10 @@ import { ContactsCard } from "./_sections/contacts-card";
 import { BuildingDataNotice } from "./_sections/building-data-notice";
 import { RegulationModuleForm } from "./regulation-module-form";
 import { PlanFormatForm } from "./plan-format-form";
+import { BuildingRulesForm } from "./building-rules-form";
 import { buildingDataProblems, planFormatChoices, regulationModuleChoices } from "@/lib/jurisdiction/building-data";
+import { buildingRulesView } from "@/lib/jurisdiction/building-selectors";
+import { getRecordedSelectorValues } from "@/lib/queries/building-selectors";
 import { lotWordsFor } from "@/lib/jurisdiction/screen-words";
 import { planNumberLabel } from "@/lib/onboarding/onboarding-words";
 import { connection } from "next/server";
@@ -105,7 +108,12 @@ export default async function SchemeDetailPage({
   const packRules = rulesForState(scheme.state).rules;
   const moduleChoices = regulationModuleChoices(packRules);
   const formatChoices = planFormatChoices(packRules);
-  const dataProblems = buildingDataProblems(packRules, scheme, scheme.lots);
+  // The building rules (VIC, ACT and WA stage 2, PR 2), for a pack with
+  // building selectors. The recorded values are read only for such a pack, so
+  // nothing changes for NSW or Queensland.
+  const recorded = packRules.BUILDING_SELECTORS?.length ? await getRecordedSelectorValues(scheme.id) : {};
+  const dataProblems = buildingDataProblems(packRules, scheme, scheme.lots, recorded);
+  const rulesView = buildingRulesView(packRules, { scheme, lots: scheme.lots, recorded });
 
   return (
     <div>
@@ -156,6 +164,7 @@ export default async function SchemeDetailPage({
 
       {moduleChoices && <RegulationModuleForm schemeId={scheme.id} choices={moduleChoices} current={scheme.regulationModule ?? null} />}
       {formatChoices && <PlanFormatForm schemeId={scheme.id} choices={formatChoices} current={scheme.planFormat ?? null} />}
+      {rulesView && <BuildingRulesForm schemeId={scheme.id} view={rulesView} />}
 
       {/* Edit form */}
       <div className="mb-6">

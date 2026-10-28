@@ -11,9 +11,10 @@
  * Missing data fails closed: a building whose pack has a module selector but
  * no supported module recorded, or a lot without an entitlement its pack
  * holds, is flagged to the adviser in plain words and never read as if it
- * were an NSW building. Pure, with type imports only.
+ * were an NSW building. Pure.
  */
 import type { StatutoryRules } from "@/config/statutory";
+import { buildingSelectorProblems, type SelectorBuilding } from "./building-selectors";
 
 export type EntitlementSchedule = StatutoryRules["ENTITLEMENT_SCHEDULES"][number];
 type DecidedUse = NonNullable<EntitlementSchedule["decides"]>[number];
@@ -293,13 +294,17 @@ const lotList = (numbers: string[]) => {
 /**
  * What a building is missing that its pack asks it to hold, for the adviser:
  * the module, the plan format (or one StrataVerze does not support yet), and
- * the lots without the second schedule's entitlement. Empty for an NSW
- * building.
+ * the lots without the second schedule's entitlement. Then, for a pack with
+ * building selectors (VIC, ACT and WA stage 2, PR 2), each recorded selector
+ * not recorded and each derived one that cannot be worked out, with the facts
+ * to record (building-selectors.ts). Empty for an NSW building; a Queensland
+ * building's problems are as before, since its pack has no building selectors.
  */
 export function buildingDataProblems(
-  rules: Pick<StatutoryRules, "REGULATION_MODULE" | "ENTITLEMENT_SCHEDULES"> & Partial<Pick<StatutoryRules, "PLAN_FORMAT">>,
-  scheme: { regulationModule?: string | null; planFormat?: string | null },
-  lots: readonly LotEntitlements[],
+  rules: Pick<StatutoryRules, "REGULATION_MODULE" | "ENTITLEMENT_SCHEDULES"> & Partial<Pick<StatutoryRules, "PLAN_FORMAT" | "BUILDING_SELECTORS" | "BUILDING_FACTS">>,
+  scheme: { regulationModule?: string | null; planFormat?: string | null } & Partial<SelectorBuilding["scheme"]>,
+  lots: readonly (LotEntitlements & Partial<SelectorBuilding["lots"][number]>)[],
+  recorded: SelectorBuilding["recorded"] = {},
 ): string[] {
   const problems: string[] = [];
   const moduleProblem = regulationModuleProblem(rules, scheme.regulationModule);
@@ -313,5 +318,6 @@ export function buildingDataProblems(
     if (missing.length === 1) problems.push(`Lot ${missing[0]} has no ${separate.name} recorded. StrataVerze can enter it from the building's records.`);
     else if (missing.length > 1) problems.push(`${missing.length} lots have no ${separate.name} recorded (lots ${lotList(missing)}). StrataVerze can enter them from the building's records.`);
   }
+  if (rules.BUILDING_SELECTORS?.length) problems.push(...buildingSelectorProblems(rules, { scheme, lots, recorded }));
   return problems;
 }

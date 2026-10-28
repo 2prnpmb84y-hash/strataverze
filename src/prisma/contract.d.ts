@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'f744c7f59e261f84b916a43c5f4dc98b8ce489fac27ae60ae574a2b8dae69eac'>;
+  StorageHashBase<'7d4f8fdcb3e333b289efde33f9c59d8e96d382cd52ccc3c8e7a87b0744862b03'>;
 export type ExecutionHash =
   ExecutionHashBase<'8c9cb0b046b1bd7cbabff3729749064a4319da7e3f83be98fb8c1e93574f50c8'>;
 export type ProfileHash =
@@ -1688,6 +1688,7 @@ export namespace Models {
     interestScheduleEntitlement: FieldOutputTypes['public']['Lot']['interestScheduleEntitlement'];
     lotNumber: FieldOutputTypes['public']['Lot']['lotNumber'];
     lotType: FieldOutputTypes['public']['Lot']['lotType'];
+    occupiable: FieldOutputTypes['public']['Lot']['occupiable'];
     schemeId: FieldOutputTypes['public']['Lot']['schemeId'];
     streetName: FieldOutputTypes['public']['Lot']['streetName'];
     streetNo: FieldOutputTypes['public']['Lot']['streetNo'];
@@ -2651,6 +2652,8 @@ export namespace Models {
     postcode: FieldOutputTypes['public']['Scheme']['postcode'];
     preMeetingEvotingAdopted: FieldOutputTypes['public']['Scheme']['preMeetingEvotingAdopted'];
     regulationModule: FieldOutputTypes['public']['Scheme']['regulationModule'];
+    replacementCost: FieldOutputTypes['public']['Scheme']['replacementCost'];
+    servicesOnly: FieldOutputTypes['public']['Scheme']['servicesOnly'];
     state: FieldOutputTypes['public']['Scheme']['state'];
     suburb: FieldOutputTypes['public']['Scheme']['suburb'];
     timeZone: FieldOutputTypes['public']['Scheme']['timeZone'];
@@ -2695,6 +2698,7 @@ export namespace Models {
     quoteRequests: public_QuoteRequest[];
     recordsInspections: public_RecordsInspection[];
     saleCertificates: public_SaleCertificate[];
+    selectorValues: public_SchemeSelectorValue[];
     supplierInvoices: public_SupplierInvoice[];
     suppliers: public_Supplier[];
     workOrders: public_WorkOrder[];
@@ -2754,6 +2758,7 @@ export namespace Models {
       | 'quoteRequests'
       | 'recordsInspections'
       | 'saleCertificates'
+      | 'selectorValues'
       | 'supplierInvoices'
       | 'suppliers'
       | 'workOrders'
@@ -2842,6 +2847,16 @@ export namespace Models {
     updatedAt: FieldOutputTypes['public']['SchemePaymentPolicy']['updatedAt'];
     updatedBy: FieldOutputTypes['public']['SchemePaymentPolicy']['updatedBy'];
     readonly [RelationKeys]?: never;
+  };
+  export type public_SchemeSelectorValue = {
+    id: FieldOutputTypes['public']['SchemeSelectorValue']['id'];
+    key: FieldOutputTypes['public']['SchemeSelectorValue']['key'];
+    recordedAt: FieldOutputTypes['public']['SchemeSelectorValue']['recordedAt'];
+    recordedBy: FieldOutputTypes['public']['SchemeSelectorValue']['recordedBy'];
+    schemeId: FieldOutputTypes['public']['SchemeSelectorValue']['schemeId'];
+    value: FieldOutputTypes['public']['SchemeSelectorValue']['value'];
+    scheme: public_Scheme;
+    readonly [RelationKeys]?: 'scheme';
   };
   export type public_SchemeSubscription = {
     createdAt: FieldOutputTypes['public']['SchemeSubscription']['createdAt'];
@@ -4292,6 +4307,7 @@ export declare const models: {
     SchemeImage: Models.public_SchemeImage;
     SchemeMembership: Models.public_SchemeMembership;
     SchemePaymentPolicy: Models.public_SchemePaymentPolicy;
+    SchemeSelectorValue: Models.public_SchemeSelectorValue;
     SchemeSubscription: Models.public_SchemeSubscription;
     SecurityAuditCheck: Models.public_SecurityAuditCheck;
     SecurityAuditEvent: Models.public_SecurityAuditEvent;
@@ -13033,6 +13049,12 @@ type ContractBase = Omit<
                   };
                   readonly many: false;
                 };
+                readonly occupiable: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly scheme_id: {
                   readonly dataType: 'pg/uuid';
                   readonly codecId: 'pg/uuid@1';
@@ -17795,6 +17817,74 @@ type ContractBase = Omit<
               ];
               foreignKeys: readonly [];
             };
+            readonly scheme_selector_values: {
+              columns: {
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly key: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly recorded_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly recorded_by: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly scheme_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly value: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'scheme_selector_values_scheme_id_key_key';
+                  readonly columns: readonly ['scheme_id', 'key'];
+                  readonly unique: true;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'scheme_selector_values';
+                    readonly columns: readonly ['scheme_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'schemes';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
             readonly scheme_subscriptions: {
               columns: {
                 readonly created_at: {
@@ -18103,6 +18193,19 @@ type ContractBase = Omit<
                 readonly regulation_module: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly replacement_cost: {
+                  readonly dataType: 'pg/numeric';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 14; readonly scale: 2 };
+                  readonly many: false;
+                };
+                readonly services_only: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
                   readonly nullable: true;
                   readonly many: false;
                 };
@@ -27378,6 +27481,10 @@ type ContractBase = Omit<
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'SchemePaymentPolicy';
     };
+    readonly scheme_selector_values: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'SchemeSelectorValue';
+    };
     readonly scheme_subscriptions: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'SchemeSubscription';
@@ -35106,6 +35213,10 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly occupiable: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
               readonly schemeId: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
@@ -35360,6 +35471,7 @@ type ContractBase = Omit<
                 };
                 readonly lotNumber: { readonly column: 'lot_number' };
                 readonly lotType: { readonly column: 'lot_type' };
+                readonly occupiable: { readonly column: 'occupiable' };
                 readonly schemeId: { readonly column: 'scheme_id' };
                 readonly streetName: { readonly column: 'street_name' };
                 readonly streetNo: { readonly column: 'street_no' };
@@ -40620,6 +40732,18 @@ type ContractBase = Omit<
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly replacementCost: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly typeParams: { readonly precision: 14; readonly scale: 2 };
+                };
+              };
+              readonly servicesOnly: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
               readonly state: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -41066,6 +41190,17 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['schemeId'];
                 };
               };
+              readonly selectorValues: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'SchemeSelectorValue';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['schemeId'];
+                };
+              };
               readonly supplierInvoices: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -41334,6 +41469,8 @@ type ContractBase = Omit<
                   readonly column: 'pre_meeting_evoting_adopted';
                 };
                 readonly regulationModule: { readonly column: 'regulation_module' };
+                readonly replacementCost: { readonly column: 'replacement_cost' };
+                readonly servicesOnly: { readonly column: 'services_only' };
                 readonly state: { readonly column: 'state' };
                 readonly suburb: { readonly column: 'suburb' };
                 readonly timeZone: { readonly column: 'time_zone' };
@@ -41762,6 +41899,63 @@ type ContractBase = Omit<
                 readonly singleApproverLimit: { readonly column: 'single_approver_limit' };
                 readonly updatedAt: { readonly column: 'updated_at' };
                 readonly updatedBy: { readonly column: 'updated_by' };
+              };
+            };
+          };
+          readonly SchemeSelectorValue: {
+            readonly fields: {
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly key: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly recordedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly recordedBy: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly schemeId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly value: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: {
+              readonly scheme: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Scheme';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['schemeId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'scheme_selector_values';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly id: { readonly column: 'id' };
+                readonly key: { readonly column: 'key' };
+                readonly recordedAt: { readonly column: 'recorded_at' };
+                readonly recordedBy: { readonly column: 'recorded_by' };
+                readonly schemeId: { readonly column: 'scheme_id' };
+                readonly value: { readonly column: 'value' };
               };
             };
           };

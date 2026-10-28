@@ -36,7 +36,18 @@
  * marked `defaultByLaw: true`.
  */
 
-import type { EntitlementScheduleDefinition, FundDefinition, PackFeatures, RuleStatus, SchemeSelector, SizeClassRequirement } from "./types";
+import type {
+  BuildingFactDefinition,
+  BuildingSelector,
+  DerivedBuildingSelector,
+  EntitlementScheduleDefinition,
+  FundDefinition,
+  PackFeatures,
+  RecordedBuildingSelector,
+  RecordedFactKey,
+  RuleStatus,
+  SizeClassRequirement,
+} from "./types";
 
 const STA = "Strata Titles Act 1985 (WA)";
 const STGR = "Strata Titles (General) Regulations 2019 (WA)";
@@ -54,8 +65,10 @@ const MAGISTRATES_COURT = "Magistrates Court of WA, Monetary claim for debt or d
  * TENURE selector. Which options are `supported` is a StrataVerze proposal,
  * not law (FOR_REVIEW).
  */
-export const SCHEME_TYPE: SchemeSelector = {
+export const SCHEME_TYPE: RecordedBuildingSelector = {
   key: "schemeType",
+  // Recorded by the adviser in the Building rules section (stage 2, PR 2).
+  held: "RECORDED",
   label: "Scheme type",
   help: "Whether the scheme is a strata scheme (lots defined by reference to a building) or a survey-strata scheme (lots defined without a building).",
   options: [
@@ -71,8 +84,10 @@ export const SCHEME_TYPE: SchemeSelector = {
  * Either scheme type may be leasehold. Which options are `supported` is a
  * StrataVerze proposal, not law (FOR_REVIEW).
  */
-export const TENURE: SchemeSelector = {
+export const TENURE: RecordedBuildingSelector = {
   key: "tenure",
+  // Recorded by the adviser in the Building rules section (stage 2, PR 2).
+  held: "RECORDED",
   label: "Freehold or leasehold",
   help: "Whether the scheme is freehold or a leasehold scheme with a fixed expiry day.",
   options: [
@@ -93,9 +108,14 @@ export const TENURE: SchemeSelector = {
  * 5-lot scheme"). Three bands: 2 lots, 3 to 5 lots, 6 or more. The
  * designated strata company test (10 or more lots, or replacement cost) is
  * separate: DESIGNATED_STRATA_COMPANY.
+ *
+ * Worked out from the building's number of lots (stage 2, PR 2, 28 Oct 2026),
+ * never recorded. The notes give no class for a scheme of fewer than 2 lots,
+ * so none is worked out for one.
  */
-export const SCHEME_SIZE: SchemeSelector = {
+export const SCHEME_SIZE: DerivedBuildingSelector = {
   key: "schemeSize",
+  held: "DERIVED",
   label: "Scheme size",
   help: "Worked out from the number of lots in the scheme.",
   options: [
@@ -103,6 +123,12 @@ export const SCHEME_SIZE: SchemeSelector = {
     { value: "THREE_TO_FIVE_LOT", label: "3, 4 or 5-lot scheme", supported: true },
     { value: "SIX_OR_MORE_LOT", label: "6 or more lots", supported: true },
   ],
+  rules: [
+    { value: "TWO_LOT", when: { number: "LOT_COUNT", atLeast: 2, atMost: 2 }, provision: `${STA} s 3(1)`, status: "CONFIRMED" },
+    { value: "THREE_TO_FIVE_LOT", when: { number: "LOT_COUNT", atLeast: 3, atMost: 5 }, provision: `${STA} s 3(1)`, status: "CONFIRMED" },
+    { value: "SIX_OR_MORE_LOT", when: { number: "LOT_COUNT", atLeast: 6 }, provision: `${STA} s 3(1)`, status: "CONFIRMED" },
+  ],
+  noRuleFits: "No scheme size fits the number of lots recorded. A scheme has at least 2 lots.",
   source: `${STA} ss 3(1), 123, 127, 130, 140`,
   status: "CONFIRMED",
 };
@@ -177,6 +203,80 @@ export const DESIGNATED_STRATA_COMPANY = {
   source: `${STA} s 100(7); ${STGR} reg 79; ${LANDGATE_COMPANIES}`,
   status: "CONFIRMED" as RuleStatus,
 } as const;
+
+/**
+ * The replacement cost the designated test reads (stage 2, PR 2): for a
+ * strata scheme the scheme building replacement cost, for a survey-strata
+ * scheme the replacement cost of the improvements on the common property
+ * (STGR reg 79). Recorded by the adviser, in dollars.
+ */
+export const BUILDING_FACTS: Partial<Readonly<Record<RecordedFactKey, BuildingFactDefinition>>> = {
+  REPLACEMENT_COST: {
+    label: "Replacement cost",
+    help: "For a strata scheme, the scheme building replacement cost. For a survey-strata scheme, the replacement cost of the improvements on the common property. In dollars.",
+    source: `${STA} s 100(7); ${STGR} reg 79`,
+    status: "CONFIRMED",
+  },
+};
+
+const designatedCost = (schemeType: string) => ({
+  all: [
+    { selector: SCHEME_TYPE.key, in: [schemeType] },
+    { number: "REPLACEMENT_COST_CENTS", moreThan: DESIGNATED_STRATA_COMPANY.replacementCostMoreThanCents },
+  ],
+}) as const;
+
+/**
+ * Whether the strata company is a designated strata company (STA s 100(7);
+ * STGR reg 79), worked out from DESIGNATED_STRATA_COMPANY (stage 2, PR 2):
+ * (a) 10 or more lots; (b) a strata scheme whose scheme building replacement
+ * cost is more than $5,000,000; or (c) a survey-strata scheme whose common
+ * property improvements have a replacement cost of more than $5,000,000.
+ * Strictly more than, as reg 79 says (not Landgate's "or greater"). With 10 or
+ * more lots no other fact is needed. Below 10 lots the scheme type and the
+ * replacement cost are both needed, or it is not worked out. The notes record
+ * no other way to be, or not be, designated, so no override is offered.
+ */
+export const DESIGNATED_STATUS: DerivedBuildingSelector = {
+  key: "designatedStrataCompany",
+  held: "DERIVED",
+  label: "Designated strata company",
+  help: "Worked out from the number of lots and, below 10 lots, the scheme type and the replacement cost. A designated strata company must have a reserve fund and a 10-year plan.",
+  options: [
+    { value: "DESIGNATED", label: "Designated strata company", supported: true },
+    { value: "NOT_DESIGNATED", label: "Not a designated strata company", supported: true },
+  ],
+  rules: [
+    {
+      value: "DESIGNATED",
+      when: { any: [{ number: "LOT_COUNT", atLeast: DESIGNATED_STRATA_COMPANY.minLots }, designatedCost("STRATA"), designatedCost("SURVEY_STRATA")] },
+      provision: `${STA} s 100(7); ${STGR} reg 79`,
+      status: DESIGNATED_STRATA_COMPANY.status,
+    },
+    {
+      value: "NOT_DESIGNATED",
+      when: {
+        all: [
+          { number: "LOT_COUNT", lessThan: DESIGNATED_STRATA_COMPANY.minLots },
+          { selector: SCHEME_TYPE.key, in: ["STRATA", "SURVEY_STRATA"] },
+          { number: "REPLACEMENT_COST_CENTS", atMost: DESIGNATED_STRATA_COMPANY.replacementCostMoreThanCents },
+        ],
+      },
+      provision: `${STA} s 100(7); ${STGR} reg 79`,
+      status: DESIGNATED_STRATA_COMPANY.status,
+    },
+  ],
+  noRuleFits: "The designated strata company test could not be worked out from the facts recorded.",
+  source: `${STA} s 100(2), (2A), (7); ${STGR} reg 79`,
+  status: "CONFIRMED",
+};
+
+/**
+ * The building selectors (stage 2, PR 2): the scheme type and tenure,
+ * recorded by the adviser, and the size class and designated status, worked
+ * out from the number of lots, the scheme type and the replacement cost.
+ */
+export const BUILDING_SELECTORS: readonly BuildingSelector[] = [SCHEME_TYPE, TENURE, SCHEME_SIZE, DESIGNATED_STATUS];
 
 /**
  * The two funds (STA s 100). Neither is required of every Western Australian
@@ -1110,6 +1210,9 @@ export const FOR_REVIEW = [
   "Supported options: `supported: true` for STRATA (SCHEME_TYPE), FREEHOLD (TENURE) and all three size classes (SCHEME_SIZE) is a StrataVerze proposal, not law. Survey-strata and leasehold schemes are proposed as not supported because they were researched at headline level only.",
   "Levy debts go to a court, not SAT (s 100(4)(c), s 197(3)(f)). TERMINOLOGY.tribunal (\"SAT\") is the strata disputes tribunal only; shared code that names where levy claims are heard must take the forum from DEBT_RECOVERY, not from TERMINOLOGY.tribunal.",
   "Funds: both funds have `required: false`, with `requiredWhen` giving the law's test. Before Western Australia goes live, defaultFunds must read `requiredWhen` (GO-LIVE GAP at FUND_CATALOGUE), using the building's size class, by-laws and designated strata company status.",
+  "Building selectors (BUILDING_SELECTORS): the scheme type and tenure are recorded by the adviser or StrataVerze in the Building rules section, outside the locked building record, and any listed option may be recorded (one not supported is flagged). The size class and designated status are worked out, never recorded. The number of lots is the building's lots other than common property rows, read only where it matches the building's total lots.",
+  "Designated status (DESIGNATED_STATUS): the notes record no way to be, or not be, designated other than the s 100(7) and reg 79 tests, so no override is offered. Below 10 lots the replacement cost must be recorded, and its meaning follows the scheme type (scheme building for a strata scheme, common property improvements for a survey-strata scheme). Who may record the replacement cost, and from what valuation, is for review.",
+  "Scheme size (SCHEME_SIZE): no class is worked out for fewer than 2 lots, because the notes give none.",
 ] as const;
 
 /**

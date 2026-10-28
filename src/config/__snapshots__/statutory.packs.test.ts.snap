@@ -34,6 +34,459 @@ exports[`Australian Capital Territory pack (pending) > is the rules recorded for
     "statementsPresentedWithinMonthsOfStatedDay": 3,
     "status": "CONFIRMED",
   },
+  "AUDIT_BY_UNITS": {
+    "held": "DERIVED",
+    "help": "Worked out from the number of units. With more than 100 units the financial records must be audited before the AGM. Otherwise an audit is required only if the annual budget is over $250,000.",
+    "key": "auditByUnits",
+    "label": "Audit",
+    "noRuleFits": "Whether an audit is required could not be worked out from the units recorded.",
+    "options": [
+      {
+        "label": "Audit required",
+        "supported": true,
+        "value": "REQUIRED",
+      },
+      {
+        "label": "Required only if the annual budget is over $250,000",
+        "supported": true,
+        "value": "BUDGET_DECIDES",
+      },
+    ],
+    "rules": [
+      {
+        "provision": "Unit Titles (Management) Act 2011 (ACT) sch 2 ss 2.1(1)(g), 2.1A",
+        "status": "CONFIRMED",
+        "value": "REQUIRED",
+        "when": {
+          "moreThan": 100,
+          "number": "LOT_COUNT",
+        },
+      },
+      {
+        "provision": "Unit Titles (Management) Act 2011 (ACT) sch 2 ss 2.1(1)(g), 2.1A",
+        "status": "CONFIRMED",
+        "value": "BUDGET_DECIDES",
+        "when": {
+          "atMost": 100,
+          "number": "LOT_COUNT",
+        },
+      },
+    ],
+    "source": "Unit Titles (Management) Act 2011 (ACT) sch 2 ss 2.1(1)(g), 2.1A",
+    "status": "CONFIRMED",
+  },
+  "BANK_ACCOUNT_EXEMPTION": {
+    "held": "DERIVED",
+    "help": "Worked out from the number of units. Only a units plan of 2 or 3 units may exempt itself from the bank account requirement, by unopposed resolution.",
+    "key": "bankAccountExemption",
+    "label": "Bank account exemption",
+    "noRuleFits": "The bank account exemption could not be worked out from the units recorded.",
+    "options": [
+      {
+        "label": "May exempt itself",
+        "supported": true,
+        "value": "MAY_EXEMPT",
+      },
+      {
+        "label": "May not exempt itself",
+        "supported": true,
+        "value": "MAY_NOT_EXEMPT",
+      },
+    ],
+    "rules": [
+      {
+        "provision": "Unit Titles (Management) Act 2011 (ACT) s 68(2)",
+        "status": "CONFIRMED",
+        "value": "MAY_EXEMPT",
+        "when": {
+          "atLeast": 2,
+          "atMost": 3,
+          "number": "LOT_COUNT",
+        },
+      },
+      {
+        "provision": "Unit Titles (Management) Act 2011 (ACT) s 68(2)",
+        "status": "CONFIRMED",
+        "value": "MAY_NOT_EXEMPT",
+        "when": {
+          "any": [
+            {
+              "lessThan": 2,
+              "number": "LOT_COUNT",
+            },
+            {
+              "moreThan": 3,
+              "number": "LOT_COUNT",
+            },
+          ],
+        },
+      },
+    ],
+    "source": "Unit Titles (Management) Act 2011 (ACT) s 68(2)",
+    "status": "CONFIRMED",
+  },
+  "BUILDING_SELECTORS": [
+    {
+      "held": "RECORDED",
+      "help": "A units plan under the Unit Titles Act 2001. Community title schemes are governed by a different Act.",
+      "key": "schemeType",
+      "label": "Scheme type",
+      "options": [
+        {
+          "label": "Units plan",
+          "supported": true,
+          "value": "UNITS_PLAN",
+        },
+        {
+          "label": "Community title scheme",
+          "note": "Community Title Act 2001 (R17, effective 6 Dec 2025): only the register page was read; its body corporate, committee and meeting rules are not confirmed.",
+          "supported": false,
+          "value": "COMMUNITY_TITLE",
+        },
+      ],
+      "source": "Unit Titles Act 2001 (ACT) ss 7 to 11; Community Title Act 2001 (ACT) (landing page only)",
+      "status": "CONFIRMED",
+    },
+    {
+      "held": "RECORDED",
+      "help": "Whether the units plan is a retirement village units plan. Its standard quorum is 1/3 of units instead of 1/2, and its budget and AGM notice timing follow the Retirement Villages Act 2012.",
+      "key": "retirementVillagePlan",
+      "label": "Retirement village units plan",
+      "options": [
+        {
+          "label": "Not a retirement village units plan",
+          "supported": true,
+          "value": "NO",
+        },
+        {
+          "label": "Retirement village units plan",
+          "note": "The Retirement Villages Act 2012 was not read, so StrataVerze does not apply these rules yet.",
+          "supported": false,
+          "value": "YES",
+        },
+      ],
+      "source": "Unit Titles (Management) Act 2011 (ACT) s 75(5); sch 3 ss 3.6(3), 3.9(1)(a)(i)",
+      "status": "CONFIRMED",
+    },
+    {
+      "held": "RECORDED",
+      "help": "Whether the units plan is mixed use. Its executive committee must then include, if feasible, at least 1 owner of a residential unit and 1 owner of a unit that is not residential.",
+      "key": "mixedUsePlan",
+      "label": "Mixed use units plan",
+      "options": [
+        {
+          "label": "Not a mixed use units plan",
+          "supported": true,
+          "value": "NO",
+        },
+        {
+          "label": "Mixed use units plan",
+          "note": "StrataVerze does not check the executive committee for this yet.",
+          "supported": false,
+          "value": "YES",
+        },
+      ],
+      "source": "Unit Titles (Management) Act 2011 (ACT) s 39A",
+      "status": "CONFIRMED",
+    },
+    {
+      "held": "RECORDED",
+      "help": "Whether every unit in the units plan is a class B unit. The owners corporation may then exempt itself from building insurance for buildings on class B units by unanimous resolution.",
+      "key": "classBOnlyPlan",
+      "label": "Class B units only",
+      "options": [
+        {
+          "label": "Not class B units only",
+          "supported": true,
+          "value": "NO",
+        },
+        {
+          "label": "Class B units only",
+          "note": "StrataVerze does not apply the building insurance exemption yet.",
+          "supported": false,
+          "value": "YES",
+        },
+      ],
+      "source": "Unit Titles (Management) Act 2011 (ACT) s 101(2)",
+      "status": "CONFIRMED",
+    },
+    {
+      "held": "DERIVED",
+      "help": "Worked out from the number of units. Only a units plan of 2 or 3 units may exempt itself from the bank account requirement, by unopposed resolution.",
+      "key": "bankAccountExemption",
+      "label": "Bank account exemption",
+      "noRuleFits": "The bank account exemption could not be worked out from the units recorded.",
+      "options": [
+        {
+          "label": "May exempt itself",
+          "supported": true,
+          "value": "MAY_EXEMPT",
+        },
+        {
+          "label": "May not exempt itself",
+          "supported": true,
+          "value": "MAY_NOT_EXEMPT",
+        },
+      ],
+      "rules": [
+        {
+          "provision": "Unit Titles (Management) Act 2011 (ACT) s 68(2)",
+          "status": "CONFIRMED",
+          "value": "MAY_EXEMPT",
+          "when": {
+            "atLeast": 2,
+            "atMost": 3,
+            "number": "LOT_COUNT",
+          },
+        },
+        {
+          "provision": "Unit Titles (Management) Act 2011 (ACT) s 68(2)",
+          "status": "CONFIRMED",
+          "value": "MAY_NOT_EXEMPT",
+          "when": {
+            "any": [
+              {
+                "lessThan": 2,
+                "number": "LOT_COUNT",
+              },
+              {
+                "moreThan": 3,
+                "number": "LOT_COUNT",
+              },
+            ],
+          },
+        },
+      ],
+      "source": "Unit Titles (Management) Act 2011 (ACT) s 68(2)",
+      "status": "CONFIRMED",
+    },
+    {
+      "held": "DERIVED",
+      "help": "Worked out from the number of units. With 4 or more units a sinking fund and a sinking fund plan are required.",
+      "key": "sinkingFundRequired",
+      "label": "Sinking fund",
+      "noRuleFits": "Whether a sinking fund is required could not be worked out from the units recorded.",
+      "options": [
+        {
+          "label": "Sinking fund and plan required",
+          "supported": true,
+          "value": "REQUIRED",
+        },
+        {
+          "label": "Not required",
+          "supported": true,
+          "value": "NOT_REQUIRED",
+        },
+      ],
+      "rules": [
+        {
+          "provision": "Unit Titles (Management) Act 2011 (ACT) ss 81(1), 82(1)",
+          "status": "CONFIRMED",
+          "value": "REQUIRED",
+          "when": {
+            "atLeast": 4,
+            "number": "LOT_COUNT",
+          },
+        },
+        {
+          "provision": "Unit Titles (Management) Act 2011 (ACT) ss 81(1), 82(1)",
+          "status": "CONFIRMED",
+          "value": "NOT_REQUIRED",
+          "when": {
+            "lessThan": 4,
+            "number": "LOT_COUNT",
+          },
+        },
+      ],
+      "source": "Unit Titles (Management) Act 2011 (ACT) ss 81(1), 82(1)",
+      "status": "CONFIRMED",
+    },
+    {
+      "held": "DERIVED",
+      "help": "Worked out from the number of units. With 7 or more units a communications officer may be appointed by ordinary resolution.",
+      "key": "communicationsOfficer",
+      "label": "Communications officer",
+      "noRuleFits": "Whether a communications officer may be appointed could not be worked out from the units recorded.",
+      "options": [
+        {
+          "label": "May be appointed",
+          "supported": true,
+          "value": "MAY_APPOINT",
+        },
+        {
+          "label": "May not be appointed",
+          "supported": true,
+          "value": "MAY_NOT_APPOINT",
+        },
+      ],
+      "rules": [
+        {
+          "provision": "Unit Titles (Management) Act 2011 (ACT) s 66",
+          "status": "CONFIRMED",
+          "value": "MAY_APPOINT",
+          "when": {
+            "atLeast": 7,
+            "number": "LOT_COUNT",
+          },
+        },
+        {
+          "provision": "Unit Titles (Management) Act 2011 (ACT) s 66",
+          "status": "CONFIRMED",
+          "value": "MAY_NOT_APPOINT",
+          "when": {
+            "lessThan": 7,
+            "number": "LOT_COUNT",
+          },
+        },
+      ],
+      "source": "Unit Titles (Management) Act 2011 (ACT) s 66",
+      "status": "CONFIRMED",
+    },
+    {
+      "held": "DERIVED",
+      "help": "Worked out from the number of units. With more than 20 units a proxy holder may exercise proxies for no more than 5% of the total number of units. With 20 units or fewer the limit is 1 proxy.",
+      "key": "proxyLimit",
+      "label": "Proxy limit",
+      "noRuleFits": "The proxy limit could not be worked out from the units recorded.",
+      "options": [
+        {
+          "label": "1 proxy",
+          "supported": true,
+          "value": "ONE_PROXY",
+        },
+        {
+          "label": "No more than 5% of the units",
+          "supported": true,
+          "value": "FIVE_PERCENT_OF_UNITS",
+        },
+      ],
+      "rules": [
+        {
+          "provision": "Unit Titles (Management) Act 2011 (ACT) sch 3 s 3.26(3)",
+          "status": "CONFIRMED",
+          "value": "FIVE_PERCENT_OF_UNITS",
+          "when": {
+            "moreThan": 20,
+            "number": "LOT_COUNT",
+          },
+        },
+        {
+          "provision": "Unit Titles (Management) Act 2011 (ACT) sch 3 s 3.26(3)",
+          "status": "CONFIRMED",
+          "value": "ONE_PROXY",
+          "when": {
+            "atMost": 20,
+            "number": "LOT_COUNT",
+          },
+        },
+      ],
+      "source": "Unit Titles (Management) Act 2011 (ACT) sch 3 s 3.26(3)",
+      "status": "CONFIRMED",
+    },
+    {
+      "held": "DERIVED",
+      "help": "Worked out from the number of units. With more than 100 units the financial records must be audited before the AGM. Otherwise an audit is required only if the annual budget is over $250,000.",
+      "key": "auditByUnits",
+      "label": "Audit",
+      "noRuleFits": "Whether an audit is required could not be worked out from the units recorded.",
+      "options": [
+        {
+          "label": "Audit required",
+          "supported": true,
+          "value": "REQUIRED",
+        },
+        {
+          "label": "Required only if the annual budget is over $250,000",
+          "supported": true,
+          "value": "BUDGET_DECIDES",
+        },
+      ],
+      "rules": [
+        {
+          "provision": "Unit Titles (Management) Act 2011 (ACT) sch 2 ss 2.1(1)(g), 2.1A",
+          "status": "CONFIRMED",
+          "value": "REQUIRED",
+          "when": {
+            "moreThan": 100,
+            "number": "LOT_COUNT",
+          },
+        },
+        {
+          "provision": "Unit Titles (Management) Act 2011 (ACT) sch 2 ss 2.1(1)(g), 2.1A",
+          "status": "CONFIRMED",
+          "value": "BUDGET_DECIDES",
+          "when": {
+            "atMost": 100,
+            "number": "LOT_COUNT",
+          },
+        },
+      ],
+      "source": "Unit Titles (Management) Act 2011 (ACT) sch 2 ss 2.1(1)(g), 2.1A",
+      "status": "CONFIRMED",
+    },
+  ],
+  "CLASS_B_ONLY_PLAN": {
+    "held": "RECORDED",
+    "help": "Whether every unit in the units plan is a class B unit. The owners corporation may then exempt itself from building insurance for buildings on class B units by unanimous resolution.",
+    "key": "classBOnlyPlan",
+    "label": "Class B units only",
+    "options": [
+      {
+        "label": "Not class B units only",
+        "supported": true,
+        "value": "NO",
+      },
+      {
+        "label": "Class B units only",
+        "note": "StrataVerze does not apply the building insurance exemption yet.",
+        "supported": false,
+        "value": "YES",
+      },
+    ],
+    "source": "Unit Titles (Management) Act 2011 (ACT) s 101(2)",
+    "status": "CONFIRMED",
+  },
+  "COMMUNICATIONS_OFFICER": {
+    "held": "DERIVED",
+    "help": "Worked out from the number of units. With 7 or more units a communications officer may be appointed by ordinary resolution.",
+    "key": "communicationsOfficer",
+    "label": "Communications officer",
+    "noRuleFits": "Whether a communications officer may be appointed could not be worked out from the units recorded.",
+    "options": [
+      {
+        "label": "May be appointed",
+        "supported": true,
+        "value": "MAY_APPOINT",
+      },
+      {
+        "label": "May not be appointed",
+        "supported": true,
+        "value": "MAY_NOT_APPOINT",
+      },
+    ],
+    "rules": [
+      {
+        "provision": "Unit Titles (Management) Act 2011 (ACT) s 66",
+        "status": "CONFIRMED",
+        "value": "MAY_APPOINT",
+        "when": {
+          "atLeast": 7,
+          "number": "LOT_COUNT",
+        },
+      },
+      {
+        "provision": "Unit Titles (Management) Act 2011 (ACT) s 66",
+        "status": "CONFIRMED",
+        "value": "MAY_NOT_APPOINT",
+        "when": {
+          "lessThan": 7,
+          "number": "LOT_COUNT",
+        },
+      },
+    ],
+    "source": "Unit Titles (Management) Act 2011 (ACT) s 66",
+    "status": "CONFIRMED",
+  },
   "CONTRIBUTIONS": {
     "alternativeMethod": {
       "by": "SPECIAL",
@@ -379,6 +832,7 @@ exports[`Australian Capital Territory pack (pending) > is the rules recorded for
     "The sinking fund is marked \`required: false\` in FUND_CATALOGUE because the shared FundDefinition has only a yes or no \`required\`. The Act requires a sinking fund and sinking fund plan only with 4 or more units (UTMA ss 81(1), 82(1)); the threshold is FUND_RULES.sinkingFundRequiredFromUnits. Before the pack applies, decide how the platform requires the fund for buildings of 4 or more units (for example, a size threshold in the shared fund shape).",
     "FEATURES switches off the certificate (strataInformationCertificate) and records inspection (recordsInspections) workflows for this draft. Those switches run the NSW workflows; the ACT has its own certificates (SALE_CERTIFICATE) and records inspection rules (RECORDS), which need ACT workflows before they can be switched on.",
     "FOR LEGAL REVIEW: what the opening words of UTMA s 94(1), "unless otherwise decided by ordinary resolution", let an ordinary resolution do (INTEREST.openingWords).",
+    "BUILDING_SELECTORS: the scheme type and the three plan variants (retirement village, mixed use, class B units only) are recorded by the adviser or StrataVerze in the Building rules section, outside the locked building record. Each variant's "yes" is marked not supported because StrataVerze applies none of their rules yet (a StrataVerze proposal). The unit thresholds (bank account exemption, sinking fund, communications officer, proxy limit, the unit leg of the audit test) are worked out from the number of units: the building's lots other than common property rows, read only where it matches the building's total lots. The member thresholds (1 to 3 members, 4 or more members) are not worked out, because members are not units. The annual budget leg of the audit test is not a recorded fact, so at 100 units or fewer the value says the budget decides.",
     "DATED_RULES restates the Bill's quorum and absentee vote changes as NOT LAW values that are never applied, beside the in-force values from R25 (26 Jun 2026; earlier days have no value). When the Bill passes and pt 6 is notified, a new pack version restates them as enacted with the day they commence. Confirm both choices.",
   ],
   "FUND_CATALOGUE": [
@@ -731,6 +1185,27 @@ exports[`Australian Capital Territory pack (pending) > is the rules recorded for
     "source": "Unit Titles (Management) Act 2011 (ACT) s 41; sch 2 ss 2.1, 2.8; sch 3 ss 3.1 to 3.13, 3.31, 3.31A; Unit Titles (Management) Regulation 2011 (ACT) s 10; Unit Titles (Management) (Meeting Agenda) Guidelines 2023 (NI2023-528)",
     "status": "CONFIRMED",
   },
+  "MIXED_USE_PLAN": {
+    "held": "RECORDED",
+    "help": "Whether the units plan is mixed use. Its executive committee must then include, if feasible, at least 1 owner of a residential unit and 1 owner of a unit that is not residential.",
+    "key": "mixedUsePlan",
+    "label": "Mixed use units plan",
+    "options": [
+      {
+        "label": "Not a mixed use units plan",
+        "supported": true,
+        "value": "NO",
+      },
+      {
+        "label": "Mixed use units plan",
+        "note": "StrataVerze does not check the executive committee for this yet.",
+        "supported": false,
+        "value": "YES",
+      },
+    ],
+    "source": "Unit Titles (Management) Act 2011 (ACT) s 39A",
+    "status": "CONFIRMED",
+  },
   "NOT_CONFIRMED": [
     "Community title governance details (body corporate name, committee, meetings): only the Community Title Act 2001 register page was read.",
     "Rental certificate contents (DI2026-21): the instrument was not opened.",
@@ -805,6 +1280,47 @@ exports[`Australian Capital Territory pack (pending) > is the rules recorded for
     "maxWhen20UnitsOrFewer": 1,
     "roundingStatus": "NOT_CONFIRMED",
     "source": "Unit Titles (Management) Act 2011 (ACT) s 146(2); sch 3 ss 3.7(2)(a), 3.26, 3.27; UTMA Form 2, Appointment of a proxy (AF2021-17)",
+    "status": "CONFIRMED",
+  },
+  "PROXY_LIMIT_BAND": {
+    "held": "DERIVED",
+    "help": "Worked out from the number of units. With more than 20 units a proxy holder may exercise proxies for no more than 5% of the total number of units. With 20 units or fewer the limit is 1 proxy.",
+    "key": "proxyLimit",
+    "label": "Proxy limit",
+    "noRuleFits": "The proxy limit could not be worked out from the units recorded.",
+    "options": [
+      {
+        "label": "1 proxy",
+        "supported": true,
+        "value": "ONE_PROXY",
+      },
+      {
+        "label": "No more than 5% of the units",
+        "supported": true,
+        "value": "FIVE_PERCENT_OF_UNITS",
+      },
+    ],
+    "rules": [
+      {
+        "provision": "Unit Titles (Management) Act 2011 (ACT) sch 3 s 3.26(3)",
+        "status": "CONFIRMED",
+        "value": "FIVE_PERCENT_OF_UNITS",
+        "when": {
+          "moreThan": 20,
+          "number": "LOT_COUNT",
+        },
+      },
+      {
+        "provision": "Unit Titles (Management) Act 2011 (ACT) sch 3 s 3.26(3)",
+        "status": "CONFIRMED",
+        "value": "ONE_PROXY",
+        "when": {
+          "atMost": 20,
+          "number": "LOT_COUNT",
+        },
+      },
+    ],
+    "source": "Unit Titles (Management) Act 2011 (ACT) sch 3 s 3.26(3)",
     "status": "CONFIRMED",
   },
   "RECORDS": {
@@ -959,6 +1475,27 @@ exports[`Australian Capital Territory pack (pending) > is the rules recorded for
     "status": "CONFIRMED",
     "votesPerUnit": 1,
   },
+  "RETIREMENT_VILLAGE_PLAN": {
+    "held": "RECORDED",
+    "help": "Whether the units plan is a retirement village units plan. Its standard quorum is 1/3 of units instead of 1/2, and its budget and AGM notice timing follow the Retirement Villages Act 2012.",
+    "key": "retirementVillagePlan",
+    "label": "Retirement village units plan",
+    "options": [
+      {
+        "label": "Not a retirement village units plan",
+        "supported": true,
+        "value": "NO",
+      },
+      {
+        "label": "Retirement village units plan",
+        "note": "The Retirement Villages Act 2012 was not read, so StrataVerze does not apply these rules yet.",
+        "supported": false,
+        "value": "YES",
+      },
+    ],
+    "source": "Unit Titles (Management) Act 2011 (ACT) s 75(5); sch 3 ss 3.6(3), 3.9(1)(a)(i)",
+    "status": "CONFIRMED",
+  },
   "SALE_CERTIFICATE": {
     "applicants": "an eligible person, including a person who has entered a contract to buy the unit",
     "contents": {
@@ -1030,6 +1567,7 @@ exports[`Australian Capital Territory pack (pending) > is the rules recorded for
     "updateWithinMonthsOfSaleCertificate": 4,
   },
   "SCHEME_TYPE": {
+    "held": "RECORDED",
     "help": "A units plan under the Unit Titles Act 2001. Community title schemes are governed by a different Act.",
     "key": "schemeType",
     "label": "Scheme type",
@@ -1064,6 +1602,47 @@ exports[`Australian Capital Territory pack (pending) > is the rules recorded for
       "standardQuorumFractionOfUnits": 0.3333333333333333,
     },
     "source": "Unit Titles (Management) Act 2011 (ACT) ss 39A, 75(5), 101(2); sch 3 ss 3.6(3), 3.9(1)(a)(i)",
+    "status": "CONFIRMED",
+  },
+  "SINKING_FUND_REQUIRED": {
+    "held": "DERIVED",
+    "help": "Worked out from the number of units. With 4 or more units a sinking fund and a sinking fund plan are required.",
+    "key": "sinkingFundRequired",
+    "label": "Sinking fund",
+    "noRuleFits": "Whether a sinking fund is required could not be worked out from the units recorded.",
+    "options": [
+      {
+        "label": "Sinking fund and plan required",
+        "supported": true,
+        "value": "REQUIRED",
+      },
+      {
+        "label": "Not required",
+        "supported": true,
+        "value": "NOT_REQUIRED",
+      },
+    ],
+    "rules": [
+      {
+        "provision": "Unit Titles (Management) Act 2011 (ACT) ss 81(1), 82(1)",
+        "status": "CONFIRMED",
+        "value": "REQUIRED",
+        "when": {
+          "atLeast": 4,
+          "number": "LOT_COUNT",
+        },
+      },
+      {
+        "provision": "Unit Titles (Management) Act 2011 (ACT) ss 81(1), 82(1)",
+        "status": "CONFIRMED",
+        "value": "NOT_REQUIRED",
+        "when": {
+          "lessThan": 4,
+          "number": "LOT_COUNT",
+        },
+      },
+    ],
+    "source": "Unit Titles (Management) Act 2011 (ACT) ss 81(1), 82(1)",
     "status": "CONFIRMED",
   },
   "SIZE_THRESHOLDS": {
@@ -1188,6 +1767,8 @@ exports[`Australian Capital Territory pack (pending) > is the rules recorded for
     "lateCharge": "interest",
     "levies": "contributions",
     "levy": "contribution",
+    "lot": "unit",
+    "lots": "units",
     "managementContract": "management contract",
     "manager": "manager",
     "managerGuidanceTerm": "owners corporation managing agent",
@@ -2469,6 +3050,294 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
     "status": "CONFIRMED",
     "twoLotExempt": true,
   },
+  "BUILDING_FACTS": {
+    "LOT_OCCUPIABLE": {
+      "help": "An occupiable lot is a lot that is ordinarily used for residential or business purposes. A lot is not occupiable if it is a car park, a storage locker or a lot not ordinarily used for residential or business purposes.",
+      "label": "Occupiable lot",
+      "neverForLotTypes": {
+        "lotTypes": [
+          "PARKING",
+          "STORAGE",
+        ],
+        "status": "STRATAVERZE",
+      },
+      "noLabel": "Not occupiable",
+      "source": "Owners Corporations Act 2006 (Vic) s 3",
+      "status": "CONFIRMED",
+      "yesLabel": "Occupiable",
+    },
+    "SERVICES_ONLY": {
+      "help": "No land or building is designated as common property, and either common meters installed by a utility company are the common property, or there is an unmetered common supply or service.",
+      "label": "Services only owners corporation",
+      "noLabel": "Not services only",
+      "source": "Owners Corporations Act 2006 (Vic) s 3",
+      "status": "CONFIRMED",
+      "yesLabel": "Services only",
+    },
+  },
+  "BUILDING_SELECTORS": [
+    {
+      "held": "RECORDED",
+      "help": "Whether the plan of subdivision makes this owners corporation unlimited or limited.",
+      "key": "ownersCorporationType",
+      "label": "Owners corporation type",
+      "options": [
+        {
+          "label": "Unlimited owners corporation",
+          "note": "Supported in this draft as a StrataVerze choice, not a rule of law (for review).",
+          "supported": true,
+          "value": "UNLIMITED",
+        },
+        {
+          "label": "Limited owners corporation",
+          "note": "Only its members may use its common property, and its functions may be shifted to the unlimited owners corporation (SA ss 27C, 27D). Not supported in this draft.",
+          "supported": false,
+          "value": "LIMITED",
+        },
+      ],
+      "source": "Subdivision Act 1988 (Vic) ss 27(2), (3), 27C(3) to (5), 27D",
+      "status": "CONFIRMED",
+    },
+    {
+      "held": "RECORDED",
+      "help": "Whether the plan of subdivision creates more than one owners corporation.",
+      "key": "severalOwnersCorporations",
+      "label": "Owners corporations on the plan",
+      "options": [
+        {
+          "label": "This is the only owners corporation on the plan",
+          "supported": true,
+          "value": "NO",
+        },
+        {
+          "label": "One of several owners corporations on the plan",
+          "note": "How the tier is assessed for a plan with several owners corporations is not confirmed, so StrataVerze does not work it out.",
+          "supported": false,
+          "value": "YES",
+        },
+      ],
+      "source": "Subdivision Act 1988 (Vic) s 27(1); Owners Corporations Act 2006 (Vic) s 7",
+      "status": "CONFIRMED",
+    },
+    {
+      "held": "DERIVED",
+      "help": "Worked out from the number of occupiable lots, whether the owners corporation is services only, and whether it is the only one on the plan.",
+      "key": "tier",
+      "label": "Tier",
+      "noRuleFits": "No tier fits the lots recorded. Check each lot's occupiable answer.",
+      "options": [
+        {
+          "label": "Tier 1",
+          "note": "More than 100 occupiable lots, not services only.",
+          "supported": true,
+          "value": "TIER_1",
+        },
+        {
+          "label": "Tier 2",
+          "note": "51 to 100 occupiable lots, not services only.",
+          "supported": true,
+          "value": "TIER_2",
+        },
+        {
+          "label": "Tier 3",
+          "note": "10 to 50 occupiable lots, not services only.",
+          "supported": true,
+          "value": "TIER_3",
+        },
+        {
+          "label": "Tier 4",
+          "note": "3 to 9 occupiable lots, not services only.",
+          "supported": true,
+          "value": "TIER_4",
+        },
+        {
+          "label": "Tier 5",
+          "note": "An owners corporation for a 2-lot subdivision ("comprising of 2 occupiable lots"), or a services only owners corporation.",
+          "supported": true,
+          "value": "TIER_5",
+        },
+      ],
+      "rules": [
+        {
+          "provision": "Owners Corporations Act 2006 (Vic) s 7; Subdivision Act 1988 (Vic) s 27(1)",
+          "refusal": "This owners corporation is one of several on its plan. How the tier is assessed then is not confirmed, so StrataVerze does not work it out.",
+          "status": "NOT_CONFIRMED",
+          "value": null,
+          "when": {
+            "in": [
+              "YES",
+            ],
+            "selector": "severalOwnersCorporations",
+          },
+        },
+        {
+          "provision": "Owners Corporations Act 2006 (Vic) s 7(2) to (6)",
+          "status": "STRATAVERZE",
+          "value": "TIER_5",
+          "when": {
+            "all": [
+              {
+                "in": [
+                  "NO",
+                ],
+                "selector": "severalOwnersCorporations",
+              },
+              {
+                "flag": "SERVICES_ONLY",
+                "is": true,
+              },
+            ],
+          },
+        },
+        {
+          "provision": "Owners Corporations Act 2006 (Vic) s 7(8)",
+          "refusal": "Every lot is recorded as not occupiable. The tier is then worked out counting the lots that are not occupiable, which StrataVerze does not do yet.",
+          "status": "STRATAVERZE",
+          "value": null,
+          "when": {
+            "all": [
+              {
+                "atMost": 0,
+                "number": "OCCUPIABLE_LOT_COUNT",
+              },
+              {
+                "atLeast": 1,
+                "number": "NON_OCCUPIABLE_LOT_COUNT",
+              },
+            ],
+          },
+        },
+        {
+          "provision": "Owners Corporations Act 2006 (Vic) s 7(7)",
+          "refusal": "Fewer than 10 lots are occupiable and more than 50 are not. Tiers 1 and 2 are then worked out counting the lots that are not occupiable, which StrataVerze does not do yet.",
+          "status": "STRATAVERZE",
+          "value": null,
+          "when": {
+            "all": [
+              {
+                "lessThan": 10,
+                "number": "OCCUPIABLE_LOT_COUNT",
+              },
+              {
+                "moreThan": 50,
+                "number": "NON_OCCUPIABLE_LOT_COUNT",
+              },
+            ],
+          },
+        },
+        {
+          "provision": "Owners Corporations Act 2006 (Vic) s 7(6); s 3 (def. 2-lot subdivision)",
+          "status": "CONFIRMED",
+          "value": "TIER_5",
+          "when": {
+            "all": [
+              {
+                "atLeast": 2,
+                "atMost": 2,
+                "number": "OCCUPIABLE_LOT_COUNT",
+              },
+              {
+                "atMost": 0,
+                "number": "NON_OCCUPIABLE_LOT_COUNT",
+              },
+            ],
+          },
+        },
+        {
+          "provision": "Owners Corporations Act 2006 (Vic) s 7(6); s 3 (def. 2-lot subdivision)",
+          "refusal": "The plan has 2 occupiable lots and other lots that are not occupiable. Whether it is then a 2-lot subdivision is for StrataVerze to decide, so the tier is not worked out yet.",
+          "status": "STRATAVERZE",
+          "value": null,
+          "when": {
+            "all": [
+              {
+                "atLeast": 2,
+                "atMost": 2,
+                "number": "OCCUPIABLE_LOT_COUNT",
+              },
+              {
+                "atLeast": 1,
+                "number": "NON_OCCUPIABLE_LOT_COUNT",
+              },
+            ],
+          },
+        },
+        {
+          "provision": "Owners Corporations Act 2006 (Vic) s 7(2)",
+          "status": "CONFIRMED",
+          "value": "TIER_1",
+          "when": {
+            "all": [
+              {
+                "flag": "SERVICES_ONLY",
+                "is": false,
+              },
+              {
+                "atLeast": 101,
+                "number": "OCCUPIABLE_LOT_COUNT",
+              },
+            ],
+          },
+        },
+        {
+          "provision": "Owners Corporations Act 2006 (Vic) s 7(3)",
+          "status": "CONFIRMED",
+          "value": "TIER_2",
+          "when": {
+            "all": [
+              {
+                "flag": "SERVICES_ONLY",
+                "is": false,
+              },
+              {
+                "atLeast": 51,
+                "atMost": 100,
+                "number": "OCCUPIABLE_LOT_COUNT",
+              },
+            ],
+          },
+        },
+        {
+          "provision": "Owners Corporations Act 2006 (Vic) s 7(4)",
+          "status": "CONFIRMED",
+          "value": "TIER_3",
+          "when": {
+            "all": [
+              {
+                "flag": "SERVICES_ONLY",
+                "is": false,
+              },
+              {
+                "atLeast": 10,
+                "atMost": 50,
+                "number": "OCCUPIABLE_LOT_COUNT",
+              },
+            ],
+          },
+        },
+        {
+          "provision": "Owners Corporations Act 2006 (Vic) s 7(5)",
+          "status": "CONFIRMED",
+          "value": "TIER_4",
+          "when": {
+            "all": [
+              {
+                "flag": "SERVICES_ONLY",
+                "is": false,
+              },
+              {
+                "atLeast": 3,
+                "atMost": 9,
+                "number": "OCCUPIABLE_LOT_COUNT",
+              },
+            ],
+          },
+        },
+      ],
+      "source": "Owners Corporations Act 2006 (Vic) ss 3, 7; Subdivision Act 1988 (Vic) s 27(1)",
+      "status": "CONFIRMED",
+    },
+  ],
   "CHANGES": [
     {
       "change": "OCA s 67(1)(da): the building manual must be given at the first meeting",
@@ -3581,6 +4450,17 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
       "kind": "LEGAL",
       "point": "The financial year (no statutory definition found) and the tier of an owners corporation on a plan with several.",
     },
+    {
+      "before": "any rule reads the tier",
+      "key": "BUILDING_SELECTORS_TIER",
+      "kind": "LEGAL",
+      "point": "How TIER is worked out. (1) An owners corporation recorded as one of several on its plan is refused: the notes do not confirm how its tier is assessed (FINANCIAL_YEAR_AND_MULTI_OC_TIERS). (2) A services only owners corporation is tier 5 before s 7(7) and (8) are read, because tiers 1 to 4 exclude services only and s 7(7) applies tiers 1 and 2 only; that order is a StrataVerze reading. (3) Where s 7(7) or (8) applies (mostly or only non-occupiable lots) the tier is refused, because the notes do not say how the non-occupiable lots are counted with the occupiable ones. (4) A plan with 2 occupiable lots and no other lots is tier 5 (a 2-lot subdivision, "comprising of 2 occupiable lots"); with 2 occupiable lots and other lots it is refused until decided, because the notes do not say whether the other lots count. (5) Every tier is marked supported as a StrataVerze proposal.",
+    },
+    {
+      "before": "Victorian buildings are set up",
+      "key": "BUILDING_FACTS_RECORDED_BY",
+      "point": "Who records each lot's occupiable answer, the services only answer and whether the owners corporation is the only one on its plan: the adviser or StrataVerze, in the Building rules section, outside the locked building record. The lot form and the data import do not ask for them yet, so a new lot is flagged until it is answered. A lot of StrataVerze's PARKING or STORAGE type answered occupiable is flagged and the tier refused, reading those types as the car park and storage locker of s 3 (a StrataVerze choice).",
+    },
   ],
   "FUND_CATALOGUE": [
     {
@@ -4175,6 +5055,7 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
     "status": "CONFIRMED",
   },
   "OWNERS_CORPORATION_TYPE": {
+    "held": "RECORDED",
     "help": "Whether the plan of subdivision makes this owners corporation unlimited or limited.",
     "key": "ownersCorporationType",
     "label": "Owners corporation type",
@@ -4653,6 +5534,27 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
     "twoLotSpecialMeans": "UNANIMOUS",
     "votesPerLot": 1,
   },
+  "SEVERAL_OWNERS_CORPORATIONS": {
+    "held": "RECORDED",
+    "help": "Whether the plan of subdivision creates more than one owners corporation.",
+    "key": "severalOwnersCorporations",
+    "label": "Owners corporations on the plan",
+    "options": [
+      {
+        "label": "This is the only owners corporation on the plan",
+        "supported": true,
+        "value": "NO",
+      },
+      {
+        "label": "One of several owners corporations on the plan",
+        "note": "How the tier is assessed for a plan with several owners corporations is not confirmed, so StrataVerze does not work it out.",
+        "supported": false,
+        "value": "YES",
+      },
+    ],
+    "source": "Subdivision Act 1988 (Vic) s 27(1); Owners Corporations Act 2006 (Vic) s 7",
+    "status": "CONFIRMED",
+  },
   "SOURCES": [
     {
       "id": "S1",
@@ -4904,6 +5806,224 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
     ],
     "tribunal": "VCAT",
   },
+  "TIER": {
+    "held": "DERIVED",
+    "help": "Worked out from the number of occupiable lots, whether the owners corporation is services only, and whether it is the only one on the plan.",
+    "key": "tier",
+    "label": "Tier",
+    "noRuleFits": "No tier fits the lots recorded. Check each lot's occupiable answer.",
+    "options": [
+      {
+        "label": "Tier 1",
+        "note": "More than 100 occupiable lots, not services only.",
+        "supported": true,
+        "value": "TIER_1",
+      },
+      {
+        "label": "Tier 2",
+        "note": "51 to 100 occupiable lots, not services only.",
+        "supported": true,
+        "value": "TIER_2",
+      },
+      {
+        "label": "Tier 3",
+        "note": "10 to 50 occupiable lots, not services only.",
+        "supported": true,
+        "value": "TIER_3",
+      },
+      {
+        "label": "Tier 4",
+        "note": "3 to 9 occupiable lots, not services only.",
+        "supported": true,
+        "value": "TIER_4",
+      },
+      {
+        "label": "Tier 5",
+        "note": "An owners corporation for a 2-lot subdivision ("comprising of 2 occupiable lots"), or a services only owners corporation.",
+        "supported": true,
+        "value": "TIER_5",
+      },
+    ],
+    "rules": [
+      {
+        "provision": "Owners Corporations Act 2006 (Vic) s 7; Subdivision Act 1988 (Vic) s 27(1)",
+        "refusal": "This owners corporation is one of several on its plan. How the tier is assessed then is not confirmed, so StrataVerze does not work it out.",
+        "status": "NOT_CONFIRMED",
+        "value": null,
+        "when": {
+          "in": [
+            "YES",
+          ],
+          "selector": "severalOwnersCorporations",
+        },
+      },
+      {
+        "provision": "Owners Corporations Act 2006 (Vic) s 7(2) to (6)",
+        "status": "STRATAVERZE",
+        "value": "TIER_5",
+        "when": {
+          "all": [
+            {
+              "in": [
+                "NO",
+              ],
+              "selector": "severalOwnersCorporations",
+            },
+            {
+              "flag": "SERVICES_ONLY",
+              "is": true,
+            },
+          ],
+        },
+      },
+      {
+        "provision": "Owners Corporations Act 2006 (Vic) s 7(8)",
+        "refusal": "Every lot is recorded as not occupiable. The tier is then worked out counting the lots that are not occupiable, which StrataVerze does not do yet.",
+        "status": "STRATAVERZE",
+        "value": null,
+        "when": {
+          "all": [
+            {
+              "atMost": 0,
+              "number": "OCCUPIABLE_LOT_COUNT",
+            },
+            {
+              "atLeast": 1,
+              "number": "NON_OCCUPIABLE_LOT_COUNT",
+            },
+          ],
+        },
+      },
+      {
+        "provision": "Owners Corporations Act 2006 (Vic) s 7(7)",
+        "refusal": "Fewer than 10 lots are occupiable and more than 50 are not. Tiers 1 and 2 are then worked out counting the lots that are not occupiable, which StrataVerze does not do yet.",
+        "status": "STRATAVERZE",
+        "value": null,
+        "when": {
+          "all": [
+            {
+              "lessThan": 10,
+              "number": "OCCUPIABLE_LOT_COUNT",
+            },
+            {
+              "moreThan": 50,
+              "number": "NON_OCCUPIABLE_LOT_COUNT",
+            },
+          ],
+        },
+      },
+      {
+        "provision": "Owners Corporations Act 2006 (Vic) s 7(6); s 3 (def. 2-lot subdivision)",
+        "status": "CONFIRMED",
+        "value": "TIER_5",
+        "when": {
+          "all": [
+            {
+              "atLeast": 2,
+              "atMost": 2,
+              "number": "OCCUPIABLE_LOT_COUNT",
+            },
+            {
+              "atMost": 0,
+              "number": "NON_OCCUPIABLE_LOT_COUNT",
+            },
+          ],
+        },
+      },
+      {
+        "provision": "Owners Corporations Act 2006 (Vic) s 7(6); s 3 (def. 2-lot subdivision)",
+        "refusal": "The plan has 2 occupiable lots and other lots that are not occupiable. Whether it is then a 2-lot subdivision is for StrataVerze to decide, so the tier is not worked out yet.",
+        "status": "STRATAVERZE",
+        "value": null,
+        "when": {
+          "all": [
+            {
+              "atLeast": 2,
+              "atMost": 2,
+              "number": "OCCUPIABLE_LOT_COUNT",
+            },
+            {
+              "atLeast": 1,
+              "number": "NON_OCCUPIABLE_LOT_COUNT",
+            },
+          ],
+        },
+      },
+      {
+        "provision": "Owners Corporations Act 2006 (Vic) s 7(2)",
+        "status": "CONFIRMED",
+        "value": "TIER_1",
+        "when": {
+          "all": [
+            {
+              "flag": "SERVICES_ONLY",
+              "is": false,
+            },
+            {
+              "atLeast": 101,
+              "number": "OCCUPIABLE_LOT_COUNT",
+            },
+          ],
+        },
+      },
+      {
+        "provision": "Owners Corporations Act 2006 (Vic) s 7(3)",
+        "status": "CONFIRMED",
+        "value": "TIER_2",
+        "when": {
+          "all": [
+            {
+              "flag": "SERVICES_ONLY",
+              "is": false,
+            },
+            {
+              "atLeast": 51,
+              "atMost": 100,
+              "number": "OCCUPIABLE_LOT_COUNT",
+            },
+          ],
+        },
+      },
+      {
+        "provision": "Owners Corporations Act 2006 (Vic) s 7(4)",
+        "status": "CONFIRMED",
+        "value": "TIER_3",
+        "when": {
+          "all": [
+            {
+              "flag": "SERVICES_ONLY",
+              "is": false,
+            },
+            {
+              "atLeast": 10,
+              "atMost": 50,
+              "number": "OCCUPIABLE_LOT_COUNT",
+            },
+          ],
+        },
+      },
+      {
+        "provision": "Owners Corporations Act 2006 (Vic) s 7(5)",
+        "status": "CONFIRMED",
+        "value": "TIER_4",
+        "when": {
+          "all": [
+            {
+              "flag": "SERVICES_ONLY",
+              "is": false,
+            },
+            {
+              "atLeast": 3,
+              "atMost": 9,
+              "number": "OCCUPIABLE_LOT_COUNT",
+            },
+          ],
+        },
+      },
+    ],
+    "source": "Owners Corporations Act 2006 (Vic) ss 3, 7; Subdivision Act 1988 (Vic) s 27(1)",
+    "status": "CONFIRMED",
+  },
   "TIERS": {
     "countingRules": [
       {
@@ -5026,6 +6146,204 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
 
 exports[`Western Australia pack (pending) > is the rules recorded for review 1`] = `
 {
+  "BUILDING_FACTS": {
+    "REPLACEMENT_COST": {
+      "help": "For a strata scheme, the scheme building replacement cost. For a survey-strata scheme, the replacement cost of the improvements on the common property. In dollars.",
+      "label": "Replacement cost",
+      "source": "Strata Titles Act 1985 (WA) s 100(7); Strata Titles (General) Regulations 2019 (WA) reg 79",
+      "status": "CONFIRMED",
+    },
+  },
+  "BUILDING_SELECTORS": [
+    {
+      "held": "RECORDED",
+      "help": "Whether the scheme is a strata scheme (lots defined by reference to a building) or a survey-strata scheme (lots defined without a building).",
+      "key": "schemeType",
+      "label": "Scheme type",
+      "options": [
+        {
+          "label": "Strata scheme",
+          "note": "Lots defined by reference to a building.",
+          "supported": true,
+          "value": "STRATA",
+        },
+        {
+          "label": "Survey-strata scheme",
+          "note": "Lots defined without a building; owners insure infrastructure on their own lot (s 97(1) note 1). Researched at headline level only.",
+          "supported": false,
+          "value": "SURVEY_STRATA",
+        },
+      ],
+      "source": "Strata Titles Act 1985 (WA) s 3(1), ss 8, 9",
+      "status": "CONFIRMED",
+    },
+    {
+      "held": "RECORDED",
+      "help": "Whether the scheme is freehold or a leasehold scheme with a fixed expiry day.",
+      "key": "tenure",
+      "label": "Freehold or leasehold",
+      "options": [
+        {
+          "label": "Freehold",
+          "supported": true,
+          "value": "FREEHOLD",
+        },
+        {
+          "label": "Leasehold scheme",
+          "note": "A strata or survey-strata scheme with a fixed expiry day, at least 20 years (or a period set by regulation) and no more than 99 years after registration; each lot is held under a strata lease that expires on the expiry day and is not subject to renewal or forfeiture (ss 8(3)(d), 50). Researched at headline level only.",
+          "supported": false,
+          "value": "LEASEHOLD",
+        },
+      ],
+      "source": "Strata Titles Act 1985 (WA) s 3(1), ss 8(3)(d), 50",
+      "status": "CONFIRMED",
+    },
+    {
+      "held": "DERIVED",
+      "help": "Worked out from the number of lots in the scheme.",
+      "key": "schemeSize",
+      "label": "Scheme size",
+      "noRuleFits": "No scheme size fits the number of lots recorded. A scheme has at least 2 lots.",
+      "options": [
+        {
+          "label": "2-lot scheme",
+          "supported": true,
+          "value": "TWO_LOT",
+        },
+        {
+          "label": "3, 4 or 5-lot scheme",
+          "supported": true,
+          "value": "THREE_TO_FIVE_LOT",
+        },
+        {
+          "label": "6 or more lots",
+          "supported": true,
+          "value": "SIX_OR_MORE_LOT",
+        },
+      ],
+      "rules": [
+        {
+          "provision": "Strata Titles Act 1985 (WA) s 3(1)",
+          "status": "CONFIRMED",
+          "value": "TWO_LOT",
+          "when": {
+            "atLeast": 2,
+            "atMost": 2,
+            "number": "LOT_COUNT",
+          },
+        },
+        {
+          "provision": "Strata Titles Act 1985 (WA) s 3(1)",
+          "status": "CONFIRMED",
+          "value": "THREE_TO_FIVE_LOT",
+          "when": {
+            "atLeast": 3,
+            "atMost": 5,
+            "number": "LOT_COUNT",
+          },
+        },
+        {
+          "provision": "Strata Titles Act 1985 (WA) s 3(1)",
+          "status": "CONFIRMED",
+          "value": "SIX_OR_MORE_LOT",
+          "when": {
+            "atLeast": 6,
+            "number": "LOT_COUNT",
+          },
+        },
+      ],
+      "source": "Strata Titles Act 1985 (WA) ss 3(1), 123, 127, 130, 140",
+      "status": "CONFIRMED",
+    },
+    {
+      "held": "DERIVED",
+      "help": "Worked out from the number of lots and, below 10 lots, the scheme type and the replacement cost. A designated strata company must have a reserve fund and a 10-year plan.",
+      "key": "designatedStrataCompany",
+      "label": "Designated strata company",
+      "noRuleFits": "The designated strata company test could not be worked out from the facts recorded.",
+      "options": [
+        {
+          "label": "Designated strata company",
+          "supported": true,
+          "value": "DESIGNATED",
+        },
+        {
+          "label": "Not a designated strata company",
+          "supported": true,
+          "value": "NOT_DESIGNATED",
+        },
+      ],
+      "rules": [
+        {
+          "provision": "Strata Titles Act 1985 (WA) s 100(7); Strata Titles (General) Regulations 2019 (WA) reg 79",
+          "status": "CONFIRMED",
+          "value": "DESIGNATED",
+          "when": {
+            "any": [
+              {
+                "atLeast": 10,
+                "number": "LOT_COUNT",
+              },
+              {
+                "all": [
+                  {
+                    "in": [
+                      "STRATA",
+                    ],
+                    "selector": "schemeType",
+                  },
+                  {
+                    "moreThan": 500000000,
+                    "number": "REPLACEMENT_COST_CENTS",
+                  },
+                ],
+              },
+              {
+                "all": [
+                  {
+                    "in": [
+                      "SURVEY_STRATA",
+                    ],
+                    "selector": "schemeType",
+                  },
+                  {
+                    "moreThan": 500000000,
+                    "number": "REPLACEMENT_COST_CENTS",
+                  },
+                ],
+              },
+            ],
+          },
+        },
+        {
+          "provision": "Strata Titles Act 1985 (WA) s 100(7); Strata Titles (General) Regulations 2019 (WA) reg 79",
+          "status": "CONFIRMED",
+          "value": "NOT_DESIGNATED",
+          "when": {
+            "all": [
+              {
+                "lessThan": 10,
+                "number": "LOT_COUNT",
+              },
+              {
+                "in": [
+                  "STRATA",
+                  "SURVEY_STRATA",
+                ],
+                "selector": "schemeType",
+              },
+              {
+                "atMost": 500000000,
+                "number": "REPLACEMENT_COST_CENTS",
+              },
+            ],
+          },
+        },
+      ],
+      "source": "Strata Titles Act 1985 (WA) s 100(2), (2A), (7); Strata Titles (General) Regulations 2019 (WA) reg 79",
+      "status": "CONFIRMED",
+    },
+  ],
   "CHANGES_SINCE_2024": [
     {
       "amends": "STA",
@@ -5252,6 +6570,94 @@ exports[`Western Australia pack (pending) > is the rules recorded for review 1`]
     ],
   },
   "DECISIONS": [],
+  "DESIGNATED_STATUS": {
+    "held": "DERIVED",
+    "help": "Worked out from the number of lots and, below 10 lots, the scheme type and the replacement cost. A designated strata company must have a reserve fund and a 10-year plan.",
+    "key": "designatedStrataCompany",
+    "label": "Designated strata company",
+    "noRuleFits": "The designated strata company test could not be worked out from the facts recorded.",
+    "options": [
+      {
+        "label": "Designated strata company",
+        "supported": true,
+        "value": "DESIGNATED",
+      },
+      {
+        "label": "Not a designated strata company",
+        "supported": true,
+        "value": "NOT_DESIGNATED",
+      },
+    ],
+    "rules": [
+      {
+        "provision": "Strata Titles Act 1985 (WA) s 100(7); Strata Titles (General) Regulations 2019 (WA) reg 79",
+        "status": "CONFIRMED",
+        "value": "DESIGNATED",
+        "when": {
+          "any": [
+            {
+              "atLeast": 10,
+              "number": "LOT_COUNT",
+            },
+            {
+              "all": [
+                {
+                  "in": [
+                    "STRATA",
+                  ],
+                  "selector": "schemeType",
+                },
+                {
+                  "moreThan": 500000000,
+                  "number": "REPLACEMENT_COST_CENTS",
+                },
+              ],
+            },
+            {
+              "all": [
+                {
+                  "in": [
+                    "SURVEY_STRATA",
+                  ],
+                  "selector": "schemeType",
+                },
+                {
+                  "moreThan": 500000000,
+                  "number": "REPLACEMENT_COST_CENTS",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        "provision": "Strata Titles Act 1985 (WA) s 100(7); Strata Titles (General) Regulations 2019 (WA) reg 79",
+        "status": "CONFIRMED",
+        "value": "NOT_DESIGNATED",
+        "when": {
+          "all": [
+            {
+              "lessThan": 10,
+              "number": "LOT_COUNT",
+            },
+            {
+              "in": [
+                "STRATA",
+                "SURVEY_STRATA",
+              ],
+              "selector": "schemeType",
+            },
+            {
+              "atMost": 500000000,
+              "number": "REPLACEMENT_COST_CENTS",
+            },
+          ],
+        },
+      },
+    ],
+    "source": "Strata Titles Act 1985 (WA) s 100(2), (2A), (7); Strata Titles (General) Regulations 2019 (WA) reg 79",
+    "status": "CONFIRMED",
+  },
   "DESIGNATED_STRATA_COMPANY": {
     "landgateWordingDiffers": "Landgate guidance says "$5 million or greater"; reg 79 says "more than $5 000 000".",
     "minLots": 10,
@@ -5326,6 +6732,9 @@ exports[`Western Australia pack (pending) > is the rules recorded for review 1`]
     "Supported options: \`supported: true\` for STRATA (SCHEME_TYPE), FREEHOLD (TENURE) and all three size classes (SCHEME_SIZE) is a StrataVerze proposal, not law. Survey-strata and leasehold schemes are proposed as not supported because they were researched at headline level only.",
     "Levy debts go to a court, not SAT (s 100(4)(c), s 197(3)(f)). TERMINOLOGY.tribunal ("SAT") is the strata disputes tribunal only; shared code that names where levy claims are heard must take the forum from DEBT_RECOVERY, not from TERMINOLOGY.tribunal.",
     "Funds: both funds have \`required: false\`, with \`requiredWhen\` giving the law's test. Before Western Australia goes live, defaultFunds must read \`requiredWhen\` (GO-LIVE GAP at FUND_CATALOGUE), using the building's size class, by-laws and designated strata company status.",
+    "Building selectors (BUILDING_SELECTORS): the scheme type and tenure are recorded by the adviser or StrataVerze in the Building rules section, outside the locked building record, and any listed option may be recorded (one not supported is flagged). The size class and designated status are worked out, never recorded. The number of lots is the building's lots other than common property rows, read only where it matches the building's total lots.",
+    "Designated status (DESIGNATED_STATUS): the notes record no way to be, or not be, designated other than the s 100(7) and reg 79 tests, so no override is offered. Below 10 lots the replacement cost must be recorded, and its meaning follows the scheme type (scheme building for a strata scheme, common property improvements for a survey-strata scheme). Who may record the replacement cost, and from what valuation, is for review.",
+    "Scheme size (SCHEME_SIZE): no class is worked out for fewer than 2 lots, because the notes give none.",
   ],
   "FUND_CATALOGUE": [
     {
@@ -5678,9 +7087,11 @@ exports[`Western Australia pack (pending) > is the rules recorded for review 1`]
     "whoMayPropose": "a member entitled to vote on the resolution",
   },
   "SCHEME_SIZE": {
+    "held": "DERIVED",
     "help": "Worked out from the number of lots in the scheme.",
     "key": "schemeSize",
     "label": "Scheme size",
+    "noRuleFits": "No scheme size fits the number of lots recorded. A scheme has at least 2 lots.",
     "options": [
       {
         "label": "2-lot scheme",
@@ -5698,10 +7109,42 @@ exports[`Western Australia pack (pending) > is the rules recorded for review 1`]
         "value": "SIX_OR_MORE_LOT",
       },
     ],
+    "rules": [
+      {
+        "provision": "Strata Titles Act 1985 (WA) s 3(1)",
+        "status": "CONFIRMED",
+        "value": "TWO_LOT",
+        "when": {
+          "atLeast": 2,
+          "atMost": 2,
+          "number": "LOT_COUNT",
+        },
+      },
+      {
+        "provision": "Strata Titles Act 1985 (WA) s 3(1)",
+        "status": "CONFIRMED",
+        "value": "THREE_TO_FIVE_LOT",
+        "when": {
+          "atLeast": 3,
+          "atMost": 5,
+          "number": "LOT_COUNT",
+        },
+      },
+      {
+        "provision": "Strata Titles Act 1985 (WA) s 3(1)",
+        "status": "CONFIRMED",
+        "value": "SIX_OR_MORE_LOT",
+        "when": {
+          "atLeast": 6,
+          "number": "LOT_COUNT",
+        },
+      },
+    ],
     "source": "Strata Titles Act 1985 (WA) ss 3(1), 123, 127, 130, 140",
     "status": "CONFIRMED",
   },
   "SCHEME_TYPE": {
+    "held": "RECORDED",
     "help": "Whether the scheme is a strata scheme (lots defined by reference to a building) or a survey-strata scheme (lots defined without a building).",
     "key": "schemeType",
     "label": "Scheme type",
@@ -5919,6 +7362,7 @@ exports[`Western Australia pack (pending) > is the rules recorded for review 1`]
     "warrantyNotForContractsBefore": "2027-11-01",
   },
   "TENURE": {
+    "held": "RECORDED",
     "help": "Whether the scheme is freehold or a leasehold scheme with a fixed expiry day.",
     "key": "tenure",
     "label": "Freehold or leasehold",
