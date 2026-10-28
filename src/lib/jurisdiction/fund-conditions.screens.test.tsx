@@ -62,11 +62,13 @@ describe("createScheme with fund conditions", () => {
     // 6 lots: the administrative fund is required; the reserve fund needs the scheme type and replacement cost.
     expect(await create("WA", "6000", 6)).toEqual(["Administrative Fund"]);
     sharedFake.reset({ Scheme: [], SchemeMembership: [], Fund: [], Lot: [], LotDetail: [] });
-    expect(await create("WA", "6000", 3)).toEqual([]);
+    // 3 lots: no fund can be worked out, so the building is refused (it would have no ledger).
+    await expect(create("WA", "6000", 3)).rejects.toThrow("so it would have no ledger.");
+    expect(sharedFake.table("Fund")).toEqual([]);
   });
 
-  it("gives a VIC building no maintenance fund until its tier can be worked out", async () => {
-    expect(await create("VIC", "3000", 60)).toEqual([]);
+  it("gives a VIC building its administrative fund, and no maintenance fund until its tier can be worked out", async () => {
+    expect(await create("VIC", "3000", 60)).toEqual(["Administrative Fund"]);
   });
 });
 

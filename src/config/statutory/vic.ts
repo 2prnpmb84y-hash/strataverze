@@ -579,7 +579,10 @@ export const FUND_CATALOGUE: readonly FundDefinition[] = [
     purpose: "Annual fees and other money not paid into the maintenance fund: general administration, maintenance and repairs, insurance and other recurrent obligations (OCA s 23(1)).",
     // The Act requires accounts and a bank account (ss 27, 33), not this fund.
     // Not a statutory fund: a StrataVerze ledger choice for money not paid into the maintenance fund.
-    required: false,
+    // Required as a ledger choice (stage 2, PR 3 review), so every Victorian
+    // building has a ledger fund for annual fees and its chart of accounts can
+    // be set up. The status STRATAVERZE says so (FOR_REVIEW ADMINISTRATIVE_FUND).
+    required: true,
     source: `${OCA} ss 23(1), 27, 33(1) (no administrative fund provision found)`,
     status: "STRATAVERZE",
   },
@@ -2474,7 +2477,7 @@ export const FOR_REVIEW = [
   },
   {
     key: "ADMINISTRATIVE_FUND",
-    point: "The administrative fund is a StrataVerze ledger choice (status STRATAVERZE): the Act names no such fund. Confirm the name owners see, or another.",
+    point: "The administrative fund is a StrataVerze ledger choice (status STRATAVERZE): the Act names no such fund. Confirm the name owners see, or another. Since stage 2 PR 3 it is also marked required, as a ledger choice and not a rule of law, so every Victorian building is given it and has a ledger for its annual fees (the chart of accounts needs at least one fund). The screens show it as required with the note that this is a StrataVerze choice. Confirm.",
     before: "sign-off",
     kind: "STRATAVERZE",
   },

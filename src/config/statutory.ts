@@ -398,9 +398,10 @@ export const PENDING_RULE_PACKS = {
     // flagged only where the maintenance fund depends on it). The maintenance fund gains `requiredWhen`, written against
     // TIER and that selector: required for tiers 1 and 2 (ss 36, 40, 42; requiring it before a plan is approved is a
     // StrataVerze reading), not required for tier 5 (ss 7A(1)(b), 8), and at tiers 3 and 4 required where a plan is
-    // approved (ss 40, 42) and not required otherwise. `required` stays false. The GO-LIVE GAP note is replaced, and
-    // FOR_REVIEW MAINTENANCE_FUND_REQUIRED and BUILDING_FACTS_RECORDED_BY are rewritten. No legal value or status changed;
-    // still a draft.
+    // approved (ss 40, 42) and not required otherwise. `required` stays false. The administrative fund becomes required
+    // as a ledger choice (status STRATAVERZE, unchanged), so every building has a ledger fund and a chart of accounts;
+    // FOR_REVIEW ADMINISTRATIVE_FUND says so. The GO-LIVE GAP note is replaced, and FOR_REVIEW MAINTENANCE_FUND_REQUIRED
+    // and BUILDING_FACTS_RECORDED_BY are rewritten. No legal value or status changed; still a draft.
     version: "2026.10.4",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",
@@ -421,9 +422,11 @@ export const PENDING_RULE_PACKS = {
     // 2026.10.3 (28 Oct 2026): fund conditions (stage 2 PR 3). `requiredWhen` is now written against the building
     // selectors, with the meaning of the first forms (PR #107) unchanged: the administrative fund by SCHEME_SIZE and the
     // new ADMINISTRATIVE_FUND_BY_LAWS (recorded, flagged only for 2 to 5 lots: s 140(1)(b), (2)), plus an SAT order
-    // (s 140(3), from the notes), and the reserve fund by DESIGNATED_STATUS (s 100(2), (7); reg 79). defaultFunds reads
+    // (s 140(3), from the notes: CONFIRMED for 3 to 5 lots, NOT_CONFIRMED for 2 lots, whose scope against s 140(1)(b)
+    // the notes do not give), and the reserve fund by DESIGNATED_STATUS (s 100(2), (7); reg 79). defaultFunds reads
     // them, so the GO-LIVE GAP at FUND_CATALOGUE is closed. FOR_REVIEW's funds point is rewritten and gains the by-laws
-    // selector. No legal value or status changed; still a draft.
+    // selector, the 2-lot SAT order and schemes with no fund (refused at onboarding, flagged after). No legal value or
+    // status changed; still a draft.
     version: "2026.10.3",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",

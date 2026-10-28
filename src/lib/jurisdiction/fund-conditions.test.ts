@@ -9,7 +9,7 @@ import { PENDING_RULE_PACKS, statutoryRulesFor } from "@/config/statutory";
 import type { SelectorBuilding } from "./building-selectors";
 import { buildingSelectorProblems } from "./building-selectors";
 import { buildingDataProblems } from "./building-data";
-import { defaultFunds, fundProblems, fundRequirement, fundRequirementsView, hasFundConditions, requiredFunds, type FundNeed } from "./funds";
+import { defaultFunds, fundProblems, fundRequirement, fundRequirementsView, hasFundConditions, noLedgerProblem, requiredFunds, type FundNeed } from "./funds";
 
 const NSW = statutoryRulesFor("NSW");
 const QLD = PENDING_RULE_PACKS.QLD.rules as unknown as typeof NSW;
@@ -74,8 +74,8 @@ describe("VIC maintenance fund: tiers 1 and 2, or an approved plan", () => {
     expect(tier3.need).toBeNull();
     expect(tier3.missing).toEqual(["selector:maintenancePlanApproved"]);
     expect(tier3.problem).toBe("Whether this building must have a maintenance fund cannot be worked out because no answer is recorded for maintenance plan approved. Record what is missing in the building rules.");
-    expect(names(VIC, vic(51))).toEqual(["Maintenance Fund"]);
-    expect(names(VIC, vic(50))).toEqual([]);
+    expect(names(VIC, vic(51))).toEqual(["Administrative Fund", "Maintenance Fund"]);
+    expect(names(VIC, vic(50))).toEqual(["Administrative Fund"]);
   });
 
   it("at tiers 3 and 4 is required with an approved plan and not otherwise", () => {
@@ -83,7 +83,7 @@ describe("VIC maintenance fund: tiers 1 and 2, or an approved plan", () => {
     expect(need(VIC, "MAINTENANCE", vic(50, { maintenancePlanApproved: "NO" }))).toBe("OPTIONAL");
     expect(need(VIC, "MAINTENANCE", vic(9, { maintenancePlanApproved: "YES" }))).toBe("REQUIRED");
     expect(need(VIC, "MAINTENANCE", vic(3, { maintenancePlanApproved: "NO" }))).toBe("OPTIONAL");
-    expect(names(VIC, vic(9, { maintenancePlanApproved: "YES" }))).toEqual(["Maintenance Fund"]);
+    expect(names(VIC, vic(9, { maintenancePlanApproved: "YES" }))).toEqual(["Administrative Fund", "Maintenance Fund"]);
     expect(fundRequirement(VIC, VIC.FUND_CATALOGUE[1], vic(9, { maintenancePlanApproved: "YES" })).reason).toBe("Required because the owners corporation has approved a maintenance plan.");
   });
 
@@ -108,9 +108,19 @@ describe("VIC maintenance fund: tiers 1 and 2, or an approved plan", () => {
     expect(several.problem).toContain("because the tier cannot be worked out.");
   });
 
-  it("leaves the administrative fund (a StrataVerze ledger choice) not required, as before", () => {
-    expect(need(VIC, "ADMINISTRATIVE", vic(60))).toBe("OPTIONAL");
-    expect(fundRequirement(VIC, VIC.FUND_CATALOGUE[0], vic(60)).conditional).toBe(false);
+  it("requires the administrative fund as a StrataVerze ledger choice, for every building", () => {
+    expect(need(VIC, "ADMINISTRATIVE", vic(60))).toBe("REQUIRED");
+    expect(need(VIC, "ADMINISTRATIVE", { scheme: {}, lots: [], recorded: {} })).toBe("REQUIRED");
+    expect(fundRequirement(VIC, VIC.FUND_CATALOGUE[0], vic(60))).toMatchObject({ conditional: false, status: "STRATAVERZE" });
+  });
+
+  it("says in the notice when a required fund rests on a StrataVerze reading, so it never reads as law", () => {
+    expect(fundProblems(VIC, vic(51), [{ fundType: "ADMINISTRATIVE" }])).toEqual([
+      "This building must have a maintenance fund but none is set up. Required for a tier 1 or tier 2 owners corporation, which must prepare and approve a maintenance plan. A StrataVerze choice. Add it under Manage Funds.",
+    ]);
+    expect(fundProblems(VIC, vic(51), [{ fundType: "CAPITAL_WORKS" }])).toEqual([
+      "This building must have an administrative fund but none is set up. A StrataVerze choice. Add it under Manage Funds.",
+    ]);
   });
 
   it("flags the plan answer only where the fund depends on it", () => {
@@ -133,8 +143,11 @@ describe("WA administrative fund: by size class, with the by-laws (s 140)", () =
     for (const n of [3, 5]) expect(ANSWERS.map((a) => need(WA, "ADMINISTRATIVE", wa(n, a)))).toEqual(["REQUIRED", "REQUIRED", "OPTIONAL", "REQUIRED"]);
   });
 
-  it("for 2 lots is not allowed unless the by-laws require it or SAT has", () => {
+  it("for 2 lots is not allowed unless the by-laws require it or SAT has (an SAT order there not confirmed)", () => {
     expect(ANSWERS.map((a) => need(WA, "ADMINISTRATIVE", wa(2, a)))).toEqual(["NOT_ALLOWED", "REQUIRED", "NOT_ALLOWED", "REQUIRED"]);
+    expect(fundRequirement(WA, WA.FUND_CATALOGUE[0], wa(2, "SAT_REQUIRED")).status).toBe("NOT_CONFIRMED");
+    expect(fundRequirement(WA, WA.FUND_CATALOGUE[0], wa(3, "SAT_REQUIRED")).status).toBe("CONFIRMED");
+    expect(fundRequirementsView(WA, wa(2, "SAT_REQUIRED"))?.[0]).toMatchObject({ needLabel: "Required", statusNote: "Not confirmed" });
     expect(requiredFunds(WA, wa(2, "NEITHER")).notAllowed.map((f) => f.key)).toEqual(["ADMINISTRATIVE"]);
   });
 
@@ -208,7 +221,19 @@ describe("fund problems for Building data missing", () => {
     expect(problems).toEqual([
       "This building must have an administrative fund but none is set up. Add it under Manage Funds.",
       "This building must have a sinking fund but none is set up. Required with 4 or more units, with a sinking fund plan. Add it under Manage Funds.",
+      "This building has no administrative fund and no sinking fund, so StrataVerze cannot keep its ledger.",
     ]);
+  });
+
+  it("refuse at onboarding a building that would be given no fund, in plain words", () => {
+    expect(noLedgerProblem(WA, building(3))).toBe("StrataVerze cannot set up this building yet. None of its funds can be worked out from the lots entered, so it would have no ledger.");
+    expect(noLedgerProblem(WA, building(2, { replacementCost: "100.00" }, { schemeType: "STRATA", administrativeFundByLaws: "NEITHER" }))).toBe(
+      "StrataVerze cannot set up this building yet. Its rules require none of its funds, so it would have no ledger.",
+    );
+    expect(noLedgerProblem(WA, building(6))).toBeNull();
+    expect(noLedgerProblem(ACT, building(3))).toBeNull();
+    expect(noLedgerProblem(VIC, building(0))).toBeNull();
+    expect([NSW, QLD].map((r) => noLedgerProblem(r, building(0)))).toEqual([null, null]);
   });
 });
 
@@ -257,7 +282,7 @@ describe("the fund screens' view", () => {
     ]);
     const vic = fundRequirementsView(VIC, building(60, { servicesOnly: false }, { severalOwnersCorporations: "NO" }));
     expect(vic?.map((r) => [r.label, r.needLabel, r.statusNote])).toEqual([
-      ["Administrative Fund", "Not required", "A StrataVerze choice"],
+      ["Administrative Fund", "Required", "A StrataVerze choice"],
       ["Maintenance Fund", "Required", "A StrataVerze choice"],
     ]);
   });

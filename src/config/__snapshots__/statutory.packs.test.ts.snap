@@ -4438,7 +4438,7 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
       "before": "sign-off",
       "key": "ADMINISTRATIVE_FUND",
       "kind": "STRATAVERZE",
-      "point": "The administrative fund is a StrataVerze ledger choice (status STRATAVERZE): the Act names no such fund. Confirm the name owners see, or another.",
+      "point": "The administrative fund is a StrataVerze ledger choice (status STRATAVERZE): the Act names no such fund. Confirm the name owners see, or another. Since stage 2 PR 3 it is also marked required, as a ledger choice and not a rule of law, so every Victorian building is given it and has a ledger for its annual fees (the chart of accounts needs at least one fund). The screens show it as required with the note that this is a StrataVerze choice. Confirm.",
     },
     {
       "before": "Victorian buildings are set up",
@@ -4519,7 +4519,7 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
       "ledgerFund": "ADMINISTRATIVE",
       "name": "administrative fund",
       "purpose": "Annual fees and other money not paid into the maintenance fund: general administration, maintenance and repairs, insurance and other recurrent obligations (OCA s 23(1)).",
-      "required": false,
+      "required": true,
       "shortLabel": "Admin",
       "source": "Owners Corporations Act 2006 (Vic) ss 23(1), 27, 33(1) (no administrative fund provision found)",
       "status": "STRATAVERZE",
@@ -6941,6 +6941,8 @@ exports[`Western Australia pack (pending) > is the rules recorded for review 1`]
     "Supported options: \`supported: true\` for STRATA (SCHEME_TYPE), FREEHOLD (TENURE) and all three size classes (SCHEME_SIZE) is a StrataVerze proposal, not law. Survey-strata and leasehold schemes are proposed as not supported because they were researched at headline level only.",
     "Levy debts go to a court, not SAT (s 100(4)(c), s 197(3)(f)). TERMINOLOGY.tribunal ("SAT") is the strata disputes tribunal only; shared code that names where levy claims are heard must take the forum from DEBT_RECOVERY, not from TERMINOLOGY.tribunal.",
     "Funds: both funds have \`required: false\`, and \`requiredWhen\` gives the law's test through the building selectors (stage 2, PR 3), read by defaultFunds and requiredFunds. The administrative fund reads the size class and ADMINISTRATIVE_FUND_BY_LAWS, the reserve fund the designated status. A fund that cannot be worked out is not given to a new building, and the building is flagged in Building data missing, as is a required fund it lacks or an administrative fund a 2-lot scheme may not have. The SAT order under s 140(3) is a new answer the first form did not hold.",
+    "SAT order for a 2-lot scheme: the notes give s 140(3) (SAT may require a designated function on a member's application) without its scope or how it sits with s 140(1)(b) (a 2-lot scheme cannot establish an administrative fund unless its by-laws require one). A 2-lot scheme recorded with an SAT order is read as required, so it is never given fewer funds than an order may require, and that rule is NOT_CONFIRMED. For 3 to 5 lots the order is read as required (CONFIRMED). Confirm.",
+    "Schemes with no fund (stage 2 PR 3 review): a building with no administrative and no reserve fund has no ledger, as the chart of accounts needs at least one fund. Onboarding refuses such a building in plain words: one whose funds cannot be worked out from the lots entered (every 2 to 5-lot scheme, since the wizard does not ask for the by-laws answer, the scheme type or the replacement cost), and one whose rules require no fund (a 2-lot scheme whose by-laws do not require an administrative fund and that is not designated). An existing building in that state is flagged in Building data missing. Decide how StrataVerze should handle such schemes: ask for the by-laws answer, scheme type and replacement cost during onboarding, keep a ledger with no statutory fund, or decline them.",
     "ADMINISTRATIVE_FUND_BY_LAWS: one answer for a 2 to 5-lot scheme (neither, by-laws require, by-laws exempt, SAT has required), recorded by the adviser or StrataVerze in the Building rules section, and asked for only where the administrative fund depends on it. It covers the administrative fund only, not the other designated functions of s 140(4). Every answer is marked supported (a StrataVerze proposal). Confirm who checks the by-laws, and whether by-laws that exempt a 3 to 5-lot scheme still let it keep a fund: the notes say only that it is exempt, so the screens say only that the fund is not required.",
     "Building selectors (BUILDING_SELECTORS): the scheme type and tenure are recorded by the adviser or StrataVerze in the Building rules section, outside the locked building record, and any listed option may be recorded (one not supported is flagged). The size class and designated status are worked out, never recorded. The number of lots is the building's lots other than common property rows, read only where it matches the building's total lots.",
     "Designated status (DESIGNATED_STATUS): the notes record no way to be, or not be, designated other than the s 100(7) and reg 79 tests, so no override is offered. Below 10 lots the replacement cost must be recorded, and its meaning follows the scheme type (scheme building for a strata scheme, common property improvements for a survey-strata scheme). Who may record the replacement cost, and from what valuation, is for review.",
@@ -6978,8 +6980,29 @@ exports[`Western Australia pack (pending) > is the rules recorded for review 1`]
               "all": [
                 {
                   "in": [
-                    "TWO_LOT",
                     "THREE_TO_FIVE_LOT",
+                  ],
+                  "selector": "schemeSize",
+                },
+                {
+                  "in": [
+                    "SAT_REQUIRED",
+                  ],
+                  "selector": "administrativeFundByLaws",
+                },
+              ],
+            },
+          },
+          {
+            "need": "REQUIRED",
+            "provision": "Strata Titles Act 1985 (WA) s 140(1)(b), (3)",
+            "reason": "Required because SAT has required it on a member's application.",
+            "status": "NOT_CONFIRMED",
+            "when": {
+              "all": [
+                {
+                  "in": [
+                    "TWO_LOT",
                   ],
                   "selector": "schemeSize",
                 },

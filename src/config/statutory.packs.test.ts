@@ -17,6 +17,7 @@ import {
   type StatutoryRules,
 } from "./statutory";
 import { schemeStateProblem, SUPPORTED_SCHEME_STATES } from "./jurisdictions";
+import { fundConditionSelectors } from "@/lib/jurisdiction/funds";
 import type { BuildingSelector, EntitlementScheduleDefinition, FundDefinition, RuleStatus, SelectorCondition } from "./statutory/types";
 
 const STATUSES: RuleStatus[] = ["CONFIRMED", "GUIDANCE", "STRATAVERZE", "NOT_CONFIRMED"];
@@ -81,6 +82,12 @@ describe.each(packs)("%s funds and entitlement schedules", (_code, rules) => {
         expect(r.reason).not.toMatch(/[;\u2013\u2014]/);
       }
     }
+  });
+
+  it("reads every answer flagged only by fund conditions in at least one fund condition", () => {
+    const read = fundConditionSelectors(funds);
+    const deferred = ((rules as { BUILDING_SELECTORS?: readonly BuildingSelector[] }).BUILDING_SELECTORS ?? []).filter((s) => s.held === "RECORDED" && s.flagMissing === "FUND_CONDITIONS");
+    for (const s of deferred) expect(read, s.key).toContain(s.key);
   });
 
   it("holds exactly one entitlement schedule on each lot", () => {
@@ -296,7 +303,8 @@ describe("Victorian pack (pending)", () => {
     expect(maintenance?.required).toBe(false);
     expect(admin?.ledgerFund).toBe("ADMINISTRATIVE");
     expect(admin?.status).toBe("STRATAVERZE");
-    expect(admin?.required).toBe(false);
+    // Required as a ledger choice (stage 2, PR 3 review), so every building has a ledger fund.
+    expect(admin?.required).toBe(true);
     expect(admin?.requiredWhen).toBeUndefined();
     expect(vic.FOR_REVIEW.map((r) => r.key)).toEqual(expect.arrayContaining(["ADMINISTRATIVE_FUND", "MAINTENANCE_FUND_REQUIRED"]));
   });
@@ -511,6 +519,12 @@ describe("Western Australia pack (pending)", () => {
     expect(["NEITHER", "REQUIRE", "EXEMPT", "SAT_REQUIRED"].map((b) => decide("TWO_LOT", b))).toEqual(["NOT_ALLOWED", "REQUIRED", "NOT_ALLOWED", "REQUIRED"]);
     expect(wa.ADMINISTRATIVE_FUND_BY_LAWS.options.map((o) => o.value)).toEqual(["NEITHER", "REQUIRE", "EXEMPT", "SAT_REQUIRED"]);
     expect(wa.ADMINISTRATIVE_FUND_BY_LAWS.flagMissing).toBe("FUND_CONDITIONS");
+    // An SAT order: confirmed for 3 to 5 lots, not confirmed for 2 lots (s 140(3) against s 140(1)(b)).
+    const sat = admin?.requiredWhen?.rules.filter((r) => JSON.stringify(r.when).includes("SAT_REQUIRED")).map((r) => [size(r.when, "schemeSize"), r.status]);
+    expect(sat).toEqual([
+      [["THREE_TO_FIVE_LOT"], "CONFIRMED"],
+      [["TWO_LOT"], "NOT_CONFIRMED"],
+    ]);
   });
 
   it("designates a strata company at 10 or more lots or a replacement cost strictly more than $5m", () => {

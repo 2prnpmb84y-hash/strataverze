@@ -206,12 +206,37 @@ export function defaultFunds(source: FundsSource, building: SelectorBuilding = N
 }
 
 /**
+ * Why a new building would have no ledger, or null (stage 2, PR 3 review).
+ * For a pack with fund conditions, the funds a new building is given
+ * (defaultFunds) may be none: none can be worked out from what onboarding
+ * knows, or the law requires none (a 2-lot WA scheme whose by-laws do not
+ * require an administrative fund and that is not designated). The chart of
+ * accounts needs at least one fund, so such a building is refused rather than
+ * created without a ledger. Null for NSW and Queensland, whose funds are
+ * always required.
+ */
+export function noLedgerProblem(source: FundsSource, building: SelectorBuilding = NO_BUILDING): string | null {
+  if (!hasFundConditions(source)) return null;
+  const funds = requiredFunds(source, building);
+  if (funds.required.length) return null;
+  return funds.undecided.length
+    ? "StrataVerze cannot set up this building yet. None of its funds can be worked out from the lots entered, so it would have no ledger."
+    : "StrataVerze cannot set up this building yet. Its rules require none of its funds, so it would have no ledger.";
+}
+
+/** A rule's status as a sentence after its reason, where it is not confirmed in the law. */
+const statusSentence = (status: RuleStatus) => (STATUS_NOTES[status] ? ` ${STATUS_NOTES[status]}.` : "");
+
+/**
  * What a building's funds are missing or should not have, for the "Building
  * data missing" notice, for a pack with fund conditions only (none for NSW and
  * Queensland, so their notice is unchanged): each fund that cannot be worked
  * out, with what to record; with the building's funds, each required fund it
- * does not hold and each it holds that it may not have. A fund is held where
- * a fund of its ledger fund type (or the legacy type kept in it) is set up.
+ * does not hold, each it holds that it may not have, and a building that holds
+ * no fund and so has no ledger. A fund is held where a fund of its ledger fund
+ * type (or the legacy type kept in it) is set up. A reason is followed by its
+ * status where the rule is not confirmed in the law, so a StrataVerze reading
+ * never reads as law.
  */
 export function fundProblems(source: FundsSource, building: SelectorBuilding, held?: readonly { fundType: string }[]): string[] {
   if (!hasFundConditions(source)) return [];
@@ -219,12 +244,20 @@ export function fundProblems(source: FundsSource, building: SelectorBuilding, he
   const ledgers = held ? new Set(held.map((f) => ledgerFundOf(f.fundType)).filter(Boolean)) : null;
   const problems: string[] = [];
   for (const r of each) {
+    const why = `${r.reason ? ` ${r.reason}` : ""}${statusSentence(r.status)}`;
     if (r.need === null) problems.push(r.problem ?? "");
     else if (ledgers && r.need === "REQUIRED" && !ledgers.has(r.fund.ledgerFund)) {
-      problems.push(`This building must have ${withArticle(r.fund.name)} but none is set up.${r.reason ? ` ${r.reason}` : ""} Add it under Manage Funds.`);
+      problems.push(`This building must have ${withArticle(r.fund.name)} but none is set up.${why} Add it under Manage Funds.`);
     } else if (ledgers && r.need === "NOT_ALLOWED" && ledgers.has(r.fund.ledgerFund)) {
-      problems.push(`This building has ${withArticle(r.fund.name)}, which it may not have.${r.reason ? ` ${r.reason}` : ""}`);
+      problems.push(`This building has ${withArticle(r.fund.name)}, which it may not have.${why}`);
     }
+  }
+  if (ledgers && !ledgers.size) {
+    const [admin, capital] = [ledgerFundDefinition(source, "ADMINISTRATIVE"), ledgerFundDefinition(source, "CAPITAL_WORKS")];
+    const noneRequired = each.every((r) => r.need !== null && r.need !== "REQUIRED");
+    problems.push(
+      `This building has no ${admin.name} and no ${capital.name}, so StrataVerze cannot keep its ledger.${noneRequired ? " Its rules require neither, and StrataVerze does not handle such a building yet." : ""}`,
+    );
   }
   return problems.filter(Boolean);
 }

@@ -4,7 +4,7 @@ import type { Varchar } from "@prisma/orm-postgres/target/codec-types";
 import { isUpcomingMeeting } from "@/lib/meetings/lifecycle";
 import { defaultTimeZone } from "@/lib/jurisdiction/time-zone";
 import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
-import { defaultFunds } from "@/lib/jurisdiction/funds";
+import { defaultFunds, noLedgerProblem } from "@/lib/jurisdiction/funds";
 import { seedDefaultChartOfAccounts } from "./seed-chart-of-accounts";
 import { db } from "@/prisma/db";
 import { needRule, type StatutoryRules } from "@/config/statutory";
@@ -114,11 +114,15 @@ export class SchemeDataError extends Error {
  * such selector (the schemes_regulation_module_state_check and
  * schemes_plan_format_state_check constraints), a module StrataVerze does not
  * apply, a plan format that is not listed, or a second lot entitlement that
- * is not a positive whole number or that the pack does not hold.
+ * is not a positive whole number or that the pack does not hold. For a pack
+ * with fund conditions (stage 2, PR 3 review), also a building that would be
+ * given no fund, and so no ledger (noLedgerProblem). NSW and Queensland funds
+ * are always required, so that check never refuses them.
  */
 export function newSchemeDataProblem(
-  rules: Pick<StatutoryRules, "REGULATION_MODULE" | "ENTITLEMENT_SCHEDULES"> & Partial<Pick<StatutoryRules, "PLAN_FORMAT">>,
-  data: { regulationModule?: string | null; planFormat?: string | null },
+  rules: Pick<StatutoryRules, "REGULATION_MODULE" | "ENTITLEMENT_SCHEDULES"> &
+    Partial<Pick<StatutoryRules, "PLAN_FORMAT" | "FUND_CATALOGUE" | "BUILDING_SELECTORS" | "BUILDING_FACTS" | "TERMINOLOGY">>,
+  data: { regulationModule?: string | null; planFormat?: string | null; totalLots?: number | null },
   lots: readonly { lotNumber: string; interestScheduleEntitlement?: number | null }[],
 ): string | null {
   if (data.regulationModule != null) {
@@ -140,7 +144,16 @@ export function newSchemeDataProblem(
     if (!Number.isInteger(value) || value < 1 || value > MAX_ENTITLEMENT)
       return `Lot ${lot.lotNumber}: the ${separate!.name} must be a whole number from 1 to ${MAX_ENTITLEMENT.toLocaleString("en-AU")}.`;
   }
+  if (rules.FUND_CATALOGUE) {
+    const problem = noLedgerProblem({ ...rules, FUND_CATALOGUE: rules.FUND_CATALOGUE }, onboardingBuilding(data, lots));
+    if (problem) return problem;
+  }
   return null;
+}
+
+/** A new building as its fund conditions read it at onboarding: the total lots and the lots entered, nothing recorded yet. */
+function onboardingBuilding(data: { totalLots?: number | null }, lots: readonly { lotNumber: string }[]) {
+  return { scheme: { totalLots: data.totalLots ?? null }, lots: lots.map((l) => ({ lotNumber: l.lotNumber })), recorded: {} };
 }
 
 /**
@@ -230,8 +243,8 @@ export async function createScheme(
     // is recorded yet, so a fund that needs more is not given, and the
     // building page flags it in Building data missing until it is recorded.
     // NSW and Queensland funds have no condition, so this does not change them.
-    const building = { scheme: { totalLots: data.totalLots }, lots: lots.map((l) => ({ lotNumber: l.lotNumber })), recorded: {} };
-    for (const fund of defaultFunds(rules, building)) {
+    // A building that would get no fund at all was refused above (noLedgerProblem).
+    for (const fund of defaultFunds(rules, onboardingBuilding(data, lots))) {
       await tx.orm.public.Fund.create({
         schemeId: scheme.id,
         name: fund.name,
