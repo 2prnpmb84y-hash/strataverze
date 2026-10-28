@@ -493,7 +493,7 @@ export async function saveBuildingRulesAction(
     const read = readBuildingRulesForm(rules, formData);
     if (!read.ok) return { error: read.error };
 
-    const change = await saveBuildingRules(schemeId, read.input, profile.id);
+    const change = await saveBuildingRules(schemeId, read.input, profile.id, current.state);
     await logActivity({
       schemeId,
       actorId: profile.id,

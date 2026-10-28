@@ -358,8 +358,8 @@ export const PENDING_RULE_PACKS = {
     // units only) become recorded yes or no selectors, each "yes" marked not supported (a StrataVerze proposal: none of their
     // rules is applied yet). The unit thresholds of SIZE_THRESHOLDS (bank account exemption, sinking fund, communications
     // officer, proxy limit, the unit leg of the audit test) become selectors worked out from the number of units, with the
-    // thresholds unchanged. Member thresholds are not worked out. FOR_REVIEW gains that point. No legal value or status
-    // changed; still a draft.
+    // thresholds unchanged. Member thresholds are not worked out. TERMINOLOGY gains lot and lots ("unit", "units", wording
+    // only), so the building rules say units. FOR_REVIEW gains that point. No legal value or status changed; still a draft.
     version: "2026.10.3",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",
@@ -381,11 +381,14 @@ export const PENDING_RULE_PACKS = {
     // value or status changed; still a draft. SR 53/2026 (25 Nov 2026) stays off until a pack version records that it
     // commenced, and from that day the reader refuses the manager fees until then.
     // 2026.10.3 (28 Oct 2026): BUILDING_SELECTORS and BUILDING_FACTS added (the building selector shape, stage 2 PR 2).
-    // OWNERS_CORPORATION_TYPE becomes a recorded selector with its values unchanged. TIER is worked out from each lot's
-    // occupiable answer and the services only answer (s 3), with the lot ranges, the 2-lot subdivision and the counting
-    // rules taken unchanged from TIERS (s 7). Where s 7(7) or (8) applies the tier is refused (a StrataVerze choice: the notes
-    // do not say how the lots are counted there). FOR_REVIEW gains BUILDING_SELECTORS_TIER and BUILDING_FACTS_RECORDED_BY.
-    // No legal value or status changed; still a draft.
+    // OWNERS_CORPORATION_TYPE becomes a recorded selector with its values unchanged, and SEVERAL_OWNERS_CORPORATIONS records
+    // whether the owners corporation is one of several on its plan (SA s 27(1)). TIER is worked out from each lot's occupiable
+    // answer and the services only answer (s 3), with the lot ranges, the 2-lot subdivision and the counting rules taken
+    // unchanged from TIERS (s 7). Refused: one of several owners corporations (NOT_CONFIRMED in the notes), s 7(7) or (8)
+    // (a StrataVerze choice: the notes do not say how the lots are counted there), and 2 occupiable lots with other lots (a
+    // StrataVerze choice until decided). Services only is read as tier 5 before s 7(7) and (8) (a StrataVerze reading). A
+    // PARKING or STORAGE lot answered occupiable is flagged (a StrataVerze reading of s 3). FOR_REVIEW gains
+    // BUILDING_SELECTORS_TIER and BUILDING_FACTS_RECORDED_BY. No legal value or status changed; still a draft.
     version: "2026.10.3",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",

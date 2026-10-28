@@ -1767,6 +1767,8 @@ exports[`Australian Capital Territory pack (pending) > is the rules recorded for
     "lateCharge": "interest",
     "levies": "contributions",
     "levy": "contribution",
+    "lot": "unit",
+    "lots": "units",
     "managementContract": "management contract",
     "manager": "manager",
     "managerGuidanceTerm": "owners corporation managing agent",
@@ -3052,6 +3054,13 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
     "LOT_OCCUPIABLE": {
       "help": "An occupiable lot is a lot that is ordinarily used for residential or business purposes. A lot is not occupiable if it is a car park, a storage locker or a lot not ordinarily used for residential or business purposes.",
       "label": "Occupiable lot",
+      "neverForLotTypes": {
+        "lotTypes": [
+          "PARKING",
+          "STORAGE",
+        ],
+        "status": "STRATAVERZE",
+      },
       "noLabel": "Not occupiable",
       "source": "Owners Corporations Act 2006 (Vic) s 3",
       "status": "CONFIRMED",
@@ -3090,8 +3099,29 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
       "status": "CONFIRMED",
     },
     {
+      "held": "RECORDED",
+      "help": "Whether the plan of subdivision creates more than one owners corporation.",
+      "key": "severalOwnersCorporations",
+      "label": "Owners corporations on the plan",
+      "options": [
+        {
+          "label": "This is the only owners corporation on the plan",
+          "supported": true,
+          "value": "NO",
+        },
+        {
+          "label": "One of several owners corporations on the plan",
+          "note": "How the tier is assessed for a plan with several owners corporations is not confirmed, so StrataVerze does not work it out.",
+          "supported": false,
+          "value": "YES",
+        },
+      ],
+      "source": "Subdivision Act 1988 (Vic) s 27(1); Owners Corporations Act 2006 (Vic) s 7",
+      "status": "CONFIRMED",
+    },
+    {
       "held": "DERIVED",
-      "help": "Worked out from the number of occupiable lots and whether the owners corporation is services only.",
+      "help": "Worked out from the number of occupiable lots, whether the owners corporation is services only, and whether it is the only one on the plan.",
       "key": "tier",
       "label": "Tier",
       "noRuleFits": "No tier fits the lots recorded. Check each lot's occupiable answer.",
@@ -3128,6 +3158,37 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
         },
       ],
       "rules": [
+        {
+          "provision": "Owners Corporations Act 2006 (Vic) s 7; Subdivision Act 1988 (Vic) s 27(1)",
+          "refusal": "This owners corporation is one of several on its plan. How the tier is assessed then is not confirmed, so StrataVerze does not work it out.",
+          "status": "NOT_CONFIRMED",
+          "value": null,
+          "when": {
+            "in": [
+              "YES",
+            ],
+            "selector": "severalOwnersCorporations",
+          },
+        },
+        {
+          "provision": "Owners Corporations Act 2006 (Vic) s 7(2) to (6)",
+          "status": "STRATAVERZE",
+          "value": "TIER_5",
+          "when": {
+            "all": [
+              {
+                "in": [
+                  "NO",
+                ],
+                "selector": "severalOwnersCorporations",
+              },
+              {
+                "flag": "SERVICES_ONLY",
+                "is": true,
+              },
+            ],
+          },
+        },
         {
           "provision": "Owners Corporations Act 2006 (Vic) s 7(8)",
           "refusal": "Every lot is recorded as not occupiable. The tier is then worked out counting the lots that are not occupiable, which StrataVerze does not do yet.",
@@ -3169,15 +3230,34 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
           "status": "CONFIRMED",
           "value": "TIER_5",
           "when": {
-            "any": [
-              {
-                "flag": "SERVICES_ONLY",
-                "is": true,
-              },
+            "all": [
               {
                 "atLeast": 2,
                 "atMost": 2,
                 "number": "OCCUPIABLE_LOT_COUNT",
+              },
+              {
+                "atMost": 0,
+                "number": "NON_OCCUPIABLE_LOT_COUNT",
+              },
+            ],
+          },
+        },
+        {
+          "provision": "Owners Corporations Act 2006 (Vic) s 7(6); s 3 (def. 2-lot subdivision)",
+          "refusal": "The plan has 2 occupiable lots and other lots that are not occupiable. Whether it is then a 2-lot subdivision is for StrataVerze to decide, so the tier is not worked out yet.",
+          "status": "STRATAVERZE",
+          "value": null,
+          "when": {
+            "all": [
+              {
+                "atLeast": 2,
+                "atMost": 2,
+                "number": "OCCUPIABLE_LOT_COUNT",
+              },
+              {
+                "atLeast": 1,
+                "number": "NON_OCCUPIABLE_LOT_COUNT",
               },
             ],
           },
@@ -3254,7 +3334,7 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
           },
         },
       ],
-      "source": "Owners Corporations Act 2006 (Vic) ss 3, 7",
+      "source": "Owners Corporations Act 2006 (Vic) ss 3, 7; Subdivision Act 1988 (Vic) s 27(1)",
       "status": "CONFIRMED",
     },
   ],
@@ -4374,12 +4454,12 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
       "before": "any rule reads the tier",
       "key": "BUILDING_SELECTORS_TIER",
       "kind": "LEGAL",
-      "point": "The tier (TIER) is worked out from each lot's occupiable answer and the services only answer (s 7). Where s 7(7) or (8) applies (mostly or only non-occupiable lots) StrataVerze refuses to work it out, because the notes do not say how the non-occupiable lots are counted with the occupiable ones. A plan with 2 occupiable lots is read as tier 5 whatever its other lots, as TIERS records the 2-lot subdivision. The tier is worked out from this owners corporation's lots only (see FINANCIAL_YEAR_AND_MULTI_OC_TIERS). Every tier is marked supported as a StrataVerze proposal.",
+      "point": "How TIER is worked out. (1) An owners corporation recorded as one of several on its plan is refused: the notes do not confirm how its tier is assessed (FINANCIAL_YEAR_AND_MULTI_OC_TIERS). (2) A services only owners corporation is tier 5 before s 7(7) and (8) are read, because tiers 1 to 4 exclude services only and s 7(7) applies tiers 1 and 2 only; that order is a StrataVerze reading. (3) Where s 7(7) or (8) applies (mostly or only non-occupiable lots) the tier is refused, because the notes do not say how the non-occupiable lots are counted with the occupiable ones. (4) A plan with 2 occupiable lots and no other lots is tier 5 (a 2-lot subdivision, "comprising of 2 occupiable lots"); with 2 occupiable lots and other lots it is refused until decided, because the notes do not say whether the other lots count. (5) Every tier is marked supported as a StrataVerze proposal.",
     },
     {
       "before": "Victorian buildings are set up",
       "key": "BUILDING_FACTS_RECORDED_BY",
-      "point": "Who records each lot's occupiable answer and the services only answer: the adviser or StrataVerze, in the Building rules section, outside the locked building record. The lot form and the data import do not ask for them yet, so a new lot is flagged until it is answered.",
+      "point": "Who records each lot's occupiable answer, the services only answer and whether the owners corporation is the only one on its plan: the adviser or StrataVerze, in the Building rules section, outside the locked building record. The lot form and the data import do not ask for them yet, so a new lot is flagged until it is answered. A lot of StrataVerze's PARKING or STORAGE type answered occupiable is flagged and the tier refused, reading those types as the car park and storage locker of s 3 (a StrataVerze choice).",
     },
   ],
   "FUND_CATALOGUE": [
@@ -5454,6 +5534,27 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
     "twoLotSpecialMeans": "UNANIMOUS",
     "votesPerLot": 1,
   },
+  "SEVERAL_OWNERS_CORPORATIONS": {
+    "held": "RECORDED",
+    "help": "Whether the plan of subdivision creates more than one owners corporation.",
+    "key": "severalOwnersCorporations",
+    "label": "Owners corporations on the plan",
+    "options": [
+      {
+        "label": "This is the only owners corporation on the plan",
+        "supported": true,
+        "value": "NO",
+      },
+      {
+        "label": "One of several owners corporations on the plan",
+        "note": "How the tier is assessed for a plan with several owners corporations is not confirmed, so StrataVerze does not work it out.",
+        "supported": false,
+        "value": "YES",
+      },
+    ],
+    "source": "Subdivision Act 1988 (Vic) s 27(1); Owners Corporations Act 2006 (Vic) s 7",
+    "status": "CONFIRMED",
+  },
   "SOURCES": [
     {
       "id": "S1",
@@ -5707,7 +5808,7 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
   },
   "TIER": {
     "held": "DERIVED",
-    "help": "Worked out from the number of occupiable lots and whether the owners corporation is services only.",
+    "help": "Worked out from the number of occupiable lots, whether the owners corporation is services only, and whether it is the only one on the plan.",
     "key": "tier",
     "label": "Tier",
     "noRuleFits": "No tier fits the lots recorded. Check each lot's occupiable answer.",
@@ -5744,6 +5845,37 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
       },
     ],
     "rules": [
+      {
+        "provision": "Owners Corporations Act 2006 (Vic) s 7; Subdivision Act 1988 (Vic) s 27(1)",
+        "refusal": "This owners corporation is one of several on its plan. How the tier is assessed then is not confirmed, so StrataVerze does not work it out.",
+        "status": "NOT_CONFIRMED",
+        "value": null,
+        "when": {
+          "in": [
+            "YES",
+          ],
+          "selector": "severalOwnersCorporations",
+        },
+      },
+      {
+        "provision": "Owners Corporations Act 2006 (Vic) s 7(2) to (6)",
+        "status": "STRATAVERZE",
+        "value": "TIER_5",
+        "when": {
+          "all": [
+            {
+              "in": [
+                "NO",
+              ],
+              "selector": "severalOwnersCorporations",
+            },
+            {
+              "flag": "SERVICES_ONLY",
+              "is": true,
+            },
+          ],
+        },
+      },
       {
         "provision": "Owners Corporations Act 2006 (Vic) s 7(8)",
         "refusal": "Every lot is recorded as not occupiable. The tier is then worked out counting the lots that are not occupiable, which StrataVerze does not do yet.",
@@ -5785,15 +5917,34 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
         "status": "CONFIRMED",
         "value": "TIER_5",
         "when": {
-          "any": [
-            {
-              "flag": "SERVICES_ONLY",
-              "is": true,
-            },
+          "all": [
             {
               "atLeast": 2,
               "atMost": 2,
               "number": "OCCUPIABLE_LOT_COUNT",
+            },
+            {
+              "atMost": 0,
+              "number": "NON_OCCUPIABLE_LOT_COUNT",
+            },
+          ],
+        },
+      },
+      {
+        "provision": "Owners Corporations Act 2006 (Vic) s 7(6); s 3 (def. 2-lot subdivision)",
+        "refusal": "The plan has 2 occupiable lots and other lots that are not occupiable. Whether it is then a 2-lot subdivision is for StrataVerze to decide, so the tier is not worked out yet.",
+        "status": "STRATAVERZE",
+        "value": null,
+        "when": {
+          "all": [
+            {
+              "atLeast": 2,
+              "atMost": 2,
+              "number": "OCCUPIABLE_LOT_COUNT",
+            },
+            {
+              "atLeast": 1,
+              "number": "NON_OCCUPIABLE_LOT_COUNT",
             },
           ],
         },
@@ -5870,7 +6021,7 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
         },
       },
     ],
-    "source": "Owners Corporations Act 2006 (Vic) ss 3, 7",
+    "source": "Owners Corporations Act 2006 (Vic) ss 3, 7; Subdivision Act 1988 (Vic) s 27(1)",
     "status": "CONFIRMED",
   },
   "TIERS": {

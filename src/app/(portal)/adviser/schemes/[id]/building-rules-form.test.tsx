@@ -51,13 +51,16 @@ describe("the Building rules section", () => {
   });
 
   it("asks a Victorian building for services only and each lot's occupiable answer, and shows the tier", () => {
-    const view = buildingRulesView(VIC, { scheme: { totalLots: 12, servicesOnly: false }, lots: lots(12, true), recorded: { ownersCorporationType: "UNLIMITED" } })!;
+    const view = buildingRulesView(VIC, { scheme: { totalLots: 12, servicesOnly: false }, lots: lots(12, true), recorded: { ownersCorporationType: "UNLIMITED", severalOwnersCorporations: "NO" } })!;
     const html = renderToStaticMarkup(<BuildingRulesForm schemeId="s1" view={view} />);
     expect(html).toContain('name="servicesOnly"');
     expect(html).toContain('<option value="NO" selected="">Not services only</option>');
     expect(html).toContain('name="occupiable:lot-12"');
     expect(html).toContain(">Tier 3<");
-    expect(html).toContain("From: Occupiable lots: 12, Not occupiable lots: 0, Services only owners corporation: Not services only");
+    expect(html).toContain(
+      "From: Owners corporations on the plan: This is the only owners corporation on the plan, Services only owners corporation: Not services only, Occupiable lots: 12, Not occupiable lots: 0",
+    );
+    expect(html).toContain("Lot 12");
   });
 
   it("is a client file that takes no pack values", () => {

@@ -4419,10 +4419,6 @@ model AnnualReport {
   @@map("annual_reports")
 }
 
-/// The daily reminder for the deadline to start proceedings for a long
-/// outstanding debt (the Queensland 2 year rule, SM s 166(2); QLD go-live gap,
-/// 27 Oct 2026). One row per lot and oldest unpaid due date: the last stage
-/// emailed, claimed before it is sent so a retried run sends it once.
 /// A building selector value an adviser recorded (VIC, ACT and WA stage 2, PR 2), for a selector the building's rule pack
 /// lists in BUILDING_SELECTORS as RECORDED. The allowed values are checked in the app from the pack
 /// (src/lib/jurisdiction/building-selectors.ts); a state change deletes the building's rows. Queensland's regulation
@@ -4441,6 +4437,10 @@ model SchemeSelectorValue {
   @@map("scheme_selector_values")
 }
 
+/// The daily reminder for the deadline to start proceedings for a long
+/// outstanding debt (the Queensland 2 year rule, SM s 166(2); QLD go-live gap,
+/// 27 Oct 2026). One row per lot and oldest unpaid due date: the last stage
+/// emailed, claimed before it is sent so a retried run sends it once.
 model ProceedingsDeadlineReminder {
   id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   schemeId    String   @map("scheme_id") @db.Uuid

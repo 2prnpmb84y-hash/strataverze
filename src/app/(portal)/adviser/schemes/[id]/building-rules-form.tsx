@@ -85,15 +85,17 @@ export function BuildingRulesForm({ schemeId, view }: { schemeId: string; view: 
             <legend className="block text-sm font-medium text-ink mb-1.5">{view.lotOccupiable.label}</legend>
             <p className="mb-2 text-xs text-ink-muted">{view.lotOccupiable.help}</p>
             {view.lotOccupiable.lots.length === 0 ? (
-              <p className="text-sm text-ink-muted">No lots are recorded yet.</p>
+              <p className="text-sm text-ink-muted">No {view.lotsWord} are recorded yet.</p>
             ) : (
               <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 {view.lotOccupiable.lots.map((lot) => (
                   <label key={lot.id} className="flex items-center gap-2 text-sm text-ink">
-                    <span className="w-16 shrink-0">Lot {lot.lotNumber}</span>
+                    <span className="w-16 shrink-0">
+                      {view.lotWord} {lot.lotNumber}
+                    </span>
                     <select
                       name={`occupiable:${lot.id}`}
-                      aria-label={`Lot ${lot.lotNumber}`}
+                      aria-label={`${view.lotWord} ${lot.lotNumber}`}
                       defaultValue={lot.current == null ? "" : lot.current ? "YES" : "NO"}
                       className={SELECT}
                     >

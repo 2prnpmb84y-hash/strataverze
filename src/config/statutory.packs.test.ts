@@ -127,6 +127,7 @@ describe("Australian Capital Territory pack (pending)", () => {
   it("is a draft for review, not signed off, with no decisions yet", () => {
     expect(pack.code).toBe("AU-ACT");
     expect(pack.state).toBe("ACT");
+    expect(pack.version).toBe("2026.10.3");
     expect(pack.status).toBe("DRAFT");
     expect(pack.reviewedOn).toBeNull();
     expect(pack.reviewer).toBe("Matthew Wrigley");
@@ -424,6 +425,7 @@ describe("Western Australia pack (pending)", () => {
   const wa = pack.rules;
 
   it("is a draft, not yet signed off, with no decisions", () => {
+    expect(pack.version).toBe("2026.10.2");
     expect(pack.status).toBe("DRAFT");
     expect(pack.reviewedOn).toBeNull();
     expect(wa.DECISIONS).toHaveLength(0);

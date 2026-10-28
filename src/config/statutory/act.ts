@@ -1393,6 +1393,9 @@ export const TERMINOLOGY = {
   /** Access Canberra's term for a manager (GUIDANCE). */
   managerGuidanceTerm: "owners corporation managing agent",
   owner: "unit owner",
+  /** What the platform calls a lot (stage 2, PR 2): the UTMA's word, as the notes use it. */
+  lot: "unit",
+  lots: "units",
   scheme: "units plan",
   unitClasses: ["class A (in a building)", "class B (land)"],
   entitlement: "unit entitlement",

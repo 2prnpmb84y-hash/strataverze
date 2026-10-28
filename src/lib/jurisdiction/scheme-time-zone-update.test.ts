@@ -94,4 +94,34 @@ describe("updateScheme and the building selectors (VIC, ACT and WA stage 2, PR 2
     await updateScheme(S, { state: "NSW", postcode: "2000" });
     expect(scheme(S)).toMatchObject({ state: "NSW", replacementCost: null });
   });
+
+  it("locks the building's row for a state change, so a building rules save in progress is cleared after it, and takes no lock otherwise", async () => {
+    seed("VIC");
+    let release!: () => void;
+    const held = new Promise<void>((r) => (release = r));
+    // A building rules save holding the row, writing a value under the old state.
+    const saving = sharedFake.db.transaction(async (tx) => {
+      await tx.orm.public.Scheme.where({ id: S }).forNoKeyUpdate().first();
+      await held;
+      await tx.orm.public.SchemeSelectorValue.create({ schemeId: S, key: "severalOwnersCorporations", value: "NO" });
+      await tx.orm.public.Scheme.where({ id: S }).update({ servicesOnly: false });
+    });
+    const moving = updateScheme(S, { state: "NSW", postcode: "2000" });
+    await new Promise((r) => setTimeout(r, 20));
+    release();
+    await saving;
+    await moving;
+    expect(scheme(S)).toMatchObject({ state: "NSW", servicesOnly: null });
+    expect(sharedFake.table("SchemeSelectorValue").map((v) => v.schemeId)).toEqual([OTHER]);
+    expect(sharedFake.locks.filter((l) => l.table === "Scheme" && l.ids.includes(S))).toEqual([
+      { table: "Scheme", ids: [S], inTransaction: true },
+      { table: "Scheme", ids: [S], inTransaction: true },
+    ]);
+    expect(sharedFake.globalCallsUnderLock).toEqual([]);
+
+    sharedFake.reset({ Scheme: [{ id: "n", name: "Old", state: "NSW", postcode: "2000", timeZone: "Australia/Sydney" }] });
+    await updateScheme("n", { name: "New", state: "NSW", postcode: "2880" });
+    expect(sharedFake.locks).toEqual([]);
+  });
 });
+

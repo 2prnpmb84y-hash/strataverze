@@ -23,7 +23,13 @@ import type {
   StatutoryRules,
 } from "@/config/statutory";
 
-type SelectorRules = Partial<Pick<StatutoryRules, "BUILDING_SELECTORS" | "BUILDING_FACTS" | "REGULATION_MODULE" | "PLAN_FORMAT">>;
+type SelectorRules = Partial<Pick<StatutoryRules, "BUILDING_SELECTORS" | "BUILDING_FACTS" | "REGULATION_MODULE" | "PLAN_FORMAT" | "TERMINOLOGY">>;
+
+/** What the pack calls a lot, lower case: "lot" unless its TERMINOLOGY says otherwise (the ACT's "unit"). */
+export function lotNouns(rules: SelectorRules): { lot: string; lots: string } {
+  return { lot: rules.TERMINOLOGY?.lot ?? "lot", lots: rules.TERMINOLOGY?.lots ?? "lots" };
+}
+const upper = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 /** The records a building's facts are read from. */
 export interface BuildingFactRecords {
@@ -36,6 +42,8 @@ export type FactGap =
   | { kind: "NO_LOTS" }
   | { kind: "LOT_COUNT_MISMATCH"; recorded: number; total: number }
   | { kind: "LOTS_UNANSWERED"; lotNumbers: string[] }
+  /** Lots of a type the pack says is never occupiable, answered occupiable. */
+  | { kind: "LOTS_CONFLICT"; lotNumbers: string[]; lotTypes: string[] }
   | { kind: "NOT_RECORDED" };
 
 export interface BuildingFacts {
@@ -58,9 +66,10 @@ export function dollarsToCents(value: unknown): number | null {
 /**
  * The building's facts, from its records. The lot count is read only where
  * the lots recorded (other than common property) match the building's total
- * lots, and the occupiable counts only where every lot has an answer too.
+ * lots, and the occupiable counts only where every lot has an answer too and
+ * no lot of a type the pack says is never occupiable is answered occupiable.
  */
-export function buildingFacts(records: BuildingFactRecords): BuildingFacts {
+export function buildingFacts(records: BuildingFactRecords, rules: SelectorRules = {}): BuildingFacts {
   const lots = records.lots.filter(isLot);
   const total = records.scheme.totalLots;
   const gaps: Partial<Record<BuildingFactKey, FactGap>> = {};
@@ -75,8 +84,16 @@ export function buildingFacts(records: BuildingFactRecords): BuildingFacts {
   let occupiable: number | null = null;
   let nonOccupiable: number | null = null;
   const unanswered = lots.filter((l) => l.occupiable == null).map((l) => String(l.lotNumber ?? ""));
+  const never = rules.BUILDING_FACTS?.LOT_OCCUPIABLE?.neverForLotTypes?.lotTypes ?? [];
+  const conflicting = lots.filter((l) => l.occupiable === true && never.includes(String(l.lotType ?? "").toUpperCase()));
   if (lotCount == null) {
     gaps.OCCUPIABLE_LOT_COUNT = gaps.NON_OCCUPIABLE_LOT_COUNT = gaps.LOT_COUNT;
+  } else if (conflicting.length) {
+    gaps.OCCUPIABLE_LOT_COUNT = gaps.NON_OCCUPIABLE_LOT_COUNT = {
+      kind: "LOTS_CONFLICT",
+      lotNumbers: conflicting.map((l) => String(l.lotNumber ?? "")),
+      lotTypes: [...new Set(conflicting.map((l) => String(l.lotType ?? "").toLowerCase()))],
+    };
   } else if (unanswered.length) {
     gaps.OCCUPIABLE_LOT_COUNT = gaps.NON_OCCUPIABLE_LOT_COUNT = { kind: "LOTS_UNANSWERED", lotNumbers: unanswered };
   } else {
@@ -222,7 +239,7 @@ export function selectorValue(
   const selector = buildingSelectors(rules).find((s) => s.key === key);
   if (!selector) return null;
   if (selector.held === "RECORDED") return { holding: "RECORDED", value: (building.recorded[key] ?? "").trim() || null };
-  const derived = deriveSelector(selector, buildingFacts(building).values, building.recorded);
+  const derived = deriveSelector(selector, buildingFacts(building, rules).values, building.recorded);
   return { holding: "DERIVED", value: derived.ok ? derived.value : null, derived };
 }
 
@@ -247,11 +264,19 @@ function gapWords(rules: SelectorRules, ref: FactRef, facts: BuildingFacts): str
     return `no ${lower(selector?.label ?? key)} is recorded`;
   }
   const gap = facts.gaps[ref as BuildingFactKey];
-  if (gap?.kind === "NO_LOTS") return "no lots are recorded";
-  if (gap?.kind === "LOT_COUNT_MISMATCH") return `${gap.recorded} lots are recorded but the building's total is ${gap.total}`;
+  const { lot, lots } = lotNouns(rules);
+  if (gap?.kind === "NO_LOTS") return `no ${lots} are recorded`;
+  if (gap?.kind === "LOT_COUNT_MISMATCH") return `${gap.recorded} ${gap.recorded === 1 ? lot : lots} ${gap.recorded === 1 ? "is" : "are"} recorded but the building's total is ${gap.total}`;
+  if (gap?.kind === "LOTS_CONFLICT") {
+    const word = factWord(rules, "LOT_OCCUPIABLE", "occupiable");
+    const types = list(gap.lotTypes);
+    return gap.lotNumbers.length === 1
+      ? `${lot} ${gap.lotNumbers[0]} is a ${types} ${lot} but is answered yes for ${word}`
+      : `${gap.lotNumbers.length} ${types} ${lots} are answered yes for ${word} (${lots} ${lotList(gap.lotNumbers)})`;
+  }
   if (gap?.kind === "LOTS_UNANSWERED") {
     const word = factWord(rules, "LOT_OCCUPIABLE", "lot answer");
-    return gap.lotNumbers.length === 1 ? `lot ${gap.lotNumbers[0]} has no answer for ${word}` : `${gap.lotNumbers.length} lots have no answer for ${word} (lots ${lotList(gap.lotNumbers)})`;
+    return gap.lotNumbers.length === 1 ? `${lot} ${gap.lotNumbers[0]} has no answer for ${word}` : `${gap.lotNumbers.length} ${lots} have no answer for ${word} (${lots} ${lotList(gap.lotNumbers)})`;
   }
   if (ref === "SERVICES_ONLY") return `no answer is recorded for ${factWord(rules, "SERVICES_ONLY", "services only")}`;
   if (ref === "REPLACEMENT_COST_CENTS") return `no ${factWord(rules, "REPLACEMENT_COST", "replacement cost")} is recorded`;
@@ -290,7 +315,7 @@ export function recordedProblem(selector: BuildingSelector, stored: string | nul
 export function buildingSelectorProblems(rules: SelectorRules, building: SelectorBuilding): string[] {
   const selectors = buildingSelectors(rules);
   if (!selectors.length) return [];
-  const facts = buildingFacts(building);
+  const facts = buildingFacts(building, rules);
   const problems: string[] = [];
   for (const selector of selectors) {
     const problem =
@@ -335,6 +360,10 @@ export interface FactFieldView {
 }
 
 export interface BuildingRulesView {
+  /** What the pack calls a lot, as a label starts it: "Lot", "Unit". */
+  lotWord: string;
+  /** The plural, lower case: "lots", "units". */
+  lotsWord: string;
   recorded: RecordedSelectorView[];
   derived: DerivedSelectorView[];
   servicesOnly: (FactFieldView & { current: boolean | null }) | null;
@@ -363,11 +392,11 @@ function factShown(rules: SelectorRules, ref: FactRef, facts: BuildingFacts, rec
   const occupiable = rules.BUILDING_FACTS?.LOT_OCCUPIABLE;
   switch (ref) {
     case "LOT_COUNT":
-      return { label: "Lots", value: v == null ? notRecorded : String(v) };
+      return { label: upper(lotNouns(rules).lots), value: v == null ? notRecorded : String(v) };
     case "OCCUPIABLE_LOT_COUNT":
-      return { label: `${occupiable?.yesLabel ?? "Occupiable"} lots`, value: v == null ? notRecorded : String(v) };
+      return { label: `${occupiable?.yesLabel ?? "Occupiable"} ${lotNouns(rules).lots}`, value: v == null ? notRecorded : String(v) };
     case "NON_OCCUPIABLE_LOT_COUNT":
-      return { label: `${occupiable?.noLabel ?? "Not occupiable"} lots`, value: v == null ? notRecorded : String(v) };
+      return { label: `${occupiable?.noLabel ?? "Not occupiable"} ${lotNouns(rules).lots}`, value: v == null ? notRecorded : String(v) };
     case "SERVICES_ONLY": {
       const def = rules.BUILDING_FACTS?.SERVICES_ONLY;
       return { label: def?.label ?? "Services only", value: v == null ? notRecorded : v ? (def?.yesLabel ?? "Yes") : (def?.noLabel ?? "No") };
@@ -385,8 +414,9 @@ function factShown(rules: SelectorRules, ref: FactRef, facts: BuildingFacts, rec
 export function buildingRulesView(rules: SelectorRules, building: SelectorBuilding): BuildingRulesView | null {
   const selectors = buildingSelectors(rules);
   if (!selectors.length) return null;
-  const facts = buildingFacts(building);
-  const view: BuildingRulesView = { recorded: [], derived: [], servicesOnly: null, replacementCost: null, lotOccupiable: null };
+  const facts = buildingFacts(building, rules);
+  const nouns = lotNouns(rules);
+  const view: BuildingRulesView = { lotWord: upper(nouns.lot), lotsWord: nouns.lots, recorded: [], derived: [], servicesOnly: null, replacementCost: null, lotOccupiable: null };
   for (const s of selectors) {
     if (s.held === "RECORDED") {
       view.recorded.push({

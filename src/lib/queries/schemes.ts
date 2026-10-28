@@ -300,41 +300,37 @@ export async function updateScheme(
   // database holds a module for Queensland only. An NSW building has none, so
   // nothing changes for it. The plan format (QLD go-live gap) belongs to the
   // pack the same way and is cleared with it.
-  let clearModule = false;
-  let clearPlanFormat = false;
+  let stateChanged = false;
   // The building selectors (VIC, ACT and WA stage 2, PR 2) belong to the pack
   // the same way: a state change deletes the recorded selector values and
   // clears the facts the derived ones read (services only, replacement cost,
   // each lot's occupiable answer), so nothing recorded under one state's
   // rules is read under another's. Only a real state change does this, and
   // only where something is held, so an NSW building's update is as before.
-  let clearSelectors = false;
-  const clearFacts: { servicesOnly?: null; replacementCost?: null } = {};
   if (data.state !== undefined || data.postcode !== undefined) {
     const current = await db.orm.public.Scheme.where({ id: schemeId }).first();
     const norm = (v: unknown) => String(v ?? "").trim().toUpperCase();
-    const stateChanged = data.state !== undefined && norm(data.state) !== norm(current?.state);
+    stateChanged = data.state !== undefined && norm(data.state) !== norm(current?.state);
     const changed = stateChanged || (data.postcode !== undefined && norm(data.postcode) !== norm(current?.postcode));
     if (changed) {
       timeZone = defaultTimeZone(data.state ?? current?.state, data.postcode ?? current?.postcode);
       if (!timeZone) throw new Error(`No time zone is known for ${data.state ?? current?.state ?? "this state"}.`);
     }
-    clearModule = stateChanged && current?.regulationModule != null;
-    clearPlanFormat = stateChanged && current?.planFormat != null;
-    clearSelectors = stateChanged;
-    if (stateChanged && current?.servicesOnly != null) clearFacts.servicesOnly = null;
-    if (stateChanged && current?.replacementCost != null) clearFacts.replacementCost = null;
   }
-  const update = {
-    ...data,
-    ...(timeZone ? { timeZone: timeZone as unknown as Varchar<64> } : {}),
-    ...(clearModule ? { regulationModule: null } : {}),
-    ...(clearPlanFormat ? { planFormat: null } : {}),
-    ...clearFacts,
-  };
-  if (!clearSelectors) return db.orm.public.Scheme.where({ id: schemeId }).update(update);
+  const update = { ...data, ...(timeZone ? { timeZone: timeZone as unknown as Varchar<64> } : {}) };
+  if (!stateChanged) return db.orm.public.Scheme.where({ id: schemeId }).update(update);
+  // A state change: the building's row is locked first (the reads above are
+  // done before the lock), so a building rules save waits for it and then
+  // sees the new state, and what is cleared is read from the locked row.
   return db.transaction(async (tx) => {
-    const updated = await tx.orm.public.Scheme.where({ id: schemeId }).update(update);
+    const locked = await tx.orm.public.Scheme.where({ id: schemeId }).forNoKeyUpdate().first();
+    const updated = await tx.orm.public.Scheme.where({ id: schemeId }).update({
+      ...update,
+      ...(locked?.regulationModule != null ? { regulationModule: null } : {}),
+      ...(locked?.planFormat != null ? { planFormat: null } : {}),
+      ...(locked?.servicesOnly != null ? { servicesOnly: null } : {}),
+      ...(locked?.replacementCost != null ? { replacementCost: null } : {}),
+    });
     await tx.orm.public.SchemeSelectorValue.where((v) => v.schemeId.eq(schemeId)).deleteAndCount();
     await tx.orm.public.Lot.where((l) => and(l.schemeId.eq(schemeId), l.occupiable.isNotNull())).updateAndCount({ occupiable: null });
     return updated;

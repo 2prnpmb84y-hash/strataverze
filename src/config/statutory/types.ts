@@ -229,6 +229,14 @@ export interface BuildingFactDefinition {
   /** For a yes or no fact: the words for each answer. */
   yesLabel?: string;
   noLabel?: string;
+  /**
+   * LOT_OCCUPIABLE only: StrataVerze lot types that are never occupiable
+   * (Victoria: a car park or a storage locker, OCA s 3). A lot of one of these
+   * types answered "yes" is flagged, and nothing that reads the answer is
+   * worked out until it is corrected. `status` is the status of mapping the
+   * law's words to the lot types.
+   */
+  neverForLotTypes?: { lotTypes: readonly string[]; status: RuleStatus };
   source: string;
   status: RuleStatus;
 }
@@ -339,6 +347,13 @@ export interface SharedTerminology {
    * joined. NSW gives none, so its pack is unchanged.
    */
   lateChargeGeneral?: string;
+  /**
+   * What the platform calls a lot, lower case, where the pack's law uses
+   * another word (the ACT's "unit"), with its plural. Optional: a pack
+   * without them keeps "lot" and "lots" (NSW and Queensland are unchanged).
+   */
+  lot?: string;
+  lots?: string;
 }
 
 /**

@@ -33,13 +33,20 @@ export interface BuildingRulesChange {
 
 /**
  * Saves the building rules in one transaction, with the building's row locked
- * so two saves for the same building do not interleave. A selector value of
+ * so two saves for the same building, or a save and a state change, do not
+ * interleave. Refused if the building's state is no longer the one the values
+ * were checked for. A selector value of
  * null deletes the recorded value. Each lot is updated only where it belongs
  * to the building, or nothing is saved.
  */
-export async function saveBuildingRules(schemeId: string, input: BuildingRulesInput, actorId: string): Promise<BuildingRulesChange> {
+export async function saveBuildingRules(schemeId: string, input: BuildingRulesInput, actorId: string, checkedForState: string): Promise<BuildingRulesChange> {
   return db.transaction(async (tx) => {
-    await tx.orm.public.Scheme.where((s) => s.id.eq(schemeId)).forNoKeyUpdate().first();
+    // The values were checked against the pack for `checkedForState`. Read
+    // the state again under the lock (a state change takes the same lock), and
+    // refuse if it changed, so nothing is saved under another state's rules.
+    const locked = await tx.orm.public.Scheme.where((s) => s.id.eq(schemeId)).forNoKeyUpdate().first();
+    if (!locked) throw new BuildingRulesError("Scheme not found.");
+    if (locked.state !== checkedForState) throw new BuildingRulesError("The building's state changed while this was being saved. Reload the page and try again.");
     const change: BuildingRulesChange = { selectors: [], servicesOnly: false, replacementCost: false, lots: 0 };
     for (const [key, value] of Object.entries(input.selectors)) {
       const scoped = tx.orm.public.SchemeSelectorValue.where((v) => and(v.schemeId.eq(schemeId), v.key.eq(key)));

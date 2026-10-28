@@ -155,4 +155,23 @@ describe("saveBuildingRulesAction", () => {
     expect(sharedFake.table("SchemeSelectorValue")).toEqual([]);
     expect(scheme(NSW_ID)).toEqual({ id: NSW_ID, state: "NSW", totalLots: 1 });
   });
+
+  it("refuses a save when the building's state changes while it waits for the building's lock, saving nothing", async () => {
+    let release!: () => void;
+    const held = new Promise<void>((r) => (release = r));
+    // A state change holding the building's row, as updateScheme does.
+    const change = sharedFake.db.transaction(async (tx) => {
+      await tx.orm.public.Scheme.where({ id: WA_ID }).forNoKeyUpdate().first();
+      await held;
+      await tx.orm.public.Scheme.where({ id: WA_ID }).update({ state: "NSW" });
+    });
+    const saving = save(WA_ID, { "selector:schemeType": "STRATA", replacementCost: "6000000" });
+    await new Promise((r) => setTimeout(r, 20));
+    release();
+    await change;
+    expect(await saving).toEqual({ error: "The building's state changed while this was being saved. Reload the page and try again." });
+    expect(values(WA_ID)).toEqual({});
+    expect(scheme(WA_ID).replacementCost).toBeNull();
+    expect(sharedFake.locks.filter((l) => l.table === "Scheme").every((l) => l.inTransaction)).toBe(true);
+  });
 });

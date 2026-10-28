@@ -39,7 +39,8 @@ function vicBuilding(occupiable: number, non: number, servicesOnly: boolean | nu
   ];
   return { scheme: { totalLots: lots.length, servicesOnly, ...extra }, lots };
 }
-const tier = (b: BuildingFactRecords) => deriveSelector(derived(VIC, "tier"), buildingFacts(b).values);
+const ONLY_OC: RecordedValues = { severalOwnersCorporations: "NO" };
+const tier = (b: BuildingFactRecords, recorded: RecordedValues = ONLY_OC) => deriveSelector(derived(VIC, "tier"), buildingFacts(b, VIC).values, recorded);
 const tierValue = (b: BuildingFactRecords) => {
   const r = tier(b);
   return r.ok ? r.value : r.kind;
@@ -59,13 +60,40 @@ describe("VIC tier (OCA s 7), from occupiable lots and services only", () => {
     expect(tierValue(vicBuilding(n, 0, false))).toBe(expected);
   });
 
-  it("is tier 5 for a services only owners corporation whatever its lots", () => {
+  it("is tier 5 for a services only owners corporation whatever its lots, s 7(7) and (8) included", () => {
     expect(tierValue(vicBuilding(101, 0, true))).toBe("TIER_5");
     expect(tierValue(vicBuilding(10, 4, true))).toBe("TIER_5");
+    // s 7(7): fewer than 10 occupiable lots and more than 50 that are not.
+    expect(tierValue(vicBuilding(5, 60, true))).toBe("TIER_5");
+    // s 7(8): only lots that are not occupiable.
+    expect(tierValue(vicBuilding(0, 5, true))).toBe("TIER_5");
   });
 
-  it("is tier 5 with 2 occupiable lots, whatever its other lots, as TIERS records the 2-lot subdivision", () => {
-    expect(tierValue(vicBuilding(2, 5, false))).toBe("TIER_5");
+  it("is tier 5 for a 2-lot subdivision of 2 occupiable lots and no other, and refuses 2 occupiable lots with other lots until decided", () => {
+    expect(tierValue(vicBuilding(2, 0, false))).toBe("TIER_5");
+    expect(tier(vicBuilding(2, 5, false))).toMatchObject({ ok: false, kind: "REFUSED", message: expect.stringContaining("Whether it is then a 2-lot subdivision is for StrataVerze to decide") });
+    // 2 shops and 51 car parks: s 7(7) applies, refused, never tier 5.
+    expect(tier(vicBuilding(2, 51, false))).toMatchObject({ ok: false, kind: "REFUSED", provision: expect.stringContaining("s 7(7)") });
+    expect(tier(vicBuilding(2, 40, false))).toMatchObject({ ok: false, kind: "REFUSED" });
+  });
+
+  it("refuses an owners corporation that is one of several on its plan, and fails closed until that is answered", () => {
+    expect(tier(vicBuilding(50, 0, false), { severalOwnersCorporations: "YES" })).toMatchObject({ ok: false, kind: "REFUSED", message: expect.stringContaining("one of several on its plan") });
+    expect(tier(vicBuilding(50, 0, true), { severalOwnersCorporations: "YES" })).toMatchObject({ ok: false, kind: "REFUSED" });
+    expect(tier(vicBuilding(50, 0, false), {})).toEqual({ ok: false, kind: "MISSING", missing: ["selector:severalOwnersCorporations"] });
+  });
+
+  it("flags a parking or storage lot answered occupiable, and works nothing out from it", () => {
+    const b = vicBuilding(10, 0, false);
+    b.lots = [...b.lots, { lotNumber: "11", lotType: "PARKING", occupiable: true }];
+    b.scheme.totalLots = 11;
+    expect(tier(b)).toEqual({ ok: false, kind: "MISSING", missing: ["OCCUPIABLE_LOT_COUNT", "NON_OCCUPIABLE_LOT_COUNT"] });
+    expect(buildingSelectorProblems(VIC, { ...b, recorded: { ownersCorporationType: "UNLIMITED", ...ONLY_OC } })).toEqual([
+      "The tier cannot be worked out because lot 11 is a parking lot but is answered yes for occupiable lot. Record what is missing in the building rules.",
+    ]);
+    // Answered not occupiable, it counts as not occupiable.
+    b.lots[10].occupiable = false;
+    expect(tierValue(b)).toBe("TIER_3");
   });
 
   it("counts lots that are not occupiable out of tiers 1 to 4", () => {
@@ -92,8 +120,7 @@ describe("VIC tier (OCA s 7), from occupiable lots and services only", () => {
   it("fails closed when the services only answer is needed and missing", () => {
     expect(tier(vicBuilding(50, 0, null))).toEqual({ ok: false, kind: "MISSING", missing: ["SERVICES_ONLY"] });
     expect(tier(vicBuilding(101, 0, null))).toEqual({ ok: false, kind: "MISSING", missing: ["SERVICES_ONLY"] });
-    // Not needed: 2 occupiable lots is tier 5 either way.
-    expect(tierValue(vicBuilding(2, 0, null))).toBe("TIER_5");
+    expect(tier(vicBuilding(2, 0, null))).toEqual({ ok: false, kind: "MISSING", missing: ["SERVICES_ONLY"] });
   });
 
   it("fails closed when a lot has no occupiable answer, never counting it either way", () => {
@@ -115,17 +142,21 @@ describe("VIC tier (OCA s 7), from occupiable lots and services only", () => {
   });
 
   it("says what to record in the Building data missing notice", () => {
-    const b = vicBuilding(50, 0, null);
+    const b = vicBuilding(50, 0, false);
     b.lots = [...b.lots, { lotNumber: "51", lotType: "RESIDENTIAL", occupiable: null }, { lotNumber: "52", lotType: "RESIDENTIAL", occupiable: null }];
     b.scheme.totalLots = 52;
-    expect(buildingSelectorProblems(VIC, { ...b, recorded: { ownersCorporationType: "UNLIMITED" } })).toEqual([
+    expect(buildingSelectorProblems(VIC, { ...b, recorded: { ownersCorporationType: "UNLIMITED", ...ONLY_OC } })).toEqual([
       "The tier cannot be worked out because 2 lots have no answer for occupiable lot (lots 51 and 52). Record what is missing in the building rules.",
     ]);
-    expect(buildingSelectorProblems(VIC, { ...vicBuilding(50, 0, null), recorded: {} })).toEqual([
+    expect(buildingSelectorProblems(VIC, { ...vicBuilding(50, 0, null), recorded: ONLY_OC })).toEqual([
       "No owners corporation type is recorded for this building. Choose it in the building rules.",
       "The tier cannot be worked out because no answer is recorded for services only owners corporation. Record what is missing in the building rules.",
     ]);
-    expect(buildingSelectorProblems(VIC, { ...vicBuilding(9, 51, false), recorded: { ownersCorporationType: "LIMITED" } })).toEqual([
+    expect(buildingSelectorProblems(VIC, { ...vicBuilding(50, 0, false), recorded: { ownersCorporationType: "UNLIMITED" } })).toEqual([
+      "No owners corporations on the plan is recorded for this building. Choose it in the building rules.",
+      "The tier cannot be worked out because no owners corporations on the plan is recorded. Record what is missing in the building rules.",
+    ]);
+    expect(buildingSelectorProblems(VIC, { ...vicBuilding(9, 51, false), recorded: { ownersCorporationType: "LIMITED", ...ONLY_OC } })).toEqual([
       expect.stringMatching(/^The building's owners corporation type is recorded as limited owners corporation, which StrataVerze does not support yet\./),
       expect.stringMatching(/^The tier cannot be worked out\. Fewer than 10 lots are occupiable and more than 50 are not\./),
     ]);
@@ -233,8 +264,18 @@ describe("ACT unit thresholds, from the number of units", () => {
     ]);
   });
 
-  it("fails closed with no units recorded", () => {
+  it("fails closed with no units recorded, and says units, as the pack does", () => {
     expect(act("sinkingFundRequired", 0)).toBe("MISSING");
+    const recorded = { schemeType: "UNITS_PLAN", retirementVillagePlan: "NO", mixedUsePlan: "NO", classBOnlyPlan: "NO" };
+    const problems = buildingSelectorProblems(ACT, { ...waBuilding(0), recorded });
+    expect(problems[0]).toBe("The bank account exemption cannot be worked out because no units are recorded. Record what is missing in the building rules.");
+    expect(problems.join(" ")).not.toMatch(/\blots?\b/);
+    expect(buildingSelectorProblems(ACT, { scheme: { totalLots: 5 }, lots: waBuilding(4).lots, recorded })[0]).toContain("because 4 units are recorded but the building's total is 5.");
+    const view = buildingRulesView(ACT, { ...waBuilding(21), recorded })!;
+    expect([view.lotWord, view.lotsWord]).toEqual(["Unit", "units"]);
+    expect(view.derived.find((d) => d.key === "proxyLimit")?.facts).toEqual([{ label: "Units", value: "21" }]);
+    // Western Australia keeps "lots".
+    expect(buildingRulesView(WA, { ...waBuilding(3), recorded: {} })!.lotWord).toBe("Lot");
   });
 });
 
