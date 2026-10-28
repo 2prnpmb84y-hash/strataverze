@@ -99,6 +99,56 @@ exports[`Australian Capital Territory pack (pending) > is the rules recorded for
     "source": "Unit Titles (Management) Act 2011 (ACT) ss 78(1), 79(2), 90",
     "status": "CONFIRMED",
   },
+  "DATED_RULES": {
+    "ABSENTEE_VOTES_COUNT_TOWARDS_QUORUM": {
+      "title": "Absentee votes count towards the quorum",
+      "versions": [
+        {
+          "from": "2026-06-26",
+          "legalStatus": "IN_FORCE",
+          "source": "Unit Titles (Management) Act 2011 (ACT) sch 3 s 3.31(4) (R25, effective 26 Jun 2026)",
+          "status": "CONFIRMED",
+          "value": false,
+        },
+        {
+          "commencement": "If passed, pt 6 (unit titles) commences 3 months after notification (cl 2(2)); not notified",
+          "legalStatus": "NOT_LAW",
+          "pendingChange": "HCALA_BILL_2026",
+          "presentedOn": "2026-09-17",
+          "source": "Housing and Consumer Affairs Legislation Amendment Bill 2026 (ACT), as presented 17 Sep 2026, cls 2, 54, 56 to 64 (pt 6 read in full; explanatory statement not read)",
+          "textStatus": "READ_IN_BILL_TEXT",
+          "value": true,
+        },
+      ],
+    },
+    "QUORUM_FRACTION_OF_UNITS": {
+      "title": "Standard quorum (fraction of units)",
+      "versions": [
+        {
+          "from": "2026-06-26",
+          "legalStatus": "IN_FORCE",
+          "source": "Unit Titles (Management) Act 2011 (ACT) sch 3 s 3.9(1)(a) (R25, effective 26 Jun 2026)",
+          "status": "CONFIRMED",
+          "value": {
+            "fractionOfUnits": 0.5,
+            "retirementVillageFractionOfUnits": 0.3333333333333333,
+          },
+        },
+        {
+          "commencement": "If passed, pt 6 (unit titles) commences 3 months after notification (cl 2(2)); not notified",
+          "legalStatus": "NOT_LAW",
+          "pendingChange": "HCALA_BILL_2026",
+          "presentedOn": "2026-09-17",
+          "source": "Housing and Consumer Affairs Legislation Amendment Bill 2026 (ACT), as presented 17 Sep 2026, cls 2, 54, 56 to 64 (pt 6 read in full; explanatory statement not read)",
+          "textStatus": "READ_IN_BILL_TEXT",
+          "value": {
+            "fractionOfUnits": 0.25,
+            "retirementVillageFractionOfUnits": 0.25,
+          },
+        },
+      ],
+    },
+  },
   "DEBT_RECOVERY": {
     "contributionRecoveryNeedsResolution": false,
     "forum": {
@@ -329,6 +379,7 @@ exports[`Australian Capital Territory pack (pending) > is the rules recorded for
     "The sinking fund is marked \`required: false\` in FUND_CATALOGUE because the shared FundDefinition has only a yes or no \`required\`. The Act requires a sinking fund and sinking fund plan only with 4 or more units (UTMA ss 81(1), 82(1)); the threshold is FUND_RULES.sinkingFundRequiredFromUnits. Before the pack applies, decide how the platform requires the fund for buildings of 4 or more units (for example, a size threshold in the shared fund shape).",
     "FEATURES switches off the certificate (strataInformationCertificate) and records inspection (recordsInspections) workflows for this draft. Those switches run the NSW workflows; the ACT has its own certificates (SALE_CERTIFICATE) and records inspection rules (RECORDS), which need ACT workflows before they can be switched on.",
     "FOR LEGAL REVIEW: what the opening words of UTMA s 94(1), "unless otherwise decided by ordinary resolution", let an ordinary resolution do (INTEREST.openingWords).",
+    "DATED_RULES restates the Bill's quorum and absentee vote changes as NOT LAW values that are never applied, beside the in-force values from R25 (26 Jun 2026; earlier days have no value). When the Bill passes and pt 6 is notified, a new pack version restates them as enacted with the day they commence. Confirm both choices.",
   ],
   "FUND_CATALOGUE": [
     {
@@ -2544,6 +2595,349 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
     "status": "CONFIRMED",
     "termUntil": "a new committee is elected",
   },
+  "DATED_RULES": {
+    "ARREARS_CARVE_OUTS": {
+      "title": "Not in arrears with a payment plan request or plan",
+      "versions": [
+        {
+          "commencedOn": null,
+          "commencement": "on proclamation, or 1 Dec 2027 if not proclaimed earlier (No. 36/2026 s 2(3), (6))",
+          "fixedStartDate": null,
+          "latestStartDate": "2027-12-01",
+          "legalStatus": "ENACTED_NOT_COMMENCED",
+          "pendingChange": "CLAA_2026_ARREARS_CARVE_OUTS",
+          "source": "Consumer Legislation Amendment Act 2026 (Vic) (No. 36/2026), as made Part 6 Div 2 (new OCA ss 89B(4), 89C(11), 103(8))",
+          "status": "CONFIRMED",
+          "value": {
+            "notInArrearsFor": [
+              "voting (s 89B(4))",
+              "acting as a proxy (s 89C(11))",
+              "the committee (s 103(8))",
+            ],
+          },
+        },
+      ],
+    },
+    "INTEREST_PAUSE": {
+      "title": "No interest during a payment plan request or plan",
+      "versions": [
+        {
+          "commencedOn": null,
+          "commencement": "on proclamation, or 1 Dec 2027 if not proclaimed earlier (No. 36/2026 s 2(3), (6))",
+          "fixedStartDate": null,
+          "latestStartDate": "2027-12-01",
+          "legalStatus": "ENACTED_NOT_COMMENCED",
+          "pendingChange": "CLAA_2026_INTEREST_PAUSE",
+          "source": "Consumer Legislation Amendment Act 2026 (Vic) (No. 36/2026), as made s 36 (new OCA s 29(1A))",
+          "status": "CONFIRMED",
+          "value": {
+            "appliesToTiers": [
+              1,
+              2,
+              3,
+              4,
+            ],
+            "noInterestWhile": [
+              "a payment-plan request is unanswered under s 32B(2)",
+              "the owner has entered, and is complying with, a payment plan",
+            ],
+          },
+        },
+      ],
+    },
+    "MANAGER_EDUCATION": {
+      "title": "Manager education reforms",
+      "versions": [
+        {
+          "commencedOn": null,
+          "commencement": "on proclamation, or 30 Jun 2027 at the latest (HSRA 2025 s 2(4))",
+          "fixedStartDate": null,
+          "latestStartDate": "2027-06-30",
+          "legalStatus": "ENACTED_NOT_COMMENCED",
+          "pendingChange": "HSRA_2025_MANAGER_EDUCATION",
+          "source": "Consumer and Planning Legislation Amendment (Housing Statement Reform) Act 2025 (Vic) (No. 6/2025), as made ss 2(4), 85 to 110; Owners Corporations Act 2006 (Vic) s 212",
+          "status": "CONFIRMED",
+          "value": {
+            "adds": [
+              "corporate managers must appoint a registered "officer in effective control"",
+              "natural persons must complete prescribed courses or examinations",
+              "Business Licensing Authority registration conditions",
+              "mandatory continuing professional development (ss 198A, 198B)",
+            ],
+            "cavSummary": {
+              "annualCpdFrom": "2028-04-01",
+              "initialTrainingBy": "2027-06-30",
+              "initialTrainingCoreUnits": 5,
+              "officerRegistrationBy": "2027-06-30",
+              "officerRegistrationIfAlreadyRegisteredBy": "2027-08-01",
+              "source": "CAV, New education rules: Owners corporation managers (last updated 28 May 2026); Owners Corporations (Education) Regulations 2026 (Vic) (SR 54/2026) (text not read)",
+              "status": "GUIDANCE",
+            },
+          },
+        },
+      ],
+    },
+    "MANAGER_LICENSING": {
+      "title": "Manager licensing scheme (announced)",
+      "versions": [
+        {
+          "commencement": "no Bill or Act yet; the media release lists it among changes "to come next year"",
+          "legalStatus": "ANNOUNCED_NO_LEGISLATION",
+          "pendingChange": "MANAGER_LICENSING_ANNOUNCEMENT_2026",
+          "source": "Premier of Victoria, A Better Deal For Apartment And Townhouse Owners (media release, 3 Jun 2026)",
+          "status": "GUIDANCE",
+          "value": {
+            "reviewRecommendations": {
+              "supportedInFull": 17,
+              "supportedInPart": 3,
+              "supportedInPrinciple": 26,
+            },
+          },
+        },
+      ],
+    },
+    "MANAGER_REGISTRATION_FEE_UNITS": {
+      "note": "The officer in effective control fee (new reg 20(2), from 30 Jun 2027) stays in PENDING_CHANGES only.",
+      "title": "Manager registration fees (fee units)",
+      "versions": [
+        {
+          "from": "2021-12-01",
+          "legalStatus": "IN_FORCE",
+          "source": "Owners Corporations Regulations 2018 (Vic) regs 19 to 21 (Version 002, in force 1 Dec 2021)",
+          "status": "CONFIRMED",
+          "value": {
+            "annual": 10.01,
+            "application": 14.26,
+            "lateLodgement": 1,
+          },
+        },
+        {
+          "commencedOn": null,
+          "commencement": "25 Nov 2026 (SR 53/2026 reg 3); new reg 20(2) applies from 30 Jun 2027",
+          "fixedStartDate": "2026-11-25",
+          "latestStartDate": "2026-11-25",
+          "legalStatus": "MADE_NOT_COMMENCED",
+          "pendingChange": "SR_53_2026_MANAGER_FEES",
+          "source": "Owners Corporations Amendment Regulations 2026 (Vic) (SR 53/2026), as made regs 3, 5 to 7",
+          "status": "CONFIRMED",
+          "value": {
+            "annual": 22.05,
+            "application": 29.12,
+            "lateLodgement": 1.35,
+          },
+        },
+      ],
+    },
+    "OTHER_DIV2": {
+      "title": "Seal witness and the Part 12 correction",
+      "versions": [
+        {
+          "commencedOn": null,
+          "commencement": "on proclamation, or 1 Dec 2027 if not proclaimed earlier (No. 36/2026 s 2(3), (6))",
+          "fixedStartDate": null,
+          "latestStartDate": "2027-12-01",
+          "legalStatus": "ENACTED_NOT_COMMENCED",
+          "pendingChange": "CLAA_2026_OTHER_DIV2",
+          "source": "Consumer Legislation Amendment Act 2026 (Vic) (No. 36/2026), as made s 33(2) and Part 6 Div 2 (new OCA s 21(2A))",
+          "status": "CONFIRMED",
+          "value": {
+            "registeredManagerDefinitionPart": {
+              "from": "Part 6",
+              "to": "Part 12",
+            },
+            "sealWitness": "new s 21(2A)",
+          },
+        },
+      ],
+    },
+    "PAYMENT_ALLOCATION_ORDER": {
+      "title": "Order a payment is applied in",
+      "versions": [
+        {
+          "from": "2026-09-09",
+          "legalStatus": "IN_FORCE",
+          "source": "Owners Corporations Act 2006 (Vic) (Version 024, in force 9 Sep 2026, read in full): the notes record no order before s 32I commences",
+          "status": "NOT_CONFIRMED",
+          "value": "NO_STATUTORY_RULE",
+        },
+        {
+          "commencedOn": null,
+          "commencement": "on proclamation, or 1 Dec 2027 if not proclaimed earlier (No. 36/2026 s 2(3), (6))",
+          "fixedStartDate": null,
+          "latestStartDate": "2027-12-01",
+          "legalStatus": "ENACTED_NOT_COMMENCED",
+          "pendingChange": "CLAA_2026_PAYMENT_PLANS",
+          "source": "Consumer Legislation Amendment Act 2026 (Vic) (No. 36/2026), as made ss 2(3), (6), 40 (new OCA s 32I)",
+          "status": "CONFIRMED",
+          "value": [
+            "LEVY",
+            "INTEREST",
+            "RECOVERY_COSTS",
+          ],
+        },
+      ],
+    },
+    "PAYMENT_PLANS": {
+      "title": "Payment plans",
+      "versions": [
+        {
+          "commencedOn": null,
+          "commencement": "on proclamation, or 1 Dec 2027 if not proclaimed earlier (No. 36/2026 s 2(3), (6))",
+          "fixedStartDate": null,
+          "latestStartDate": "2027-12-01",
+          "legalStatus": "ENACTED_NOT_COMMENCED",
+          "pendingChange": "CLAA_2026_PAYMENT_PLANS",
+          "source": "Consumer Legislation Amendment Act 2026 (Vic) (No. 36/2026), as made ss 2(3), (6), 33, 38 to 46 (new OCA ss 31(2)(ab), 32(3), 32A to 32J, 162(ca), 163(3), (4))",
+          "status": "CONFIRMED",
+          "value": {
+            "agmReport": [
+              "the number of plan requests",
+              "how many were accepted or refused",
+              "refusal reasons",
+              "variations",
+            ],
+            "appliesToTiers": [
+              1,
+              2,
+              3,
+              4,
+            ],
+            "decision": {
+              "decideWithinDays": 28,
+              "deemedAcceptanceExcludedIf": "the request was not in the approved form and was for a term over 12 months",
+              "deemedAcceptedIfNotDecided": true,
+              "ownerOccupierRefusalNeedsWrittenReasons": true,
+              "writtenNoticeWithinDays": 28,
+            },
+            "deemedStartDaysAfterRequest": 29,
+            "feeMayBeCharged": false,
+            "feeNoticeMustStateClockPause": true,
+            "identifyingInformationInMinutes": false,
+            "maxTermMonthsBeforeRefusalGround": 12,
+            "noVcatPaymentApplicationWhilePendingOrComplying": true,
+            "onDefault": [
+              "terminate the plan",
+              "recover the debt through s 32",
+            ],
+            "ownerOccupierRefusalGroundsOnly": [
+              "the plan would likely cause prescribed financial circumstances for the owners corporation",
+              "prescribed hardship information is missing",
+              "the owner has an existing plan, or did not comply with a plan within the last 2 years",
+              "the requested term is longer than 12 months",
+              "another prescribed ground",
+            ],
+            "paymentAllocationAppliesToAllOwnersCorporations": true,
+            "paymentAllocationOrder": [
+              "LEVY",
+              "INTEREST",
+              "RECOVERY_COSTS",
+            ],
+            "recoveryClocksPause": true,
+            "request": {
+              "after": [
+                "a fee notice",
+                "a final notice",
+              ],
+              "approvedForm": true,
+              "inWriting": true,
+              "ownersCorporationMayAskOnlyFor": "prescribed information and evidence",
+            },
+            "startsOn": "acceptance, or 29 days after the request if deemed accepted",
+            "variedBy": "written agreement",
+            "vcatJurisdiction": true,
+          },
+        },
+      ],
+    },
+    "PRIVACY": {
+      "title": "Privacy of owner information",
+      "versions": [
+        {
+          "commencedOn": null,
+          "commencement": "on proclamation, or 1 Dec 2027 if not proclaimed earlier (No. 36/2026 s 2(3), (6))",
+          "fixedStartDate": null,
+          "latestStartDate": "2027-12-01",
+          "legalStatus": "ENACTED_NOT_COMMENCED",
+          "pendingChange": "CLAA_2026_PRIVACY",
+          "source": "Consumer Legislation Amendment Act 2026 (Vic) (No. 36/2026), as made Part 6 Div 2 (new OCA ss 203AA to 203AAF)",
+          "status": "CONFIRMED",
+          "value": {
+            "discloseOnlyAsPermitted": true,
+            "notifyMisuseWithinDays": 7,
+            "penaltyUnitsEach": 60,
+            "protectOwnerInformation": true,
+            "returnOrDestroyWithinDays": 28,
+          },
+        },
+      ],
+    },
+    "PROXY_LIMIT": {
+      "note": "maxLotOwners is the limit for every meeting, or at or below the occupiable lots threshold where aboveThreshold is given.",
+      "title": "Proxy limit",
+      "versions": [
+        {
+          "from": "2026-09-09",
+          "legalStatus": "IN_FORCE",
+          "source": "Owners Corporations Act 2006 (Vic) s 89D (Version 024, in force 9 Sep 2026); Owners Corporations Regulations 2018 (Vic) reg 8A",
+          "status": "CONFIRMED",
+          "value": {
+            "aboveThreshold": {
+              "counts": "occupiable lots",
+              "maxPercentOfLotOwners": 5,
+              "occupiableLotsMoreThan": 20,
+              "roundingStatus": "NOT_CONFIRMED",
+            },
+            "exceptions": [
+              "family members",
+              "one owner with multiple lots (prescribed)",
+              "owners corporations managing commercial, retail or industrial common property (prescribed)",
+            ],
+            "exceptionsStatus": "CONFIRMED",
+            "maxLotOwners": 1,
+          },
+        },
+        {
+          "commencedOn": null,
+          "commencement": "on proclamation, or 1 Dec 2027 if not proclaimed earlier (No. 36/2026 s 2(3), (6))",
+          "fixedStartDate": null,
+          "latestStartDate": "2027-12-01",
+          "legalStatus": "ENACTED_NOT_COMMENCED",
+          "pendingChange": "CLAA_2026_PROXY_LIMIT",
+          "source": "Consumer Legislation Amendment Act 2026 (Vic) (No. 36/2026), as made s 43A (new OCA s 89D(1))",
+          "status": "CONFIRMED",
+          "value": {
+            "aboveThreshold": null,
+            "exceptions": [
+              "family members",
+              "one owner with multiple lots (prescribed)",
+              "owners corporations managing commercial, retail or industrial common property (prescribed)",
+            ],
+            "exceptionsStatus": "NOT_CONFIRMED",
+            "maxLotOwners": 1,
+          },
+        },
+      ],
+    },
+    "SALE_OF_LAND": {
+      "title": "Vendor's statements: when made available",
+      "versions": [
+        {
+          "commencedOn": null,
+          "commencement": "on proclamation, or 1 Jun 2027 at the latest; ss 106 to 108 at the latest 1 Jul 2027",
+          "fixedStartDate": null,
+          "latestStartDate": "2027-06-01",
+          "legalStatus": "ENACTED_NOT_COMMENCED",
+          "pendingChange": "CLAA_2026_SALE_OF_LAND",
+          "source": "Consumer Legislation Amendment Act 2026 (Vic) (No. 36/2026), as made Part 9 Div 1 (commencement only)",
+          "status": "CONFIRMED",
+          "value": {
+            "contentRead": false,
+            "sections106To108LatestStartDate": "2027-07-01",
+          },
+        },
+      ],
+    },
+  },
   "DECISIONS": [
     {
       "decidedBy": null,
@@ -3144,6 +3538,18 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
       "key": "PENDING_COMMENCEMENT",
       "kind": "LEGAL",
       "point": "Check the Government Gazette for proclamations of CLAA 2026 Part 6 Div 2 and HSRA 2025 Part 4 Div 1 before each pack release. SR 53/2026 commences on 25 Nov 2026 and needs a new pack version to switch on.",
+    },
+    {
+      "before": "any code reads a dated rule",
+      "key": "DATED_RULES",
+      "kind": "STRATAVERZE",
+      "point": "Each pending change is restated in DATED_RULES. An enacted or made change stays off, even after its fixed or latest start date, until a pack version records the day it commenced; once that date passes the reader refuses the rule and the pending law check lists it (SR 53/2026 from 25 Nov 2026). In-force values start on the day the version read came into force (OCA Version 024, OCR Version 002), so earlier days have no value. Before s 32I the payment order is recorded as no statutory rule, NOT_CONFIRMED. The pending proxy limit carries the exceptions in force, NOT_CONFIRMED (the notes say only that the s 89D(2) exceptions are not amended). Confirm these choices.",
+    },
+    {
+      "before": "25 Nov 2026",
+      "key": "FIXED_DATE_COMMENCEMENT",
+      "kind": "STRATAVERZE",
+      "point": "Whether an instrument that fixes its own start date (SR 53/2026, 25 Nov 2026) should count as commenced on that date without a new pack version recording it. Until decided, it does not: from 25 Nov 2026 the reader refuses the manager registration fees until a pack version records commencedOn.",
     },
     {
       "before": "CLAA 2026 Part 6 Div 2 commences (1 Dec 2027 at the latest)",
