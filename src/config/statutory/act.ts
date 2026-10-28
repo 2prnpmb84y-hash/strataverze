@@ -6,8 +6,8 @@
  *
  * DRAFT, FOR STRATAVERZE TO REVIEW (27 Oct 2026). Not signed off and not
  * applied to any building: `rulePackFor` returns active packs only, and the
- * ACT is not in SUPPORTED_SCHEME_STATES or the database's state check. Nothing
- * here has been decided by StrataVerze yet (DECISIONS is empty).
+ * ACT is not in SUPPORTED_SCHEME_STATES or the database's state check. The one
+ * StrataVerze decision so far is the payment order (DECISIONS, 28 Oct 2026).
  *
  * Every value comes from the research notes of 27 Oct 2026 prepared for
  * Matthew Wrigley ("ACT unit titles: research notes for the StrataVerze ACT
@@ -44,10 +44,12 @@
  * PENDING_REFORMS entry has `legalStatus: "NOT_LAW"` and `textStatus:
  * "READ_IN_BILL_TEXT"` instead of a `status`.
  *
- * Not included (shapes being changed in another branch): LATE_CHARGE,
- * NOTICE_RULES and MEETING_RULES. Their ACT rules are held as plain data in
- * INTEREST, CONTRIBUTION_NOTICES and MEETINGS. PAYMENT_ALLOCATION_ORDER is
- * left out because the notes record no order (NOT_CONFIRMED).
+ * Not included (shapes being changed in another branch): NOTICE_RULES and
+ * MEETING_RULES. Their ACT rules are held as plain data in
+ * CONTRIBUTION_NOTICES and MEETINGS. LATE_CHARGE is given from INTEREST
+ * (stage 2, PR 5). PAYMENT_ALLOCATION_ORDER is a StrataVerze choice Matthew
+ * Wrigley made on 28 Oct 2026 (contribution first, as NSW): the notes record
+ * no order.
  */
 
 import type {
@@ -56,7 +58,9 @@ import type {
   DerivedBuildingSelector,
   EntitlementScheduleDefinition,
   FundDefinition,
+  LateChargeRules,
   PackFeatures,
+  PaymentAllocationPart,
   RecordedBuildingSelector,
   RuleStatus,
   SharedTerminology,
@@ -608,8 +612,8 @@ export const DISCOUNTS = {
 } as const;
 
 /**
- * Interest on overdue contributions (s 94). Held as plain data; the shared
- * LATE_CHARGE shape is being changed in another branch.
+ * Interest on overdue contributions (s 94), as the notes give it. The shared
+ * LATE_CHARGE below is built from it (stage 2, PR 5).
  */
 export const INTEREST = {
   /** 10% a year simple interest until paid (s 94(1)(a)). */
@@ -633,6 +637,65 @@ export const INTEREST = {
   source: `${UTMA} s 94`,
   status: "CONFIRMED" as RuleStatus,
 } as const;
+
+/**
+ * The late charge in the shared shape (VIC, ACT and WA stage 2, PR 5,
+ * 28 Oct 2026), from INTEREST and the notes only. 10% a year simple interest
+ * by default (s 94(1)(a)); a special resolution may set a rate from 0 to 20%
+ * (s 94(1); the notes give the range as 0 to 20%). The notes say interest
+ * runs "until paid" but not from which day, with what grace period, or how a
+ * day's share of the yearly rate is worked out, so those are NOT_CONFIRMED
+ * and the engine charges nothing until a pack version records them
+ * (FOR_REVIEW). No setting for "no interest by ordinary resolution" is
+ * offered: what the opening words of s 94(1) allow is for legal review. The
+ * notes record no waiver in a particular case.
+ */
+export const LATE_CHARGE: LateChargeRules = {
+  method: "ANNUAL_RATE",
+  modes: ["STATUTORY", "RESOLVED_ANNUAL_RATE"],
+  defaultMode: "STATUTORY",
+  resolutionRequiredFor: ["RESOLVED_ANNUAL_RATE"],
+  // The annual-rate rule is in `annual`; these older fields hold nothing for it.
+  annualRatePercent: null,
+  maxMonthlyRatePercent: null,
+  graceMonths: 0,
+  source: INTEREST.source,
+  annual: {
+    statutoryRatePercent: { value: INTEREST.defaultAnnualRatePercent, status: "CONFIRMED", source: `${UTMA} s 94(1)(a)` },
+    resolvedRate: {
+      resolution: {
+        value: { kind: "SPECIAL", words: "special resolution" },
+        status: "CONFIRMED",
+        source: `${UTMA} s 94(1)`,
+        note: "Below 10%, or above 10% and up to 20%, by special resolution. The opening words of s 94(1) are not read as letting an ordinary resolution set a rate (FOR LEGAL REVIEW, INTEREST.openingWords).",
+      },
+      minPercent: { value: INTEREST.minAnnualRatePercent, status: "CONFIRMED", source: `${UTMA} s 94(1)`, note: "The notes give the range as 0 to 20%." },
+      maxPercent: { value: INTEREST.maxAnnualRatePercent, status: "CONFIRMED", source: `${UTMA} s 94(1)` },
+      maxInclusive: true,
+    },
+    accrual: {
+      from: {
+        value: null,
+        status: "NOT_CONFIRMED",
+        source: `${UTMA} ss 80, 91, 94(1)(a)`,
+        note: "The notes say 10% a year simple interest \"until paid\", and that a contribution is payable on the date stated in the notice or on the instalment dates. They do not say from which day interest runs.",
+      },
+      graceMonths: { value: null, status: "NOT_CONFIRMED", source: `${UTMA} s 94`, note: "The notes record no grace period, and do not say there is none." },
+      simple: { value: true, status: "CONFIRMED", source: `${UTMA} s 94(1)(a)` },
+      daysInYear: { value: null, status: "NOT_CONFIRMED", source: `${UTMA} s 94(1)(a)`, note: "The notes give a rate a year and do not say how a day's share of it is worked out." },
+    },
+    waiver: null,
+    source: INTEREST.source,
+  },
+};
+
+/**
+ * The order a payment is applied to what an owner owes: contributions, then
+ * interest, then recovery costs, as NSW. The notes record no order, so this
+ * is a StrataVerze choice Matthew Wrigley made on 28 Oct 2026 (DECISIONS),
+ * not a rule of law.
+ */
+export const PAYMENT_ALLOCATION_ORDER: readonly PaymentAllocationPart[] = ["LEVY", "INTEREST", "RECOVERY_COSTS"];
 
 /** Recovering unpaid contributions (notes section D). */
 export const DEBT_RECOVERY = {
@@ -1544,7 +1607,8 @@ export const NOT_CONFIRMED = [
   "The content of Form 2 (AF2021-17): only its existence and in-force status were checked.",
   "The Unit Titles Act 2001 beyond ss 5 to 16, including what A2025-29 changed.",
   // Found while writing the pack: the notes record nothing on these.
-  "The order a payment is applied to contributions, interest and recovery costs: the notes record none, so the pack has no PAYMENT_ALLOCATION_ORDER.",
+  "The order a payment is applied to contributions, interest and recovery costs: the notes record none. PAYMENT_ALLOCATION_ORDER is a StrataVerze choice (DECISIONS, 28 Oct 2026).",
+  "From which day interest under UTMA s 94 runs, whether there is any grace period, and how a day's share of the yearly rate is worked out (365 days or another basis): the notes do not say.",
   "A short form of the owners corporation's name for meeting notices and minutes: the notes record none, so the full name is used.",
   "What the 1/3 in the 3-member special resolution test (UTMA sch 3 s 3.16(2)) is measured against: the notes say only \"less than 1/3\".",
   "The member-count scope of an unopposed resolution (UTMA sch 3 s 3.17): the notes give the test with no member-count limit.",
@@ -1558,14 +1622,23 @@ export const FOR_REVIEW = [
   "FOR LEGAL REVIEW: what the opening words of UTMA s 94(1), \"unless otherwise decided by ordinary resolution\", let an ordinary resolution do (INTEREST.openingWords).",
   "BUILDING_SELECTORS: the scheme type and the three plan variants (retirement village, mixed use, class B units only) are recorded by the adviser or StrataVerze in the Building rules section, outside the locked building record. Each variant's \"yes\" is marked not supported because StrataVerze applies none of their rules yet (a StrataVerze proposal). The unit thresholds (bank account exemption, sinking fund, communications officer, proxy limit, the unit leg of the audit test) are worked out from the number of units: the building's lots other than common property rows, read only where it matches the building's total lots. The member thresholds (1 to 3 members, 4 or more members) are not worked out, because members are not units. The annual budget leg of the audit test is not a recorded fact, so at 100 units or fewer the value says the budget decides.",
   "DATED_RULES restates the Bill's quorum and absentee vote changes as NOT LAW values that are never applied, beside the in-force values from R25 (26 Jun 2026; earlier days have no value). When the Bill passes and pt 6 is notified, a new pack version restates them as enacted with the day they commence. Confirm both choices.",
+  "LATE_CHARGE (stage 2, PR 5): 10% a year by default and 0 to 20% by special resolution are from the notes (s 94(1)). Three accrual values are NOT_CONFIRMED, so no interest is charged until a pack version records them: the day interest starts (the due date, or the day after), any grace period, and the days a year's rate is shared over (365, or another basis). The special resolution is checked against the motion's recorded category (SPECIAL). Rounding (once, half up, to the cent, on the sum of the days, as NSW interest) and applying each payment to the contribution first are StrataVerze choices. Confirm each.",
+  "PAYMENT_ALLOCATION_ORDER: contributions, then interest, then recovery costs, as NSW. Decided by Matthew Wrigley on 28 Oct 2026 as a StrataVerze choice (DECISIONS), since the notes record no order. Recorded here so the decision is visible at sign-off.",
 ] as const;
 
 /**
- * StrataVerze's decisions in the sign-off. None yet: Matthew Wrigley has not
- * reviewed this draft. Points for that review are in FOR_REVIEW and marked
- * "FOR REVIEW" and "FOR LEGAL REVIEW" above.
+ * StrataVerze's decisions. Matthew Wrigley has not reviewed this draft as a
+ * whole; the one decision so far is the payment order (28 Oct 2026). Points
+ * for the review are in FOR_REVIEW and marked "FOR REVIEW" and "FOR LEGAL
+ * REVIEW" above.
  */
-export const DECISIONS: readonly { decision: string; decidedBy: string; decidedOn: string }[] = [];
+export const DECISIONS: readonly { decision: string; decidedBy: string; decidedOn: string }[] = [
+  {
+    decision: "Apply a payment to contributions first, then interest, then recovery costs, as NSW (PAYMENT_ALLOCATION_ORDER). A StrataVerze choice: the notes record no order.",
+    decidedBy: "Matthew Wrigley",
+    decidedOn: "2026-10-28",
+  },
+];
 
 /**
  * None of the NSW workflows applies in the ACT: there is no statutory payment

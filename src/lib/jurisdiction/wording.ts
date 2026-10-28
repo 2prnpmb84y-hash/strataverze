@@ -6,7 +6,7 @@
  */
 import type { StatutoryRules } from "@/config/statutory";
 import { needRule } from "@/config/statutory/need-rule";
-import { lateChargeApplies, type InterestRule, type LateChargeSetting } from "@/lib/finance/statutory-interest";
+import { annualLateChargeMissing, annualLateChargeRate, lateChargeApplies, type InterestRule, type LateChargeSetting } from "@/lib/finance/statutory-interest";
 const NUMBER_WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve"];
 
 /** How long before the due date a notice goes out: "5 weeks", "1 week" or "40 days". */
@@ -126,6 +126,8 @@ export interface NoticeLateCharge {
  * monthly penalty, or none.
  */
 export function noticeLateCharge(rule: StatutoryRules["LATE_CHARGE"], setting: LateChargeSetting): NoticeLateCharge {
+  // An annual-rate rule (VIC, ACT and WA) has no notice wording yet (stage 2, PR 6): refused, never worded as another state's.
+  if (rule.annual) throw new Error("Notices cannot state this building's late charge yet.");
   if (rule.method === "DAILY_SIMPLE_ANNUAL" && rule.annualRatePercent != null) {
     return {
       noInterest: setting.mode === "NO_INTEREST",
@@ -160,8 +162,17 @@ export interface LateChargeOption {
   label: string;
   /** The setting needs the general meeting resolution that decided it. */
   needsResolution: boolean;
-  /** The setting needs the monthly rate the resolution set. */
+  /** The setting needs the monthly rate the resolution set (the yearly rate, where `words.annualRate` is given). */
   needsRate: boolean;
+}
+
+/** The yearly rate a resolution may set, for the form (VIC, ACT and WA); a bound not confirmed is null. */
+export interface AnnualRateWords {
+  min: number | null;
+  max: number | null;
+  maxInclusive: boolean;
+  /** Whether a rate can be recorded at all (who decides and both bounds confirmed). */
+  canRecord: boolean;
 }
 
 /** The late charge wording the interest page and its form need (plain data, so it can go to the browser). */
@@ -188,6 +199,8 @@ export interface LateChargeWords {
   reasons: Record<string, string>;
   /** Shown when the setting charges nothing. */
   noCharge: { title: string; description: string };
+  /** An annual-rate rule only (VIC, ACT and WA): the yearly rate the form asks for, in place of a monthly one. */
+  annualRate?: AnnualRateWords;
 }
 
 /**
@@ -211,6 +224,7 @@ export function lateChargeWords(rules: StatutoryRules, setting: LateChargeSettin
     legend: `${Term} on overdue ${t.levies}`,
     maxMonthlyRatePercent: rule.maxMonthlyRatePercent,
   };
+  if (rule.annual) return annualLateChargeWords(rules, setting, charging, common);
   if (rule.method === "DAILY_SIMPLE_ANNUAL") {
     const w = interestWords(rules);
     const option = (mode: (typeof rule.modes)[number]): LateChargeOption => ({
@@ -268,6 +282,120 @@ export function lateChargeWords(rules: StatutoryRules, setting: LateChargeSettin
       title: `No ${t.lateCharge} is charged`,
       description: `No ${t.lateCharge} applies until the ${t.ownersCorporation} resolves to charge one. Record the resolution and its rate above.`,
     },
+  };
+}
+
+/**
+ * The interest page's words for an annual-rate rule (VIC, ACT and WA stage 2,
+ * PR 5), from the pack's `annual` rule and the building's setting. Where the
+ * rule cannot charge yet because a value is not confirmed, the page says so
+ * in plain words.
+ */
+function annualLateChargeWords(
+  rules: StatutoryRules,
+  setting: LateChargeSetting,
+  charging: boolean,
+  common: Omit<LateChargeWords, "description" | "options" | "rateLabel" | "rateHelp" | "reasons" | "noCharge">,
+): LateChargeWords {
+  const rule = rules.LATE_CHARGE;
+  const annual = rule.annual!;
+  const t = rules.TERMINOLOGY;
+  const Term = capitalise(t.lateCharge);
+  const order = rules.PAYMENT_ALLOCATION_ORDER;
+  const missing = annualLateChargeMissing(rule, setting, order);
+  const rate = annualLateChargeRate(rule, setting, order);
+  const statutory = annual.statutoryRatePercent?.value ?? null;
+  const r = annual.resolvedRate;
+  const who = r?.resolution.value ?? null;
+  const min = r?.minPercent.value ?? null;
+  const max = r?.maxPercent.value ?? null;
+  const range =
+    min == null || max == null ? null : r!.maxInclusive ? `from ${percentText(min)}% to ${percentText(max)}% a year` : `at least ${percentText(min)}% and less than ${percentText(max)}% a year`;
+  const canRecord = who != null && range != null;
+  const resolvedLabel = canRecord
+    ? `${Term} at a yearly rate set by ${who!.words}, ${range}`
+    : `${Term} at a yearly rate a resolution sets. This cannot be recorded yet, because who decides or the highest rate is not confirmed for this building's rules.`;
+  const label = (mode: string) =>
+    mode === "STATUTORY"
+      ? statutory != null
+        ? `Statutory ${t.lateCharge}: ${percentText(statutory)}% a year (${rule.source}).`
+        : `Statutory ${t.lateCharge}`
+      : mode === "RESOLVED_ANNUAL_RATE"
+        ? resolvedLabel
+        : `No ${t.lateCharge}`;
+  const notConfirmed = `No ${t.lateCharge} is charged yet, because this building's rules do not yet confirm how it is worked out.`;
+  const description = charging
+    ? `${Term}: ${percentText(rate ?? 0)}% a year on ${t.levies} unpaid after the due date (${rule.source}).`
+    : missing.length > 0
+      ? notConfirmed
+      : `No ${t.lateCharge}: the ${t.ownersCorporation} has not resolved to charge it.`;
+  return {
+    ...common,
+    description,
+    options: rule.modes.map((mode) => ({
+      mode,
+      label: label(mode),
+      needsResolution: rule.resolutionRequiredFor.includes(mode),
+      needsRate: mode === "RESOLVED_ANNUAL_RATE",
+    })),
+    rateLabel: `Yearly ${t.lateCharge} rate (%)`,
+    rateHelp: canRecord ? `The rate the ${who!.words} set, ${range}.` : "No rate can be recorded yet.",
+    reasons: {
+      IN_GRACE: "In the grace period",
+      PAID_IN_GRACE: "Paid within the grace period",
+      NOT_YET_DUE: "Not yet due",
+      NOTHING_OWING: "Nothing owing",
+      NO_INTEREST_RESOLUTION: `No ${t.lateCharge} resolved`,
+      WAIVED: "Waived for this notice",
+      RULE_NOT_CONFIRMED: "Not charged until the rules are confirmed",
+    },
+    noCharge: {
+      title: `No ${t.lateCharge} is charged`,
+      description: missing.length > 0 ? notConfirmed : `No ${t.lateCharge} applies until the ${t.ownersCorporation} resolves to charge it. Record the resolution and its rate above.`,
+    },
+    annualRate: { min, max, maxInclusive: r?.maxInclusive ?? true, canRecord },
+  };
+}
+
+/** The waiver words and choices for the interest page (plain data, so it can go to the browser). */
+export interface LateChargeWaiverWords {
+  /** "interest" */
+  term: string;
+  /** "Waive interest on one notice" */
+  heading: string;
+  /** What a waiver does here, and who decides it. */
+  description: string;
+  /** The kinds the pack allows, with their labels. */
+  kinds: { value: string; label: string }[];
+  /** "general meeting resolution" */
+  decidedByWords: string;
+  /** Whether reasons are required (the pack has decisions reported to the annual general meeting). */
+  reasonsRequired: boolean;
+  /** Whether a waiver can be recorded at all (who decides is confirmed); when not, `description` says why. */
+  canRecord: boolean;
+}
+
+/**
+ * The waiver words for the interest page, from the building's pack
+ * (`rules.LATE_CHARGE.annual.waiver`; VIC, ACT and WA stage 2, PR 5), or null
+ * where the pack gives no waiver (NSW, Queensland, the ACT).
+ */
+export function lateChargeWaiverWords(rules: StatutoryRules): LateChargeWaiverWords | null {
+  const waiver = rules.LATE_CHARGE.annual?.waiver;
+  if (!waiver) return null;
+  const t = rules.TERMINOLOGY;
+  const who = waiver.decidedBy.value;
+  const KIND_LABELS: Record<string, string> = { WHOLE: `All the ${t.lateCharge} on the notice`, AMOUNT: "An amount", PERIOD: "The days of a period" };
+  return {
+    term: t.lateCharge,
+    heading: `Waive ${t.lateCharge} on one notice`,
+    description: who
+      ? `The ${t.ownersCorporation} may waive ${t.lateCharge} in a particular case (${waiver.source}). Record the ${who.words} that decided it.${waiver.reportedToAgm ? " The reasons are required." : ""}`
+      : `Who may waive ${t.lateCharge} is not confirmed for this building's rules yet, so no waiver can be recorded.`,
+    kinds: waiver.kinds.map((k) => ({ value: k, label: KIND_LABELS[k] ?? k })),
+    decidedByWords: who?.words ?? "",
+    reasonsRequired: waiver.reportedToAgm,
+    canRecord: who != null,
   };
 }
 

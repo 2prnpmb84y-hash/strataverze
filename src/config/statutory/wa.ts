@@ -7,8 +7,9 @@
  * applied to any building: `rulePackFor` returns active packs only, and
  * Western Australia is not in SUPPORTED_SCHEME_STATES or the database's state
  * check. Every value below comes from the research notes of 27 Oct 2026 and
- * keeps their status (see RuleStatus in ./types); nothing has been decided
- * yet (DECISIONS is empty), and the points to decide are in FOR_REVIEW.
+ * keeps their status (see RuleStatus in ./types). The one StrataVerze
+ * decision so far is the payment order (DECISIONS, 28 Oct 2026), and the
+ * points to decide are in FOR_REVIEW.
  *
  * Sources, read on 27 Oct 2026:
  * - the STA, consolidated HTML on legislation.wa.gov.au, version 08-a0-00,
@@ -42,7 +43,9 @@ import type {
   DerivedBuildingSelector,
   EntitlementScheduleDefinition,
   FundDefinition,
+  LateChargeRules,
   PackFeatures,
+  PaymentAllocationPart,
   RecordedBuildingSelector,
   RecordedFactKey,
   RuleStatus,
@@ -625,8 +628,7 @@ export const TEN_YEAR_PLAN = {
  * year simple interest from the due date, automatically, unless the strata
  * company determines (generally or in a particular case) no interest or a
  * lesser rate. No grace period. Interest goes to the fund the contribution
- * belongs to. Recorded as plain data; the shared late charge shape is being
- * changed elsewhere.
+ * belongs to. The shared LATE_CHARGE below is built from it (stage 2, PR 5).
  */
 export const INTEREST_ON_UNPAID_CONTRIBUTIONS = {
   annualRatePercent: 11,
@@ -639,6 +641,72 @@ export const INTEREST_ON_UNPAID_CONTRIBUTIONS = {
   source: `${STA} s 100(4)(b), (5); ${STGR} reg 78`,
   status: "CONFIRMED" as RuleStatus,
 } as const;
+
+/**
+ * The late charge in the shared shape (VIC, ACT and WA stage 2, PR 5,
+ * 28 Oct 2026), from INTEREST_ON_UNPAID_CONTRIBUTIONS and the notes only.
+ * 11% a year simple interest from the due date, with no grace period, applies
+ * automatically (s 100(4)(b); reg 78). The strata company may determine,
+ * generally or in a particular case, no interest or a lesser rate: a rate
+ * from 0 (no interest) up to but not including 11%. Who in the strata company
+ * determines it is not in the notes (NOT_CONFIRMED), so no lower rate, no
+ * "no interest" and no waiver can be recorded until a pack version records
+ * it (FOR_REVIEW). How a day's share of the yearly rate is worked out is not
+ * in the notes either, so the engine charges nothing until that is recorded.
+ */
+export const LATE_CHARGE: LateChargeRules = {
+  method: "ANNUAL_RATE",
+  modes: ["STATUTORY", "RESOLVED_ANNUAL_RATE"],
+  defaultMode: "STATUTORY",
+  resolutionRequiredFor: ["RESOLVED_ANNUAL_RATE"],
+  // The annual-rate rule is in `annual`; these older fields hold nothing for it.
+  annualRatePercent: null,
+  maxMonthlyRatePercent: null,
+  graceMonths: 0,
+  source: INTEREST_ON_UNPAID_CONTRIBUTIONS.source,
+  annual: {
+    statutoryRatePercent: { value: INTEREST_ON_UNPAID_CONTRIBUTIONS.annualRatePercent, status: "CONFIRMED", source: `${STGR} reg 78` },
+    resolvedRate: {
+      resolution: {
+        value: null,
+        status: "NOT_CONFIRMED",
+        source: `${STA} s 100(4)(b)`,
+        note: "The strata company \"determines\" no interest or a lesser rate. The notes do not record by what resolution or body.",
+      },
+      minPercent: { value: 0, status: "CONFIRMED", source: `${STA} s 100(4)(b)`, note: "No interest (0%) or a lesser rate." },
+      maxPercent: { value: INTEREST_ON_UNPAID_CONTRIBUTIONS.annualRatePercent, status: "CONFIRMED", source: `${STA} s 100(4)(b); ${STGR} reg 78`, note: "A lesser rate than 11%, so 11% itself is not a resolved rate." },
+      maxInclusive: false,
+    },
+    accrual: {
+      from: { value: "DUE_DATE", status: "CONFIRMED", source: `${STA} s 100(4)(b)`, note: "Interest runs if a contribution is \"not paid when it becomes due and payable\"." },
+      graceMonths: { value: INTEREST_ON_UNPAID_CONTRIBUTIONS.graceMonths, status: "CONFIRMED", source: `${STA} s 100(4)(b)`, note: "None stated. Interest runs if not paid when due and payable." },
+      simple: { value: true, status: "CONFIRMED", source: `${STA} s 100(4)(b); ${STGR} reg 78` },
+      daysInYear: { value: null, status: "NOT_CONFIRMED", source: `${STGR} reg 78`, note: "The notes give a rate a year and do not say how a day's share of it is worked out." },
+    },
+    waiver: {
+      // "In a particular case": no interest (the whole of it) is the case the notes give. A lesser rate in one case is not offered yet (FOR_REVIEW).
+      kinds: ["WHOLE"],
+      decidedBy: {
+        value: null,
+        status: "NOT_CONFIRMED",
+        source: `${STA} s 100(4)(b)`,
+        note: "The strata company may determine no interest in a particular case. The notes do not record by what resolution or body.",
+      },
+      reportedToAgm: false,
+      source: `${STA} s 100(4)(b)`,
+      status: "CONFIRMED",
+    },
+    source: INTEREST_ON_UNPAID_CONTRIBUTIONS.source,
+  },
+};
+
+/**
+ * The order a payment is applied to what an owner owes: contributions, then
+ * interest, then recovery costs, as NSW. The notes record none, so this is a
+ * StrataVerze choice Matthew Wrigley made on 28 Oct 2026 (DECISIONS), not a
+ * rule of law.
+ */
+export const PAYMENT_ALLOCATION_ORDER: readonly PaymentAllocationPart[] = ["LEVY", "INTEREST", "RECOVERY_COSTS"];
 
 /** Recovering unpaid contributions (STA ss 47(8), 100(4)(c), 116(1)(f), 120(2), 143(5)(e), 197(3)(f)). */
 export const DEBT_RECOVERY = {
@@ -1306,12 +1374,22 @@ export const NOT_CONFIRMED = [
   "The Consumer Protection strata page was read only through a summary and appears to predate the May 2020 reforms (the Real Estate and Business Agents Act point).",
   // Gaps found while writing the pack.
   "Who within the strata company determines no interest or a lower rate (s 100(4)(b) says the company \"determines\"; the notes do not record by what resolution or body).",
-  "The order a payment is applied to contributions, interest and recovery costs: the notes record none, so the pack has no PAYMENT_ALLOCATION_ORDER.",
+  "The order a payment is applied to contributions, interest and recovery costs: the notes record none. PAYMENT_ALLOCATION_ORDER is a StrataVerze choice (DECISIONS, 28 Oct 2026).",
+  "How a day's share of the 11% yearly rate is worked out (365 days or another basis): the notes do not say.",
   "The list of key documents the scheme developer must hand over at the first general meeting (ss 78, 79; reg 10): the notes confirm the duty but do not record the list.",
 ] as const;
 
-/** StrataVerze's decisions: none yet. The pack has not been reviewed. */
-export const DECISIONS = [] as const;
+/**
+ * StrataVerze's decisions. The pack as a whole has not been reviewed; the one
+ * decision so far is the payment order (28 Oct 2026).
+ */
+export const DECISIONS: readonly { decision: string; decidedBy: string; decidedOn: string }[] = [
+  {
+    decision: "Apply a payment to contributions first, then interest, then recovery costs, as NSW (PAYMENT_ALLOCATION_ORDER). A StrataVerze choice: the notes record no order.",
+    decidedBy: "Matthew Wrigley",
+    decidedOn: "2026-10-28",
+  },
+];
 
 /**
  * Points for StrataVerze to decide or check before the pack is signed off
@@ -1328,6 +1406,8 @@ export const FOR_REVIEW = [
   "Building selectors (BUILDING_SELECTORS): the scheme type and tenure are recorded by the adviser or StrataVerze in the Building rules section, outside the locked building record, and any listed option may be recorded (one not supported is flagged). The size class and designated status are worked out, never recorded. The number of lots is the building's lots other than common property rows, read only where it matches the building's total lots.",
   "Designated status (DESIGNATED_STATUS): the notes record no way to be, or not be, designated other than the s 100(7) and reg 79 tests, so no override is offered. Below 10 lots the replacement cost must be recorded, and its meaning follows the scheme type (scheme building for a strata scheme, common property improvements for a survey-strata scheme). Who may record the replacement cost, and from what valuation, is for review.",
   "Scheme size (SCHEME_SIZE): no class is worked out for fewer than 2 lots, because the notes give none.",
+  "LATE_CHARGE (stage 2, PR 5): 11% a year simple interest from the due date, with no grace period, is from the notes (s 100(4)(b); reg 78). Who in the strata company determines no interest or a lesser rate, generally or in a particular case, is NOT_CONFIRMED, so neither a lower rate (from 0, which is no interest, up to but not including 11%) nor a one-case waiver can be recorded until a pack version records it. How a day's share of the yearly rate is worked out (365 days or another basis) is NOT_CONFIRMED, so no interest is charged at all until that is recorded. A lesser rate in a particular case is not offered: only waiving all of the interest on one notice. Rounding (once, half up, to the cent, on the sum of the days, as NSW interest) and applying each payment to the contribution first are StrataVerze choices. Confirm each.",
+  "PAYMENT_ALLOCATION_ORDER: contributions, then interest, then recovery costs, as NSW. Decided by Matthew Wrigley on 28 Oct 2026 as a StrataVerze choice (DECISIONS), since the notes record no order. Recorded here so the decision is visible at sign-off.",
 ] as const;
 
 /**

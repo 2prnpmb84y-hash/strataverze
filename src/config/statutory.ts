@@ -376,7 +376,15 @@ export const PENDING_RULE_PACKS = {
     // so a building of 4 or more units is given one. `required` stays false and the threshold is unchanged. FOR_REVIEW's
     // sinking fund point is rewritten (whether fewer units may keep one is not in the notes). No legal value or status
     // changed; still a draft.
-    version: "2026.10.4",
+    // 2026.10.5 (28 Oct 2026): the annual resolved rate (stage 2 PR 5). LATE_CHARGE added in the shared shape (method
+    // ANNUAL_RATE), from INTEREST unchanged: 10% a year simple by default (s 94(1)(a)), or 0 to 20% by special resolution
+    // (s 94(1)), checked against the motion's recorded category. From which day interest runs, any grace period and how
+    // a day's share of the yearly rate is worked out are NOT_CONFIRMED (the notes do not say), so no interest is charged
+    // until a pack version records them. No waiver (none in the notes) and no "no interest by ordinary resolution"
+    // setting (s 94(1) opening words, for legal review). PAYMENT_ALLOCATION_ORDER added (contributions, then interest,
+    // then recovery costs, as NSW): a StrataVerze choice Matthew Wrigley made on 28 Oct 2026, recorded in DECISIONS.
+    // NOT_CONFIRMED and FOR_REVIEW gain the points. No legal value or status already recorded changed; still a draft.
+    version: "2026.10.5",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",
     reviewedOn: null,
@@ -426,7 +434,18 @@ export const PENDING_RULE_PACKS = {
     // reads INSURANCE_PREMIUM_FEE yet. FOR_REVIEW gains ENTITLEMENT_DECIDES, SECOND_SCHEDULE_HELD and
     // CONTRIBUTION_INSURANCE_S23A, and a GO-LIVE GAP note at ENTITLEMENT_SCHEDULES says what is applied. No legal value
     // or status already recorded changed; still a draft.
-    version: "2026.10.5",
+    // 2026.10.6 (28 Oct 2026): the annual resolved rate and the waiver (stage 2 PR 5). LATE_CHARGE added in the shared shape
+    // (method ANNUAL_RATE), from INTEREST unchanged: no interest by default; a rate set by a resolution at a general meeting
+    // (s 29(1)), capped at the Penalty Interest Rates Act maximum (s 29(2)), whose 10% is GUIDANCE and so not a cap: no
+    // rate can be recorded until it is checked. Interest runs on amounts outstanding after the due date with no grace
+    // period (s 29(1)); how it accrues and the days a year's rate is shared over are NOT_CONFIRMED, so none is charged
+    // until a pack version records them. The waiver in a particular case (s 29(3), (4)) can be recorded for one notice
+    // (all of it, an amount or a period) by a general meeting resolution with reasons (a StrataVerze proposal).
+    // PAYMENT_ALLOCATION_ORDER added (fees, then interest, then recovery costs, as NSW): a StrataVerze choice Matthew
+    // Wrigley made on 28 Oct 2026, recorded in DECISIONS; DATED_RULES still records no statutory order before s 32I.
+    // DEFERRED_SHARED_SHAPES drops LATE_CHARGE and PAYMENT_ALLOCATION_ORDER. FOR_REVIEW gains LATE_CHARGE, INTEREST_WAIVER
+    // and PAYMENT_ALLOCATION_ORDER. No legal value or status already recorded changed; still a draft.
+    version: "2026.10.6",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",
     reviewedOn: null,
@@ -451,7 +470,15 @@ export const PENDING_RULE_PACKS = {
     // them, so the GO-LIVE GAP at FUND_CATALOGUE is closed. FOR_REVIEW's funds point is rewritten and gains the by-laws
     // selector, the 2-lot SAT order and schemes with no fund (refused at onboarding, flagged after). No legal value or
     // status changed; still a draft.
-    version: "2026.10.3",
+    // 2026.10.4 (28 Oct 2026): the annual resolved rate (stage 2 PR 5). LATE_CHARGE added in the shared shape (method
+    // ANNUAL_RATE), from INTEREST_ON_UNPAID_CONTRIBUTIONS unchanged: 11% a year simple from the due date with no grace period
+    // (s 100(4)(b); reg 78). A lower rate (0, which is no interest, up to but not including 11%) and a one-case waiver of
+    // all the interest on a notice are in the shape, but who in the strata company determines them is NOT_CONFIRMED, so
+    // neither can be recorded. How a day's share of the yearly rate is worked out is NOT_CONFIRMED, so no interest is
+    // charged until a pack version records it. PAYMENT_ALLOCATION_ORDER added (contributions, then interest, then recovery
+    // costs, as NSW): a StrataVerze choice Matthew Wrigley made on 28 Oct 2026, recorded in DECISIONS. NOT_CONFIRMED and
+    // FOR_REVIEW gain the points. No legal value or status already recorded changed; still a draft.
+    version: "2026.10.4",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",
     reviewedOn: null,

@@ -601,21 +601,112 @@ export interface HardshipInformation {
 
 /**
  * A building's late charge setting (`schemes.interest_mode`):
- * - STATUTORY: the rate the law fixes (NSW);
+ * - STATUTORY: the rate the law fixes (NSW; the ACT and WA default rates);
  * - NO_INTEREST: none, because a recorded resolution says so (NSW);
  * - NONE: none, because none has been resolved (Queensland's default);
- * - RESOLVED_RATE: at the rate a recorded resolution set (Queensland).
+ * - RESOLVED_RATE: at the monthly rate a recorded resolution set (Queensland);
+ * - RESOLVED_ANNUAL_RATE: at the annual rate a recorded resolution set, within
+ *   the pack's range (`annual.resolvedRate`; VIC, ACT and WA stage 2, PR 5),
+ *   held in `schemes.late_charge_annual_rate_percent`.
  */
-export type LateChargeMode = "STATUTORY" | "NO_INTEREST" | "NONE" | "RESOLVED_RATE";
+export type LateChargeMode = "STATUTORY" | "NO_INTEREST" | "NONE" | "RESOLVED_RATE" | "RESOLVED_ANNUAL_RATE";
 
 /**
  * How the late charge on an overdue levy is worked out:
  * - DAILY_SIMPLE_ANNUAL: simple interest at an annual rate, day by day from
  *   the due date, after a grace period (NSW);
  * - MONTHLY_SIMPLE_WHOLE_MONTHS: simple interest at a monthly rate for each
- *   whole month in arrears after the date for payment (Queensland).
+ *   whole month in arrears after the date for payment (Queensland);
+ * - ANNUAL_RATE: interest at an annual rate, the statutory one or one a
+ *   resolution set within a range, worked out day by day exactly as `annual`
+ *   records (VIC, ACT and WA stage 2, PR 5). Every detail of it is a
+ *   CheckedValue, and one with no value stops the charge (fails closed).
  */
-export type LateChargeMethod = "DAILY_SIMPLE_ANNUAL" | "MONTHLY_SIMPLE_WHOLE_MONTHS";
+export type LateChargeMethod = "DAILY_SIMPLE_ANNUAL" | "MONTHLY_SIMPLE_WHOLE_MONTHS" | "ANNUAL_RATE";
+
+/**
+ * A value of a rule that the late charge engine may rely on only when it is
+ * checked (VIC, ACT and WA stage 2, PR 5, 28 Oct 2026): read in the
+ * in-force text (CONFIRMED) or a StrataVerze choice (STRATAVERZE). Anything
+ * else has no value, so the engine refuses to charge rather than guess:
+ * NOT_CONFIRMED where the notes do not give it, GUIDANCE where only
+ * guidance does (the figure is kept in `guidance` for the review, never used).
+ */
+export type CheckedValue<T> =
+  | { value: T; status: "CONFIRMED" | "STRATAVERZE"; source: string; note?: string }
+  | { value: null; status: "NOT_CONFIRMED" | "GUIDANCE"; source: string; note: string; guidance?: T };
+
+/**
+ * The kind of resolution that sets an annual rate or decides a waiver:
+ * - GENERAL_MEETING: any resolution carried at a general meeting;
+ * - ORDINARY, SPECIAL: a motion carried at a general meeting and recorded as
+ *   that category (`agenda_items.resolution_category`).
+ */
+export type LateChargeResolutionKind = "GENERAL_MEETING" | "ORDINARY" | "SPECIAL";
+
+/** Who decides, with the words the screens use for it ("a special resolution"). */
+export interface LateChargeResolution {
+  kind: LateChargeResolutionKind;
+  words: string;
+}
+
+/**
+ * The annual rate a resolution may set instead of the statutory one, and by
+ * what kind of resolution. Each part is checked: where the notes do not say
+ * who decides, or a bound is not confirmed, no rate can be recorded.
+ */
+export interface ResolvedAnnualRateRule {
+  resolution: CheckedValue<LateChargeResolution>;
+  /** The lowest rate, % a year, inclusive. */
+  minPercent: CheckedValue<number>;
+  /** The highest rate, % a year. */
+  maxPercent: CheckedValue<number>;
+  /** Whether the highest rate itself may be set ("up to 20%"), or only a rate below it ("a lesser rate"). */
+  maxInclusive: boolean;
+}
+
+/** What a waiver in a particular case may do: the whole late charge on a notice, an amount of it, or the days in a period. */
+export type LateChargeWaiverKind = "WHOLE" | "AMOUNT" | "PERIOD";
+
+/** A pack's one-case waiver: what it may waive, who decides, and whether decisions go to the AGM. */
+export interface LateChargeWaiverRule {
+  kinds: readonly LateChargeWaiverKind[];
+  /** Who decides; with no value, who may decide is not confirmed and no waiver can be recorded. */
+  decidedBy: CheckedValue<LateChargeResolution>;
+  /** Decisions to waive or not, with reasons, are reported to the annual general meeting. */
+  reportedToAgm: boolean;
+  source: string;
+  status: RuleStatus;
+}
+
+/**
+ * An annual-rate late charge (method ANNUAL_RATE; VIC, ACT and WA stage 2,
+ * PR 5, 28 Oct 2026). The interest on a day is the unpaid levy times the
+ * rate divided by `daysInYear`, summed and rounded once to the cent.
+ */
+export interface AnnualLateChargeRules {
+  /**
+   * The rate the law fixes when no resolution has varied it (STATUTORY), % a
+   * year, or null where the law fixes none (Victoria: interest only if a
+   * resolution authorises it). With no value, it is not confirmed.
+   */
+  statutoryRatePercent: CheckedValue<number> | null;
+  /** The rate a resolution may set instead (RESOLVED_ANNUAL_RATE), or null where none may be set. */
+  resolvedRate: ResolvedAnnualRateRule | null;
+  accrual: {
+    /** The first day interest runs for: the due date, so a levy unpaid on its due date bears one day for each day after. */
+    from: CheckedValue<"DUE_DATE">;
+    /** Whole months after the due date within which a levy paid in full bears none. */
+    graceMonths: CheckedValue<number>;
+    /** Simple interest on the unpaid levy, never on interest. */
+    simple: CheckedValue<true>;
+    /** The days a year's rate is shared over, day by day. */
+    daysInYear: CheckedValue<number>;
+  };
+  /** The one-case waiver, or null where the pack gives none. */
+  waiver: LateChargeWaiverRule | null;
+  source: string;
+}
 
 /**
  * The late charge on overdue levies (NSW interest, Queensland penalty), in
@@ -636,6 +727,14 @@ export interface LateChargeRules {
   /** Whole months after the due date within which a levy paid in full bears no charge. */
   graceMonths: number;
   source: string;
+  /**
+   * The annual-rate rule (method ANNUAL_RATE), with every value checked (VIC,
+   * ACT and WA stage 2, PR 5). Absent for NSW and Queensland, whose rules are
+   * the fields above. Where present, `annualRatePercent` and
+   * `maxMonthlyRatePercent` are null and `graceMonths` is 0, so a reader that
+   * knows only those fields charges nothing rather than the wrong rate.
+   */
+  annual?: AnnualLateChargeRules;
 }
 
 /** The order a payment is applied to what an owner owes ("INTEREST" is the late charge, Queensland's penalty). */

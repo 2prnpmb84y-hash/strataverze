@@ -212,6 +212,10 @@
       "model": "JournalLine",
       "namespace": "public"
     },
+    "late_charge_waivers": {
+      "model": "LateChargeWaiver",
+      "namespace": "public"
+    },
     "levy_notices": {
       "model": "LevyNotice",
       "namespace": "public"
@@ -11502,6 +11506,207 @@
               "table": "journal_lines"
             }
           },
+          "LateChargeWaiver": {
+            "fields": {
+              "amount": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                }
+              },
+              "decidedBy": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "decidedOn": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/date-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "fromDate": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/date-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "kind": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "levyNoticeId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "reasons": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "recordedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "recordedBy": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "resolutionMeetingId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "resolutionMotionId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "rulePack": {
+                "nullable": false,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 40
+                  }
+                }
+              },
+              "schemeId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "toDate": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/date-string@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "levyNotice": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "levyNoticeId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "LevyNotice",
+                  "namespace": "public"
+                }
+              },
+              "scheme": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "schemeId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Scheme",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "amount": {
+                  "column": "amount"
+                },
+                "decidedBy": {
+                  "column": "decided_by"
+                },
+                "decidedOn": {
+                  "column": "decided_on"
+                },
+                "fromDate": {
+                  "column": "from_date"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "kind": {
+                  "column": "kind"
+                },
+                "levyNoticeId": {
+                  "column": "levy_notice_id"
+                },
+                "reasons": {
+                  "column": "reasons"
+                },
+                "recordedAt": {
+                  "column": "recorded_at"
+                },
+                "recordedBy": {
+                  "column": "recorded_by"
+                },
+                "resolutionMeetingId": {
+                  "column": "resolution_meeting_id"
+                },
+                "resolutionMotionId": {
+                  "column": "resolution_motion_id"
+                },
+                "rulePack": {
+                  "column": "rule_pack"
+                },
+                "schemeId": {
+                  "column": "scheme_id"
+                },
+                "toDate": {
+                  "column": "to_date"
+                }
+              },
+              "namespaceId": "public",
+              "table": "late_charge_waivers"
+            }
+          },
           "LevyNotice": {
             "fields": {
               "amountDue": {
@@ -11750,6 +11955,21 @@
                 },
                 "to": {
                   "model": "Fund",
+                  "namespace": "public"
+                }
+              },
+              "lateChargeWaivers": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "levyNoticeId"
+                  ]
+                },
+                "to": {
+                  "model": "LateChargeWaiver",
                   "namespace": "public"
                 }
               },
@@ -21116,6 +21336,17 @@
                   "kind": "scalar"
                 }
               },
+              "lateChargeAnnualRatePercent": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 5,
+                    "scale": 2
+                  }
+                }
+              },
               "lateChargeMonthlyRatePercent": {
                 "nullable": true,
                 "type": {
@@ -21620,6 +21851,21 @@
                 },
                 "to": {
                   "model": "JournalEntry",
+                  "namespace": "public"
+                }
+              },
+              "lateChargeWaivers": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "schemeId"
+                  ]
+                },
+                "to": {
+                  "model": "LateChargeWaiver",
                   "namespace": "public"
                 }
               },
@@ -22200,6 +22446,9 @@
                 },
                 "isActive": {
                   "column": "is_active"
+                },
+                "lateChargeAnnualRatePercent": {
+                  "column": "late_charge_annual_rate_percent"
                 },
                 "lateChargeMonthlyRatePercent": {
                   "column": "late_charge_monthly_rate_percent"
@@ -44173,6 +44422,166 @@
               },
               "uniques": []
             },
+            "late_charge_waivers": {
+              "columns": {
+                "amount": {
+                  "codecId": "pg/numeric@1",
+                  "dataType": "pg/numeric",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                },
+                "decided_by": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "decided_on": {
+                  "codecId": "pg/date-string@1",
+                  "dataType": "pg/date",
+                  "nullable": false
+                },
+                "from_date": {
+                  "codecId": "pg/date-string@1",
+                  "dataType": "pg/date",
+                  "nullable": true
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "default": {
+                    "expression": "gen_random_uuid()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "kind": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "levy_notice_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "reasons": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "recorded_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "recorded_by": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "resolution_meeting_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "resolution_motion_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "rule_pack": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": false,
+                  "typeParams": {
+                    "length": 40
+                  }
+                },
+                "scheme_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "to_date": {
+                  "codecId": "pg/date-string@1",
+                  "dataType": "pg/date",
+                  "nullable": true
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "late_charge_waivers_scheme_id_idx"
+                  },
+                  "onDelete": "cascade",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "scheme_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "late_charge_waivers"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "schemes"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "late_charge_waivers_levy_notice_id_idx"
+                  },
+                  "onDelete": "cascade",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "levy_notice_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "late_charge_waivers"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "levy_notices"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "levy_notice_id"
+                  ],
+                  "name": "late_charge_waivers_levy_notice_id_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "scheme_id"
+                  ],
+                  "name": "late_charge_waivers_scheme_id_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
             "levy_notices": {
               "columns": {
                 "amount_due": {
@@ -51077,6 +51486,15 @@
                     "value": true
                   },
                   "nullable": false
+                },
+                "late_charge_annual_rate_percent": {
+                  "codecId": "pg/numeric@1",
+                  "dataType": "pg/numeric",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 5,
+                    "scale": 2
+                  }
                 },
                 "late_charge_monthly_rate_percent": {
                   "codecId": "pg/numeric@1",
@@ -61414,7 +61832,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "28741ae902226e32e3792317b8d527cff0632677e5840f4f595d013215a58a22"
+    "storageHash": "d6c28e27364f01587a998d47294ac5b270b3763edbdcbb5e2dd6c5080bb8decc"
   },
   "execution": {
     "executionHash": "8c9cb0b046b1bd7cbabff3729749064a4319da7e3f83be98fb8c1e93574f50c8",

@@ -15,12 +15,15 @@ export interface ResolutionMeeting {
  * The building's late charge setting, from the modes its pack allows (given
  * in `words.options`). NSW: statutory interest or, by a recorded general
  * meeting resolution, no interest. Queensland: no penalty or, by a recorded
- * general meeting resolution, a penalty at the monthly rate it set.
+ * general meeting resolution, a penalty at the monthly rate it set. VIC, ACT
+ * and WA (`words.annualRate`): a yearly rate within the pack's range, by the
+ * resolution the pack names.
  */
 export function InterestSettingForm({
   schemeId,
   mode,
   monthlyRatePercent,
+  annualRatePercent = null,
   meetingId,
   motionId,
   meetings,
@@ -30,6 +33,8 @@ export function InterestSettingForm({
   mode: string;
   /** The recorded monthly rate (a resolved rate only). */
   monthlyRatePercent: number | null;
+  /** The recorded yearly rate (a resolved yearly rate only; VIC, ACT and WA). */
+  annualRatePercent?: number | null;
   meetingId: string | null;
   motionId: string | null;
   meetings: ResolutionMeeting[];
@@ -58,7 +63,26 @@ export function InterestSettingForm({
         ))}
       </fieldset>
 
-      {chosen?.needsRate && (
+      {chosen?.needsRate && words.annualRate && (
+        <label className="block text-sm text-ink sm:max-w-xs">
+          <span className="mb-1 block font-medium">{words.rateLabel}</span>
+          <input
+            type="number"
+            name="annualRatePercent"
+            inputMode="decimal"
+            min={words.annualRate.min ?? 0}
+            max={words.annualRate.max == null ? undefined : words.annualRate.maxInclusive ? words.annualRate.max : words.annualRate.max - 0.01}
+            step="0.01"
+            required
+            disabled={!words.annualRate.canRecord}
+            defaultValue={annualRatePercent ?? ""}
+            className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm"
+          />
+          <span className="mt-1 block text-xs text-ink-muted">{words.rateHelp}</span>
+        </label>
+      )}
+
+      {chosen?.needsRate && !words.annualRate && (
         <label className="block text-sm text-ink sm:max-w-xs">
           <span className="mb-1 block font-medium">{words.rateLabel}</span>
           <input

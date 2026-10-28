@@ -6,8 +6,8 @@
  * DRAFT, FOR STRATAVERZE TO REVIEW (27 Oct 2026). Not signed off and not
  * applied to any building: `rulePackFor` returns active packs only, and
  * Victoria is not in SUPPORTED_SCHEME_STATES or the database's state check.
- * Nothing here has been decided by StrataVerze yet: DECISIONS lists proposed
- * choices only, and FOR_REVIEW lists the points to settle first.
+ * DECISIONS lists proposed choices, and one decided: the payment order
+ * (Matthew Wrigley, 28 Oct 2026). FOR_REVIEW lists the points to settle first.
  *
  * Every value comes from the research notes of 27 Oct 2026 prepared for
  * Matthew Wrigley ("Victoria: owners corporation law research notes"), which
@@ -48,10 +48,11 @@
  * records the difference (GUIDANCE_CONFLICTS).
  *
  * Shared shapes: TERMINOLOGY, FUND_CATALOGUE, ENTITLEMENT_SCHEDULES and
- * FEATURES are given. NOTICE_RULES, LATE_CHARGE, PAYMENT_ALLOCATION_ORDER and
- * MEETING_RULES are deferred, with the reasons in DEFERRED_SHARED_SHAPES; their
- * Victorian rules are held as plain data in FEE_NOTICES, INTEREST,
- * PENDING_CHANGES and MEETINGS, RESOLUTIONS and PROXIES.
+ * FEATURES are given, and LATE_CHARGE (from INTEREST) and
+ * PAYMENT_ALLOCATION_ORDER (a StrataVerze choice) since stage 2, PR 5.
+ * NOTICE_RULES and MEETING_RULES are deferred, with the reasons in
+ * DEFERRED_SHARED_SHAPES; their Victorian rules are held as plain data in
+ * FEE_NOTICES, PENDING_CHANGES and MEETINGS, RESOLUTIONS and PROXIES.
  */
 
 import type {
@@ -64,6 +65,7 @@ import type {
   EntitlementScheduleDefinition,
   NoStatutoryRule,
   FundDefinition,
+  LateChargeRules,
   PackFeatures,
   PaymentAllocationPart,
   RecordedBuildingSelector,
@@ -996,8 +998,9 @@ export const HARDSHIP_INSTALMENTS_RULE = {
 // ---------------------------------------------------------------------------
 
 /**
- * Interest on amounts outstanding after the due date (OCA s 29). Held as
- * plain data; the shared LATE_CHARGE shape is deferred (DEFERRED_SHARED_SHAPES).
+ * Interest on amounts outstanding after the due date (OCA s 29), as the
+ * notes give it. The shared LATE_CHARGE below is built from it (stage 2,
+ * PR 5).
  */
 export const INTEREST = {
   /** Only "If authorised by a resolution at a general meeting", on amounts still outstanding after the due date (s 29(1)). */
@@ -1033,6 +1036,86 @@ export const INTEREST = {
   source: `${OCA} ss 29, 31(2)(b), 32(2)(b), 165(2)`,
   status: "CONFIRMED" as RuleStatus,
 } as const;
+
+/**
+ * The late charge in the shared shape (VIC, ACT and WA stage 2, PR 5,
+ * 28 Oct 2026), from INTEREST and the notes only. No interest unless a
+ * resolution at a general meeting authorises it (s 29(1)), so a building
+ * starts with none. The rate must not exceed the Penalty Interest Rates Act
+ * 1983 maximum (s 29(2)), whose current value (10%) is guidance only, so the
+ * cap has no value and no rate can be recorded until it is checked
+ * (FOR_REVIEW PENALTY_INTEREST_RATE). How interest accrues is not in the
+ * notes either (NOT_CONFIRMED), so the engine charges nothing until a pack
+ * version records it. The owners corporation may waive in a particular case,
+ * and decisions to waive or not, with reasons, go to the AGM (s 29(3), (4)).
+ */
+export const LATE_CHARGE: LateChargeRules = {
+  method: "ANNUAL_RATE",
+  modes: ["NONE", "RESOLVED_ANNUAL_RATE"],
+  defaultMode: "NONE",
+  resolutionRequiredFor: ["RESOLVED_ANNUAL_RATE"],
+  // The annual-rate rule is in `annual`; these older fields hold nothing for it.
+  annualRatePercent: null,
+  maxMonthlyRatePercent: null,
+  graceMonths: 0,
+  source: `${OCA} s 29`,
+  annual: {
+    // Victoria fixes no rate: interest only if a general meeting resolution authorises it (s 29(1)).
+    statutoryRatePercent: null,
+    resolvedRate: {
+      resolution: {
+        value: { kind: "GENERAL_MEETING", words: "general meeting resolution" },
+        status: "CONFIRMED",
+        source: `${OCA} s 29(1)`,
+        note: "\"If authorised by a resolution at a general meeting\". The notes give no kind of resolution, so any resolution carried at a general meeting.",
+      },
+      minPercent: { value: 0, status: "STRATAVERZE", source: `${OCA} s 29`, note: "The notes give no lowest rate. A rate below 0 is not a rate, so 0 is the lowest StrataVerze takes." },
+      maxPercent: {
+        value: null,
+        status: "GUIDANCE",
+        guidance: INTEREST.penaltyInterestRate.annualPercent,
+        source: `${OCA} s 29(2); ${SUPREME_COURT_PIR}`,
+        note: "The cap is the Penalty Interest Rates Act 1983 maximum (s 29(2), CONFIRMED). Its current value is guidance only and the rate notice was not read, so it is not used as a cap and no rate can be recorded (FOR_REVIEW PENALTY_INTEREST_RATE).",
+      },
+      // "Must not exceed": the maximum itself may be set.
+      maxInclusive: true,
+    },
+    accrual: {
+      from: { value: "DUE_DATE", status: "CONFIRMED", source: `${OCA} s 29(1)`, note: "On \"amounts still outstanding after the due date\"." },
+      graceMonths: { value: 0, status: "CONFIRMED", source: `${OCA} s 29(1)`, note: "Interest applies to amounts still outstanding after the due date. The notes record no grace period." },
+      simple: {
+        value: null,
+        status: "NOT_CONFIRMED",
+        source: `${OCA} ss 29, 32(2)(b)`,
+        note: "How interest accrues (daily, simple or otherwise) beyond the final notice's daily amount: the notes do not say.",
+      },
+      daysInYear: { value: null, status: "NOT_CONFIRMED", source: `${OCA} s 29`, note: "The notes do not say how a day's share of a yearly rate is worked out." },
+    },
+    waiver: {
+      kinds: ["WHOLE", "AMOUNT", "PERIOD"],
+      decidedBy: {
+        value: { kind: "GENERAL_MEETING", words: "general meeting resolution" },
+        status: "STRATAVERZE",
+        source: `${OCA} s 29(3)`,
+        note: "The notes say the owners corporation may waive in a particular case. They do not say whether its committee may decide it, so StrataVerze asks for a general meeting resolution until that is settled (FOR_REVIEW INTEREST_WAIVER).",
+      },
+      reportedToAgm: INTEREST.waiverDecisionsReportedToAgm,
+      source: `${OCA} s 29(3), (4)`,
+      status: "CONFIRMED",
+    },
+    source: `${OCA} s 29`,
+  },
+};
+
+/**
+ * The order a payment is applied to what an owner owes: fees, then interest,
+ * then recovery costs, as NSW. The notes record no order in force before
+ * s 32I commences (DATED_RULES.PAYMENT_ALLOCATION_ORDER keeps that record),
+ * so this is a StrataVerze choice Matthew Wrigley made on 28 Oct 2026
+ * (DECISIONS), not a rule of law. It is the same order as the pending s 32I
+ * (fees and charges, then penalty interest, then recovery costs).
+ */
+export const PAYMENT_ALLOCATION_ORDER: readonly PaymentAllocationPart[] = ["LEVY", "INTEREST", "RECOVERY_COSTS"];
 
 // ---------------------------------------------------------------------------
 // E. Fee recovery
@@ -2395,8 +2478,9 @@ export const DATED_RULES = {
   },
   /**
    * The order a payment is applied in. Before s 32I: no statutory order, as
-   * the notes record none (NOT_CONFIRMED, NOT_CONFIRMED list and
-   * DEFERRED_SHARED_SHAPES). Then the s 32I order, for all owners corporations.
+   * the notes record none (NOT_CONFIRMED, NOT_CONFIRMED list). Then the s 32I
+   * order, for all owners corporations. The order StrataVerze applies until
+   * then is PAYMENT_ALLOCATION_ORDER (a StrataVerze choice, 28 Oct 2026).
    */
   PAYMENT_ALLOCATION_ORDER: {
     title: "Order a payment is applied in",
@@ -2458,15 +2542,6 @@ export const DEFERRED_SHARED_SHAPES = [
       "The 28-day fee notice rule is held in FEE_NOTICES. The shape also needs a StrataVerze lead time for issuing notices (none chosen yet) and a hardship start date (the approved forms' start date is not confirmed).",
   },
   {
-    shape: "LATE_CHARGE",
-    reason:
-      "The interest rule is held in INTEREST. The shape caps a resolved rate monthly; Victoria caps it at the Penalty Interest Rates Act maximum, an annual rate whose current value is guidance only, and the notes do not say how interest accrues beyond the final notice's daily amount.",
-  },
-  {
-    shape: "PAYMENT_ALLOCATION_ORDER",
-    reason: "No order in force is recorded. The s 32I order (fees and charges, then penalty interest, then recovery costs) is enacted but not in force (PENDING_CHANGES).",
-  },
-  {
     shape: "MEETING_RULES",
     reason:
       "MEETING_RULES is now a shared rule (MeetingRuleSet); a pending pack need not give it, and the ACT draft does not. A Victorian set needs a minutes deadline for ordinary meetings (not found in the notes), Victoria's interim resolutions and ballots mapped to its categories, and StrataVerze choices on wording and pre-meeting voting. Until then Victoria's meeting, resolution and proxy rules are held as data in MEETINGS, RESOLUTIONS and PROXIES.",
@@ -2494,8 +2569,8 @@ export const NOT_CONFIRMED = [
   "How the 5% proxy limit (s 89D) is rounded: the notes do not say.",
   "The tier of an owners corporation with 1 occupiable lot that s 7(7) and (8) do not reach: the notes record none.",
   "The approved form for a manager's contract of appointment (s 119(3)): the notes do not identify or describe it.",
-  "The order a payment is applied to fees, interest and recovery costs before s 32I commences: the notes record none, so the pack has no PAYMENT_ALLOCATION_ORDER.",
-  "How interest accrues (daily, simple or otherwise) beyond the final notice's daily amount: the notes do not say.",
+  "The order a payment is applied to fees, interest and recovery costs before s 32I commences: the notes record none. PAYMENT_ALLOCATION_ORDER is a StrataVerze choice (DECISIONS, 28 Oct 2026).",
+  "How interest accrues (daily, simple or otherwise) beyond the final notice's daily amount, and how a day's share of a yearly rate is worked out: the notes do not say.",
   "How days are counted for the Act's periods (calendar or clear days), and when a posted or emailed notice is taken to be given: the notes do not say.",
   "What \"business day\" means for s 151 (certificate within 10 business days) and s 89B (payment 4 business days before a vote): the notes give no definition.",
   "Whether there is any deadline for sending ordinary AGM minutes: the notes give one only for interim resolutions (s 78) and interim special resolutions (s 97), each within 14 days.",
@@ -2599,7 +2674,7 @@ export const FOR_REVIEW = [
   },
   {
     key: "DEFERRED_SHARED_SHAPES",
-    point: "NOTICE_RULES, LATE_CHARGE, PAYMENT_ALLOCATION_ORDER and MEETING_RULES are deferred (DEFERRED_SHARED_SHAPES).",
+    point: "NOTICE_RULES and MEETING_RULES are deferred (DEFERRED_SHARED_SHAPES). LATE_CHARGE and PAYMENT_ALLOCATION_ORDER are given since stage 2, PR 5.",
     before: "the pack moves to RULE_PACKS",
     kind: "STRATAVERZE",
   },
@@ -2643,6 +2718,26 @@ export const FOR_REVIEW = [
     kind: "STRATAVERZE",
   },
   {
+    key: "LATE_CHARGE",
+    point:
+      "LATE_CHARGE (stage 2, PR 5). No interest until a resolution at a general meeting authorises it, with its rate (s 29(1)), so a building starts with none. No rate can be recorded yet: the cap (the Penalty Interest Rates Act maximum, s 29(2)) has no value until PENALTY_INTEREST_RATE is checked, and 10% is never used as a default cap. Even with a rate, nothing is charged until a pack version records how interest accrues (simple or otherwise) and the days a year's rate is shared over (365, or another basis): the notes give neither. Interest runs on amounts outstanding after the due date with no grace period (s 29(1)). The lowest rate, 0, is a StrataVerze choice. Rounding (once, half up, to the cent, on the sum of the days, as NSW interest) and applying each payment to the fee first are StrataVerze choices. Once checked, the cap may need to be a dated rule (DATED_RULES), as the rate is fixed by notice. Confirm each.",
+    before: "Victorian interest is charged",
+    kind: "LEGAL",
+  },
+  {
+    key: "INTEREST_WAIVER",
+    point:
+      "The waiver in a particular case (s 29(3)) is recorded for one notice: all of its interest, an amount, or the days of a period. Whether s 29(3) allows waiving part of the interest (an amount or a period) is not in the notes: offered as a StrataVerze reading. Who decides is not in the notes either: StrataVerze asks for a general meeting resolution (the meeting and motion) until it is settled whether the committee may. The reasons are required, because decisions to waive or not, with reasons, are reported to the AGM (s 29(4)); the AGM report itself is not produced yet, and a decision not to waive is not recorded. A waiver cannot be changed or removed once recorded, and one recorded after interest was charged on the notice does not reverse that charge. Confirm each.",
+    before: "Victorian interest is charged",
+    kind: "LEGAL",
+  },
+  {
+    key: "PAYMENT_ALLOCATION_ORDER",
+    point: "PAYMENT_ALLOCATION_ORDER: fees, then interest, then recovery costs, as NSW. Decided by Matthew Wrigley on 28 Oct 2026 as a StrataVerze choice (DECISIONS), since the notes record no order in force before s 32I. DATED_RULES.PAYMENT_ALLOCATION_ORDER still records no statutory order before s 32I; switching to s 32I by date is stage 2, PR 7.",
+    before: "sign-off",
+    kind: "STRATAVERZE",
+  },
+  {
     key: "CONTRIBUTION_INSURANCE_S23A",
     point:
       "The s 23A insurance premium fee is NOT applied yet: the pack has no CONTRIBUTION_INSURANCE, so the whole of every Victorian fee, insurance included, is shared by lot liability (s 23(3), CONFIRMED). The notes limit s 23A to the reinstatement and replacement premium (the s 59 cover), shared by lot entitlement. Public liability (s 60) and any other policy stay in annual fees by lot liability. To apply it, decide: (1) whether an owners corporation must raise the reinstatement premium as the s 23A fee, or may keep it in annual fees by lot liability (not in the notes); (2) whether the s 23A fee may be on the annual fee notice or needs a fee notice of its own (not in the notes); (3) how the reinstatement premium is held apart from the other policies, since the budget's Insurance account holds them together; (4) the StrataVerze choices that would come with it: insurance paid from the administrative fund, a budget with no reinstatement premium not refused (2-lot and services only owners corporations need not insure, ss 7A, 8, and others may insure another way, ss 61A, 63, 64), a special fee shared by lot liability only (s 24(2)), and no recovery from a culpable owner (s 23A) offered yet. The shared engine (src/lib/levies/contribution-shares.ts) is ready for INSURANCE_PREMIUM_FEE once these are decided.",
@@ -2652,9 +2747,9 @@ export const FOR_REVIEW = [
 ] as const;
 
 /**
- * StrataVerze choices this draft proposes. None is decided: Matthew Wrigley
- * has not reviewed the draft (`decidedBy` and `decidedOn` stay null until he
- * does).
+ * StrataVerze choices this draft proposes. Matthew Wrigley has not reviewed
+ * the draft, so `decidedBy` and `decidedOn` stay null on each, except the
+ * payment order he decided on 28 Oct 2026.
  */
 export const DECISIONS: readonly { decision: string; proposedOn: string; decidedBy: string | null; decidedOn: string | null }[] = [
   { decision: "Support unlimited owners corporations first; limited owners corporations are listed but blocked (OWNERS_CORPORATION_TYPE).", proposedOn: "2026-10-27", decidedBy: null, decidedOn: null },
@@ -2664,6 +2759,12 @@ export const DECISIONS: readonly { decision: string; proposedOn: string; decided
   { decision: "Keep each pending change off until its commencement is confirmed and a new pack version records it.", proposedOn: "2026-10-27", decidedBy: null, decidedOn: null },
   { decision: "Charge no interest until a building records the general meeting resolution that authorises it, with the rate.", proposedOn: "2026-10-27", decidedBy: null, decidedOn: null },
   { decision: "Show owners \"fees\", \"fee notice\" and \"final notice\", never \"levy\".", proposedOn: "2026-10-27", decidedBy: null, decidedOn: null },
+  {
+    decision: "Apply a payment to fees first, then interest, then recovery costs, as NSW (PAYMENT_ALLOCATION_ORDER). A StrataVerze choice: the notes record no order in force before s 32I.",
+    proposedOn: "2026-10-28",
+    decidedBy: "Matthew Wrigley",
+    decidedOn: "2026-10-28",
+  },
 ];
 
 /**

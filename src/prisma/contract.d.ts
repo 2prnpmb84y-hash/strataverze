@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'28741ae902226e32e3792317b8d527cff0632677e5840f4f595d013215a58a22'>;
+  StorageHashBase<'d6c28e27364f01587a998d47294ac5b270b3763edbdcbb5e2dd6c5080bb8decc'>;
 export type ExecutionHash =
   ExecutionHashBase<'8c9cb0b046b1bd7cbabff3729749064a4319da7e3f83be98fb8c1e93574f50c8'>;
 export type ProfileHash =
@@ -1596,6 +1596,26 @@ export namespace Models {
     readonly [RelationKeys]?:
       'accountCode' | 'bankTransaction' | 'fund' | 'journalEntry' | 'lot' | 'supplier';
   };
+  export type public_LateChargeWaiver = {
+    amount: FieldOutputTypes['public']['LateChargeWaiver']['amount'];
+    decidedBy: FieldOutputTypes['public']['LateChargeWaiver']['decidedBy'];
+    decidedOn: FieldOutputTypes['public']['LateChargeWaiver']['decidedOn'];
+    fromDate: FieldOutputTypes['public']['LateChargeWaiver']['fromDate'];
+    id: FieldOutputTypes['public']['LateChargeWaiver']['id'];
+    kind: FieldOutputTypes['public']['LateChargeWaiver']['kind'];
+    levyNoticeId: FieldOutputTypes['public']['LateChargeWaiver']['levyNoticeId'];
+    reasons: FieldOutputTypes['public']['LateChargeWaiver']['reasons'];
+    recordedAt: FieldOutputTypes['public']['LateChargeWaiver']['recordedAt'];
+    recordedBy: FieldOutputTypes['public']['LateChargeWaiver']['recordedBy'];
+    resolutionMeetingId: FieldOutputTypes['public']['LateChargeWaiver']['resolutionMeetingId'];
+    resolutionMotionId: FieldOutputTypes['public']['LateChargeWaiver']['resolutionMotionId'];
+    rulePack: FieldOutputTypes['public']['LateChargeWaiver']['rulePack'];
+    schemeId: FieldOutputTypes['public']['LateChargeWaiver']['schemeId'];
+    toDate: FieldOutputTypes['public']['LateChargeWaiver']['toDate'];
+    levyNotice: public_LevyNotice;
+    scheme: public_Scheme;
+    readonly [RelationKeys]?: 'levyNotice' | 'scheme';
+  };
   export type public_LevyNotice = {
     amountDue: FieldOutputTypes['public']['LevyNotice']['amountDue'];
     amountPaid: FieldOutputTypes['public']['LevyNotice']['amountPaid'];
@@ -1625,12 +1645,19 @@ export namespace Models {
     updatedAt: FieldOutputTypes['public']['LevyNotice']['updatedAt'];
     financialDocuments: public_FinancialDocument[];
     fund: public_Fund;
+    lateChargeWaivers: public_LateChargeWaiver[];
     levySchedule: public_LevySchedule;
     lot: public_Lot;
     payments: public_LevyPayment[];
     scheme: public_Scheme;
     readonly [RelationKeys]?:
-      'financialDocuments' | 'fund' | 'levySchedule' | 'lot' | 'payments' | 'scheme';
+      | 'financialDocuments'
+      | 'fund'
+      | 'lateChargeWaivers'
+      | 'levySchedule'
+      | 'lot'
+      | 'payments'
+      | 'scheme';
   };
   export type public_LevyPayment = {
     amount: FieldOutputTypes['public']['LevyPayment']['amount'];
@@ -2644,6 +2671,7 @@ export namespace Models {
     interestResolutionRecordedAt: FieldOutputTypes['public']['Scheme']['interestResolutionRecordedAt'];
     interestResolutionRecordedBy: FieldOutputTypes['public']['Scheme']['interestResolutionRecordedBy'];
     isActive: FieldOutputTypes['public']['Scheme']['isActive'];
+    lateChargeAnnualRatePercent: FieldOutputTypes['public']['Scheme']['lateChargeAnnualRatePercent'];
     lateChargeMonthlyRatePercent: FieldOutputTypes['public']['Scheme']['lateChargeMonthlyRatePercent'];
     name: FieldOutputTypes['public']['Scheme']['name'];
     organisationId: FieldOutputTypes['public']['Scheme']['organisationId'];
@@ -2686,6 +2714,7 @@ export namespace Models {
     invitations: public_Invitation[];
     invoices: public_Invoice[];
     journalEntries: public_JournalEntry[];
+    lateChargeWaivers: public_LateChargeWaiver[];
     levyNotices: public_LevyNotice[];
     levySchedules: public_LevySchedule[];
     lots: public_Lot[];
@@ -2746,6 +2775,7 @@ export namespace Models {
       | 'invitations'
       | 'invoices'
       | 'journalEntries'
+      | 'lateChargeWaivers'
       | 'levyNotices'
       | 'levySchedules'
       | 'lots'
@@ -4258,6 +4288,7 @@ export declare const models: {
     InvoiceExtraction: Models.public_InvoiceExtraction;
     JournalEntry: Models.public_JournalEntry;
     JournalLine: Models.public_JournalLine;
+    LateChargeWaiver: Models.public_LateChargeWaiver;
     LevyNotice: Models.public_LevyNotice;
     LevyPayment: Models.public_LevyPayment;
     LevySchedule: Models.public_LevySchedule;
@@ -11682,6 +11713,147 @@ type ContractBase = Omit<
                 },
               ];
             };
+            readonly late_charge_waivers: {
+              columns: {
+                readonly amount: {
+                  readonly dataType: 'pg/numeric';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 12; readonly scale: 2 };
+                  readonly many: false;
+                };
+                readonly decided_by: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly decided_on: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly from_date: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly kind: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly levy_notice_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly reasons: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly recorded_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly recorded_by: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly resolution_meeting_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly resolution_motion_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly rule_pack: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly length: 40 };
+                  readonly many: false;
+                };
+                readonly scheme_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly to_date: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'late_charge_waivers_levy_notice_id_idx';
+                  readonly columns: readonly ['levy_notice_id'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'late_charge_waivers_scheme_id_idx';
+                  readonly columns: readonly ['scheme_id'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'late_charge_waivers';
+                    readonly columns: readonly ['scheme_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'schemes';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'late_charge_waivers';
+                    readonly columns: readonly ['levy_notice_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'levy_notices';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
             readonly levy_notices: {
               columns: {
                 readonly amount_due: {
@@ -18142,6 +18314,13 @@ type ContractBase = Omit<
                     readonly kind: 'literal';
                     readonly value: DefaultLiteralValue<'pg/bool@1', true>;
                   };
+                  readonly many: false;
+                };
+                readonly late_charge_annual_rate_percent: {
+                  readonly dataType: 'pg/numeric';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 5; readonly scale: 2 };
                   readonly many: false;
                 };
                 readonly late_charge_monthly_rate_percent: {
@@ -27313,6 +27492,10 @@ type ContractBase = Omit<
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'JournalLine';
     };
+    readonly late_charge_waivers: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'LateChargeWaiver';
+    };
     readonly levy_notices: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'LevyNotice';
@@ -34645,6 +34828,128 @@ type ContractBase = Omit<
               };
             };
           };
+          readonly LateChargeWaiver: {
+            readonly fields: {
+              readonly amount: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly typeParams: { readonly precision: 12; readonly scale: 2 };
+                };
+              };
+              readonly decidedBy: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly decidedOn: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+              readonly fromDate: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly kind: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly levyNoticeId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly reasons: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly recordedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly recordedBy: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly resolutionMeetingId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly resolutionMotionId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly rulePack: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 40 };
+                };
+              };
+              readonly schemeId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly toDate: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+            };
+            readonly relations: {
+              readonly levyNotice: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'LevyNotice';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['levyNoticeId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly scheme: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Scheme';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['schemeId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'late_charge_waivers';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly amount: { readonly column: 'amount' };
+                readonly decidedBy: { readonly column: 'decided_by' };
+                readonly decidedOn: { readonly column: 'decided_on' };
+                readonly fromDate: { readonly column: 'from_date' };
+                readonly id: { readonly column: 'id' };
+                readonly kind: { readonly column: 'kind' };
+                readonly levyNoticeId: { readonly column: 'levy_notice_id' };
+                readonly reasons: { readonly column: 'reasons' };
+                readonly recordedAt: { readonly column: 'recorded_at' };
+                readonly recordedBy: { readonly column: 'recorded_by' };
+                readonly resolutionMeetingId: { readonly column: 'resolution_meeting_id' };
+                readonly resolutionMotionId: { readonly column: 'resolution_motion_id' };
+                readonly rulePack: { readonly column: 'rule_pack' };
+                readonly schemeId: { readonly column: 'scheme_id' };
+                readonly toDate: { readonly column: 'to_date' };
+              };
+            };
+          };
           readonly LevyNotice: {
             readonly fields: {
               readonly amountDue: {
@@ -34822,6 +35127,17 @@ type ContractBase = Omit<
                 readonly on: {
                   readonly localFields: readonly ['fundId'];
                   readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly lateChargeWaivers: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'LateChargeWaiver';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['levyNoticeId'];
                 };
               };
               readonly levySchedule: {
@@ -40704,6 +41020,14 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
               };
+              readonly lateChargeAnnualRatePercent: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly typeParams: { readonly precision: 5; readonly scale: 2 };
+                };
+              };
               readonly lateChargeMonthlyRatePercent: {
                 readonly nullable: true;
                 readonly type: {
@@ -41054,6 +41378,17 @@ type ContractBase = Omit<
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
                   readonly model: 'JournalEntry';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['schemeId'];
+                };
+              };
+              readonly lateChargeWaivers: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'LateChargeWaiver';
                 };
                 readonly cardinality: '1:N';
                 readonly on: {
@@ -41468,6 +41803,9 @@ type ContractBase = Omit<
                   readonly column: 'interest_resolution_recorded_by';
                 };
                 readonly isActive: { readonly column: 'is_active' };
+                readonly lateChargeAnnualRatePercent: {
+                  readonly column: 'late_charge_annual_rate_percent';
+                };
                 readonly lateChargeMonthlyRatePercent: {
                   readonly column: 'late_charge_monthly_rate_percent';
                 };

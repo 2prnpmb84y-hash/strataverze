@@ -94,13 +94,13 @@ import {
 } from "@/lib/finance/bank-allocations";
 import { suspenseBlockingClose, unallocatedCents } from "@/lib/finance/reconciliation";
 import { schemeTimeZone, schemeToday } from "@/lib/jurisdiction/scheme-time";
-import { interestSettingProblem } from "@/lib/finance/statutory-interest";
+import { interestSettingProblem, lateChargeWaiverProblem } from "@/lib/finance/statutory-interest";
 import { messageTermsFor, rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
 import { auditLabelWords, levyFormWords } from "@/lib/jurisdiction/screen-words";
 import { capitalise } from "@/lib/jurisdiction/wording";
 import { fundNameWords, ledgerFundDefinition } from "@/lib/jurisdiction/funds";
 import { UnsupportedJurisdictionError, type StatutoryRules } from "@/config/statutory";
-import { generalMeetingResolutionProblem } from "@/lib/finance/resolutions";
+import { generalMeetingResolutionProblem, meetingDay, resolutionOfKindProblem } from "@/lib/finance/resolutions";
 import { BudgetError, assertLineEditable, editableBudgetFor, getBudgets } from "@/lib/finance/budgets";
 import { levyScheduleActivationProblem } from "@/lib/finance/budget-status";
 import type { Numeric, TimestampString } from "@prisma/orm-postgres/target/codec-types";
@@ -2895,7 +2895,9 @@ export async function extractInvoiceFromPdfAction(
  * (`rules.LATE_CHARGE`). NSW: statutory interest or, by a recorded general
  * meeting resolution, no interest; no other rate can be set. Queensland: no
  * penalty or, by a recorded general meeting resolution, a penalty at the
- * monthly rate it set (at most the pack's maximum).
+ * monthly rate it set (at most the pack's maximum). VIC, ACT and WA (stage 2,
+ * PR 5): a yearly rate within the pack's range, set by the kind of resolution
+ * the pack names (an ACT special resolution must be recorded as one).
  */
 export async function saveInterestSettingAction(
   schemeId: string,
@@ -2908,12 +2910,15 @@ export async function saveInterestSettingAction(
     const meetingId = String(formData.get("meetingId") ?? "").trim() || null;
     const motionId = String(formData.get("motionId") ?? "").trim() || null;
     const rateText = String(formData.get("monthlyRatePercent") ?? "").trim();
+    const annualText = String(formData.get("annualRatePercent") ?? "").trim();
     const { rules } = await rulesForScheme(schemeId);
     const rule = rules.LATE_CHARGE;
     // The monthly rate is read only for a resolved rate; it is not stored otherwise.
     const monthlyRatePercent = mode === "RESOLVED_RATE" && rateText ? (/^\d+(\.\d+)?$/.test(rateText) ? Number(rateText) : Number.NaN) : null;
+    // The yearly rate likewise, only for a resolved yearly rate (VIC, ACT and WA).
+    const annualRatePercent = mode === "RESOLVED_ANNUAL_RATE" && annualText ? (/^\d+(\.\d+)?$/.test(annualText) ? Number(annualText) : Number.NaN) : null;
     const problem = interestSettingProblem(
-      { mode, monthlyRatePercent, resolutionMeetingId: meetingId, resolutionMotionId: motionId },
+      { mode, monthlyRatePercent, annualRatePercent, resolutionMeetingId: meetingId, resolutionMotionId: motionId },
       rule,
       rules.TERMINOLOGY,
     );
@@ -2921,13 +2926,19 @@ export async function saveInterestSettingAction(
 
     const needsResolution = (rule.resolutionRequiredFor as readonly string[]).includes(mode);
     if (needsResolution) {
-      const resolution = await generalMeetingResolutionProblem(schemeId, meetingId, motionId);
+      // A yearly rate needs the kind of resolution the pack names; every other mode a general meeting resolution, as before.
+      const kind = mode === "RESOLVED_ANNUAL_RATE" ? rule.annual?.resolvedRate?.resolution.value : null;
+      const resolution = kind ? await resolutionOfKindProblem(schemeId, meetingId, motionId, kind) : await generalMeetingResolutionProblem(schemeId, meetingId, motionId);
       if (resolution) return { error: resolution };
     }
 
     await db.orm.public.Scheme.where((s) => s.id.eq(schemeId)).update({
       interestMode: mode,
       lateChargeMonthlyRatePercent: mode === "RESOLVED_RATE" && monthlyRatePercent != null ? (monthlyRatePercent.toFixed(2) as unknown as Numeric<5, 2>) : null,
+      // Only an annual-rate pack holds a yearly rate, so an NSW or Queensland building's update is as before.
+      ...(rule.annual
+        ? { lateChargeAnnualRatePercent: mode === "RESOLVED_ANNUAL_RATE" && annualRatePercent != null ? (annualRatePercent.toFixed(2) as unknown as Numeric<5, 2>) : null }
+        : {}),
       interestResolutionMeetingId: needsResolution ? meetingId : null,
       interestResolutionMotionId: needsResolution ? motionId : null,
       interestResolutionRecordedBy: profile.id,
@@ -2939,7 +2950,13 @@ export async function saveInterestSettingAction(
       action: "INTEREST_SETTING_CHANGED",
       entityType: "Scheme",
       entityId: schemeId,
-      metadata: { mode, meetingId, motionId, ...(mode === "RESOLVED_RATE" ? { monthlyRatePercent } : {}) },
+      metadata: {
+        mode,
+        meetingId,
+        motionId,
+        ...(mode === "RESOLVED_RATE" ? { monthlyRatePercent } : {}),
+        ...(mode === "RESOLVED_ANNUAL_RATE" ? { annualRatePercent } : {}),
+      },
     });
     revalidatePath(financePath(schemeId, "/interest"));
     return { success: true };
@@ -2947,5 +2964,84 @@ export async function saveInterestSettingAction(
     if (err instanceof AuthorisationError) return { error: err.message };
     if (err instanceof UnsupportedJurisdictionError) return { error: err.message };
     return { error: `Failed to save the ${(await messageTermsFor(schemeId)).lateCharge} setting.` };
+  }
+}
+
+/** Dollars as an adviser types them ("12.50"), in cents; NaN when not a plain amount with at most 2 decimal places. */
+const dollarsToCents = (text: string) => (/^\d+(\.\d{1,2})?$/.test(text) ? Math.round(Number(text) * 100) : Number.NaN);
+
+/**
+ * Record a waiver of the late charge on one notice in a particular case (VIC,
+ * ACT and WA stage 2, PR 5; Victoria s 29(3)), as the building's pack allows
+ * it (`rules.LATE_CHARGE.annual.waiver`): all of it, an amount or the days of
+ * a period, decided by the kind of resolution the pack names, with the
+ * meeting and motion, and the reasons where decisions go to the AGM. Advisers
+ * only, as the late charge setting. A pack with no waiver, or where who
+ * decides is not confirmed, refuses it.
+ */
+export async function recordLateChargeWaiverAction(
+  schemeId: string,
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const field = (name: string) => String(formData.get(name) ?? "").trim();
+    const kind = field("kind");
+    const noticeId = field("levyNoticeId") || null;
+    const meetingId = field("meetingId") || null;
+    const motionId = field("motionId") || null;
+    const reasons = field("reasons") || null;
+    const { rules, label } = await rulesForScheme(schemeId);
+    const rule = rules.LATE_CHARGE;
+    const amountCents = kind === "AMOUNT" ? dollarsToCents(field("amount")) : null;
+    const fromDate = kind === "PERIOD" ? field("fromDate") || null : null;
+    const toDate = kind === "PERIOD" ? field("toDate") || null : null;
+    const problem = lateChargeWaiverProblem(
+      { kind, amountCents, fromDate, toDate, reasons, resolutionMeetingId: meetingId, resolutionMotionId: motionId },
+      rule,
+      rules.TERMINOLOGY,
+    );
+    if (problem) return { error: problem };
+    const decidedBy = rule.annual!.waiver!.decidedBy.value!;
+
+    const notice = noticeId ? await db.orm.public.LevyNotice.where((n) => n.id.eq(noticeId)).first() : null;
+    if (!notice || notice.schemeId !== schemeId) return { error: `Choose a ${rules.TERMINOLOGY.levy} notice of this building.` };
+
+    const resolution = await resolutionOfKindProblem(schemeId, meetingId, motionId, decidedBy);
+    if (resolution) return { error: resolution };
+    const decidedOn = await meetingDay(schemeId, meetingId!);
+    if (!decidedOn) return { error: "That meeting has no date recorded. Record the meeting's date first." };
+
+    const waiver = await db.orm.public.LateChargeWaiver.create({
+      schemeId,
+      levyNoticeId: notice.id,
+      kind,
+      amount: amountCents != null ? (fromCents(amountCents).toFixed(2) as unknown as Numeric<12, 2>) : null,
+      fromDate,
+      toDate,
+      decidedBy: decidedBy.kind,
+      resolutionMeetingId: meetingId!,
+      resolutionMotionId: motionId!,
+      decidedOn,
+      reasons,
+      rulePack: label,
+      recordedBy: profile.id,
+    });
+    await logActivity({
+      schemeId,
+      actorId: profile.id,
+      action: "LATE_CHARGE_WAIVER_RECORDED",
+      entityType: "LevyNotice",
+      entityId: notice.id,
+      metadata: { waiverId: waiver.id, kind, amountCents, fromDate, toDate, meetingId, motionId, decidedOn, rulePack: label },
+    });
+    revalidatePath(financePath(schemeId, "/interest"));
+    return { success: true };
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
+    if (err instanceof UnsupportedJurisdictionError) return { error: err.message };
+    logError("Late charge waiver error:", err);
+    return { error: `Failed to record the ${(await messageTermsFor(schemeId)).lateCharge} waiver.` };
   }
 }

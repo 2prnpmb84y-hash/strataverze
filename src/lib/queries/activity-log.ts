@@ -185,6 +185,8 @@ export type ActivityAction =
   | "STATUTORY_PACK_ADOPTED"
   | "AUDIT_EXPORT_DOWNLOADED"
   | "INTEREST_SETTING_CHANGED"
+  // A waiver of the late charge on one notice (VIC, ACT and WA stage 2, PR 5). Advisers only: not in any owner feed.
+  | "LATE_CHARGE_WAIVER_RECORDED"
   | "LEVY_NOTICES_EMAILED"
   // The building's regulation module (Queensland, stage 2, step 10). Advisers only: not in any owner feed.
   | "REGULATION_MODULE_CHANGED"
