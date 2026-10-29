@@ -251,6 +251,7 @@ model Scheme {
   proceedingsDeadlineReminders ProceedingsDeadlineReminder[]
   selectorValues     SchemeSelectorValue[]
   lateChargeWaivers           LateChargeWaiver[]
+  pendingResolutions          PendingResolution[]
   saleCertificates            SaleCertificate[]
   recordsInspections          RecordsInspection[]
 
@@ -4565,4 +4566,69 @@ model LateChargeWaiver {
   @@index([levyNoticeId])
   @@index([schemeId])
   @@map("late_charge_waivers")
+}
+
+// A resolution decided or taking effect after its meeting (VIC, ACT and WA stage 2, PR 8b-i, migration
+// 20261124): Victoria's interim special resolution (s 97) and interim resolution without a quorum (s 78), and
+// the ACT's reduced quorum decision (sch 3 ss 3.10, 3.11). One row for each agenda item, opened at conduct with
+// the item stored as INTERIM, and decided once (CARRIED or LOST) by the daily run or an adviser's record; the
+// item is updated to CARRIED or LOST in the same transaction. A trigger refuses any change to a decided row
+// and to a fact once recorded. The meetings and agenda items have foreign keys in the database (NO ACTION),
+// not declared here, as for the waivers.
+model PendingResolution {
+  id                     String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId               String    @map("scheme_id") @db.Uuid
+  meetingId              String    @map("meeting_id") @db.Uuid
+  agendaItemId           String    @unique @map("agenda_item_id") @db.Uuid
+  state                  String    // VIC, ACT (WA from PR 8b-ii)
+  kind                   String    // INTERIM_SPECIAL, INTERIM_NO_QUORUM, REDUCED_QUORUM (VOTING_PERIOD from PR 8b-ii)
+  category               String    // the item's resolution category at the meeting
+  takesEffectAs          String    @map("takes_effect_as") // the category it takes effect as (SPECIAL for s 97)
+  status                 String    @default("PENDING") // PENDING, CARRIED, LOST
+  madeOn                 DateTime  @db.Date @map("made_on") // the later of the meeting's day and the day it was recorded
+  windowClosesOn         DateTime  @db.Date @map("window_closes_on") // the last day a petition or notice can arrive
+  noticeDueOn            DateTime? @db.Date @map("notice_due_on")
+  noticeGivenOn          DateTime? @db.Date @map("notice_given_on")
+  petitionReceivedOn     DateTime? @db.Date @map("petition_received_on")
+  meetingNoticeGivenOn   DateTime? @db.Date @map("meeting_notice_given_on") // Victoria s 78: special general meeting notice
+  meetingNoticeMeetingId String?   @map("meeting_notice_meeting_id") @db.Uuid
+  meetingHeldBy          DateTime? @db.Date @map("meeting_held_by")
+  confirmedMeetingId     String?   @map("confirmed_meeting_id") @db.Uuid
+  confirmedItemId        String?   @map("confirmed_item_id") @db.Uuid
+  effectiveOn            DateTime? @db.Date @map("effective_on") // CARRIED only: the day it took effect
+  endedBy                String?   @map("ended_by") // PERIOD_ENDED, PETITION, CONFIRMED, NOT_CONFIRMED, MEETING_NOT_HELD
+  decidedAt              DateTime? @db.Timestamptz @map("decided_at")
+  decidedBy              String?   @map("decided_by") @db.Uuid // null when the daily run decided it
+  meetingVotes           Json      @map("meeting_votes") // {counted, notCounted, tally} at the meeting
+  rule                   Json      // the pack's pending rule and the category's rule at the meeting
+  rulePack               String    @map("rule_pack") @db.VarChar(40)
+  recordedBy             String    @map("recorded_by") @db.Uuid
+  createdAt              DateTime  @default(now()) @db.Timestamptz @map("created_at")
+
+  scheme Scheme                 @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  lots   PendingResolutionLot[]
+
+  @@index([schemeId])
+  @@index([meetingId])
+  @@index([status, windowClosesOn])
+  @@map("pending_resolutions")
+}
+
+// The lots that signed a petition against a pending resolution (Victoria s 97(5), the ACT sch 3 s 3.11), one
+// row for each lot. Rows are never updated (trigger). The lot has a foreign key in the database, not declared
+// here. LATE_VOTE (Western Australia s 121(2)) is allowed by the database for PR 8b-ii.
+model PendingResolutionLot {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  pendingResolutionId String   @map("pending_resolution_id") @db.Uuid
+  lotId               String   @map("lot_id") @db.Uuid
+  entry               String   // PETITION (LATE_VOTE from PR 8b-ii)
+  vote                String?  // LATE_VOTE only: FOR or AGAINST
+  receivedOn          DateTime @db.Date @map("received_on")
+  recordedBy          String   @map("recorded_by") @db.Uuid
+  recordedAt          DateTime @default(now()) @db.Timestamptz @map("recorded_at")
+
+  pendingResolution PendingResolution @relation(fields: [pendingResolutionId], references: [id], onDelete: Cascade)
+
+  @@unique([pendingResolutionId, lotId, entry])
+  @@map("pending_resolution_lots")
 }

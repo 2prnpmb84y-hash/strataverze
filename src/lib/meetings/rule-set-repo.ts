@@ -85,6 +85,10 @@ function rowToRuleSet(row: RuleSetRow, seed: MeetingRuleSet): MeetingRuleSet {
   if (seed.quorumAttestation) ruleSet.quorumAttestation = seed.quorumAttestation;
   if (seed.votesPresentAttestation) ruleSet.votesPresentAttestation = seed.votesPresentAttestation;
   if (seed.quorumNeedsEveryLot) ruleSet.quorumNeedsEveryLot = seed.quorumNeedsEveryLot;
+  // No column either, and only where the seed has them (the draft packs, VIC, ACT and WA stage 2, PR 8b-i,
+  // 29 Oct 2026): the resolutions decided later and the reduced quorum answer. NSW and Queensland never have them.
+  if (seed.pendingResolutions) ruleSet.pendingResolutions = seed.pendingResolutions;
+  if (seed.reducedQuorumAttestation) ruleSet.reducedQuorumAttestation = seed.reducedQuorumAttestation;
   return ruleSet;
 }
 

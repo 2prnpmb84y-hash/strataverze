@@ -1471,9 +1471,14 @@ export const RECORDS = {
  * - whether the meeting had a standard quorum for the motion (sch 3 s 3.9:
  *   quorum is counted for each motion) is the chair's answer
  *   (quorumAttestation, since stage 2, PR 8a-ii, 29 Oct 2026), never worked
- *   out or assumed: not answered, the count is refused; "no" (a reduced
- *   quorum, whose decision takes effect later, ss 3.10, 3.11) is refused
- *   until those decisions are tracked (stage 2, PR 8b);
+ *   out or assumed: not answered, the count is refused. After "no" the
+ *   chair answers whether a reduced quorum (2 or more people present and
+ *   entitled to vote, s 3.9(2) to (6)) was present (reducedQuorumAttestation,
+ *   since stage 2, PR 8b-i): with "yes" a count that passes is a reduced
+ *   quorum decision, recorded as pending and decided later (ss 3.10, 3.11,
+ *   pendingResolutions, below), and one that fails is recorded as lost at
+ *   once; with "no" (the meeting is adjourned, s 3.9(4)) or no answer the
+ *   count is refused;
  * - the test is chosen by the building's number of members, recorded in its
  *   building rules (MEMBER_BAND); none recorded refuses the count;
  * - an ordinary resolution: more votes for than against, by unit entitlement
@@ -1507,7 +1512,27 @@ export const RECORDS = {
  * debtorRuleAppliesWhen limits the rule to 3 or more members. With no band
  * recorded the rule applies (it fails closed). An unpaid amount is read as an
  * overdue contribution notice (FOR_REVIEW).
+ * Reduced quorum decisions (sch 3 ss 3.10, 3.11), since stage 2, PR 8b-i
+ * (29 Oct 2026, Matthew Wrigley's decisions D1 to D3, D5, D6 and D10,
+ * DECISIONS): made on the later of the meeting's day and the day it is
+ * recorded, in the building's time zone; a petition or notice may arrive up
+ * to and including 28 days after that, and it takes effect the next day once
+ * its 14-day notice to the members is recorded as given (a late notice is
+ * flagged, not moved). A petition signed for more than half of the units
+ * entitled to vote on the day it is received (units barred for an unpaid
+ * amount left out) disallows it, recorded as lost. A later meeting's motion
+ * carried with a standard quorum confirms it sooner, taking effect on that
+ * meeting's day. A pending item cannot be recorded again, deferred or
+ * deleted. The pending Bill (DATED_RULES, NOT LAW) would make it take effect
+ * the day after, with no petition; that is never applied. Matthew Wrigley's
+ * decision of 29 Oct 2026 (review M1, DECISIONS): the daily run records it as
+ * having taken effect only 7 days after the 28 days end
+ * (settleAfterGraceDays), so a petition received in time can still be
+ * recorded; the day it takes effect does not move.
  */
+
+/** Days of grace before the daily run records a period's end (Matthew Wrigley's decision of 29 Oct 2026, review M1). */
+const PENDING_SETTLE_GRACE_DAYS = 7;
 
 const ACT_TIE =
   `The votes are equal. Whether the chair has a casting vote is not confirmed (with 2 members there is none, ${UTMA} sch 3 s 3.30), and StrataVerze does not record one, so the count cannot decide it`;
@@ -1654,7 +1679,7 @@ export const MEETING_RULES: MeetingRuleSet = {
   // The chair's answers for each motion (Matthew Wrigley's decision of 29 Oct 2026, DECISIONS): never worked out or assumed.
   quorumAttestation: {
     label: "Standard quorum present for this motion",
-    help: `Yes if people entitled to vote for at least ${MEETINGS.quorum.fractionOfUnits === 1 / 2 ? "half" : `${Math.round(MEETINGS.quorum.fractionOfUnits * 100)}%`} of the units were present in person or by proxy when this motion was decided. Absentee votes do not count toward it, and neither does a unit that cannot vote because an amount is unpaid. With 1 or 2 members everyone entitled to vote must be present. Answer No if only a reduced quorum was present: StrataVerze does not record those decisions yet.`,
+    help: `Yes if people entitled to vote for at least ${MEETINGS.quorum.fractionOfUnits === 1 / 2 ? "half" : `${Math.round(MEETINGS.quorum.fractionOfUnits * 100)}%`} of the units were present in person or by proxy when this motion was decided. Absentee votes do not count toward it, and neither does a unit that cannot vote because an amount is unpaid. With 1 or 2 members everyone entitled to vote must be present. Answer No if only a reduced quorum was present, and then answer whether it was.`,
     source: `${UTMA} sch 3 ss 3.9, 3.12, 3.31(4)`,
     status: "STRATAVERZE",
   },
@@ -1664,8 +1689,35 @@ export const MEETING_RULES: MeetingRuleSet = {
     source: `${UTMA} sch 3 ss 3.16(1), 3.31(4)`,
     status: "STRATAVERZE",
   },
+  // Stage 2, PR 8b-i (29 Oct 2026, Matthew Wrigley's decision D6): asked only after "No" to the standard quorum.
+  reducedQuorumAttestation: {
+    label: "Reduced quorum present for this motion",
+    help: `Yes if, without a standard quorum, at least ${MEETINGS.noQuorum.reducedQuorumMinPeople} people present and entitled to vote formed a reduced quorum when this motion was decided. A motion passed at a reduced quorum takes effect ${MEETINGS.reducedQuorumDecisions.takesEffectAfterDays} days later unless a petition disallows it or a meeting with a standard quorum confirms it sooner, and a motion that fails is recorded as lost. Answer No if there was no reduced quorum either: the meeting is adjourned and the votes cannot decide the motion.`,
+    source: `${UTMA} sch 3 ss 3.9(2) to (6), 3.10, 3.11`,
+    status: "STRATAVERZE",
+  },
+  // Stage 2, PR 8b-i (29 Oct 2026, Matthew Wrigley's decisions D1 to D3, D5, D6 and D10): reduced quorum decisions are recorded as pending and decided later.
+  pendingResolutions: {
+    REDUCED_QUORUM: {
+      label: "Reduced quorum decision",
+      windowDays: MEETINGS.reducedQuorumDecisions.takesEffectAfterDays,
+      takesEffectAs: "SAME",
+      noticeWithinDays: MEETINGS.reducedQuorumDecisions.noticeWithinDays,
+      noticeRequiredBeforeEffect: true,
+      settleAfterGraceDays: PENDING_SETTLE_GRACE_DAYS,
+      petition: {
+        moreThanFractionOf: 1 / 2,
+        of: "LOTS_ENTITLED_TO_VOTE",
+        words: "A petition signed by a majority of the people entitled to vote",
+      },
+      confirmedSoonerBy: "STANDARD_QUORUM_MEETING",
+      help: `It takes effect ${MEETINGS.reducedQuorumDecisions.takesEffectAfterDays} days after it was made, unless a petition signed by a majority of the people entitled to vote disallows it within that time, or a meeting with a standard quorum confirms it sooner. Notice of it must be given to the members within ${MEETINGS.reducedQuorumDecisions.noticeWithinDays} days. StrataVerze counts the petition by units, more than half of the units entitled to vote on the day it is received, and takes the decision to have effect the day after the ${MEETINGS.reducedQuorumDecisions.takesEffectAfterDays} days end, once the notice is recorded as given, and records that ${PENDING_SETTLE_GRACE_DAYS} days later, so a petition received in time can still be recorded.`,
+      source: `${UTMA} sch 3 ss 3.10, 3.11`,
+      status: "STRATAVERZE",
+    },
+  },
   notes:
-    "Draft, from the ACT pack (not signed off), VIC, ACT and WA stage 2, PR 8a-i and 8a-ii. Standard quorum is the chair's answer for each motion and the units present for a special resolution are the chair's count; a reduced quorum is refused until its decisions are tracked.",
+    "Draft, from the ACT pack (not signed off), VIC, ACT and WA stage 2, PR 8a-i, 8a-ii and 8b-i. Standard quorum is the chair's answer for each motion and the units present for a special resolution are the chair's count. After No, the chair answers whether a reduced quorum was present: a reduced quorum decision is recorded as pending and decided later.",
 };
 
 /** How far each part of MEETING_RULES not carrying its own status is checked. */
@@ -1690,7 +1742,12 @@ export const MEETING_RULES_STATUS = {
   quorumAttestation: {
     status: "STRATAVERZE" as RuleStatus,
     source: `${UTMA} sch 3 ss 3.9, 3.16(1), 3.31(4)`,
-    note: "Whether there was a standard quorum is the chair's answer for each motion, and the units present for a special resolution the chair's count, checked against the units entered. Neither is worked out or assumed, until attendance is recorded (Matthew Wrigley's decision of 29 Oct 2026, DECISIONS).",
+    note: "Whether there was a standard quorum is the chair's answer for each motion, and the units present for a special resolution the chair's count, checked against the units entered. Neither is worked out or assumed, until attendance is recorded (Matthew Wrigley's decision of 29 Oct 2026, DECISIONS). Since stage 2, PR 8b-i, after No the chair answers whether a reduced quorum was present (reducedQuorumAttestation, decision D6).",
+  },
+  pendingResolutions: {
+    status: "STRATAVERZE" as RuleStatus,
+    source: `${UTMA} sch 3 ss 3.9 to 3.11`,
+    note: "The 28 days, the 14 days' notice, the petition by a majority of the people entitled to vote and confirmation by a standard quorum meeting are CONFIRMED. How they are applied is StrataVerze's reading, by Matthew Wrigley's decisions of 29 Oct 2026 (D1 to D3, D5, D6 and D10, DECISIONS): the day counting, the day it is made, notice before effect, the petition counted by units entitled to vote on its day, and a failed count at a reduced quorum recorded as lost (FOR_REVIEW). The 7 days of grace before the daily run records its end (settleAfterGraceDays) are a StrataVerze value (Matthew Wrigley's decision of 29 Oct 2026, review M1).",
   },
   labelsAndLists: { status: "STRATAVERZE" as RuleStatus, source: "StrataVerze", note: "The names, the categories each meeting and the motions list offer, pre-meeting voting not offered and common property rows not counted are StrataVerze choices (FOR_REVIEW)." },
 } as const;
@@ -2006,7 +2063,7 @@ export const FOR_REVIEW = [
   "FOR LEGAL REVIEW: what the opening words of UTMA s 94(1), \"unless otherwise decided by ordinary resolution\", let an ordinary resolution do (INTEREST.openingWords).",
   "BUILDING_SELECTORS: the scheme type and the three plan variants (retirement village, mixed use, class B units only) are recorded by the adviser or StrataVerze in the Building rules section, outside the locked building record. Each variant's \"yes\" is marked not supported because StrataVerze applies none of their rules yet (a StrataVerze proposal). The unit thresholds (bank account exemption, sinking fund, communications officer, proxy limit, the unit leg of the audit test) are worked out from the number of units: the building's lots other than common property rows, read only where it matches the building's total lots. The member thresholds (1 to 3 members, 4 or more members) are not worked out, because members are not units. The annual budget leg of the audit test is not a recorded fact, so at 100 units or fewer the value says the budget decides.",
   "DATED_RULES restates the Bill's quorum and absentee vote changes as NOT LAW values that are never applied, beside the in-force values from R25 (26 Jun 2026; earlier days have no value). When the Bill passes and pt 6 is notified, a new pack version restates them as enacted with the day they commence. Confirm both choices.",
-  "LATE_CHARGE (stage 2, PR 5): 10% a year by default and 0 to 20% by special resolution are from the notes (s 94(1)). Three accrual values are NOT_CONFIRMED, so no interest is charged until a pack version records them: the day interest starts (the due date, or the day after), any grace period, and the days a year's rate is shared over (365, or another basis). The special resolution is checked against the motion's recorded category (SPECIAL) and outcome (CARRIED). Since stage 2, PR 8a-ii (29 Oct 2026) an ACT special resolution with 4 or more members can be recorded as CARRIED at a meeting from the count (sch 3 s 3.16(1)), with the chair's standard quorum answer and units present, and one with 1 or 2 members with no vote against and at least 1 vote for (s 3.16(3)), with the chair's quorum answer (s 3.12), so either can now set this rate; the 3-member test and a reduced quorum decision are still refused. Rounding (once, half up, to the cent, on the sum of the days, as NSW interest) and applying each payment to the contribution first are StrataVerze choices. Confirm each.",
+  "LATE_CHARGE (stage 2, PR 5): 10% a year by default and 0 to 20% by special resolution are from the notes (s 94(1)). Three accrual values are NOT_CONFIRMED, so no interest is charged until a pack version records them: the day interest starts (the due date, or the day after), any grace period, and the days a year's rate is shared over (365, or another basis). The special resolution is checked against the motion's recorded category (SPECIAL) and outcome (CARRIED). Since stage 2, PR 8a-ii (29 Oct 2026) an ACT special resolution with 4 or more members can be recorded as CARRIED at a meeting from the count (sch 3 s 3.16(1)), with the chair's standard quorum answer and units present, and one with 1 or 2 members with no vote against and at least 1 vote for (s 3.16(3)), with the chair's quorum answer (s 3.12), so either can now set this rate; the 3-member test is still refused. Since stage 2, PR 8b-i (29 Oct 2026) a special resolution decided at a reduced quorum is recorded as pending, and can set the rate only once it has taken effect and is recorded as carried. Rounding (once, half up, to the cent, on the sum of the days, as NSW interest) and applying each payment to the contribution first are StrataVerze choices. Confirm each.",
   "PAYMENT_ALLOCATION_ORDER: contributions, then interest, then recovery costs, as NSW. Decided by Matthew Wrigley on 28 Oct 2026 as a StrataVerze choice (DECISIONS), since the notes record no order. Recorded here so the decision is visible at sign-off.",
   "NOTICE_RULES (stage 2, PR 6a): each notice goes out 28 days before it falls due and never with less than 14 days' notice, as Matthew Wrigley decided on 28 Oct 2026 (DECISIONS); the 28 days is the most the law allows (UTMA ss 79(2)(e), 90(2)(e)). A due date more than 28 days after the notice is refused, and a special contribution due further away is planned 28 days before it falls due. Recorded here so the decision is visible at sign-off.",
   "FOR LEGAL REVIEW: whether a general fund contribution payable by instalments is given one notice for each instalment as it falls due (StrataVerze's reading, NOTICE_RULES.checked.noticeMode) or one notice that states every instalment date (UTMA s 79(2)(f)).",
@@ -2025,14 +2082,16 @@ export const FOR_REVIEW = [
   "Refused at a meeting until confirmed: the 3-member special resolution test (s 3.16(2): against less than 1/3, of what is NOT_CONFIRMED); an unopposed resolution (s 3.17: its member scope is NOT_CONFIRMED; confirming it would let it be counted). With 1 or 2 members a resolution is counted since stage 2, PR 8a-ii (29 Oct 2026, Matthew Wrigley's decision, DECISIONS): no vote against and at least 1 vote for (ss 3.15(2), 3.16(3), 3.18(2)), the quorum of s 3.12 (everyone entitled to vote present) being the chair's answer, no debtor bar (s 3.20(3) applies from 3 members) and no casting vote (s 3.30). The units present are asked on a special resolution with 1 or 2 members too, though their test does not use them. Equal votes on an ordinary or special resolution are refused, because whether the chair has a casting vote with more than 2 members is not in the notes (with 2 members there is none, s 3.30) and StrataVerze does not record one. A 3-member ordinary resolution is counted since stage 2, PR 8a-ii (29 Oct 2026), by the same test as 4 or more members (s 3.15(1)).",
   "A unanimous resolution (s 3.18(1)) needs a vote or an abstention recorded for every unit: a unit with nothing recorded refuses the count, since StrataVerze cannot tell whether its voter was present. Confirm.",
   "FOR LEGAL REVIEW: the debtor rule (sch 3 s 3.20(3): with 3 or more members a unit cannot vote on an ordinary or special resolution while an amount is unpaid) is applied since stage 2, PR 8a-ii (29 Oct 2026), in the same change as the chair's quorum answer: a unit owing an amount is not counted at the meeting and cannot vote online on such a motion, and with 1 or 2 members it is not barred. An unpaid amount is read as a contribution notice issued, past its due date and not paid in full on the meeting's date, as for Queensland (a StrataVerze reading: s 3.20(3) says \"all amounts payable\", which may be wider). With no number of members recorded the rule applies. Confirm.",
-  "Quorum (sch 3 ss 3.9 to 3.11) is counted for each motion, and a decision with a reduced quorum takes effect 28 days later unless disallowed. Since stage 2, PR 8a-ii (29 Oct 2026) whether there was a standard quorum (people entitled to vote for at least half of the units) is the chair's answer for each motion, kept with the outcome in the meeting record with who recorded it (Matthew Wrigley's decision of 29 Oct 2026, DECISIONS). It is never filled in for the chair, and a motion not answered is refused. StrataVerze does not record attendance yet, so it does not work the quorum out, and nothing checks the answer against the votes: absentee votes are entered like any other vote but do not count toward the quorum (s 3.31(4)), and a unit barred for money owed does not either. With 1 or 2 members everyone entitled to vote must be present (s 3.12): the chair's answer covers that too. \"No\" (a reduced quorum) is refused until those decisions and their later effect are tracked (stage 2, PR 8b). When attendance is recorded (meeting management, Stage C) the quorum will be worked out from it instead. A resolution recorded as carried from the count can also be relied on wherever a carried general meeting motion is asked for: budget adoption, capital works plan approval and statutory pack adoption, as for any carried motion. Confirm.",
+  "Quorum (sch 3 ss 3.9 to 3.11) is counted for each motion, and a decision with a reduced quorum takes effect 28 days later unless disallowed. Since stage 2, PR 8a-ii (29 Oct 2026) whether there was a standard quorum (people entitled to vote for at least half of the units) is the chair's answer for each motion, kept with the outcome in the meeting record with who recorded it (Matthew Wrigley's decision of 29 Oct 2026, DECISIONS). It is never filled in for the chair, and a motion not answered is refused. StrataVerze does not record attendance yet, so it does not work the quorum out, and nothing checks the answer against the votes: absentee votes are entered like any other vote but do not count toward the quorum (s 3.31(4)), and a unit barred for money owed does not either. With 1 or 2 members everyone entitled to vote must be present (s 3.12): the chair's answer covers that too. Since stage 2, PR 8b-i (29 Oct 2026) \"No\" is followed by the chair's answer whether a reduced quorum was present: a reduced quorum decision is recorded as pending and decided later (the reduced quorum point below). When attendance is recorded (meeting management, Stage C) the quorum will be worked out from it instead. A resolution recorded as carried from the count can also be relied on wherever a carried general meeting motion is asked for: budget adoption, capital works plan approval and statutory pack adoption, as for any carried motion. Confirm.",
+  "Reduced quorum decisions (sch 3 ss 3.9 to 3.11; stage 2, PR 8b-i, 29 Oct 2026), by Matthew Wrigley's StrataVerze decisions of 29 Oct 2026 (DECISIONS), each kept here for legal confirmation. (D6) After the chair answers No to the standard quorum, the chair answers whether a reduced quorum (2 or more people present and entitled to vote) was present; with Yes a count that passes is recorded as pending and one that fails is recorded as lost at once (whether a failed count at a reduced quorum is simply lost is NOT_CONFIRMED); with No the count is refused (the meeting is adjourned, s 3.9(4)). The answer is never worked out or assumed. (D1) A petition or notice may arrive up to and including the 28th day after the decision was made, and it takes effect the next day: the Legislation Act 2001 s 151 was not read, so this day counting is NOT_CONFIRMED. (D2) It is made on the later of the meeting's day and the day the chair records it, in the building's time zone. (D3) It takes effect only once its 14-day notice (s 3.10) is recorded as given; a late notice is flagged, not moved, and a notice given after the 28 days makes it take effect on that day, not before. (D5) A petition disallows it when signed for more than half of the units entitled to vote on the day it is received, leaving out units barred for an unpaid amount (where the debtor rule applies): whether the Act's \"majority of people entitled to vote\" counts units or people, and whether a barred unit is entitled to vote on a petition, are NOT_CONFIRMED; counting the barred units out is the direction that disallows more readily. A confirmation needs a later meeting's motion recorded as carried with a standard quorum answered Yes, held after the decision was made and within the 28 days, with the notice recorded; it takes effect on that meeting's day. Which motion confirms which decision is the adviser's choice. (D10) A pending item cannot be recorded again, deferred or deleted. (Review M1, Matthew Wrigley's decision of 29 Oct 2026) The daily run records it as having taken effect at the end of its period only after 7 days of grace (settleAfterGraceDays) after the last of the 28 days: during the grace a petition received within the 28 days can still be recorded, and the day it takes effect does not move. A confirmation or a petition decides it at once. Whether 7 days is long enough for a petition to reach the corporation is NOT_CONFIRMED. A petition is counted only where the units entered match the building's number of units, as in Victoria. The minutes do not state the later effect yet (stage 2, PR 8b-iv). The pending Bill (no petition, effect the day after) is NOT LAW and never applied. Confirm each.",
   "Pre-meeting electronic voting is not offered for this draft (preMeetingEvoting is null). Before it is, closing a ballot must apply what the count at the meeting applies: the debtor condition (debtorRuleAppliesWhen), judged lot by lot as an owner's own vote is (debtorVoteCheck), the quorum answer, and any refusal of the whole count (Victoria's tier 5, Western Australia's 2-lot quorum). closeBallotAction applies none of these yet (stage 2, PR 8a-ii review). Confirm before any ACT ballot is offered.",
 ] as const;
 
 /**
  * StrataVerze's decisions. Matthew Wrigley has not reviewed this draft as a
  * whole; the decisions so far are the payment order and the notice timing
- * (28 Oct 2026), and the quorum answer and 1 or 2 members (29 Oct 2026). Points for the review are in FOR_REVIEW and marked "FOR
+ * (28 Oct 2026), and the quorum answer, 1 or 2 members, reduced quorum
+ * decisions and their grace before settling (29 Oct 2026). Points for the review are in FOR_REVIEW and marked "FOR
  * REVIEW" and "FOR LEGAL REVIEW" above.
  */
 export const DECISIONS: readonly { decision: string; decidedBy: string; decidedOn: string }[] = [
@@ -2056,6 +2115,18 @@ export const DECISIONS: readonly { decision: string; decidedBy: string; decidedO
   {
     decision:
       "1 or 2 members (MEMBER_BAND ONE_OR_TWO): counted at a meeting by the tests of sch 3 ss 3.15(2), 3.16(3) and 3.18(2), no vote against and at least 1 vote for, with no debtor bar and no casting vote. Matthew Wrigley's StrataVerze decision of 29 Oct 2026.",
+    decidedBy: "Matthew Wrigley",
+    decidedOn: "2026-10-29",
+  },
+  {
+    decision:
+      "Reduced quorum decisions (MEETING_RULES.pendingResolutions and reducedQuorumAttestation, stage 2, PR 8b-i): (D1) a petition or notice can arrive up to and including the day 28 days after the decision is made, and it takes effect the next day; (D2) it is made on the later of the meeting's day and the day it is recorded, in the building's time zone; (D3) it does not take effect until its 14-day notice is recorded as given, and a late notice is flagged, not moved; (D5) a petition is valid with signatures from more than half of the units entitled to vote on the petition day, leaving out units barred for an unpaid amount; (D6) after No to the standard quorum the chair is asked \"reduced quorum present (2 or more entitled to vote)\", and a failed count at a reduced quorum is recorded as lost at once; (D10) a pending item cannot be recorded again, deferred or deleted; (D11) a separate daily run decides them; (D19) migration 20261124_pending_resolutions is approved in principle, applied before the code deploys, after a rehearsal and a further approval. Matthew Wrigley's StrataVerze decisions of 29 Oct 2026, kept for legal confirmation (FOR_REVIEW).",
+    decidedBy: "Matthew Wrigley",
+    decidedOn: "2026-10-29",
+  },
+  {
+    decision:
+      "Reduced quorum decisions settle after a grace (MEETING_RULES.pendingResolutions.settleAfterGraceDays, stage 2, PR 8b-i review M1): the daily run records a reduced quorum decision as having taken effect at the end of its period (PERIOD_ENDED) only once 7 days have passed after the last of the 28 days. During those 7 days a petition received within the 28 days can still be recorded (its day is still checked against the 28 days). The day it takes effect stays the day after the 28 days end. A confirmation or a petition is not delayed. Matthew Wrigley's StrataVerze decision of 29 Oct 2026, kept for legal confirmation (FOR_REVIEW).",
     decidedBy: "Matthew Wrigley",
     decidedOn: "2026-10-29",
   },

@@ -25,6 +25,7 @@ import type { MeetingType } from "@/lib/meetings/rules";
 import { getActiveRuleSet, getActiveRuleSetForScheme } from "@/lib/meetings/rule-set-repo";
 import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { bodyCorporateName } from "@/lib/jurisdiction/wording";
+import { DECIDED_LATER_ITEM_REFUSAL, PENDING_ITEM_REFUSAL, isPendingItem } from "@/lib/meetings/pending";
 
 export type AgendaFormState = {
   error?: string;
@@ -196,6 +197,23 @@ export async function addMotionFromLibraryAction(
   }
 }
 
+/**
+ * D10 (review M2): why the database refused to delete an agenda item a
+ * pending resolution relies on (its own resolution, decided later or not, or
+ * the motion that confirmed one), or null for any other error.
+ */
+function pendingReferenceRefusal(err: unknown): string | null {
+  const text =
+    err instanceof Error
+      ? `${err.message} ${JSON.stringify((err as { cause?: unknown }).cause ?? "")} ${JSON.stringify(err)} ${String((err as { code?: unknown }).code ?? "")}`
+      : String(err);
+  if (!/pending_resolutions/.test(text) || !/23503|foreign key/i.test(text)) return null;
+  if (/pending_resolutions_confirmed_item_id_fkey/.test(text)) {
+    return "This motion is recorded as deciding a resolution of another meeting, so it cannot be removed. Nothing was saved.";
+  }
+  return DECIDED_LATER_ITEM_REFUSAL;
+}
+
 export async function deleteAgendaItemAction(
   schemeId: string,
   meetingId: string,
@@ -209,8 +227,19 @@ export async function deleteAgendaItemAction(
 
     const item = await getAgendaItem(meetingId, itemId);
     if (!item) return { error: "Agenda item not found." };
+    // An item decided later (INTERIM, only ever under a draft pack) cannot be removed (decision D10).
+    if (isPendingItem(item)) return { error: PENDING_ITEM_REFUSAL };
 
-    await deleteAgendaItem(meetingId, itemId);
+    try {
+      await deleteAgendaItem(meetingId, itemId);
+    } catch (err) {
+      // An item a resolution decided later relies on (review M2): the database refuses the delete (the pending
+      // row's keys to the item, NO ACTION), so nothing is removed. Read from the refusal, so NSW and Queensland,
+      // which never have such a row, read nothing more.
+      const refusal = pendingReferenceRefusal(err);
+      if (refusal) return { error: refusal };
+      throw err;
+    }
     await recordMeetingEvent({
       meetingId,
       actorId: profile.id,

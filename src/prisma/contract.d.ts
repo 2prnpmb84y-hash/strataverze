@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'617447ff517c5b30db5923c74ee546f368cb4c0a525f588d84037df6def66d54'>;
+  StorageHashBase<'42f80370b0b3b87a4fc91cb08e4e537ea990ddf8ead1f3b6b3672d256c050662'>;
 export type ExecutionHash =
   ExecutionHashBase<'8c9cb0b046b1bd7cbabff3729749064a4319da7e3f83be98fb8c1e93574f50c8'>;
 export type ProfileHash =
@@ -2277,6 +2277,51 @@ export namespace Models {
     scheme: public_Scheme;
     readonly [RelationKeys]?: 'case' | 'lot' | 'plan' | 'scheme';
   };
+  export type public_PendingResolution = {
+    agendaItemId: FieldOutputTypes['public']['PendingResolution']['agendaItemId'];
+    category: FieldOutputTypes['public']['PendingResolution']['category'];
+    confirmedItemId: FieldOutputTypes['public']['PendingResolution']['confirmedItemId'];
+    confirmedMeetingId: FieldOutputTypes['public']['PendingResolution']['confirmedMeetingId'];
+    createdAt: FieldOutputTypes['public']['PendingResolution']['createdAt'];
+    decidedAt: FieldOutputTypes['public']['PendingResolution']['decidedAt'];
+    decidedBy: FieldOutputTypes['public']['PendingResolution']['decidedBy'];
+    effectiveOn: FieldOutputTypes['public']['PendingResolution']['effectiveOn'];
+    endedBy: FieldOutputTypes['public']['PendingResolution']['endedBy'];
+    id: FieldOutputTypes['public']['PendingResolution']['id'];
+    kind: FieldOutputTypes['public']['PendingResolution']['kind'];
+    madeOn: FieldOutputTypes['public']['PendingResolution']['madeOn'];
+    meetingHeldBy: FieldOutputTypes['public']['PendingResolution']['meetingHeldBy'];
+    meetingId: FieldOutputTypes['public']['PendingResolution']['meetingId'];
+    meetingNoticeGivenOn: FieldOutputTypes['public']['PendingResolution']['meetingNoticeGivenOn'];
+    meetingNoticeMeetingId: FieldOutputTypes['public']['PendingResolution']['meetingNoticeMeetingId'];
+    meetingVotes: FieldOutputTypes['public']['PendingResolution']['meetingVotes'];
+    noticeDueOn: FieldOutputTypes['public']['PendingResolution']['noticeDueOn'];
+    noticeGivenOn: FieldOutputTypes['public']['PendingResolution']['noticeGivenOn'];
+    petitionReceivedOn: FieldOutputTypes['public']['PendingResolution']['petitionReceivedOn'];
+    recordedBy: FieldOutputTypes['public']['PendingResolution']['recordedBy'];
+    rule: FieldOutputTypes['public']['PendingResolution']['rule'];
+    rulePack: FieldOutputTypes['public']['PendingResolution']['rulePack'];
+    schemeId: FieldOutputTypes['public']['PendingResolution']['schemeId'];
+    state: FieldOutputTypes['public']['PendingResolution']['state'];
+    status: FieldOutputTypes['public']['PendingResolution']['status'];
+    takesEffectAs: FieldOutputTypes['public']['PendingResolution']['takesEffectAs'];
+    windowClosesOn: FieldOutputTypes['public']['PendingResolution']['windowClosesOn'];
+    lots: public_PendingResolutionLot[];
+    scheme: public_Scheme;
+    readonly [RelationKeys]?: 'lots' | 'scheme';
+  };
+  export type public_PendingResolutionLot = {
+    entry: FieldOutputTypes['public']['PendingResolutionLot']['entry'];
+    id: FieldOutputTypes['public']['PendingResolutionLot']['id'];
+    lotId: FieldOutputTypes['public']['PendingResolutionLot']['lotId'];
+    pendingResolutionId: FieldOutputTypes['public']['PendingResolutionLot']['pendingResolutionId'];
+    receivedOn: FieldOutputTypes['public']['PendingResolutionLot']['receivedOn'];
+    recordedAt: FieldOutputTypes['public']['PendingResolutionLot']['recordedAt'];
+    recordedBy: FieldOutputTypes['public']['PendingResolutionLot']['recordedBy'];
+    vote: FieldOutputTypes['public']['PendingResolutionLot']['vote'];
+    pendingResolution: public_PendingResolution;
+    readonly [RelationKeys]?: 'pendingResolution';
+  };
   export type public_PlatformFeeEvent = {
     amountExGst: FieldOutputTypes['public']['PlatformFeeEvent']['amountExGst'];
     code: FieldOutputTypes['public']['PlatformFeeEvent']['code'];
@@ -2724,6 +2769,7 @@ export namespace Models {
     motions: public_Motion[];
     organisation: public_Organisation | null;
     paymentPlanRequests: public_PaymentPlanRequest[];
+    pendingResolutions: public_PendingResolution[];
     proceedingsDeadlineReminders: public_ProceedingsDeadlineReminder[];
     quoteRequests: public_QuoteRequest[];
     recordsInspections: public_RecordsInspection[];
@@ -2785,6 +2831,7 @@ export namespace Models {
       | 'motions'
       | 'organisation'
       | 'paymentPlanRequests'
+      | 'pendingResolutions'
       | 'proceedingsDeadlineReminders'
       | 'quoteRequests'
       | 'recordsInspections'
@@ -4320,6 +4367,8 @@ export declare const models: {
     PaymentPlan: Models.public_PaymentPlan;
     PaymentPlanInstalment: Models.public_PaymentPlanInstalment;
     PaymentPlanRequest: Models.public_PaymentPlanRequest;
+    PendingResolution: Models.public_PendingResolution;
+    PendingResolutionLot: Models.public_PendingResolutionLot;
     PlatformFeeEvent: Models.public_PlatformFeeEvent;
     PlatformInvoice: Models.public_PlatformInvoice;
     PlatformPriceBook: Models.public_PlatformPriceBook;
@@ -15914,6 +15963,306 @@ type ContractBase = Omit<
                   readonly target: {
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'payment_plan_requests';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly pending_resolution_lots: {
+              columns: {
+                readonly entry: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly lot_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly pending_resolution_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly received_on: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly recorded_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly recorded_by: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly vote: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'pending_resolution_lots_pending_resolution_id_lot_id_entry_key';
+                  readonly columns: readonly ['pending_resolution_id', 'lot_id', 'entry'];
+                  readonly unique: true;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'pending_resolution_lots';
+                    readonly columns: readonly ['pending_resolution_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'pending_resolutions';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly pending_resolutions: {
+              columns: {
+                readonly agenda_item_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly category: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly confirmed_item_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly confirmed_meeting_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly decided_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly decided_by: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly effective_on: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly ended_by: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly kind: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly made_on: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly meeting_held_by: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly meeting_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly meeting_notice_given_on: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly meeting_notice_meeting_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly meeting_votes: {
+                  readonly dataType: 'pg/jsonb';
+                  readonly codecId: 'pg/jsonb@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly notice_due_on: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly notice_given_on: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly petition_received_on: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly recorded_by: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly rule: {
+                  readonly dataType: 'pg/jsonb';
+                  readonly codecId: 'pg/jsonb@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly rule_pack: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly length: 40 };
+                  readonly many: false;
+                };
+                readonly scheme_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly state: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly status: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'PENDING'>;
+                  };
+                  readonly many: false;
+                };
+                readonly takes_effect_as: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly window_closes_on: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'pending_resolutions_agenda_item_id_key';
+                  readonly columns: readonly ['agenda_item_id'];
+                  readonly unique: true;
+                },
+                {
+                  readonly name: 'pending_resolutions_meeting_id_idx';
+                  readonly columns: readonly ['meeting_id'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'pending_resolutions_scheme_id_idx';
+                  readonly columns: readonly ['scheme_id'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'pending_resolutions_status_window_closes_on_idx';
+                  readonly columns: readonly ['status', 'window_closes_on'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'pending_resolutions';
+                    readonly columns: readonly ['scheme_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'schemes';
                     readonly columns: readonly ['id'];
                   };
                 },
@@ -27610,6 +27959,14 @@ type ContractBase = Omit<
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'PaymentPlan';
     };
+    readonly pending_resolution_lots: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'PendingResolutionLot';
+    };
+    readonly pending_resolutions: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'PendingResolution';
+    };
     readonly platform_fee_events: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'PlatformFeeEvent';
@@ -38826,6 +39183,258 @@ type ContractBase = Omit<
               };
             };
           };
+          readonly PendingResolution: {
+            readonly fields: {
+              readonly agendaItemId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly category: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly confirmedItemId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly confirmedMeetingId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly decidedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly decidedBy: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly effectiveOn: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+              readonly endedBy: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly kind: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly madeOn: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+              readonly meetingHeldBy: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+              readonly meetingId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly meetingNoticeGivenOn: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+              readonly meetingNoticeMeetingId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly meetingVotes: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/jsonb@1' };
+              };
+              readonly noticeDueOn: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+              readonly noticeGivenOn: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+              readonly petitionReceivedOn: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+              readonly recordedBy: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly rule: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/jsonb@1' };
+              };
+              readonly rulePack: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 40 };
+                };
+              };
+              readonly schemeId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly state: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly status: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly takesEffectAs: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly windowClosesOn: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+            };
+            readonly relations: {
+              readonly lots: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'PendingResolutionLot';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['pendingResolutionId'];
+                };
+              };
+              readonly scheme: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Scheme';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['schemeId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'pending_resolutions';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly agendaItemId: { readonly column: 'agenda_item_id' };
+                readonly category: { readonly column: 'category' };
+                readonly confirmedItemId: { readonly column: 'confirmed_item_id' };
+                readonly confirmedMeetingId: { readonly column: 'confirmed_meeting_id' };
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly decidedAt: { readonly column: 'decided_at' };
+                readonly decidedBy: { readonly column: 'decided_by' };
+                readonly effectiveOn: { readonly column: 'effective_on' };
+                readonly endedBy: { readonly column: 'ended_by' };
+                readonly id: { readonly column: 'id' };
+                readonly kind: { readonly column: 'kind' };
+                readonly madeOn: { readonly column: 'made_on' };
+                readonly meetingHeldBy: { readonly column: 'meeting_held_by' };
+                readonly meetingId: { readonly column: 'meeting_id' };
+                readonly meetingNoticeGivenOn: { readonly column: 'meeting_notice_given_on' };
+                readonly meetingNoticeMeetingId: { readonly column: 'meeting_notice_meeting_id' };
+                readonly meetingVotes: { readonly column: 'meeting_votes' };
+                readonly noticeDueOn: { readonly column: 'notice_due_on' };
+                readonly noticeGivenOn: { readonly column: 'notice_given_on' };
+                readonly petitionReceivedOn: { readonly column: 'petition_received_on' };
+                readonly recordedBy: { readonly column: 'recorded_by' };
+                readonly rule: { readonly column: 'rule' };
+                readonly rulePack: { readonly column: 'rule_pack' };
+                readonly schemeId: { readonly column: 'scheme_id' };
+                readonly state: { readonly column: 'state' };
+                readonly status: { readonly column: 'status' };
+                readonly takesEffectAs: { readonly column: 'takes_effect_as' };
+                readonly windowClosesOn: { readonly column: 'window_closes_on' };
+              };
+            };
+          };
+          readonly PendingResolutionLot: {
+            readonly fields: {
+              readonly entry: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly lotId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly pendingResolutionId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly receivedOn: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+              readonly recordedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly recordedBy: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly vote: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: {
+              readonly pendingResolution: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'PendingResolution';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['pendingResolutionId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'pending_resolution_lots';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly entry: { readonly column: 'entry' };
+                readonly id: { readonly column: 'id' };
+                readonly lotId: { readonly column: 'lot_id' };
+                readonly pendingResolutionId: { readonly column: 'pending_resolution_id' };
+                readonly receivedOn: { readonly column: 'received_on' };
+                readonly recordedAt: { readonly column: 'recorded_at' };
+                readonly recordedBy: { readonly column: 'recorded_by' };
+                readonly vote: { readonly column: 'vote' };
+              };
+            };
+          };
           readonly PlatformFeeEvent: {
             readonly fields: {
               readonly amountExGst: {
@@ -41491,6 +42100,17 @@ type ContractBase = Omit<
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
                   readonly model: 'PaymentPlanRequest';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['schemeId'];
+                };
+              };
+              readonly pendingResolutions: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'PendingResolution';
                 };
                 readonly cardinality: '1:N';
                 readonly on: {

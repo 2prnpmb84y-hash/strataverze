@@ -2649,15 +2649,16 @@ export const DATED_RULES = {
  *   on a poll (s 89). Whether the meeting had a quorum is the chair's answer
  *   for the item (quorumAttestation, since stage 2, PR 8a-ii, 29 Oct 2026),
  *   never worked out or assumed: not answered, the count is refused; "no",
- *   a count that carries is an interim resolution (s 78) and refused, and one
- *   that fails is recorded as lost; a "no" the votes counted contradict (half
- *   of all lots counted) is refused. Equal votes are refused (the casting
- *   vote of s 89A is not recorded);
+ *   a count that carries is an interim resolution (s 78), recorded as
+ *   pending since stage 2, PR 8b-i (below), and one that fails is recorded
+ *   as lost; a "no" the votes counted contradict (half of all lots counted)
+ *   is refused. Equal votes are refused (the casting vote of s 89A is not
+ *   recorded);
  * - a special resolution: 75% of all lots for, debtors included as they may
  *   vote on it (ss 89B, 96). Where it fails it may pass as an interim special
- *   resolution (s 97), which is refused at the meeting until interim
- *   resolutions are recorded (stage 2, PR 8b). Its second route needs at
- *   least 1 vote for (StrataVerze's reading of s 97(1A), for review);
+ *   resolution (s 97), recorded as pending since stage 2, PR 8b-i (below).
+ *   Its second route needs at least 1 vote for (StrataVerze's reading of
+ *   s 97(1A), for review);
  * - a unanimous resolution: every lot for (s 95);
  * - a poll is taken on an ordinary resolution only (a StrataVerze choice);
  * - common property rows are not counted as lots.
@@ -2671,7 +2672,32 @@ export const DATED_RULES = {
  * special resolution (a second line of defence). The arrears rule (s 89B)
  * applies to tiers 1 to 4 only (debtorRuleAppliesWhen; s 7A), and where the
  * tier cannot be worked out it applies (it fails closed).
+ * Since stage 2, PR 8b-i (29 Oct 2026, Matthew Wrigley's decisions D1 to D4,
+ * D7 and D10, DECISIONS): an interim special resolution (s 97) and an interim
+ * resolution of a meeting without a quorum (s 78) are recorded at the meeting
+ * as pending (pendingResolutions), the item stored as INTERIM, and decided
+ * later. Each is made on the later of the meeting's day and the day it is
+ * recorded, in the building's time zone; a petition or notice may arrive up
+ * to and including 29 days after that, and it takes effect the next day, as
+ * a special resolution for s 97, once its 14-day notice to the owners is
+ * recorded as given (a late notice is flagged, not moved). A petition
+ * (s 97(5)) signed for more than 25% of all lots stops an interim special
+ * resolution, recorded as lost. Notice of a special general meeting within
+ * the 29 days (s 78(4)) stops an interim resolution taking effect: the
+ * meeting must be held within 28 days of the notice and its decision
+ * recorded (confirmed: carried; not confirmed: lost); if it is not held by
+ * then, the resolution takes effect the next day; if it was held and its
+ * decision is not recorded, it never takes effect on its own. A pending item
+ * cannot be recorded again, deferred or deleted. Matthew Wrigley's decision
+ * of 29 Oct 2026 (review M1, DECISIONS): the daily run records it as having
+ * taken effect only 7 days after the period (or the day the special general
+ * meeting must be held by) ends (settleAfterGraceDays), so a petition or
+ * notice received in time can still be recorded; the day it takes effect does
+ * not move.
  */
+
+/** Days of grace before the daily run records a period's end (Matthew Wrigley's decision of 29 Oct 2026, review M1). */
+const PENDING_SETTLE_GRACE_DAYS = 7;
 
 const VIC_TIE =
   `The votes are equal. A chair who is a lot owner or a proxy has a casting vote, and without it the resolution is not passed (${OCA} s 89A). StrataVerze does not record who chaired or a casting vote yet, so the count cannot decide it`;
@@ -2792,12 +2818,46 @@ export const MEETING_RULES: MeetingRuleSet = {
   // The chair's answer for each item (Matthew Wrigley's decision of 29 Oct 2026, DECISIONS): never worked out or assumed.
   quorumAttestation: {
     label: "Quorum present for this item",
-    help: `Yes if at least ${MEETINGS.quorum.percentOfTotalLots}% of the lots were present in person or by proxy when this item was decided, or, if that many lots is not available, lots holding at least ${MEETINGS.quorum.otherwisePercentOfTotalLotEntitlement}% of the total lot entitlement. Without a quorum every resolution is an interim resolution, which StrataVerze does not record yet.`,
+    help: `Yes if at least ${MEETINGS.quorum.percentOfTotalLots}% of the lots were present in person or by proxy when this item was decided, or, if that many lots is not available, lots holding at least ${MEETINGS.quorum.otherwisePercentOfTotalLotEntitlement}% of the total lot entitlement. Without a quorum a resolution that carries is an interim resolution, which is recorded as decided later and takes effect after ${MEETINGS.interimResolutions.takesEffectDaysAfterMade} days unless a special general meeting is called.`,
     source: `${OCA} ss 77, 78(1)`,
     status: "STRATAVERZE",
   },
+  // Stage 2, PR 8b-i (29 Oct 2026, Matthew Wrigley's decisions D1 to D4, D7 and D10): interim resolutions are recorded as pending and decided later.
+  pendingResolutions: {
+    INTERIM_SPECIAL: {
+      label: "Interim special resolution",
+      windowDays: RESOLUTIONS.INTERIM_SPECIAL.becomesSpecialAfterDays,
+      takesEffectAs: "SPECIAL",
+      noticeWithinDays: RESOLUTIONS.INTERIM_SPECIAL.noticeWithinDays,
+      noticeRequiredBeforeEffect: true,
+      settleAfterGraceDays: PENDING_SETTLE_GRACE_DAYS,
+      petition: {
+        moreThanFractionOf: RESOLUTIONS.INTERIM_SPECIAL.petitionStopsIfMoreThanFractionOfTotalVotes,
+        of: "ALL_LOTS",
+        words: `A petition to the secretary signed by owners holding more than ${RESOLUTIONS.INTERIM_SPECIAL.petitionStopsIfMoreThanFractionOfTotalVotes * 100}% of the total votes for all the lots`,
+      },
+      help: `It becomes a special resolution ${RESOLUTIONS.INTERIM_SPECIAL.becomesSpecialAfterDays} days after it was passed, unless owners holding more than ${RESOLUTIONS.INTERIM_SPECIAL.petitionStopsIfMoreThanFractionOfTotalVotes * 100}% of the total votes for all the lots petition the secretary within that time. Notice of it must be given to the lot owners within ${RESOLUTIONS.INTERIM_SPECIAL.noticeWithinDays} days, with the minutes. StrataVerze takes it to have effect the day after the ${RESOLUTIONS.INTERIM_SPECIAL.becomesSpecialAfterDays} days end, once the notice is recorded as given, and records that ${PENDING_SETTLE_GRACE_DAYS} days later, so a petition received in time can still be recorded.`,
+      source: `${OCA} s 97(2) to (5)`,
+      status: "STRATAVERZE",
+    },
+    INTERIM_NO_QUORUM: {
+      label: "Interim resolution",
+      windowDays: MEETINGS.interimResolutions.takesEffectDaysAfterMade,
+      takesEffectAs: "SAME",
+      noticeWithinDays: MEETINGS.interimResolutions.noticeAndMinutesWithinDays,
+      noticeRequiredBeforeEffect: true,
+      settleAfterGraceDays: PENDING_SETTLE_GRACE_DAYS,
+      meetingNotice: {
+        meetingHeldWithinDays: MEETINGS.interimResolutions.sgmHeldWithinDaysOfNotice,
+        words: `Notice of a special general meeting given within the ${MEETINGS.interimResolutions.takesEffectDaysAfterMade} days`,
+      },
+      help: `It takes effect ${MEETINGS.interimResolutions.takesEffectDaysAfterMade} days after it was made, unless notice of a special general meeting is given within that time. Then it must be confirmed at that meeting, held within ${MEETINGS.interimResolutions.sgmHeldWithinDaysOfNotice} days of the notice, and if that meeting is not held it takes effect at the end of the ${MEETINGS.interimResolutions.sgmHeldWithinDaysOfNotice} days. Notice of it must be given to the lot owners within ${MEETINGS.interimResolutions.noticeAndMinutesWithinDays} days, with the minutes. StrataVerze takes it to have effect the day after, once the notice is recorded as given, and records that ${PENDING_SETTLE_GRACE_DAYS} days later, so a notice or meeting in time can still be recorded.`,
+      source: `${OCA} s 78(2) to (4)`,
+      status: "STRATAVERZE",
+    },
+  },
   notes:
-    "Draft, from the Victorian pack (not signed off), VIC, ACT and WA stage 2, PR 8a-i and 8a-ii. Quorum is the chair's answer for each item; tier 5 is not counted. Interim resolutions, ballots and the minutes deadline are not applied yet.",
+    "Draft, from the Victorian pack (not signed off), VIC, ACT and WA stage 2, PR 8a-i, 8a-ii and 8b-i. Quorum is the chair's answer for each item; tier 5 is not counted. Interim resolutions are recorded as pending and decided later. Ballots and the minutes deadline are not applied yet.",
 };
 
 /** How far each part of MEETING_RULES not carrying its own status is checked. */
@@ -2810,7 +2870,12 @@ export const MEETING_RULES_STATUS = {
   minutesDeadlines: {
     status: "NOT_CONFIRMED" as RuleStatus,
     source: `${OCA} ss 78, 81, 97`,
-    note: "No deadline for sending ordinary minutes was found; interim resolutions have one (14 days), applied with them (stage 2, PR 8b).",
+    note: "No deadline for sending ordinary minutes was found. Interim resolutions have one (14 days, ss 78(2), 97(2)): since stage 2, PR 8b-i it is held on each pending resolution (pendingResolutions.noticeWithinDays) and its notice must be recorded as given before it takes effect. The minutes themselves are not checked against it.",
+  },
+  pendingResolutions: {
+    status: "STRATAVERZE" as RuleStatus,
+    source: `${OCA} ss 78(2) to (4), 97(2) to (5)`,
+    note: "The periods (29 days, 14 days' notice, 28 days to hold the special general meeting) and the 25% petition are CONFIRMED. How they are applied is StrataVerze's reading, by Matthew Wrigley's decisions of 29 Oct 2026 (D1 to D4, D7 and D10, DECISIONS): the day counting, the day it is made, notice before effect, a petition recorded as lost, and a special general meeting held with no decision recorded never taking effect on its own (FOR_REVIEW MEETING_RULES_PENDING). The 7 days of grace before the daily run records its end (settleAfterGraceDays) are a StrataVerze value (Matthew Wrigley's decision of 29 Oct 2026, review M1).",
   },
   retention: {
     status: "CONFIRMED" as RuleStatus,
@@ -2985,14 +3050,14 @@ export const FOR_REVIEW = [
   {
     key: "MEETING_RULES_INTERIM",
     point:
-      "A special resolution that fails may pass as an interim special resolution (s 97): at least 50% of all lots for and not more than 25% of all lots against, or no vote against at a meeting with a quorum. The count says so, but an interim resolution is not recorded at the meeting until StrataVerze records interim resolutions, their notice and the 29-day petition period (stage 2, PR 8b); the chair is told and may defer the item. It is tested only from a special resolution item. How the first route is counted on a poll is NOT_CONFIRMED, so it is refused on a poll. StrataVerze reads the second route (s 97(1A), no vote against at a meeting with a quorum) as needing at least 1 vote for, so a meeting where nobody votes passes nothing (to confirm). Confirm.",
+      "A special resolution that fails may pass as an interim special resolution (s 97): at least 50% of all lots for and not more than 25% of all lots against, or no vote against at a meeting with a quorum. Since stage 2, PR 8b-i (29 Oct 2026) it is recorded at the meeting as pending (the item stored as INTERIM) and decided later (MEETING_RULES_PENDING). It is tested only from a special resolution item. How the first route is counted on a poll is NOT_CONFIRMED, so it is refused on a poll. StrataVerze reads the second route (s 97(1A), no vote against at a meeting with a quorum) as needing at least 1 vote for, so a meeting where nobody votes passes nothing (to confirm). Confirm.",
     before: "Victorian meetings are run",
     kind: "LEGAL",
   },
   {
     key: "MEETING_RULES_ORDINARY",
     point:
-      "An ordinary resolution counted at a meeting (since stage 2, PR 8a-ii, 29 Oct 2026) needs the chair's answer whether the meeting had a quorum for the item (MEETING_RULES_QUORUM). With \"yes\" it is recorded as carried or lost by the votes cast (by lot entitlement on a poll). With \"no\" a count that carries is an interim resolution (s 78), refused until interim resolutions are recorded (stage 2, PR 8b), and one that fails is recorded as lost. Not answered, it is refused. Equal votes are refused too: a chair who is a lot owner or a proxy has a casting vote and without it the resolution is not passed (s 89A), and StrataVerze does not record who chaired or a casting vote. A carried ordinary resolution can now authorise interest (LATE_CHARGE: any resolution carried at a general meeting, s 29(1)). A resolution recorded as carried from the count can also be relied on wherever a carried general meeting motion is asked for: budget adoption, capital works plan approval and statutory pack adoption, as for any carried motion. Confirm.",
+      "An ordinary resolution counted at a meeting (since stage 2, PR 8a-ii, 29 Oct 2026) needs the chair's answer whether the meeting had a quorum for the item (MEETING_RULES_QUORUM). With \"yes\" it is recorded as carried or lost by the votes cast (by lot entitlement on a poll). With \"no\" a count that carries is an interim resolution (s 78), recorded as pending since stage 2, PR 8b-i (MEETING_RULES_PENDING), and one that fails is recorded as lost. Not answered, it is refused. Equal votes are refused too: a chair who is a lot owner or a proxy has a casting vote and without it the resolution is not passed (s 89A), and StrataVerze does not record who chaired or a casting vote. A carried ordinary resolution can now authorise interest (LATE_CHARGE: any resolution carried at a general meeting, s 29(1)). A resolution recorded as carried from the count can also be relied on wherever a carried general meeting motion is asked for: budget adoption, capital works plan approval and statutory pack adoption, as for any carried motion. Confirm.",
     before: "Victorian meetings are run",
     kind: "STRATAVERZE",
   },
@@ -3022,6 +3087,13 @@ export const FOR_REVIEW = [
     point: "Pre-meeting electronic voting is not offered for this draft (preMeetingEvoting is null). Before it is, closing a ballot must apply what the count at the meeting applies: the debtor condition (debtorRuleAppliesWhen), judged lot by lot as an owner's own vote is (debtorVoteCheck), the quorum answer, and any refusal of the whole count (Victoria's tier 5, Western Australia's 2-lot quorum). closeBallotAction applies none of these yet (stage 2, PR 8a-ii review). Confirm.",
     before: "a Victorian ballot is offered",
     kind: "STRATAVERZE",
+  },
+  {
+    key: "MEETING_RULES_PENDING",
+    point:
+      "Interim resolutions (stage 2, PR 8b-i, 29 Oct 2026), by Matthew Wrigley's StrataVerze decisions of 29 Oct 2026 (DECISIONS), each kept here for legal confirmation. (D1) A petition, notice or special general meeting notice may arrive up to and including the 29th day after the resolution was made, and it takes effect the next day: the Interpretation of Legislation Act 1984 was not read, so whether \"29 days after\" counts this way is NOT_CONFIRMED. (D2) It is made on the later of the meeting's day and the day the chair records it, in the building's time zone. (D3) It takes effect only once its 14-day notice (ss 78(2), 97(2)) is recorded as given; a notice given late is flagged, not moved, and a notice given after the period ends makes it take effect on that day, not before. (D4) A valid s 97(5) petition, signed for more than 25% of all lots (the lots entered, common property left out, refused where they do not match the building's number of lots), means the motion did not become a special resolution, recorded as lost; what follows a petition is not in the notes. (D7) Where notice of a special general meeting is given within the 29 days (s 78(4)), the meeting must be linked when the notice is recorded; it takes effect if that meeting was not opened within the 28 days, and never on its own if it was held but its decision is not recorded. A confirmation needs that meeting's item recorded as carried (confirmed) or lost (not confirmed), with the resolution's notice recorded. For both, the meeting is held on the day it was opened in StrataVerze, on or after the day its notice was given and by the day it must be held by (since the review of 29 Oct 2026), and a confirmation takes effect on that day. (D10) A pending item cannot be recorded again, deferred or deleted. (Review M1, Matthew Wrigley's decision of 29 Oct 2026) The daily run records it as having taken effect at the end of its period only after 7 days of grace (settleAfterGraceDays), counted from the last day of the 29 days, or, after a special general meeting notice, from the day that meeting must be held by: during the grace a petition or special general meeting notice received within the 29 days can still be recorded, and the day it takes effect does not move. A confirmation or a petition decides it at once. Whether 7 days is long enough for the secretary to pass a petition on is NOT_CONFIRMED. Manager interim resolutions (s 78(1A) to (1C)) and committee interim resolutions (s 112(6), (7)) are not handled. The minutes do not state the later effect yet (stage 2, PR 8b-iv). Confirm each.",
+    before: "Victorian meetings are run",
+    kind: "LEGAL",
   },
   {
     key: "MEETING_RULES_NOTICE_AND_MINUTES",
@@ -3144,7 +3216,8 @@ export const FOR_REVIEW = [
  * StrataVerze choices this draft proposes. Matthew Wrigley has not reviewed
  * the draft, so `decidedBy` and `decidedOn` stay null on each, except the
  * payment order and the notice timing he decided on 28 Oct 2026, and the
- * quorum answer he decided on 29 Oct 2026.
+ * quorum answer, interim resolutions and their grace before settling he
+ * decided on 29 Oct 2026.
  */
 export const DECISIONS: readonly { decision: string; proposedOn: string; decidedBy: string | null; decidedOn: string | null }[] = [
   { decision: "Support unlimited owners corporations first; limited owners corporations are listed but blocked (OWNERS_CORPORATION_TYPE).", proposedOn: "2026-10-27", decidedBy: null, decidedOn: null },
@@ -3170,6 +3243,20 @@ export const DECISIONS: readonly { decision: string; proposedOn: string; decided
   {
     decision:
       "Quorum (MEETING_RULES.quorumAttestation): the chair's answer for each item, \"quorum present: yes or no\", is accepted until attendance is recorded. It is never filled in for the chair, an item not answered is refused, and the answer is kept in the meeting record with who recorded it. When attendance is recorded the quorum is to be worked out from it instead. Matthew Wrigley's StrataVerze decision of 29 Oct 2026.",
+    proposedOn: "2026-10-29",
+    decidedBy: "Matthew Wrigley",
+    decidedOn: "2026-10-29",
+  },
+  {
+    decision:
+      "Interim resolutions (MEETING_RULES.pendingResolutions, stage 2, PR 8b-i): (D1) a petition or notice can arrive up to and including the day 29 days after the resolution is made, and it takes effect the next day; (D2) it is made on the later of the meeting's day and the day it is recorded, in the building's time zone; (D3) it does not take effect until its 14-day notice is recorded as given, and a late notice is flagged, not moved; (D4) a valid s 97 petition (more than 25% of all lots) means the motion did not become a special resolution, recorded as lost; (D7) where the special general meeting of s 78 was held but its decision is not recorded, the resolution never takes effect on its own; (D10) a pending item cannot be recorded again, deferred or deleted; (D11) a separate daily run decides them; (D19) migration 20261124_pending_resolutions is approved in principle, applied before the code deploys, after a rehearsal and a further approval; (D20) a late charge waiver relying on one is decided on the day it took effect. Matthew Wrigley's StrataVerze decisions of 29 Oct 2026, kept for legal confirmation (FOR_REVIEW MEETING_RULES_PENDING).",
+    proposedOn: "2026-10-29",
+    decidedBy: "Matthew Wrigley",
+    decidedOn: "2026-10-29",
+  },
+  {
+    decision:
+      "Interim resolutions settle after a grace (MEETING_RULES.pendingResolutions.settleAfterGraceDays, stage 2, PR 8b-i review M1): the daily run records an interim resolution as having taken effect at the end of its period (PERIOD_ENDED, or MEETING_NOT_HELD under s 78) only once 7 days have passed after the last day of the 29 days, or after the day the special general meeting must be held by. During those 7 days a petition or a special general meeting notice received within the 29 days can still be recorded (its day is still checked against the 29 days). The day it takes effect stays the day after the period ends. A confirmation or a petition is not delayed. Matthew Wrigley's StrataVerze decision of 29 Oct 2026, kept for legal confirmation (FOR_REVIEW MEETING_RULES_PENDING).",
     proposedOn: "2026-10-29",
     decidedBy: "Matthew Wrigley",
     decidedOn: "2026-10-29",

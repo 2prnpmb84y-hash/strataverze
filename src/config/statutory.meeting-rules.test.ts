@@ -14,7 +14,7 @@
 import { describe, expect, it } from "vitest";
 import { MEETING_RULES as NSW_RULE_SET, PENDING_RULE_PACKS, QLD_RULE_PACK, RULE_PACKS } from "./statutory";
 import { usesDraftKeys, type MeetingRuleSet, type ResolutionCategory, type ResolutionRule } from "@/lib/meetings/rules";
-import { conductVotingView, countNeedsQuorum, countNeedsVotesPresent } from "@/lib/meetings/conduct-tally";
+import { conductVotingView, countNeedsQuorum, countNeedsReducedQuorum, countNeedsVotesPresent } from "@/lib/meetings/conduct-tally";
 import type { BuildingSelector, RecordedBuildingSelector, RuleStatus, SelectorCondition } from "./statutory/types";
 
 const STATUSES: RuleStatus[] = ["CONFIRMED", "GUIDANCE", "STRATAVERZE", "NOT_CONFIRMED"];
@@ -87,7 +87,16 @@ describe.each(DRAFTS)("%s meeting rules", (state, rs) => {
 const selectorTests = (c: SelectorCondition): [string, readonly string[]][] =>
   "all" in c ? c.all.flatMap(selectorTests) : "any" in c ? c.any.flatMap(selectorTests) : "selector" in c ? [[c.selector, c.in]] : [];
 
-const NEW_KEYS = ["countingRefusedWhen", "debtorRuleAppliesWhen", "quorumAttestation", "votesPresentAttestation", "quorumNeedsEveryLot"] as const;
+const NEW_KEYS = [
+  "countingRefusedWhen",
+  "debtorRuleAppliesWhen",
+  "quorumAttestation",
+  "votesPresentAttestation",
+  "quorumNeedsEveryLot",
+  // Stage 2, PR 8b-i (29 Oct 2026).
+  "pendingResolutions",
+  "reducedQuorumAttestation",
+] as const;
 const PACK_RULES = { VIC: PENDING_RULE_PACKS.VIC.rules, ACT: PENDING_RULE_PACKS.ACT.rules, WA: PENDING_RULE_PACKS.WA.rules };
 const NO_DASH_OR_SEMICOLON = /[;–—]/;
 
@@ -264,9 +273,80 @@ describe("NSW and Queensland", () => {
       for (const c of Object.keys(rs.resolutionCategories)) {
         expect(countNeedsQuorum(rs, c), c).toBe(false);
         expect(countNeedsVotesPresent(rs, c), c).toBe(false);
+        expect(countNeedsReducedQuorum(rs, c), c).toBe(false);
       }
     }
     expect(NSW_RULE_SET).not.toHaveProperty("excludeCommonPropertyRows");
     expect(QLD_RULE_PACK.rules.MEETING_RULES.excludeCommonPropertyRows).toBe(true);
+  });
+});
+
+describe("pending resolutions are wired to the categories that give them (stage 2, PR 8b-i)", () => {
+  const vic = PENDING_RULE_PACKS.VIC.rules.MEETING_RULES;
+  const act = PENDING_RULE_PACKS.ACT.rules.MEETING_RULES;
+  const wa = PENDING_RULE_PACKS.WA.rules.MEETING_RULES;
+
+  it("Victoria: INTERIM_SPECIAL from the special resolution's interim category, INTERIM_NO_QUORUM from an interim result without a quorum", () => {
+    expect(Object.keys(vic.pendingResolutions ?? {}).sort()).toEqual(["INTERIM_NO_QUORUM", "INTERIM_SPECIAL"]);
+    expect(vic.resolutionCategories.SPECIAL?.interimCategory).toBe("INTERIM_SPECIAL");
+    expect(vic.pendingResolutions?.INTERIM_SPECIAL).toMatchObject({ windowDays: 29, takesEffectAs: "SPECIAL", noticeWithinDays: 14, noticeRequiredBeforeEffect: true });
+    expect(vic.pendingResolutions?.INTERIM_SPECIAL?.petition).toMatchObject({ moreThanFractionOf: 0.25, of: "ALL_LOTS" });
+    expect(Object.values(vic.resolutionCategories).some((r) => r?.withoutQuorum === "INTERIM")).toBe(true);
+    expect(vic.pendingResolutions?.INTERIM_NO_QUORUM).toMatchObject({ windowDays: 29, takesEffectAs: "SAME", meetingNotice: { meetingHeldWithinDays: 28 } });
+    expect(vic.pendingResolutions?.INTERIM_NO_QUORUM?.petition).toBeUndefined();
+    expect(vic.reducedQuorumAttestation).toBeUndefined();
+  });
+
+  it("the ACT: REDUCED_QUORUM from every category decided later, with the reduced quorum question", () => {
+    expect(Object.keys(act.pendingResolutions ?? {})).toEqual(["REDUCED_QUORUM"]);
+    for (const c of ["ORDINARY", "SPECIAL", "UNANIMOUS", "UNOPPOSED"]) {
+      expect(act.resolutionCategories[c as ResolutionCategory]?.withoutQuorum, c).toBe("DECIDED_LATER");
+      expect(countNeedsReducedQuorum(act, c), c).toBe(true);
+    }
+    expect(act.reducedQuorumAttestation).toBeDefined();
+    expect(act.pendingResolutions?.REDUCED_QUORUM).toMatchObject({
+      windowDays: 28,
+      takesEffectAs: "SAME",
+      noticeWithinDays: 14,
+      noticeRequiredBeforeEffect: true,
+      confirmedSoonerBy: "STANDARD_QUORUM_MEETING",
+      petition: { moreThanFractionOf: 0.5, of: "LOTS_ENTITLED_TO_VOTE" },
+    });
+  });
+
+  it("Western Australia records none yet (stage 2, PR 8b-ii)", () => {
+    expect(wa.pendingResolutions).toBeUndefined();
+    expect(wa.reducedQuorumAttestation).toBeUndefined();
+  });
+
+  it.each(DRAFTS)("%s words each pending rule plainly, with its source and status", (_state, rs) => {
+    for (const rule of Object.values(rs.pendingResolutions ?? {})) {
+      expect(rule!.label).toMatch(/^[A-Z][a-z ]+[a-z]$/);
+      expect(rule!.help).toMatch(/^[A-Z].*\.$/);
+      expect(`${rule!.label} ${rule!.help} ${rule!.petition?.words ?? ""} ${rule!.meetingNotice?.words ?? ""}`).not.toMatch(NO_DASH_OR_SEMICOLON);
+      expect(rule!.source.length).toBeGreaterThan(5);
+      expect(STATUSES).toContain(rule!.status);
+      expect(rule!.windowDays).toBeGreaterThan(0);
+    }
+    if (rs.reducedQuorumAttestation) {
+      expect(rs.reducedQuorumAttestation.label).toMatch(/^[A-Z][^.]*[a-z]$/);
+      expect(rs.reducedQuorumAttestation.help).toMatch(/^[A-Z].*\.$/);
+      expect(`${rs.reducedQuorumAttestation.label} ${rs.reducedQuorumAttestation.help}`).not.toMatch(NO_DASH_OR_SEMICOLON);
+    }
+  });
+
+  it("asks the reduced quorum on the conduct screen wherever the action reads it, and nowhere else", () => {
+    const all = [
+      ...Object.values(RULE_PACKS).map((p) => [p.state, p.rules.MEETING_RULES] as const),
+      ...Object.values(PENDING_RULE_PACKS).map((p) => [p.state, p.rules.MEETING_RULES] as const),
+    ];
+    for (const [state, rs] of all) {
+      const items = Object.keys(rs.resolutionCategories).map((c) => ({ id: c, resolutionCategory: c }));
+      const view = conductVotingView(rs, PACK_RULES[state as keyof typeof PACK_RULES] ?? RULE_PACKS[state as keyof typeof RULE_PACKS].rules, [], items, "AGM");
+      for (const c of Object.keys(rs.resolutionCategories)) {
+        if (countNeedsReducedQuorum(rs, c)) expect(view?.items[c]?.reducedQuorumAsked, `${state} ${c}`).toEqual({ label: rs.reducedQuorumAttestation?.label, help: rs.reducedQuorumAttestation?.help });
+        else if (view) expect(view.items[c], `${state} ${c}`).not.toHaveProperty("reducedQuorumAsked");
+      }
+    }
   });
 });

@@ -1,0 +1,3286 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`nsw finance resolutions (golden) > checks a meeting and motion, every branch, for every status and outcome 1`] = `
+{
+  "committee": {
+    "access": [
+      "Meeting.where(fn).first()",
+    ],
+    "result": "Choose a general meeting of this scheme.",
+  },
+  "missingMeeting": {
+    "access": [
+      "Meeting.where(fn).first()",
+    ],
+    "result": "Choose a general meeting of this scheme.",
+  },
+  "missingMotion": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "Choose a motion from that meeting.",
+  },
+  "motionOtherMeeting": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "Choose a motion from that meeting.",
+  },
+  "noMeeting": {
+    "access": [],
+    "result": "Choose the general meeting and the motion carried at it.",
+  },
+  "noMotion": {
+    "access": [],
+    "result": "Choose the general meeting and the motion carried at it.",
+  },
+  "notAgm": {
+    "access": [
+      "Meeting.where(fn).first()",
+    ],
+    "result": "Choose an annual general meeting of this scheme.",
+  },
+  "notAgmThree": {
+    "access": [
+      "Meeting.where(fn).first()",
+    ],
+    "result": "Choose a general meeting of this scheme.",
+  },
+  "nsw-agm-CARRIED-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "nsw-agm-CARRIED-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "nsw-agm-CARRIED-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "nsw-agm-CARRIED-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "nsw-agm-CARRIED-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "nsw-agm-CARRIED-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "nsw-agm-DEFERRED-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "nsw-agm-DEFERRED-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "nsw-agm-DEFERRED-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "nsw-agm-DEFERRED-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "nsw-agm-DEFERRED-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "nsw-agm-DEFERRED-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "nsw-agm-INTERIM-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "nsw-agm-INTERIM-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "nsw-agm-INTERIM-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "nsw-agm-INTERIM-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "nsw-agm-INTERIM-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "nsw-agm-INTERIM-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "nsw-agm-LOST-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "nsw-agm-LOST-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "nsw-agm-LOST-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "nsw-agm-LOST-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "nsw-agm-LOST-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "nsw-agm-LOST-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "nsw-agm-OPEN-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "nsw-agm-OPEN-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "nsw-agm-OPEN-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "nsw-agm-OPEN-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "nsw-agm-OPEN-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "nsw-agm-OPEN-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "nsw-agm-PENDING-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "nsw-agm-PENDING-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "nsw-agm-PENDING-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "nsw-agm-PENDING-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "nsw-agm-PENDING-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "nsw-agm-PENDING-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "nsw-committee-carried": {
+    "access": [
+      "Meeting.where(fn).first()",
+    ],
+    "result": "Choose a general meeting of this scheme.",
+  },
+  "nsw-committee-lost": {
+    "access": [
+      "Meeting.where(fn).first()",
+    ],
+    "result": "Choose a general meeting of this scheme.",
+  },
+  "nsw-egm-carried": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "nsw-egm-lost": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "nsw-empty-lost": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "nsw-first-carried": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "nsw-first-lost": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "nsw-sgm-carried": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "nsw-sgm-lost": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "otherBuilding": {
+    "access": [
+      "Meeting.where(fn).first()",
+    ],
+    "result": "Choose a general meeting of this scheme.",
+  },
+}
+`;
+
+exports[`nsw finance resolutions (golden) > checks the kind of resolution 1`] = `
+{
+  "GENERAL_MEETING/noMeeting": {
+    "access": [],
+    "result": "Choose the general meeting and the motion carried at it.",
+  },
+  "GENERAL_MEETING/nsw-agm-CARRIED-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "GENERAL_MEETING/nsw-agm-CARRIED-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "GENERAL_MEETING/nsw-agm-CARRIED-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "GENERAL_MEETING/nsw-agm-CARRIED-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "GENERAL_MEETING/nsw-agm-CARRIED-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "GENERAL_MEETING/nsw-agm-CARRIED-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "GENERAL_MEETING/nsw-agm-DEFERRED-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/nsw-agm-DEFERRED-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/nsw-agm-DEFERRED-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/nsw-agm-DEFERRED-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/nsw-agm-DEFERRED-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "GENERAL_MEETING/nsw-agm-DEFERRED-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/nsw-agm-INTERIM-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/nsw-agm-INTERIM-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/nsw-agm-INTERIM-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/nsw-agm-INTERIM-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/nsw-agm-INTERIM-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "GENERAL_MEETING/nsw-agm-INTERIM-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/nsw-agm-LOST-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/nsw-agm-LOST-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/nsw-agm-LOST-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/nsw-agm-LOST-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/nsw-agm-LOST-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "GENERAL_MEETING/nsw-agm-LOST-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/nsw-agm-OPEN-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/nsw-agm-OPEN-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/nsw-agm-OPEN-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/nsw-agm-OPEN-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/nsw-agm-OPEN-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "GENERAL_MEETING/nsw-agm-OPEN-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/nsw-agm-PENDING-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/nsw-agm-PENDING-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/nsw-agm-PENDING-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/nsw-agm-PENDING-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/nsw-agm-PENDING-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "GENERAL_MEETING/nsw-agm-PENDING-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/nsw-committee-carried": {
+    "access": [
+      "Meeting.where(fn).first()",
+    ],
+    "result": "Choose a general meeting of this scheme.",
+  },
+  "GENERAL_MEETING/nsw-committee-lost": {
+    "access": [
+      "Meeting.where(fn).first()",
+    ],
+    "result": "Choose a general meeting of this scheme.",
+  },
+  "GENERAL_MEETING/nsw-egm-carried": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "GENERAL_MEETING/nsw-egm-lost": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/nsw-empty-lost": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/nsw-first-carried": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "GENERAL_MEETING/nsw-first-lost": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/nsw-sgm-carried": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "GENERAL_MEETING/nsw-sgm-lost": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/otherBuilding": {
+    "access": [
+      "Meeting.where(fn).first()",
+    ],
+    "result": "Choose a general meeting of this scheme.",
+  },
+  "ORDINARY/noMeeting": {
+    "access": [],
+    "result": "Choose the general meeting and the motion carried at it.",
+  },
+  "ORDINARY/nsw-agm-CARRIED-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion is not recorded as a ordinary resolution. Choose a motion carried as a ordinary resolution.",
+  },
+  "ORDINARY/nsw-agm-CARRIED-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion is not recorded as a ordinary resolution. Choose a motion carried as a ordinary resolution.",
+  },
+  "ORDINARY/nsw-agm-CARRIED-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "ORDINARY/nsw-agm-CARRIED-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion is not recorded as a ordinary resolution. Choose a motion carried as a ordinary resolution.",
+  },
+  "ORDINARY/nsw-agm-CARRIED-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion is not recorded as a ordinary resolution. Choose a motion carried as a ordinary resolution.",
+  },
+  "ORDINARY/nsw-agm-CARRIED-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion is not recorded as a ordinary resolution. Choose a motion carried as a ordinary resolution.",
+  },
+  "ORDINARY/nsw-agm-DEFERRED-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/nsw-agm-DEFERRED-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/nsw-agm-DEFERRED-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/nsw-agm-DEFERRED-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/nsw-agm-DEFERRED-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion is not recorded as a ordinary resolution. Choose a motion carried as a ordinary resolution.",
+  },
+  "ORDINARY/nsw-agm-DEFERRED-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/nsw-agm-INTERIM-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/nsw-agm-INTERIM-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/nsw-agm-INTERIM-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/nsw-agm-INTERIM-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/nsw-agm-INTERIM-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion is not recorded as a ordinary resolution. Choose a motion carried as a ordinary resolution.",
+  },
+  "ORDINARY/nsw-agm-INTERIM-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/nsw-agm-LOST-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/nsw-agm-LOST-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/nsw-agm-LOST-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/nsw-agm-LOST-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/nsw-agm-LOST-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion is not recorded as a ordinary resolution. Choose a motion carried as a ordinary resolution.",
+  },
+  "ORDINARY/nsw-agm-LOST-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/nsw-agm-OPEN-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/nsw-agm-OPEN-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/nsw-agm-OPEN-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/nsw-agm-OPEN-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/nsw-agm-OPEN-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion is not recorded as a ordinary resolution. Choose a motion carried as a ordinary resolution.",
+  },
+  "ORDINARY/nsw-agm-OPEN-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/nsw-agm-PENDING-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/nsw-agm-PENDING-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/nsw-agm-PENDING-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/nsw-agm-PENDING-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/nsw-agm-PENDING-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion is not recorded as a ordinary resolution. Choose a motion carried as a ordinary resolution.",
+  },
+  "ORDINARY/nsw-agm-PENDING-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/nsw-committee-carried": {
+    "access": [
+      "Meeting.where(fn).first()",
+    ],
+    "result": "Choose a general meeting of this scheme.",
+  },
+  "ORDINARY/nsw-committee-lost": {
+    "access": [
+      "Meeting.where(fn).first()",
+    ],
+    "result": "Choose a general meeting of this scheme.",
+  },
+  "ORDINARY/nsw-egm-carried": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion is not recorded as a ordinary resolution. Choose a motion carried as a ordinary resolution.",
+  },
+  "ORDINARY/nsw-egm-lost": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/nsw-empty-lost": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/nsw-first-carried": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion is not recorded as a ordinary resolution. Choose a motion carried as a ordinary resolution.",
+  },
+  "ORDINARY/nsw-first-lost": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/nsw-sgm-carried": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion is not recorded as a ordinary resolution. Choose a motion carried as a ordinary resolution.",
+  },
+  "ORDINARY/nsw-sgm-lost": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/otherBuilding": {
+    "access": [
+      "Meeting.where(fn).first()",
+    ],
+    "result": "Choose a general meeting of this scheme.",
+  },
+  "SPECIAL/noMeeting": {
+    "access": [],
+    "result": "Choose the general meeting and the motion carried at it.",
+  },
+  "SPECIAL/nsw-agm-CARRIED-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "SPECIAL/nsw-agm-CARRIED-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion is not recorded as a special resolution. Choose a motion carried as a special resolution.",
+  },
+  "SPECIAL/nsw-agm-CARRIED-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion is not recorded as a special resolution. Choose a motion carried as a special resolution.",
+  },
+  "SPECIAL/nsw-agm-CARRIED-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion is not recorded as a special resolution. Choose a motion carried as a special resolution.",
+  },
+  "SPECIAL/nsw-agm-CARRIED-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion is not recorded as a special resolution. Choose a motion carried as a special resolution.",
+  },
+  "SPECIAL/nsw-agm-CARRIED-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion is not recorded as a special resolution. Choose a motion carried as a special resolution.",
+  },
+  "SPECIAL/nsw-agm-DEFERRED-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/nsw-agm-DEFERRED-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/nsw-agm-DEFERRED-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/nsw-agm-DEFERRED-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/nsw-agm-DEFERRED-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion is not recorded as a special resolution. Choose a motion carried as a special resolution.",
+  },
+  "SPECIAL/nsw-agm-DEFERRED-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/nsw-agm-INTERIM-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/nsw-agm-INTERIM-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/nsw-agm-INTERIM-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/nsw-agm-INTERIM-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/nsw-agm-INTERIM-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "SPECIAL/nsw-agm-INTERIM-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/nsw-agm-LOST-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/nsw-agm-LOST-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/nsw-agm-LOST-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/nsw-agm-LOST-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/nsw-agm-LOST-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "SPECIAL/nsw-agm-LOST-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/nsw-agm-OPEN-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/nsw-agm-OPEN-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/nsw-agm-OPEN-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/nsw-agm-OPEN-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/nsw-agm-OPEN-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion is not recorded as a special resolution. Choose a motion carried as a special resolution.",
+  },
+  "SPECIAL/nsw-agm-OPEN-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/nsw-agm-PENDING-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/nsw-agm-PENDING-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/nsw-agm-PENDING-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/nsw-agm-PENDING-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/nsw-agm-PENDING-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "SPECIAL/nsw-agm-PENDING-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/nsw-committee-carried": {
+    "access": [
+      "Meeting.where(fn).first()",
+    ],
+    "result": "Choose a general meeting of this scheme.",
+  },
+  "SPECIAL/nsw-committee-lost": {
+    "access": [
+      "Meeting.where(fn).first()",
+    ],
+    "result": "Choose a general meeting of this scheme.",
+  },
+  "SPECIAL/nsw-egm-carried": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "SPECIAL/nsw-egm-lost": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/nsw-empty-lost": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/nsw-first-carried": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "SPECIAL/nsw-first-lost": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/nsw-sgm-carried": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "SPECIAL/nsw-sgm-lost": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/otherBuilding": {
+    "access": [
+      "Meeting.where(fn).first()",
+    ],
+    "result": "Choose a general meeting of this scheme.",
+  },
+}
+`;
+
+exports[`nsw finance resolutions (golden) > gives the day a meeting was held 1`] = `
+{
+  "missing": {
+    "access": [
+      "Meeting.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "nsw-agm": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "Scheme.where(fn).first()",
+    ],
+    "result": "2026-11-20",
+  },
+  "nsw-committee": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "Scheme.where(fn).first()",
+    ],
+    "result": "2026-07-01",
+  },
+  "nsw-egm": {
+    "access": [
+      "Meeting.where(fn).first()",
+    ],
+    "result": "2026-10-03",
+  },
+  "nsw-empty": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "Scheme.where(fn).first()",
+    ],
+    "result": "2026-07-01",
+  },
+  "nsw-first": {
+    "access": [
+      "Meeting.where(fn).first()",
+    ],
+    "result": "2026-01-31",
+  },
+  "nsw-sgm": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "Scheme.where(fn).first()",
+    ],
+    "result": "2026-04-05",
+  },
+  "otherBuilding": {
+    "access": [
+      "Meeting.where(fn).first()",
+    ],
+    "result": null,
+  },
+}
+`;
+
+exports[`nsw finance resolutions (golden) > lists the general meetings and their carried motions 1`] = `
+{
+  "agm": {
+    "access": [
+      "Meeting.where(fn).orderBy(fn).limit(100).all()",
+      "Scheme.where(fn).first()",
+      "AgendaItem.where(fn).orderBy(fn).limit(5000).all()",
+    ],
+    "result": [
+      {
+        "id": "nsw-agm",
+        "label": "Annual general meeting (20 Nov 2026)",
+        "meetingType": "AGM",
+        "motions": [
+          {
+            "id": "nsw-agm-PENDING-RESOLVED",
+            "label": "2. PENDING with RESOLVED",
+          },
+          {
+            "id": "nsw-agm-CARRIED-none",
+            "label": "7. CARRIED with no outcome",
+          },
+          {
+            "id": "nsw-agm-CARRIED-RESOLVED",
+            "label": "8. CARRIED with RESOLVED",
+          },
+          {
+            "id": "nsw-agm-CARRIED-MOTION_LOST",
+            "label": "9. CARRIED with MOTION_LOST",
+          },
+          {
+            "id": "nsw-agm-CARRIED-DEFERRED",
+            "label": "10. CARRIED with DEFERRED",
+          },
+          {
+            "id": "nsw-agm-CARRIED-INTERIM",
+            "label": "11. CARRIED with INTERIM",
+          },
+          {
+            "id": "nsw-agm-CARRIED-OPEN",
+            "label": "12. CARRIED with OPEN",
+          },
+          {
+            "id": "nsw-agm-LOST-RESOLVED",
+            "label": "14. LOST with RESOLVED",
+          },
+          {
+            "id": "nsw-agm-DEFERRED-RESOLVED",
+            "label": "20. DEFERRED with RESOLVED",
+          },
+          {
+            "id": "nsw-agm-INTERIM-RESOLVED",
+            "label": "26. INTERIM with RESOLVED",
+          },
+          {
+            "id": "nsw-agm-OPEN-RESOLVED",
+            "label": "32. OPEN with RESOLVED",
+          },
+        ],
+      },
+      {
+        "id": "nsw-first",
+        "label": "First AGM (31 Jan 2026)",
+        "meetingType": "FIRST_AGM",
+        "motions": [
+          {
+            "id": "nsw-first-carried",
+            "label": "1. Carried item",
+          },
+        ],
+      },
+    ],
+  },
+  "committee": {
+    "access": [
+      "Meeting.where(fn).orderBy(fn).limit(100).all()",
+      "Scheme.where(fn).first()",
+      "AgendaItem.where(fn).orderBy(fn).limit(5000).all()",
+    ],
+    "result": [
+      {
+        "id": "nsw-committee",
+        "label": "Committee meeting (1 July 2026)",
+        "meetingType": "COMMITTEE",
+        "motions": [
+          {
+            "id": "nsw-committee-carried",
+            "label": "1. Carried item",
+          },
+        ],
+      },
+    ],
+  },
+  "general": {
+    "access": [
+      "Meeting.where(fn).orderBy(fn).limit(100).all()",
+      "Scheme.where(fn).first()",
+      "AgendaItem.where(fn).orderBy(fn).limit(5000).all()",
+    ],
+    "result": [
+      {
+        "id": "nsw-agm",
+        "label": "Annual general meeting (20 Nov 2026)",
+        "meetingType": "AGM",
+        "motions": [
+          {
+            "id": "nsw-agm-PENDING-RESOLVED",
+            "label": "2. PENDING with RESOLVED",
+          },
+          {
+            "id": "nsw-agm-CARRIED-none",
+            "label": "7. CARRIED with no outcome",
+          },
+          {
+            "id": "nsw-agm-CARRIED-RESOLVED",
+            "label": "8. CARRIED with RESOLVED",
+          },
+          {
+            "id": "nsw-agm-CARRIED-MOTION_LOST",
+            "label": "9. CARRIED with MOTION_LOST",
+          },
+          {
+            "id": "nsw-agm-CARRIED-DEFERRED",
+            "label": "10. CARRIED with DEFERRED",
+          },
+          {
+            "id": "nsw-agm-CARRIED-INTERIM",
+            "label": "11. CARRIED with INTERIM",
+          },
+          {
+            "id": "nsw-agm-CARRIED-OPEN",
+            "label": "12. CARRIED with OPEN",
+          },
+          {
+            "id": "nsw-agm-LOST-RESOLVED",
+            "label": "14. LOST with RESOLVED",
+          },
+          {
+            "id": "nsw-agm-DEFERRED-RESOLVED",
+            "label": "20. DEFERRED with RESOLVED",
+          },
+          {
+            "id": "nsw-agm-INTERIM-RESOLVED",
+            "label": "26. INTERIM with RESOLVED",
+          },
+          {
+            "id": "nsw-agm-OPEN-RESOLVED",
+            "label": "32. OPEN with RESOLVED",
+          },
+        ],
+      },
+      {
+        "id": "nsw-egm",
+        "label": "Extraordinary meeting (3 Oct 2026)",
+        "meetingType": "EGM",
+        "motions": [
+          {
+            "id": "nsw-egm-carried",
+            "label": "1. Carried item",
+          },
+        ],
+      },
+      {
+        "id": "nsw-sgm",
+        "label": "Special meeting (5 Apr 2026)",
+        "meetingType": "SGM",
+        "motions": [
+          {
+            "id": "nsw-sgm-carried",
+            "label": "1. Carried item",
+          },
+        ],
+      },
+      {
+        "id": "nsw-first",
+        "label": "First AGM (31 Jan 2026)",
+        "meetingType": "FIRST_AGM",
+        "motions": [
+          {
+            "id": "nsw-first-carried",
+            "label": "1. Carried item",
+          },
+        ],
+      },
+    ],
+  },
+  "noBuilding": {
+    "access": [
+      "Meeting.where(fn).orderBy(fn).limit(100).all()",
+    ],
+    "result": [],
+  },
+  "none": {
+    "access": [
+      "Meeting.where(fn).orderBy(fn).limit(100).all()",
+    ],
+    "result": [],
+  },
+}
+`;
+
+exports[`qld finance resolutions (golden) > checks a meeting and motion, every branch, for every status and outcome 1`] = `
+{
+  "committee": {
+    "access": [
+      "Meeting.where(fn).first()",
+    ],
+    "result": "Choose a general meeting of this scheme.",
+  },
+  "missingMeeting": {
+    "access": [
+      "Meeting.where(fn).first()",
+    ],
+    "result": "Choose a general meeting of this scheme.",
+  },
+  "missingMotion": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "Choose a motion from that meeting.",
+  },
+  "motionOtherMeeting": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "Choose a motion from that meeting.",
+  },
+  "noMeeting": {
+    "access": [],
+    "result": "Choose the general meeting and the motion carried at it.",
+  },
+  "noMotion": {
+    "access": [],
+    "result": "Choose the general meeting and the motion carried at it.",
+  },
+  "notAgm": {
+    "access": [
+      "Meeting.where(fn).first()",
+    ],
+    "result": "Choose an annual general meeting of this scheme.",
+  },
+  "notAgmThree": {
+    "access": [
+      "Meeting.where(fn).first()",
+    ],
+    "result": "Choose a general meeting of this scheme.",
+  },
+  "otherBuilding": {
+    "access": [
+      "Meeting.where(fn).first()",
+    ],
+    "result": "Choose a general meeting of this scheme.",
+  },
+  "qld-agm-CARRIED-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "qld-agm-CARRIED-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "qld-agm-CARRIED-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "qld-agm-CARRIED-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "qld-agm-CARRIED-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "qld-agm-CARRIED-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "qld-agm-DEFERRED-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "qld-agm-DEFERRED-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "qld-agm-DEFERRED-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "qld-agm-DEFERRED-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "qld-agm-DEFERRED-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "qld-agm-DEFERRED-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "qld-agm-INTERIM-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "qld-agm-INTERIM-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "qld-agm-INTERIM-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "qld-agm-INTERIM-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "qld-agm-INTERIM-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "qld-agm-INTERIM-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "qld-agm-LOST-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "qld-agm-LOST-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "qld-agm-LOST-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "qld-agm-LOST-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "qld-agm-LOST-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "qld-agm-LOST-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "qld-agm-OPEN-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "qld-agm-OPEN-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "qld-agm-OPEN-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "qld-agm-OPEN-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "qld-agm-OPEN-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "qld-agm-OPEN-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "qld-agm-PENDING-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "qld-agm-PENDING-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "qld-agm-PENDING-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "qld-agm-PENDING-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "qld-agm-PENDING-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "qld-agm-PENDING-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "qld-committee-carried": {
+    "access": [
+      "Meeting.where(fn).first()",
+    ],
+    "result": "Choose a general meeting of this scheme.",
+  },
+  "qld-committee-lost": {
+    "access": [
+      "Meeting.where(fn).first()",
+    ],
+    "result": "Choose a general meeting of this scheme.",
+  },
+  "qld-egm-carried": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "qld-egm-lost": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "qld-empty-lost": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "qld-first-carried": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "qld-first-lost": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "qld-sgm-carried": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "qld-sgm-lost": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+}
+`;
+
+exports[`qld finance resolutions (golden) > checks the kind of resolution 1`] = `
+{
+  "GENERAL_MEETING/noMeeting": {
+    "access": [],
+    "result": "Choose the general meeting and the motion carried at it.",
+  },
+  "GENERAL_MEETING/otherBuilding": {
+    "access": [
+      "Meeting.where(fn).first()",
+    ],
+    "result": "Choose a general meeting of this scheme.",
+  },
+  "GENERAL_MEETING/qld-agm-CARRIED-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "GENERAL_MEETING/qld-agm-CARRIED-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "GENERAL_MEETING/qld-agm-CARRIED-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "GENERAL_MEETING/qld-agm-CARRIED-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "GENERAL_MEETING/qld-agm-CARRIED-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "GENERAL_MEETING/qld-agm-CARRIED-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "GENERAL_MEETING/qld-agm-DEFERRED-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/qld-agm-DEFERRED-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/qld-agm-DEFERRED-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/qld-agm-DEFERRED-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/qld-agm-DEFERRED-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "GENERAL_MEETING/qld-agm-DEFERRED-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/qld-agm-INTERIM-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/qld-agm-INTERIM-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/qld-agm-INTERIM-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/qld-agm-INTERIM-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/qld-agm-INTERIM-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "GENERAL_MEETING/qld-agm-INTERIM-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/qld-agm-LOST-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/qld-agm-LOST-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/qld-agm-LOST-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/qld-agm-LOST-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/qld-agm-LOST-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "GENERAL_MEETING/qld-agm-LOST-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/qld-agm-OPEN-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/qld-agm-OPEN-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/qld-agm-OPEN-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/qld-agm-OPEN-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/qld-agm-OPEN-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "GENERAL_MEETING/qld-agm-OPEN-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/qld-agm-PENDING-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/qld-agm-PENDING-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/qld-agm-PENDING-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/qld-agm-PENDING-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/qld-agm-PENDING-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "GENERAL_MEETING/qld-agm-PENDING-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/qld-committee-carried": {
+    "access": [
+      "Meeting.where(fn).first()",
+    ],
+    "result": "Choose a general meeting of this scheme.",
+  },
+  "GENERAL_MEETING/qld-committee-lost": {
+    "access": [
+      "Meeting.where(fn).first()",
+    ],
+    "result": "Choose a general meeting of this scheme.",
+  },
+  "GENERAL_MEETING/qld-egm-carried": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "GENERAL_MEETING/qld-egm-lost": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/qld-empty-lost": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/qld-first-carried": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "GENERAL_MEETING/qld-first-lost": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "GENERAL_MEETING/qld-sgm-carried": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "GENERAL_MEETING/qld-sgm-lost": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/noMeeting": {
+    "access": [],
+    "result": "Choose the general meeting and the motion carried at it.",
+  },
+  "ORDINARY/otherBuilding": {
+    "access": [
+      "Meeting.where(fn).first()",
+    ],
+    "result": "Choose a general meeting of this scheme.",
+  },
+  "ORDINARY/qld-agm-CARRIED-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion is not recorded as a ordinary resolution. Choose a motion carried as a ordinary resolution.",
+  },
+  "ORDINARY/qld-agm-CARRIED-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion is not recorded as a ordinary resolution. Choose a motion carried as a ordinary resolution.",
+  },
+  "ORDINARY/qld-agm-CARRIED-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "ORDINARY/qld-agm-CARRIED-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion is not recorded as a ordinary resolution. Choose a motion carried as a ordinary resolution.",
+  },
+  "ORDINARY/qld-agm-CARRIED-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion is not recorded as a ordinary resolution. Choose a motion carried as a ordinary resolution.",
+  },
+  "ORDINARY/qld-agm-CARRIED-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion is not recorded as a ordinary resolution. Choose a motion carried as a ordinary resolution.",
+  },
+  "ORDINARY/qld-agm-DEFERRED-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/qld-agm-DEFERRED-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/qld-agm-DEFERRED-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/qld-agm-DEFERRED-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/qld-agm-DEFERRED-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion is not recorded as a ordinary resolution. Choose a motion carried as a ordinary resolution.",
+  },
+  "ORDINARY/qld-agm-DEFERRED-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/qld-agm-INTERIM-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/qld-agm-INTERIM-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/qld-agm-INTERIM-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/qld-agm-INTERIM-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/qld-agm-INTERIM-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion is not recorded as a ordinary resolution. Choose a motion carried as a ordinary resolution.",
+  },
+  "ORDINARY/qld-agm-INTERIM-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/qld-agm-LOST-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/qld-agm-LOST-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/qld-agm-LOST-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/qld-agm-LOST-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/qld-agm-LOST-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion is not recorded as a ordinary resolution. Choose a motion carried as a ordinary resolution.",
+  },
+  "ORDINARY/qld-agm-LOST-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/qld-agm-OPEN-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/qld-agm-OPEN-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/qld-agm-OPEN-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/qld-agm-OPEN-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/qld-agm-OPEN-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion is not recorded as a ordinary resolution. Choose a motion carried as a ordinary resolution.",
+  },
+  "ORDINARY/qld-agm-OPEN-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/qld-agm-PENDING-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/qld-agm-PENDING-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/qld-agm-PENDING-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/qld-agm-PENDING-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/qld-agm-PENDING-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion is not recorded as a ordinary resolution. Choose a motion carried as a ordinary resolution.",
+  },
+  "ORDINARY/qld-agm-PENDING-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/qld-committee-carried": {
+    "access": [
+      "Meeting.where(fn).first()",
+    ],
+    "result": "Choose a general meeting of this scheme.",
+  },
+  "ORDINARY/qld-committee-lost": {
+    "access": [
+      "Meeting.where(fn).first()",
+    ],
+    "result": "Choose a general meeting of this scheme.",
+  },
+  "ORDINARY/qld-egm-carried": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion is not recorded as a ordinary resolution. Choose a motion carried as a ordinary resolution.",
+  },
+  "ORDINARY/qld-egm-lost": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/qld-empty-lost": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/qld-first-carried": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion is not recorded as a ordinary resolution. Choose a motion carried as a ordinary resolution.",
+  },
+  "ORDINARY/qld-first-lost": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "ORDINARY/qld-sgm-carried": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion is not recorded as a ordinary resolution. Choose a motion carried as a ordinary resolution.",
+  },
+  "ORDINARY/qld-sgm-lost": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/noMeeting": {
+    "access": [],
+    "result": "Choose the general meeting and the motion carried at it.",
+  },
+  "SPECIAL/otherBuilding": {
+    "access": [
+      "Meeting.where(fn).first()",
+    ],
+    "result": "Choose a general meeting of this scheme.",
+  },
+  "SPECIAL/qld-agm-CARRIED-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "SPECIAL/qld-agm-CARRIED-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion is not recorded as a special resolution. Choose a motion carried as a special resolution.",
+  },
+  "SPECIAL/qld-agm-CARRIED-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion is not recorded as a special resolution. Choose a motion carried as a special resolution.",
+  },
+  "SPECIAL/qld-agm-CARRIED-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion is not recorded as a special resolution. Choose a motion carried as a special resolution.",
+  },
+  "SPECIAL/qld-agm-CARRIED-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion is not recorded as a special resolution. Choose a motion carried as a special resolution.",
+  },
+  "SPECIAL/qld-agm-CARRIED-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion is not recorded as a special resolution. Choose a motion carried as a special resolution.",
+  },
+  "SPECIAL/qld-agm-DEFERRED-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/qld-agm-DEFERRED-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/qld-agm-DEFERRED-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/qld-agm-DEFERRED-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/qld-agm-DEFERRED-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion is not recorded as a special resolution. Choose a motion carried as a special resolution.",
+  },
+  "SPECIAL/qld-agm-DEFERRED-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/qld-agm-INTERIM-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/qld-agm-INTERIM-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/qld-agm-INTERIM-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/qld-agm-INTERIM-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/qld-agm-INTERIM-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "SPECIAL/qld-agm-INTERIM-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/qld-agm-LOST-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/qld-agm-LOST-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/qld-agm-LOST-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/qld-agm-LOST-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/qld-agm-LOST-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "SPECIAL/qld-agm-LOST-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/qld-agm-OPEN-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/qld-agm-OPEN-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/qld-agm-OPEN-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/qld-agm-OPEN-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/qld-agm-OPEN-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion is not recorded as a special resolution. Choose a motion carried as a special resolution.",
+  },
+  "SPECIAL/qld-agm-OPEN-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/qld-agm-PENDING-DEFERRED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/qld-agm-PENDING-INTERIM": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/qld-agm-PENDING-MOTION_LOST": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/qld-agm-PENDING-OPEN": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/qld-agm-PENDING-RESOLVED": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "SPECIAL/qld-agm-PENDING-none": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/qld-committee-carried": {
+    "access": [
+      "Meeting.where(fn).first()",
+    ],
+    "result": "Choose a general meeting of this scheme.",
+  },
+  "SPECIAL/qld-committee-lost": {
+    "access": [
+      "Meeting.where(fn).first()",
+    ],
+    "result": "Choose a general meeting of this scheme.",
+  },
+  "SPECIAL/qld-egm-carried": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "SPECIAL/qld-egm-lost": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/qld-empty-lost": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/qld-first-carried": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "SPECIAL/qld-first-lost": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+  "SPECIAL/qld-sgm-carried": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "SPECIAL/qld-sgm-lost": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "AgendaItem.where(fn).first()",
+    ],
+    "result": "That motion was not carried, so it cannot be relied on.",
+  },
+}
+`;
+
+exports[`qld finance resolutions (golden) > gives the day a meeting was held 1`] = `
+{
+  "missing": {
+    "access": [
+      "Meeting.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "otherBuilding": {
+    "access": [
+      "Meeting.where(fn).first()",
+    ],
+    "result": null,
+  },
+  "qld-agm": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "Scheme.where(fn).first()",
+    ],
+    "result": "2026-11-20",
+  },
+  "qld-committee": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "Scheme.where(fn).first()",
+    ],
+    "result": "2026-07-01",
+  },
+  "qld-egm": {
+    "access": [
+      "Meeting.where(fn).first()",
+    ],
+    "result": "2026-10-03",
+  },
+  "qld-empty": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "Scheme.where(fn).first()",
+    ],
+    "result": "2026-07-01",
+  },
+  "qld-first": {
+    "access": [
+      "Meeting.where(fn).first()",
+    ],
+    "result": "2026-01-31",
+  },
+  "qld-sgm": {
+    "access": [
+      "Meeting.where(fn).first()",
+      "Scheme.where(fn).first()",
+    ],
+    "result": "2026-04-04",
+  },
+}
+`;
+
+exports[`qld finance resolutions (golden) > lists the general meetings and their carried motions 1`] = `
+{
+  "agm": {
+    "access": [
+      "Meeting.where(fn).orderBy(fn).limit(100).all()",
+      "Scheme.where(fn).first()",
+      "AgendaItem.where(fn).orderBy(fn).limit(5000).all()",
+    ],
+    "result": [
+      {
+        "id": "qld-agm",
+        "label": "Annual general meeting (20 Nov 2026)",
+        "meetingType": "AGM",
+        "motions": [
+          {
+            "id": "qld-agm-PENDING-RESOLVED",
+            "label": "2. PENDING with RESOLVED",
+          },
+          {
+            "id": "qld-agm-CARRIED-none",
+            "label": "7. CARRIED with no outcome",
+          },
+          {
+            "id": "qld-agm-CARRIED-RESOLVED",
+            "label": "8. CARRIED with RESOLVED",
+          },
+          {
+            "id": "qld-agm-CARRIED-MOTION_LOST",
+            "label": "9. CARRIED with MOTION_LOST",
+          },
+          {
+            "id": "qld-agm-CARRIED-DEFERRED",
+            "label": "10. CARRIED with DEFERRED",
+          },
+          {
+            "id": "qld-agm-CARRIED-INTERIM",
+            "label": "11. CARRIED with INTERIM",
+          },
+          {
+            "id": "qld-agm-CARRIED-OPEN",
+            "label": "12. CARRIED with OPEN",
+          },
+          {
+            "id": "qld-agm-LOST-RESOLVED",
+            "label": "14. LOST with RESOLVED",
+          },
+          {
+            "id": "qld-agm-DEFERRED-RESOLVED",
+            "label": "20. DEFERRED with RESOLVED",
+          },
+          {
+            "id": "qld-agm-INTERIM-RESOLVED",
+            "label": "26. INTERIM with RESOLVED",
+          },
+          {
+            "id": "qld-agm-OPEN-RESOLVED",
+            "label": "32. OPEN with RESOLVED",
+          },
+        ],
+      },
+      {
+        "id": "qld-first",
+        "label": "First AGM (31 Jan 2026)",
+        "meetingType": "FIRST_AGM",
+        "motions": [
+          {
+            "id": "qld-first-carried",
+            "label": "1. Carried item",
+          },
+        ],
+      },
+    ],
+  },
+  "committee": {
+    "access": [
+      "Meeting.where(fn).orderBy(fn).limit(100).all()",
+      "Scheme.where(fn).first()",
+      "AgendaItem.where(fn).orderBy(fn).limit(5000).all()",
+    ],
+    "result": [
+      {
+        "id": "qld-committee",
+        "label": "Committee meeting (1 July 2026)",
+        "meetingType": "COMMITTEE",
+        "motions": [
+          {
+            "id": "qld-committee-carried",
+            "label": "1. Carried item",
+          },
+        ],
+      },
+    ],
+  },
+  "general": {
+    "access": [
+      "Meeting.where(fn).orderBy(fn).limit(100).all()",
+      "Scheme.where(fn).first()",
+      "AgendaItem.where(fn).orderBy(fn).limit(5000).all()",
+    ],
+    "result": [
+      {
+        "id": "qld-agm",
+        "label": "Annual general meeting (20 Nov 2026)",
+        "meetingType": "AGM",
+        "motions": [
+          {
+            "id": "qld-agm-PENDING-RESOLVED",
+            "label": "2. PENDING with RESOLVED",
+          },
+          {
+            "id": "qld-agm-CARRIED-none",
+            "label": "7. CARRIED with no outcome",
+          },
+          {
+            "id": "qld-agm-CARRIED-RESOLVED",
+            "label": "8. CARRIED with RESOLVED",
+          },
+          {
+            "id": "qld-agm-CARRIED-MOTION_LOST",
+            "label": "9. CARRIED with MOTION_LOST",
+          },
+          {
+            "id": "qld-agm-CARRIED-DEFERRED",
+            "label": "10. CARRIED with DEFERRED",
+          },
+          {
+            "id": "qld-agm-CARRIED-INTERIM",
+            "label": "11. CARRIED with INTERIM",
+          },
+          {
+            "id": "qld-agm-CARRIED-OPEN",
+            "label": "12. CARRIED with OPEN",
+          },
+          {
+            "id": "qld-agm-LOST-RESOLVED",
+            "label": "14. LOST with RESOLVED",
+          },
+          {
+            "id": "qld-agm-DEFERRED-RESOLVED",
+            "label": "20. DEFERRED with RESOLVED",
+          },
+          {
+            "id": "qld-agm-INTERIM-RESOLVED",
+            "label": "26. INTERIM with RESOLVED",
+          },
+          {
+            "id": "qld-agm-OPEN-RESOLVED",
+            "label": "32. OPEN with RESOLVED",
+          },
+        ],
+      },
+      {
+        "id": "qld-egm",
+        "label": "Extraordinary meeting (3 Oct 2026)",
+        "meetingType": "EGM",
+        "motions": [
+          {
+            "id": "qld-egm-carried",
+            "label": "1. Carried item",
+          },
+        ],
+      },
+      {
+        "id": "qld-sgm",
+        "label": "Special meeting (4 Apr 2026)",
+        "meetingType": "SGM",
+        "motions": [
+          {
+            "id": "qld-sgm-carried",
+            "label": "1. Carried item",
+          },
+        ],
+      },
+      {
+        "id": "qld-first",
+        "label": "First AGM (31 Jan 2026)",
+        "meetingType": "FIRST_AGM",
+        "motions": [
+          {
+            "id": "qld-first-carried",
+            "label": "1. Carried item",
+          },
+        ],
+      },
+    ],
+  },
+  "noBuilding": {
+    "access": [
+      "Meeting.where(fn).orderBy(fn).limit(100).all()",
+    ],
+    "result": [],
+  },
+  "none": {
+    "access": [
+      "Meeting.where(fn).orderBy(fn).limit(100).all()",
+    ],
+    "result": [],
+  },
+}
+`;
+
+exports[`the carried test (golden) > exports the same general meeting types 1`] = `
+[
+  "AGM",
+  "EGM",
+  "SGM",
+  "FIRST_AGM",
+]
+`;
+
+exports[`the carried test (golden) > only CARRIED or RESOLVED counts, never INTERIM or OPEN 1`] = `
+[
+  "PENDING/RESOLVED",
+  "CARRIED/null",
+  "CARRIED/RESOLVED",
+  "CARRIED/MOTION_LOST",
+  "CARRIED/DEFERRED",
+  "CARRIED/INTERIM",
+  "CARRIED/OPEN",
+  "LOST/RESOLVED",
+  "DEFERRED/RESOLVED",
+  "INTERIM/RESOLVED",
+  "OPEN/RESOLVED",
+]
+`;

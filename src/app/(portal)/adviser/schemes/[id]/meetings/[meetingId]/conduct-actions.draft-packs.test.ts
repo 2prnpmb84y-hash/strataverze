@@ -98,7 +98,8 @@ const payloadOf = (call = 0) => ((recordMeetingEvent.mock.calls[call] as unknown
 function at(st: string, category: string | null, seed: Record<string, unknown[]> = {}) {
   state.scheme = scheme(st);
   state.item = { id: "i1", meetingId: "m1", resolutionCategory: category };
-  sharedFake.reset({ LevyNotice: [], ElectronicBallot: [], ElectronicVote: [], ...seed });
+  // The item as stored, for a count recorded as pending, which writes it in its own transaction (stage 2, PR 8b-i).
+  sharedFake.reset({ LevyNotice: [], ElectronicBallot: [], ElectronicVote: [], AgendaItem: [{ id: "i1", meetingId: "m1", resolutionCategory: category, status: "PENDING", outcome: null }], ...seed });
 }
 
 function nothingWritten() {
@@ -159,12 +160,14 @@ describe("Western Australia", () => {
 });
 
 describe("Victoria", () => {
-  it("refuses an interim special resolution, writing nothing", async () => {
+  it("records an interim special resolution as decided later, never as carried (stage 2, PR 8b-i)", async () => {
     at("VIC", "SPECIAL", VIC_TIER_4);
     const r = await record("RESOLVED", [v(1, "FOR"), v(2, "FOR"), v(3, "FOR"), v(4, "FOR"), v(5, "AGAINST")], undefined, YES);
-    expect(r.error).toMatch(/^The votes recorded make this motion an interim special resolution\./);
-    expect(r.error).toMatch(/Nothing was saved\. The item can be deferred\.$/);
-    nothingWritten();
+    expect(r).toMatchObject({ ok: true, notice: expect.stringMatching(/^Recorded as an interim special resolution, decided later\./) });
+    // Written in its own transaction, not through the plain item update.
+    expect(updateAgendaItem).not.toHaveBeenCalled();
+    expect(sharedFake.table("PendingResolution")).toHaveLength(1);
+    expect(sharedFake.table("PendingResolution")[0]).toMatchObject({ kind: "INTERIM_SPECIAL", category: "SPECIAL", takesEffectAs: "SPECIAL", status: "PENDING" });
   });
 
   it("refuses an ordinary or special resolution until the quorum is answered, before reading the votes or the debts, writing nothing", async () => {
@@ -196,9 +199,10 @@ describe("Victoria", () => {
     expect(payloadOf().payload.attestation).toEqual({ quorumPresent: false });
     vi.clearAllMocks();
     at("VIC", "ORDINARY", VIC_TIER_4);
+    // Since stage 2, PR 8b-i: one that carries is an interim resolution, decided later.
     const r = await record("RESOLVED", [v(1, "FOR"), v(2, "FOR"), v(3, "AGAINST")], undefined, NO);
-    expect(r.error).toMatch(/^The votes recorded make this motion an interim resolution\. Majority of votes cast, at a meeting without a quorum/);
-    nothingWritten();
+    expect(r).toMatchObject({ ok: true, notice: expect.stringMatching(/^Recorded as an interim resolution, decided later\./) });
+    expect(sharedFake.table("PendingResolution")[0]).toMatchObject({ kind: "INTERIM_NO_QUORUM", category: "ORDINARY", takesEffectAs: "ORDINARY" });
   });
 
   it("refuses a \"no quorum\" answer the votes contradict, writing nothing", async () => {
@@ -281,10 +285,10 @@ describe("the ACT", () => {
     nothingWritten();
   });
 
-  it("refuses a reduced quorum (\"no\"), writing nothing", async () => {
+  it("refuses \"no\" until the reduced quorum is answered, writing nothing (stage 2, PR 8b-i)", async () => {
     at("ACT", "ORDINARY", band("FOUR_OR_MORE"));
     const r = await record("RESOLVED", [v(1, "FOR"), v(2, "FOR"), v(3, "AGAINST")], undefined, NO);
-    expect(r.error).toMatch(/The meeting had no quorum for this item, so it is decided later, which StrataVerze does not track yet/);
+    expect(r.error).toMatch(/whether it had a reduced quorum is not recorded, so the votes cannot decide it/);
     nothingWritten();
   });
 

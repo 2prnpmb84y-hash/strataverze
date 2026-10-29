@@ -53,6 +53,7 @@ describe("the interim special resolution a failed special resolution passes as (
       passed: false,
       result: "INTERIM",
       interimCategory: "INTERIM_SPECIAL",
+      laterKind: "INTERIM_SPECIAL",
       reason:
         "Votes for are less than 75% of all lots in the scheme. Votes for are at least 50% of all lots in the scheme, and votes against are not more than 25% of all lots in the scheme",
     });
@@ -98,6 +99,7 @@ describe("the interim special resolution a failed special resolution passes as (
       passed: false,
       result: "INTERIM",
       interimCategory: "INTERIM_SPECIAL",
+      laterKind: "INTERIM_SPECIAL",
       reason: "Votes for are less than 75% of all lots in the scheme. No vote against and at least 1 vote for, at a meeting with a quorum",
     });
     const r = resolveOutcome(VIC, { requestedOutcome: "MOTION_LOST", resolutionCategory: "SPECIAL", tally: tally({ ...none, quorumPresent: true }) });
@@ -131,8 +133,18 @@ describe("the interim special resolution a failed special resolution passes as (
     });
   });
 
-  it("is refused at the meeting through resolveOutcome, which records nothing", () => {
+  it("is recorded as pending through resolveOutcome, never as carried (stage 2, PR 8b-i)", () => {
     const r = resolveOutcome(VIC, { requestedOutcome: "RESOLVED", resolutionCategory: "SPECIAL", tally: tally({ forCount: 4, againstCount: 2 }) });
+    expect(r.later).toEqual({ kind: "INTERIM_SPECIAL", stored: "INTERIM" });
+    expect(r).not.toHaveProperty("refused");
+    expect(r.evaluation?.laterKind).toBe("INTERIM_SPECIAL");
+  });
+
+  it("is refused through resolveOutcome, recording nothing, under a rule set that records no interim resolutions", () => {
+    const { pendingResolutions: _omit, ...withoutPending } = VIC;
+    void _omit;
+    const r = resolveOutcome(withoutPending, { requestedOutcome: "RESOLVED", resolutionCategory: "SPECIAL", tally: tally({ forCount: 4, againstCount: 2 }) });
+    expect(r).not.toHaveProperty("later");
     expect(r.refused).toBe(
       "The votes recorded make this motion an interim special resolution. Votes for are less than 75% of all lots in the scheme. Votes for are at least 50% of all lots in the scheme, and votes against are not more than 25% of all lots in the scheme. StrataVerze does not record interim resolutions yet, so this outcome cannot be recorded here. Nothing was saved. The item can be deferred.",
     );
@@ -166,6 +178,7 @@ describe("a Victorian ordinary resolution", () => {
     expect(evaluateResolution(VIC, "ORDINARY", { forCount: 5, againstCount: 2, quorumPresent: false })).toEqual({
       passed: false,
       result: "INTERIM",
+      laterKind: "INTERIM_NO_QUORUM",
       reason: "Majority of votes cast, at a meeting without a quorum, so it is an interim resolution",
     });
   });

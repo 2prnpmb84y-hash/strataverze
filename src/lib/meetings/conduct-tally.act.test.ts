@@ -175,11 +175,29 @@ describe("what the count lets the chair record", () => {
     }
   });
 
-  it("refuses every category without a standard quorum: a reduced quorum decision takes effect later", () => {
+  it("refuses every category without a standard quorum until the reduced quorum is answered (stage 2, PR 8b-i)", () => {
     for (const c of ["ORDINARY", "SPECIAL", "UNANIMOUS"]) {
       const r = decide(c, tallyOf(count(c, votes([1, 2, 3, 4, 5, 6]), { unitsPresent: 6, quorumPresent: false })));
-      expect(r.refused).toMatch(/The meeting had no quorum for this item, so it is decided later, which StrataVerze does not track yet/);
+      expect(r.refused).toMatch(/whether it had a reduced quorum is not recorded, so the votes cannot decide it/);
+      const adjourned = decide(c, tallyOf(count(c, votes([1, 2, 3, 4, 5, 6]), { unitsPresent: 6, quorumPresent: false, reducedQuorumPresent: false })));
+      expect(adjourned.refused).toMatch(/neither a standard nor a reduced quorum for this item, so the meeting is adjourned/);
     }
+  });
+
+  it("records a count at a reduced quorum as decided later when it passes, and as lost when it fails (decision D6)", () => {
+    const at = { quorumPresent: false, reducedQuorumPresent: true };
+    const passed = count("ORDINARY", votes([1, 2], [3]), at);
+    expect(tallyOf(passed)).toMatchObject({ quorumPresent: false, reducedQuorumPresent: true });
+    expect(decide("ORDINARY", tallyOf(passed))).toMatchObject({ later: { kind: "REDUCED_QUORUM", stored: "INTERIM" } });
+    expect(decide("ORDINARY", tallyOf(passed))).not.toHaveProperty("refused");
+    const failed = count("ORDINARY", votes([1], [2, 3]), at);
+    expect(decideAs("ORDINARY", tallyOf(failed), "MOTION_LOST")).toMatchObject({ outcome: "MOTION_LOST", status: "LOST" });
+    expect(decideAs("ORDINARY", tallyOf(failed), "MOTION_LOST")).not.toHaveProperty("later");
+  });
+
+  it("puts the reduced quorum answer on the tally only after no, and only where it is asked", () => {
+    expect(tallyOf(count("ORDINARY", votes([1, 2], [3]), { quorumPresent: true, reducedQuorumPresent: true }))).not.toHaveProperty("reducedQuorumPresent");
+    expect(tallyOf(count("ORDINARY", votes([1, 2], [3]), { quorumPresent: false }))).not.toHaveProperty("reducedQuorumPresent");
   });
 
   it("records an ordinary resolution as carried or lost with a quorum, and refuses equal votes", () => {
@@ -260,8 +278,8 @@ describe("1 or 2 members (ss 3.15(2), 3.16(3), 3.18(2); Matthew Wrigley's decisi
       expect(r.refused, c).toMatch(/^The votes recorded cannot decide this motion\. With 1 or 2 members the meeting has a quorum only when everyone entitled to vote is present, and without it the meeting is adjourned \(.+ sch 3 s 3\.12\), so the votes cannot decide this motion\. Nothing was saved\. The item can be deferred\.$/);
       expect(r.refused, c).not.toMatch(/decided later/);
     }
-    // With 3 or more members a no is still a reduced quorum, decided later.
-    expect(decideSmall("ORDINARY", tallyOf(count("ORDINARY", votes([1, 2]), { quorumPresent: false }))).refused).toMatch(/so it is decided later/);
+    // With 3 or more members a no asks for the reduced quorum (stage 2, PR 8b-i).
+    expect(decideSmall("ORDINARY", tallyOf(count("ORDINARY", votes([1, 2]), { quorumPresent: false }))).refused).toMatch(/whether it had a reduced quorum is not recorded/);
   });
 
   it("asks the units present on a special resolution too, though the test does not use them", () => {
@@ -285,11 +303,14 @@ describe("the conduct screen's questions (stage 2, PR 8a-ii)", () => {
     // Each question carries the pack's words (stage 2, PR 8a-ii-b), so it is never asked without them.
     const quorum = { label: ACT.quorumAttestation!.label, help: ACT.quorumAttestation!.help };
     const unitsPresent = { label: ACT.votesPresentAttestation!.label, help: ACT.votesPresentAttestation!.help };
+    // Since stage 2, PR 8b-i: after No, whether a reduced quorum was present.
+    const reduced = { label: ACT.reducedQuorumAttestation!.label, help: ACT.reducedQuorumAttestation!.help };
     expect(view.items).toEqual({
-      o: { pollAllowed: true, proxiesAllowed: true, quorumAsked: quorum },
-      s: { pollAllowed: true, proxiesAllowed: true, quorumAsked: quorum, unitsPresentAsked: unitsPresent },
+      o: { pollAllowed: true, proxiesAllowed: true, quorumAsked: quorum, reducedQuorumAsked: reduced },
+      s: { pollAllowed: true, proxiesAllowed: true, quorumAsked: quorum, unitsPresentAsked: unitsPresent, reducedQuorumAsked: reduced },
       n: { pollAllowed: false, proxiesAllowed: true },
     });
+    expect(reduced.label).toBe("Reduced quorum present for this motion");
     expect(quorum.label).toBe("Standard quorum present for this motion");
     expect(unitsPresent.label).toBe("Units present or represented for this motion");
     expect(view).not.toHaveProperty("attestation");

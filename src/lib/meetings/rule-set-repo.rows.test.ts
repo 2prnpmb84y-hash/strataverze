@@ -124,6 +124,25 @@ describe("stored rule set rows", () => {
     }
   });
 
+  it("copy the resolutions decided later and the reduced quorum question from the seed only where it has them (stage 2, PR 8b-i)", async () => {
+    const keys = ["pendingResolutions", "reducedQuorumAttestation"] as const;
+    for (const state of ["VIC", "ACT", "WA"] as const) {
+      const seed = PENDING_RULE_PACKS[state].rules.MEETING_RULES;
+      first.mockResolvedValue(olderRow(state, seed));
+      const rs = await getActiveRuleSet(state);
+      for (const k of keys) {
+        if (seed[k] === undefined) expect(k in rs, `${state} ${k}`).toBe(false);
+        else expect(rs[k], `${state} ${k}`).toBe(seed[k]);
+      }
+    }
+    expect(Object.keys((await getActiveRuleSet("ACT")).pendingResolutions ?? {})).toEqual(["REDUCED_QUORUM"]);
+    for (const state of ["NSW", "QLD"] as const) {
+      first.mockResolvedValue(olderRow(state, state === "NSW" ? NSW_RULE_SET : QLD));
+      const other = await getActiveRuleSet(state);
+      for (const k of keys) expect(k in other, `${state} ${k}`).toBe(false);
+    }
+  });
+
   it("give a stored Queensland row the seed's common property key, however old the row (2026.10.20), and never NSW", async () => {
     first.mockResolvedValue(olderRow("QLD", QLD));
     expect((await getActiveRuleSet("QLD")).excludeCommonPropertyRows).toBe(true);

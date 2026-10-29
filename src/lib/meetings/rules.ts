@@ -270,6 +270,60 @@ export interface EveryLotQuorumRule {
   status: ResolutionRuleStatus;
 }
 
+/**
+ * A resolution decided or taking effect after its meeting (VIC, ACT and WA
+ * stage 2, PR 8b-i, 29 Oct 2026): Victoria's interim special resolution
+ * (INTERIM_SPECIAL) and interim resolution of a meeting without a quorum
+ * (INTERIM_NO_QUORUM), the ACT's reduced quorum decision (REDUCED_QUORUM)
+ * and, from PR 8b-ii, Western Australia's voting period (VOTING_PERIOD).
+ */
+export type PendingKind = "INTERIM_SPECIAL" | "INTERIM_NO_QUORUM" | "REDUCED_QUORUM" | "VOTING_PERIOD";
+
+/**
+ * How a pending resolution of a kind is decided, as the pack holds it (VIC,
+ * ACT and WA stage 2, PR 8b-i). Days are calendar days in the building's time
+ * zone, counted from the day it was made (the later of the meeting's day and
+ * the day it was recorded): a petition or notice may arrive up to and
+ * including the day `windowDays` after it, and it takes effect the next day.
+ */
+export interface PendingResolutionRule {
+  /** How it is named to people: "Interim special resolution". */
+  label: string;
+  /** The days after it is made in which it can be stopped (Victoria 29, the ACT 28). */
+  windowDays: number;
+  /** The category it takes effect as: SAME, or another (Victoria's interim special resolution becomes a special resolution). */
+  takesEffectAs: "SAME" | ResolutionCategory;
+  /** The days after it is made within which the owners must be given notice of it, or null where none is required. */
+  noticeWithinDays: number | null;
+  /** Whether it takes effect only once that notice is recorded as given (decision D3). */
+  noticeRequiredBeforeEffect: boolean;
+  /**
+   * The days of grace after the window closes (and, for Victoria s 78, after
+   * the day the special general meeting must be held by) before the daily run
+   * records it as having taken effect at the end of its period. A petition or
+   * notice received within the window can still be recorded during the
+   * grace. The day it takes effect does not move. A StrataVerze value
+   * (Matthew Wrigley's decision of 29 Oct 2026, 7 days). A confirmation or
+   * a petition decides it at once, never delayed by this.
+   */
+  settleAfterGraceDays: number;
+  /**
+   * A petition that stops it: signed for more than `moreThanFractionOf` of
+   * the lots (ALL_LOTS, Victoria) or of the lots entitled to vote on the day
+   * it is received (LOTS_ENTITLED_TO_VOTE, the ACT). `words` names the
+   * petition to people.
+   */
+  petition?: { moreThanFractionOf: number; of: "ALL_LOTS" | "LOTS_ENTITLED_TO_VOTE"; words: string };
+  /** Victoria s 78: notice of a special general meeting within the window, which must be held within these days of the notice. */
+  meetingNotice?: { meetingHeldWithinDays: number; words: string };
+  /** The ACT: a later meeting with a standard quorum may confirm it sooner. */
+  confirmedSoonerBy?: "STANDARD_QUORUM_MEETING";
+  /** What happens, in plain words for the meeting page. */
+  help: string;
+  source: string;
+  status: ResolutionRuleStatus;
+}
+
 export interface MeetingRuleSet {
   state: string;
   version: string;
@@ -376,6 +430,22 @@ export interface MeetingRuleSet {
   votesPresentAttestation?: AttestationWords;
   /** Where the pack records it: a quorum that needs every lot of a small scheme (Western Australia's 2-lot scheme). */
   quorumNeedsEveryLot?: EveryLotQuorumRule;
+  /*
+   * The keys below are the draft packs' (VIC, ACT and WA stage 2, PR 8b-i,
+   * 29 Oct 2026). Each is optional and seed-only, and NSW and Queensland have
+   * none of them.
+   */
+  /**
+   * Where the pack records it: the resolutions decided or taking effect after
+   * the meeting, by kind. A count that gives one of these kinds is recorded
+   * as pending (the agenda item stored as INTERIM) instead of refused.
+   */
+  pendingResolutions?: Partial<Record<PendingKind, PendingResolutionRule>>;
+  /**
+   * Where the pack records it (the ACT): the chair's answer, after "no" to
+   * the standard quorum, whether a reduced quorum was present for the item.
+   */
+  reducedQuorumAttestation?: AttestationWords;
   notes?: string;
 }
 
@@ -478,6 +548,12 @@ export interface ResolutionTally {
   memberBand?: string;
   /** Whether the meeting had a quorum for the item, where it was recorded. */
   quorumPresent?: boolean;
+  /**
+   * Where the meeting had no standard quorum for the item: whether a reduced
+   * quorum was present (the ACT; VIC, ACT and WA stage 2, PR 8b-i), where the
+   * chair answered it.
+   */
+  reducedQuorumPresent?: boolean;
 }
 
 /**
@@ -499,6 +575,12 @@ export interface ResolutionOutcome {
   result?: "INTERIM" | "UNDETERMINED";
   /** With INTERIM: the category it passed as, where it has one (Victoria's interim special resolution). */
   interimCategory?: ResolutionCategory;
+  /**
+   * With INTERIM (VIC, ACT and WA stage 2, PR 8b-i): the kind of pending
+   * resolution it is, which the building's pack may record later
+   * (`pendingResolutions`). Left out otherwise.
+   */
+  laterKind?: PendingKind;
 }
 
 /** Whether a value is one of the building's resolution categories (one its rule set has a rule for). */
@@ -533,7 +615,7 @@ export function evaluateResolution(
   // A category another one passes as instead (Victoria's interim special
   // resolution) is itself only ever interim.
   if (outcome.passed && isInterimCategory(ruleSet, category)) {
-    return { passed: false, reason: outcome.reason, result: "INTERIM", interimCategory: category };
+    return { passed: false, reason: outcome.reason, result: "INTERIM", interimCategory: category, laterKind: "INTERIM_SPECIAL" };
   }
   return outcome;
 }
@@ -766,13 +848,25 @@ function evaluateDraftRule(
       `This resolution is decided when its ${rule.votingPeriodDays}-day voting period closes, which StrataVerze does not track yet, so the count at the meeting cannot decide it`,
     );
   }
+  /** Counted at a reduced quorum (the ACT): a test that passes is a decision taking effect later. */
+  let reducedQuorum = false;
   if (rule.withoutQuorum) {
     if (tally.quorumPresent == null) {
       return undetermined("Whether the meeting had a quorum for this item is not recorded, so the votes cannot decide it");
     }
     if (!tally.quorumPresent && rule.noQuorumRefusal) return undetermined(rule.noQuorumRefusal);
     if (!tally.quorumPresent && rule.withoutQuorum === "DECIDED_LATER") {
-      return undetermined("The meeting had no quorum for this item, so it is decided later, which StrataVerze does not track yet");
+      // Where the pack records reduced quorum decisions (the ACT, PR 8b-i): counted at a reduced quorum, decided later.
+      if (!ruleSet.pendingResolutions?.REDUCED_QUORUM) {
+        return undetermined("The meeting had no quorum for this item, so it is decided later, which StrataVerze does not track yet");
+      }
+      if (tally.reducedQuorumPresent == null) {
+        return undetermined("The meeting had no standard quorum for this item, and whether it had a reduced quorum is not recorded, so the votes cannot decide it");
+      }
+      if (!tally.reducedQuorumPresent) {
+        return undetermined("The meeting had neither a standard nor a reduced quorum for this item, so the meeting is adjourned and the votes cannot decide it");
+      }
+      reducedQuorum = true;
     }
   }
   if (rule.tieRefusedBecause && isTie(tally)) return undetermined(rule.tieRefusedBecause);
@@ -782,17 +876,34 @@ function evaluateDraftRule(
   if (outcome.passed) {
     // Every resolution of a meeting without a quorum is interim (Victoria).
     if (rule.withoutQuorum === "INTERIM" && tally.quorumPresent === false) {
-      return { passed: false, reason: `${outcome.reason}, at a meeting without a quorum, so it is an interim resolution`, result: "INTERIM" };
+      return {
+        passed: false,
+        reason: `${outcome.reason}, at a meeting without a quorum, so it is an interim resolution`,
+        result: "INTERIM",
+        laterKind: "INTERIM_NO_QUORUM",
+      };
+    }
+    // Passed at a reduced quorum (the ACT): it takes effect later, unless stopped or confirmed sooner.
+    if (reducedQuorum) {
+      return { passed: false, reason: `${outcome.reason}, at a reduced quorum, so it is decided later`, result: "INTERIM", laterKind: "REDUCED_QUORUM" };
     }
     return outcome;
   }
+  // Failed at a reduced quorum (the ACT): lost at once (decision D6).
+  if (reducedQuorum) return outcome;
   if (!rule.interimCategory || !allowInterim) return outcome;
   const interimRule = ruleSet.resolutionCategories[rule.interimCategory];
   if (!interimRule) return outcome;
   const interim = evaluateDraftRule(ruleSet, interimRule, tally, pollEntitlement, false);
   if (interim.result === "UNDETERMINED") return undetermined(`${outcome.reason}. ${interim.reason}`);
   if (!interim.passed) return outcome;
-  return { passed: false, reason: `${outcome.reason}. ${interim.reason}`, result: "INTERIM", interimCategory: rule.interimCategory };
+  return {
+    passed: false,
+    reason: `${outcome.reason}. ${interim.reason}`,
+    result: "INTERIM",
+    interimCategory: rule.interimCategory,
+    laterKind: "INTERIM_SPECIAL",
+  };
 }
 
 const shareOf = (fraction: number, whole: string) => (fraction >= 1 ? `all of ${whole}` : `at least ${percent(fraction)} of ${whole}`);
