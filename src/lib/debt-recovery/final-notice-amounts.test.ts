@@ -114,6 +114,31 @@ describe("finalNoticeAmounts", () => {
     expect(finalNoticeAmounts(input({ notices: [notice({ levyCents: 1_000 }), notice({ number: "F-2", levyCents: 1_000 })] }))).toMatchObject({ ok: true, dailyCents: 1 });
   });
 
+  it("keeps the rate's full precision, rounding only the final cents (review L6)", () => {
+    // A statutory rate of 7.125% (a fixture): $365,000 unpaid accrues exactly $71.25 a day. Rounding the rate to
+    // hundredths of a percent first (7.13%) would give $71.30.
+    const statutory: StatutoryRules["LATE_CHARGE"] = {
+      ...CHECKED,
+      modes: ["NONE", "STATUTORY"],
+      annual: { ...CHECKED.annual!, statutoryRatePercent: { value: 7.125, status: "CONFIRMED", source: "fixture" } },
+    };
+    const r = finalNoticeAmounts(input({ lateCharge: statutory, setting: { mode: "STATUTORY" }, notices: [notice({ levyCents: 36_500_000 })] }));
+    expect(r).toMatchObject({ ok: true, dailyCents: 7_125 });
+    // A third of a percent, exactly: 3,650,000 cents at 1/3% a year is 33.33 cents a day, 33.
+    const third = { ...statutory, annual: { ...statutory.annual!, statutoryRatePercent: { value: 1 / 3, status: "CONFIRMED" as const, source: "fixture" } } };
+    expect(finalNoticeAmounts(input({ lateCharge: third, setting: { mode: "STATUTORY" }, notices: [notice({ levyCents: 3_650_000 })] }))).toMatchObject({ ok: true, dailyCents: 33 });
+  });
+
+  it("a period waiver covering the as-at day takes the notice out of the daily amount, one ending before does not, and one that cannot be read refuses (review L6)", () => {
+    const period = (fromDate: string | null, toDate: string | null) => notice({ waivers: [{ kind: "PERIOD", fromDate, toDate }] });
+    expect(finalNoticeAmounts(input({ notices: [period("2026-10-05", "2026-10-11")] }))).toMatchObject({ ok: true, dailyCents: 0 });
+    expect(finalNoticeAmounts(input({ notices: [period("2026-10-11", "2026-10-20")] }))).toMatchObject({ ok: true, dailyCents: 0 });
+    expect(finalNoticeAmounts(input({ notices: [period("2026-10-02", "2026-10-10")] }))).toMatchObject({ ok: true, dailyCents: 27 });
+    for (const [from, to] of [[null, "2026-10-20"], ["2026-10-05", null], ["2026-10-20", "2026-10-05"]]) {
+      expect(finalNoticeAmounts(input({ notices: [period(from, to)] }))).toEqual({ ok: false, problems: ["Notice F-1 has a waived period that cannot be read."] });
+    }
+  });
+
   it("applies payments to the fees first, and a notice whose interest is waived in whole adds no daily amount", () => {
     const paid = finalNoticeAmounts(input({ notices: [notice({ payments: [{ date: "2026-10-06", amountCents: 50_000 }] })] }));
     expect(paid).toMatchObject({ ok: true, feesCents: 50_000, dailyCents: 14 });

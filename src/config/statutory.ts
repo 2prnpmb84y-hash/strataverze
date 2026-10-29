@@ -682,8 +682,11 @@ export const PENDING_RULE_PACKS = {
     // recorded in DECISIONS and kept in FOR_REVIEW: FINAL_FEE_NOTICE and S18_COMMITTEE_DELEGATION are rewritten, and
     // FINAL_NOTICE_OUTSIDE, S18_ANNUAL_FEES_COMPARATOR, DAY_COUNTING_RECOVERY, VCAT_GATE_COURT, TIER_5_RECOVERY,
     // TAKEOVER_NOTICES_FINAL_NOTICE, PAYMENT_PLAN_PAUSE_GUARD, RECOVERY_FEES_NOT_PASSED, DEBT_RECOVERY_FORUM and
-    // DEBT_RECOVERY_STEPS added. NOT_CONFIRMED gains the s 18(2) comparator and the daily interest rounding. No legal
-    // value or status already recorded changed; still a draft.
+    // DEBT_RECOVERY_STEPS added. NOT_CONFIRMED gains the s 18(2) comparator and the daily interest rounding. After
+    // review (30 Oct 2026, the version unchanged): the tier is checked again at COMMITTEE_REVIEW and PROCEEDINGS
+    // (appliesWhen's unknown words and FOR_REVIEW TIER_5_RECOVERY rewritten), and FOR_REVIEW gains S18_BALLOT_RESOLUTION
+    // (a special resolution passed by ballot cannot be chosen). No legal value or status already recorded changed;
+    // still a draft.
     version: "2026.10.13",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",

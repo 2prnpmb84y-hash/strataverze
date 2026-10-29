@@ -22,9 +22,11 @@
  *   notice other than the pack's final notice), or a key not in the shared
  *   shape, refuses every action;
  * - appliesWhen (PR 9c): opening a case is refused where the building's
- *   condition is false or cannot be worked out;
+ *   condition is false or cannot be worked out, and so is completing the
+ *   steps that decide and start proceedings (review L4);
  * - amountThreshold (PR 9c): with no comparator value, or no amount for it,
- *   only the `above` resolution decides; where the amount owing when
+ *   only the `above` resolution decides, and the decision step offers only
+ *   `above` while StrataVerze does not work out the comparator's amount; where the amount owing when
  *   proceedings are started is more than the amount recorded with the
  *   decision, or either is not known, the step is refused;
  * - stepTiming (PR 9c): a step is refused before day N + 1 after the day it is
@@ -255,12 +257,17 @@ export function authorityNeeded(rule: AuthorityRule, claimCents: number | null, 
   return sameResolution(t.upTo, t.above) ? [t.upTo] : [t.upTo, t.above];
 }
 
-/** The resolutions the decision step offers before an amount is known (PR 9c): with a threshold whose comparator has no value, only `above`. */
+/**
+ * The resolutions the decision step offers (PR 9c): with an amount threshold,
+ * only `above`, since StrataVerze does not work out the comparator's amount
+ * yet (the server passes none, so the gate needs `above` whatever the
+ * comparator), and the screen offers what the gate accepts (review L2).
+ */
 function offeredResolutions(rule: AuthorityRule): readonly DebtAuthorityResolution[] | null {
   const accepted = rule.accepted.value;
   if (accepted == null || accepted.length === 0) return null;
   const t = rule.amountThreshold;
-  return t && t.comparator.value == null ? [t.above] : accepted;
+  return t ? [t.above] : accepted;
 }
 
 /**
@@ -430,6 +437,11 @@ export type RecoveryGateInput =
       amountOwing?: string | null;
       /** The comparator's amount in cents (PR 9c), or null where StrataVerze does not work it out (it never does yet). */
       comparatorCents?: number | null;
+      /**
+       * Whether the pack's appliesWhen holds for the building now (review L4): null where it cannot be worked out.
+       * Needed at the steps that decide and start proceedings for a pack with appliesWhen, which refuse without it.
+       */
+      applies?: boolean | null;
     }
   | { action: "REFER_LEGAL"; recorded: RecordedRecoveryFacts; labels?: Readonly<Record<string, string>> }
   | {
@@ -472,6 +484,12 @@ export function recoveryGateProblem(rules: Rules, input: RecoveryGateInput): str
   // COMPLETE_STEP
   const needs = recoveryStepNeeds(rules, input.stepType);
   if (needs && "problem" in needs) return needs.problem;
+  // The buildings the rules apply to, checked again where proceedings are decided and started (review L4): the
+  // building's facts may have changed since the case was opened. False or unknown refuses.
+  const w = r.appliesWhen;
+  if (w && (input.stepType === a?.recordedAtStep || input.stepType === r.forum?.recordedAtStep) && input.applies !== true) {
+    return `${sentence(input.applies === false ? w.refusal : w.unknown)} This step cannot be completed. Nothing was saved.`;
+  }
   if (a) {
     const orderOf = (t: string) => input.caseSteps.find((s) => s.stepType === t)?.stepOrder;
     const at = orderOf(a.recordedAtStep);
@@ -485,7 +503,10 @@ export function recoveryGateProblem(rules: Rules, input: RecoveryGateInput): str
     const fact = input.authority;
     if (!fact) return `Choose the meeting and the motion that decided to start proceedings: ${needs.authority.words}.`;
     if (fact.problem !== null) return fact.problem;
-    if (!needs.authority.accepted.some((x) => sameResolution(x, fact.resolution))) return `Choose ${needs.authority.words}.`;
+    // With an amount threshold the step offers only `above`; a resolution the pack accepts goes on to the threshold check,
+    // which says why it cannot decide this claim.
+    const allowed = a?.amountThreshold ? (a.accepted.value ?? []) : needs.authority.accepted;
+    if (!allowed.some((x) => sameResolution(x, fact.resolution))) return `Choose ${needs.authority.words}.`;
     if (!/^\d{4}-\d{2}-\d{2}$/.test(fact.decidedOn) || fact.decidedOn > input.today) return "That resolution has not taken effect yet, so it cannot be relied on.";
     // A decision made before the case was opened is not taken to be about it (review L4; the motion's subject is not checked).
     if (!input.caseOpenedOn) return "The day this case was opened is not known, so no resolution can be checked against it.";
@@ -571,18 +592,24 @@ function authorisedAmountProblem(amountOwing: string | null, authorisedAmount: s
  * null (PR 9c): any of its values recorded as in force from a day on or before
  * today, or enacted or made with its commencement, fixed start or latest start
  * on or before today (a Bill or an announcement never). A key the pack does
- * not hold refuses.
+ * not hold, a rule with no values, and a value whose legal status is not one
+ * StrataVerze knows refuse (review L1).
  */
 function pauseProblem(rules: Rules, key: string, today: string, label: string): string | null {
   const rule = (rules.DATED_RULES as Record<string, unknown> | undefined)?.[key];
   if (!isObject(rule) || !Array.isArray(rule.versions)) return `${label} cannot be checked against the law that would pause it, which is not in this building's rules. Nothing was saved.`;
   const onOrBefore = (d: unknown) => d != null && (typeof d !== "string" || !isDay(d) || d <= today);
-  const started = (rule.versions as unknown[]).some((v) => {
-    if (!isObject(v)) return true;
-    if (v.legalStatus === "IN_FORCE") return onOrBefore(v.from ?? "");
-    if (v.legalStatus === "ENACTED_NOT_COMMENCED" || v.legalStatus === "MADE_NOT_COMMENCED") return [v.commencedOn, v.fixedStartDate, v.latestStartDate].some(onOrBefore);
-    return false;
-  });
+  // No version at all, or one whose legal status is not known, may have started (review L1): it refuses.
+  const started =
+    rule.versions.length === 0 ||
+    (rule.versions as unknown[]).some((v) => {
+      if (!isObject(v)) return true;
+      if (v.legalStatus === "IN_FORCE") return onOrBefore(v.from ?? "");
+      if (v.legalStatus === "ENACTED_NOT_COMMENCED" || v.legalStatus === "MADE_NOT_COMMENCED") return [v.commencedOn, v.fixedStartDate, v.latestStartDate].some(onOrBefore);
+      // A Bill or an announcement never applies.
+      if (v.legalStatus === "NOT_LAW" || v.legalStatus === "ANNOUNCED_NO_LEGISLATION") return false;
+      return true;
+    });
   if (!started) return null;
   const title = typeof rule.title === "string" ? lowerFirst(rule.title) : key;
   return `${label} cannot be completed: the law on ${title} may have started by today (${auDate(today)}), and the payment plan pause is not supported yet. Nothing was saved.`;

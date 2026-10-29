@@ -937,8 +937,8 @@ export interface DebtRecoveryRules {
 
 /**
  * The buildings debt recovery under the pack's rules applies to (stage 2, PR 9c). `when` is read with
- * conditionHolds (src/lib/jurisdiction/building-selectors.ts) when a case is opened: false refuses with
- * `refusal`, and unknown refuses with `unknown`.
+ * conditionHolds (src/lib/jurisdiction/building-selectors.ts) when a case is opened, and again when the steps
+ * that decide and start proceedings are completed: false refuses with `refusal`, and unknown with `unknown`.
  */
 export interface DebtRecoveryAppliesWhen {
   when: SelectorCondition;

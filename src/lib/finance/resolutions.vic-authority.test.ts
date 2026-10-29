@@ -7,7 +7,7 @@
  * effect as SPECIAL, dated the day it took effect. A committee motion is
  * refused.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@prisma/orm-postgres/orm-client", async () => (await import("@/test/fake-orm")).fakeOrmClient);
 vi.mock("@/prisma/db", async () => ({ db: (await import("@/test/fake-orm")).sharedFake.db }));
@@ -34,6 +34,12 @@ const pending = (id: string, itemId: string, over: Record<string, unknown>) => (
   ...over,
 });
 
+beforeAll(() => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-11-10T01:00:00.000Z"));
+});
+afterAll(() => vi.useRealTimers());
+
 beforeEach(() => {
   sharedFake.reset({
     Scheme: [{ id: "v1", state: "VIC", timeZone: "Australia/Melbourne" }],
@@ -50,6 +56,9 @@ beforeEach(() => {
       { id: "interim-no-day", meetingId: "agm", position: 6, title: "Start proceedings", status: "CARRIED", outcome: "RESOLVED", resolutionCategory: "SPECIAL" },
       { id: "recorded-interim", meetingId: "agm", position: 7, title: "Start proceedings", status: "CARRIED", outcome: "RESOLVED", resolutionCategory: "INTERIM_SPECIAL" },
       { id: "recorded-interim-carried", meetingId: "agm", position: 8, title: "Start proceedings", status: "CARRIED", outcome: "RESOLVED", resolutionCategory: "INTERIM_SPECIAL" },
+      { id: "interim-later", meetingId: "agm", position: 9, title: "Start proceedings", status: "CARRIED", outcome: "RESOLVED", resolutionCategory: "SPECIAL" },
+      { id: "no-quorum-same", meetingId: "agm", position: 10, title: "Start proceedings", status: "CARRIED", outcome: "RESOLVED", resolutionCategory: "SPECIAL" },
+      { id: "no-quorum-special", meetingId: "agm", position: 11, title: "Start proceedings", status: "CARRIED", outcome: "RESOLVED", resolutionCategory: "SPECIAL" },
       { id: "committee-carried", meetingId: "committee", position: 1, title: "Start proceedings", status: "CARRIED", outcome: "RESOLVED", resolutionCategory: null },
     ],
     PendingResolution: [
@@ -58,6 +67,10 @@ beforeEach(() => {
       pending("p-3", "interim-as-ordinary", { status: "CARRIED", takesEffectAs: "ORDINARY", effectiveOn: "2026-11-09" }),
       pending("p-4", "interim-no-day", { status: "CARRIED", effectiveOn: null }),
       pending("p-5", "recorded-interim-carried", { status: "CARRIED", effectiveOn: "2026-11-09" }),
+      pending("p-6", "interim-later", { status: "CARRIED", effectiveOn: "2026-11-11" }),
+      // A resolution of a meeting without a quorum (s 78) taking effect as the SAME category, and one recorded as SPECIAL.
+      pending("p-7", "no-quorum-same", { kind: "INTERIM_NO_QUORUM", takesEffectAs: "SAME", status: "CARRIED", effectiveOn: "2026-11-09" }),
+      pending("p-8", "no-quorum-special", { kind: "INTERIM_NO_QUORUM", takesEffectAs: "SPECIAL", status: "CARRIED", effectiveOn: "2026-11-09" }),
     ],
   });
 });
@@ -95,5 +108,27 @@ describe("an interim special resolution", () => {
     expect(await authorityResolutionProblem("v1", "agm", "interim-as-ordinary", OFFERED)).toBe(refused);
     expect(await authorityResolutionProblem("v1", "agm", "interim-no-day", OFFERED)).toBe(refused);
     expect(await authorityResolutionProblem("v1", "agm", "recorded-interim", OFFERED)).toBe(refused);
+  });
+
+  it("any resolution decided later counts as special only if it takes effect as SPECIAL, carried, on or before the building's day (review L3)", async () => {
+    const refused = "That motion was decided later and has not taken effect as a special resolution, so it cannot be relied on.";
+    expect(await authorityResolutionProblem("v1", "agm", "no-quorum-same", OFFERED)).toBe(refused);
+    expect(await authorityResolution("v1", "agm", "no-quorum-special", OFFERED)).toMatchObject({ problem: null, decidedOn: "2026-11-09" });
+    // Taking effect after the building's day (10 Nov in Melbourne) is refused.
+    expect(await authorityResolutionProblem("v1", "agm", "interim-later", OFFERED)).toBe("That resolution has not taken effect yet, so it cannot be relied on.");
+  });
+});
+
+describe("the ACT and Western Australia never reach the special resolution check (review L3)", () => {
+  it("accept no special resolution, for the decision or the charge's declaration", () => {
+    for (const code of ["ACT", "WA"] as const) {
+      const recovery = PENDING_RULE_PACKS[code].rules.DEBT_RECOVERY as unknown as {
+        authorityToSue: { accepted: { value: readonly { kind: string }[] | null } };
+        statutoryCharge?: { declaredBy: { value: readonly { kind: string }[] | null } };
+      };
+      const kinds = [...(recovery.authorityToSue.accepted.value ?? []), ...(recovery.statutoryCharge?.declaredBy.value ?? [])].map((r) => r.kind);
+      expect(kinds.length, code).toBeGreaterThan(0);
+      expect(kinds, code).not.toContain("SPECIAL");
+    }
   });
 });

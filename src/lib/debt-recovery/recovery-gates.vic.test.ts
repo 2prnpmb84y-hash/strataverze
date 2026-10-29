@@ -46,6 +46,8 @@ const complete = (stepType: string, over: Partial<Extract<RecoveryGateInput, { a
     today: "2026-11-02",
     caseOpenedOn: "2026-10-01",
     labels: LABELS,
+    // The building is tier 1 to 4 unless a test says otherwise (review L4: checked at the decision and proceedings steps).
+    applies: true,
     ...over,
   });
 
@@ -74,7 +76,7 @@ describe("tier 5 and an unknown tier are refused at opening (D6)", () => {
       "This is a tier 5 owners corporation (a 2-lot subdivision or services only), which is exempt from OCA ss 18, 31 and 32 (ss 7A(1)(a), 8), so StrataVerze does not run debt recovery for it. A case cannot be opened. Nothing was saved.",
     );
     const unknown =
-      "This owners corporation's tier cannot be worked out from what is recorded. A tier 5 owners corporation is exempt from OCA ss 18, 31 and 32 (ss 7A(1)(a), 8), so a case is opened only once the tier is known to be 1 to 4. Record the building's facts first. A case cannot be opened. Nothing was saved.";
+      "This owners corporation's tier cannot be worked out from what is recorded. A tier 5 owners corporation is exempt from OCA ss 18, 31 and 32 (ss 7A(1)(a), 8), so StrataVerze goes on with debt recovery only once the tier is known to be 1 to 4. Record the building's facts first. A case cannot be opened. Nothing was saved.";
     expect(recoveryGateProblem(VIC, { action: "INITIATE", applies: null })).toBe(unknown);
     // Not worked out at all (no building read) refuses too.
     expect(recoveryGateProblem(VIC, { action: "INITIATE" })).toBe(unknown);
@@ -82,6 +84,21 @@ describe("tier 5 and an unknown tier are refused at opening (D6)", () => {
 
   it("the condition is tiers 1 to 4", () => {
     expect(RECOVERY.appliesWhen.when).toEqual({ selector: "tier", in: ["TIER_1", "TIER_2", "TIER_3", "TIER_4"] });
+  });
+
+  it("is checked again at the Authority to Start Proceedings and Proceedings steps, and not at the others (review L4)", () => {
+    const decision = { authority: carried(SPECIAL), amountOwing: "1.00" };
+    const proceedings = { recorded: AUTHORISED, forum: "VCAT", amountOwing: "1235.50" };
+    for (const [stepType, over] of [["COMMITTEE_REVIEW", decision], ["PROCEEDINGS", proceedings]] as const) {
+      expect(complete(stepType, over), stepType).toBeNull();
+      expect(complete(stepType, { ...over, applies: false }), stepType).toMatch(/^This is a tier 5 owners corporation .+ This step cannot be completed\. Nothing was saved\.$/);
+      expect(complete(stepType, { ...over, applies: null }), stepType).toMatch(/^This owners corporation's tier cannot be worked out .+ This step cannot be completed\. Nothing was saved\.$/);
+      // Not worked out at all refuses too.
+      expect(complete(stepType, { ...over, applies: undefined }), stepType).toMatch(/tier cannot be worked out/);
+    }
+    // The other steps do not read it.
+    expect(complete("LEDGER_VERIFICATION", { applies: false })).toBeNull();
+    expect(complete("LEGAL_REFERRAL", { recorded: AUTHORISED, applies: null })).toBeNull();
   });
 });
 
@@ -95,6 +112,12 @@ describe("the s 18 amount threshold (D2)", () => {
     expect(recoveryStepNeeds(VIC, "COMMITTEE_REVIEW")).toEqual({ authority: { accepted: [SPECIAL], words: "a special resolution at a general meeting" }, forum: null });
   });
 
+  it("the step offers only the special resolution while StrataVerze does not work out the comparator's amount, even with a comparator value (review L2)", () => {
+    expect(recoveryStepNeeds(WITH_COMPARATOR, "COMMITTEE_REVIEW")).toEqual({ authority: { accepted: [SPECIAL], words: "a special resolution at a general meeting" }, forum: null });
+    // As the server passes it (no comparator amount), the gate needs the special resolution too.
+    expect(complete("COMMITTEE_REVIEW", { authority: carried(ORDINARY), amountOwing: "1.00", comparatorCents: null }, WITH_COMPARATOR)).toMatch(/^Choose a special resolution at a general meeting\./);
+  });
+
   it("with a comparator: exactly twice allows an ordinary resolution, one cent more needs a special one", () => {
     expect(authorityNeeded(fixture, 100_000, 50_000)).toEqual([ORDINARY, SPECIAL]);
     expect(authorityNeeded(fixture, 100_001, 50_000)).toEqual([SPECIAL]);
@@ -105,7 +128,9 @@ describe("the s 18 amount threshold (D2)", () => {
   });
 
   it("the gate: with no comparator value an ordinary resolution is refused and a special one accepted", () => {
-    expect(complete("COMMITTEE_REVIEW", { authority: carried(ORDINARY), amountOwing: "100.00" })).toBe("Choose a special resolution at a general meeting.");
+    expect(complete("COMMITTEE_REVIEW", { authority: carried(ORDINARY), amountOwing: "100.00" })).toBe(
+      `Choose a special resolution at a general meeting. Whether a claim is within twice the total amount of the current annual fees cannot be told: whether "the total amount of the current annual fees" in s 18(2) means the owners corporation's total annual fees or the lot's is not stated in the notes, and the Victorian financial year is not confirmed, so the current annual fees cannot be worked out either. Until both are confirmed every proceeding needs a special resolution at a general meeting (decision D2).`,
+    );
     expect(complete("COMMITTEE_REVIEW", { authority: carried(SPECIAL), amountOwing: "100.00" })).toBeNull();
   });
 
@@ -289,6 +314,14 @@ describe("the payment plan pause guard (D14)", () => {
     expect(proceedings({ PAYMENT_PLANS: { title: "Payment plans", versions: [{ legalStatus: "IN_FORCE", from: "2026-11-01", value: {}, source: "x", status: "CONFIRMED" }] } }, "2026-11-02")).toBe(paused("02/11/2026"));
     // A Bill never applies.
     expect(proceedings({ PAYMENT_PLANS: { title: "Payment plans", versions: [{ legalStatus: "NOT_LAW", presentedOn: "2026-01-01", value: {}, commencement: "x", source: "x", textStatus: "READ_IN_BILL_TEXT" }] } }, "2026-11-02")).toBeNull();
+  });
+
+  it("a rule with no values, or a value whose legal status is not known, refuses; an announcement never applies (review L1)", () => {
+    expect(proceedings({ PAYMENT_PLANS: { title: "Payment plans", versions: [] } }, "2026-11-02")).toBe(paused("02/11/2026"));
+    expect(proceedings({ PAYMENT_PLANS: { title: "Payment plans", versions: [{ legalStatus: "PROCLAIMED", value: {}, source: "x" }] } }, "2026-11-02")).toBe(paused("02/11/2026"));
+    expect(proceedings({ PAYMENT_PLANS: { title: "Payment plans", versions: [{ value: {}, source: "x" }] } }, "2026-11-02")).toBe(paused("02/11/2026"));
+    expect(proceedings({ PAYMENT_PLANS: { title: "Payment plans", versions: ["x"] } }, "2026-11-02")).toBe(paused("02/11/2026"));
+    expect(proceedings({ PAYMENT_PLANS: { title: "Payment plans", versions: [{ legalStatus: "ANNOUNCED_NO_LEGISLATION", value: {}, commencement: "x", source: "x", status: "GUIDANCE" }] } }, "2026-11-02")).toBeNull();
   });
 
   it("a dated rule the pack does not hold refuses", () => {

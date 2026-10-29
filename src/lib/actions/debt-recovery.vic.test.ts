@@ -233,6 +233,23 @@ describe("the Authority to Start Proceedings step (D2)", () => {
   });
 });
 
+describe("the tier is checked again where proceedings are decided and started (review L4)", () => {
+  it("refuses the Authority to Start Proceedings step for a building now tier 5, or whose tier cannot be worked out, with nothing written", async () => {
+    seed({ currentOrder: order("COMMITTEE_REVIEW"), lots: 2 });
+    expect(await complete("COMMITTEE_REVIEW", { authorityMeetingId: "agm", authorityItemId: "g-special" })).toEqual({ error: expect.stringMatching(/^This is a tier 5 owners corporation .+ This step cannot be completed\. Nothing was saved\.$/) });
+    expectNothingWritten("COMMITTEE_REVIEW", 0);
+    seed({ currentOrder: order("COMMITTEE_REVIEW"), several: null });
+    expect(await complete("COMMITTEE_REVIEW", { authorityMeetingId: "agm", authorityItemId: "g-special" })).toEqual({ error: expect.stringMatching(/^This owners corporation's tier cannot be worked out/) });
+    expectNothingWritten("COMMITTEE_REVIEW", 0);
+  });
+
+  it("refuses the Proceedings step for a building now tier 5, with nothing written", async () => {
+    seed({ currentOrder: order("PROCEEDINGS"), records: [finalNoticeRecord("2026-10-01"), AUTHORITY_RECORD], lots: 2 });
+    expect(await complete("PROCEEDINGS", { forum: "VCAT" })).toEqual({ error: expect.stringMatching(/^This is a tier 5 owners corporation /) });
+    expectNothingWritten("PROCEEDINGS", 2);
+  });
+});
+
 describe("the Proceedings step (D4, D5, D13)", () => {
   it("is refused with no final notice recorded as given, with nothing written", async () => {
     seed({ currentOrder: order("PROCEEDINGS"), records: [AUTHORITY_RECORD] });

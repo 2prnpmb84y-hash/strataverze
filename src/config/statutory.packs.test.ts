@@ -386,6 +386,7 @@ describe("Victorian pack (pending)", () => {
     const review = (key: string) => vic.FOR_REVIEW.find((p) => p.key === key)?.point ?? "";
     const debtKeys = [
       "S18_COMMITTEE_DELEGATION",
+      "S18_BALLOT_RESOLUTION",
       "FINAL_FEE_NOTICE",
       "FINAL_NOTICE_OUTSIDE",
       "S18_ANNUAL_FEES_COMPARATOR",
@@ -403,6 +404,9 @@ describe("Victorian pack (pending)", () => {
     for (const id of ids) expect(reviewed, id).toMatch(new RegExp(`\\b${id}\\b`));
     expect(review("FINAL_FEE_NOTICE")).not.toContain("is a later PR");
     expect(review("PAYMENT_PLAN_PAUSE_GUARD")).toContain("the payment plan pause is not supported yet");
+    // Review (30 Oct 2026): the tier checked again, and a ballot resolution cannot be chosen.
+    expect(review("TIER_5_RECOVERY")).toContain("checked again");
+    expect(review("S18_BALLOT_RESOLUTION")).toContain("cannot be chosen");
     expect(vic.NOT_CONFIRMED.some((p) => p.startsWith("What \"the total amount of the current annual fees\" in s 18(2) is"))).toBe(true);
     // Stage 2, PR 8b-iv: proxy caps (D15 to D17) and the minutes (D18), kept in FOR_REVIEW PROXY_CAPS and MINUTES_CONTENTS.
     const proxies = vic.DECISIONS.find((d) => d.decision.includes("PROXY_RULES"))!;

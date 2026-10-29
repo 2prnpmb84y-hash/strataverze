@@ -1484,12 +1484,14 @@ const VIC_FINAL_NOTICE: StatutoryFinalNoticeRule = {
  * The buildings a recovery case may be opened for (stage 2, PR 9c, decision
  * D6): tiers 1 to 4. A tier 5 owners corporation (a 2-lot subdivision, or
  * services only) is exempt from ss 18, 31 and 32 (ss 7A(1)(a), 8, CONFIRMED),
- * and one whose tier cannot be worked out is refused too.
+ * and one whose tier cannot be worked out is refused too. Checked when a case
+ * is opened, and again at the Authority to Start Proceedings and Proceedings
+ * steps (review L4).
  */
 const VIC_RECOVERY_APPLIES: DebtRecoveryAppliesWhen = {
   when: tierIn([TIER_1.tier, TIER_2.tier, TIER_3.tier, TIER_4.tier]),
   refusal: "This is a tier 5 owners corporation (a 2-lot subdivision or services only), which is exempt from OCA ss 18, 31 and 32 (ss 7A(1)(a), 8), so StrataVerze does not run debt recovery for it",
-  unknown: "This owners corporation's tier cannot be worked out from what is recorded. A tier 5 owners corporation is exempt from OCA ss 18, 31 and 32 (ss 7A(1)(a), 8), so a case is opened only once the tier is known to be 1 to 4. Record the building's facts first",
+  unknown: "This owners corporation's tier cannot be worked out from what is recorded. A tier 5 owners corporation is exempt from OCA ss 18, 31 and 32 (ss 7A(1)(a), 8), so StrataVerze goes on with debt recovery only once the tier is known to be 1 to 4. Record the building's facts first",
   source: `${OCA} ss 7, 7A(1)(a), 8; ${VIC_DEBT_DECISION}, D6`,
   status: "STRATAVERZE",
 };
@@ -1638,7 +1640,7 @@ export const DEBT_RECOVERY_GUIDANCE: Readonly<Record<string, string>> = {
   HARDSHIP_REVIEW:
     "The owners corporation's rules may provide for payment of fees by instalments by owners in financial difficulty (OCA Sch 1 item 3.5). The owners corporation may waive interest in a particular case, and decisions to waive or not, with reasons, are reported to the AGM (s 29(3), (4)). Not confirmed: who decides a waiver, so none can be recorded in StrataVerze yet. Statutory payment plans (ss 32A to 32J) are enacted but not in force. This step is StrataVerze practice.",
   COMMITTEE_REVIEW:
-    "Record the special resolution carried at a general meeting that decided to start proceedings (OCA s 18). An ordinary resolution is enough for an order for payment of no more than twice the total amount of the current annual fees (s 18(2)), but whether that total is the owners corporation's or the lot's is not confirmed, and neither is the financial year, so StrataVerze asks for a special resolution for every claim (decision D2). A committee resolution is never accepted: whether a committee may give this authority by delegation (s 11(3), (5)) is not confirmed. An interim special resolution counts only once it has taken effect as a special resolution. The meeting must have been held, and the resolution must take effect on or after the day the case was opened. Its subject is not checked. The case records the amount owing then, and proceedings cannot be recorded for a larger amount. No case is opened for a tier 5 owners corporation, which is exempt from s 18 (s 7A(1)(a), decision D6). If the owners corporation decides not to start proceedings, close the case instead of completing this step.",
+    "Record the special resolution carried at a general meeting that decided to start proceedings (OCA s 18). An ordinary resolution is enough for an order for payment of no more than twice the total amount of the current annual fees (s 18(2)), but whether that total is the owners corporation's or the lot's is not confirmed, and neither is the financial year, so StrataVerze asks for a special resolution for every claim (decision D2). A committee resolution is never accepted: whether a committee may give this authority by delegation (s 11(3), (5)) is not confirmed. An interim special resolution counts only once it has taken effect as a special resolution. The meeting must have been held, and the resolution must take effect on or after the day the case was opened. Its subject is not checked. The case records the amount owing then, and proceedings cannot be recorded for a larger amount. No case is opened for a tier 5 owners corporation, which is exempt from s 18 (s 7A(1)(a), decision D6), and the tier is checked again when this step and the Proceedings step are completed. If the owners corporation decides not to start proceedings, close the case instead of completing this step.",
   LEGAL_REFERRAL:
     "Refer the matter with the ledger, the fee notices, the final fee notice and the recorded resolution. The case cannot be marked as referred for legal recovery until this step is complete. VCAT may order the owner to pay the owners corporation's reasonable costs in recovering an unpaid amount, other than costs in the proceeding (OCA s 165(1)(ca), (4)). Not confirmed: costs in the proceeding (VCAT Act s 109, not read). StrataVerze's recovery step fees are charged to the owners corporation and never passed to the owner (decision D10).",
   PROCEEDINGS:
@@ -3670,6 +3672,13 @@ export const FOR_REVIEW = [
     kind: "STRATAVERZE",
   },
   {
+    key: "S18_BALLOT_RESOLUTION",
+    point:
+      "Resolutions may also be passed by ballot (OCA ss 83 to 85, 86(2); a special resolution on a ballot or poll is 75% of the total lot entitlements of all lots, s 96). The Authority to Start Proceedings step (DEBT_RECOVERY.authorityToSue) lets the adviser choose only a motion carried at a general meeting held in StrataVerze, so a special resolution passed by ballot cannot be chosen and the step cannot be completed on one. Whether a ballot resolution may give the s 18 authority, and how StrataVerze would record one, are to be settled (Matthew Wrigley's StrataVerze decision D2 of 29 Oct 2026 accepts a general meeting only).",
+    before: "Victorian debt recovery is switched on",
+    kind: "LEGAL",
+  },
+  {
     key: "S18_ANNUAL_FEES_COMPARATOR",
     point:
       "s 18(2): an ordinary resolution suffices for an order for payment of no more than twice \"the total amount of the current annual fees\". The notes do not say whether that is the owners corporation's total annual fees or the lot's, and the Victorian financial year is NOT_CONFIRMED, so \"current\" cannot be worked out. DEBT_RECOVERY.authorityToSue.amountThreshold's comparator has no value, so StrataVerze always requires a special resolution at a general meeting (Matthew Wrigley's StrataVerze decision D2 of 29 Oct 2026). With a comparator, a claim of exactly twice the amount may be decided by an ordinary resolution and one cent more needs a special resolution, the claim being the lot's amount owing when the step is completed (its overdue fee notices with their interest). When proceedings are recorded, the amount owing must not be more than the amount recorded with the decision: a larger amount is refused, and the case cannot then go on (a completed step is not reopened), so it must be closed and a new case opened with a new resolution. Confirm the comparator, the financial year, and whether a larger amount should be refused or allowed for a special resolution.",
@@ -3693,7 +3702,7 @@ export const FOR_REVIEW = [
   {
     key: "TIER_5_RECOVERY",
     point:
-      "A tier 5 owners corporation (a 2-lot subdivision, or services only) is exempt from ss 18, 31 and 32 (ss 7A(1)(a), 8, CONFIRMED). StrataVerze refuses to open a recovery case for it (DEBT_RECOVERY.appliesWhen, tiers 1 to 4, Matthew Wrigley's StrataVerze decision D6 of 29 Oct 2026), and also where the tier cannot be worked out. The tier is checked only when a case is opened: a case opened before a building's facts change is not stopped. How a tier 5 owners corporation recovers fees (without ss 31 and 32) is not supported. Confirm.",
+      "A tier 5 owners corporation (a 2-lot subdivision, or services only) is exempt from ss 18, 31 and 32 (ss 7A(1)(a), 8, CONFIRMED). StrataVerze refuses to open a recovery case for it (DEBT_RECOVERY.appliesWhen, tiers 1 to 4, Matthew Wrigley's StrataVerze decision D6 of 29 Oct 2026), and also where the tier cannot be worked out. The tier is checked again, from the building's facts then recorded, when the Authority to Start Proceedings and Proceedings steps are completed, and a tier 5 or unknown tier refuses them too (a StrataVerze choice, stage 2, PR 9c review). The other steps do not check it. How a tier 5 owners corporation recovers fees (without ss 31 and 32) is not supported. Confirm.",
     before: "Victorian debt recovery is switched on",
     kind: "LEGAL",
   },

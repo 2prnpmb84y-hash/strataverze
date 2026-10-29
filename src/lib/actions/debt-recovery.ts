@@ -680,6 +680,10 @@ async function checkRecoveryStep(
       return { error: "Could not check the lot's notices. Nothing was saved." };
     }
   }
+  // Where the pack says which buildings its rules apply to (Victoria's tiers 1 to 4), the steps that decide and start
+  // proceedings check the building again (review L4); nothing is read for any other step or pack.
+  const appliesStep = !!recovery?.appliesWhen && (input.stepType === recovery.authorityToSue?.recordedAtStep || input.stepType === recovery.forum?.recordedAtStep);
+  const applies = appliesStep ? await recoveryAppliesTo(rules, input.schemeId) : undefined;
   // The day a final notice given outside StrataVerze was given (PR 9c), where the pack lets one be recorded.
   const finalNoticeGivenOn = needs?.finalNotice ? text("finalNoticeGivenOn") : null;
   // The facts recorded: for a pack with a final notice or an amount threshold, also the day given and the amount decided for.
@@ -702,6 +706,7 @@ async function checkRecoveryStep(
     ...(countsFromNotices ? { notices, packCode: input.packCode } : {}),
     // StrataVerze does not work out the comparator's amount (the current annual fees) yet, so none is passed.
     ...(threshold ? { amountOwing, comparatorCents: null } : {}),
+    ...(appliesStep ? { applies } : {}),
   });
   if (gate) return { error: gate };
   return {

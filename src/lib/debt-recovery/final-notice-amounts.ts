@@ -21,9 +21,12 @@
  * to the levy first, as the late charge engine requires). The interest to
  * date is the late charge engine's to `asAt` (not counting that day) less
  * any payment beyond the levy. The daily amount is the unpaid levy times the
- * annual rate divided by the pack's days in a year, summed over the notices
- * and rounded once, half up, to the cent; a notice whose interest is waived
- * in whole adds nothing.
+ * annual rate divided by the pack's days in a year, exactly (the rate at its
+ * full precision), summed over the notices and rounded once, half up, to the
+ * cent; a notice whose interest is waived in whole, or for a period that
+ * covers the as-at day, adds nothing, and a waived period without both its
+ * days refuses. The interest to date is the shared late charge engine's, as
+ * it charges it.
  */
 import type { StatutoryRules } from "@/config/statutory";
 import {
@@ -91,6 +94,10 @@ export function finalNoticeAmounts(input: FinalNoticeAmountsInput): FinalNoticeA
     else if (!pack || !(n.rulePack ?? "").startsWith(`${pack} `)) problems.push(`Notice ${n.number} was not issued under this building's rules in StrataVerze, so it does not count towards a final notice.`);
     if (!isDay(n.dueDate)) problems.push(`Notice ${n.number} has no due date.`);
     if (!wholeCents(n.levyCents) || n.payments.some((p) => !wholeCents(p.amountCents) || !isDay(p.date))) problems.push(`Notice ${n.number} has an amount or payment that cannot be read.`);
+    // A waived period must have both its days, so whether it covers the day the amounts are stated as at can be told.
+    if ((n.waivers ?? []).some((w) => w.kind === "PERIOD" && !(isDay(w.fromDate ?? "") && isDay(w.toDate ?? "") && (w.fromDate ?? "") <= (w.toDate ?? "")))) {
+      problems.push(`Notice ${n.number} has a waived period that cannot be read.`);
+    }
   }
   const rule = input.lateCharge;
   if (!rule.annual) problems.push("The building's late charge is not worked out at an annual rate, so the interest a final notice states cannot be worked out.");
@@ -100,6 +107,11 @@ export function finalNoticeAmounts(input: FinalNoticeAmountsInput): FinalNoticeA
 
   const rate = annualLateChargeRate(rule, input.setting, input.order);
   const daysInYear = rule.annual!.accrual.daysInYear.value;
+  const rateFraction = rate == null ? null : decimalFraction(rate);
+  const daysFraction = daysInYear == null ? null : decimalFraction(daysInYear);
+  if (rate != null && rate > 0 && (rateFraction == null || daysFraction == null || daysFraction[0] === BigInt(0))) {
+    return { ok: false, problems: ["The late charge rate or the days in a year cannot be read, so the interest a final notice states cannot be worked out."] };
+  }
   let feesCents = 0;
   let interestToDateCents = 0;
   let unpaidForDaily = BigInt(0);
@@ -116,13 +128,28 @@ export function finalNoticeAmounts(input: FinalNoticeAmountsInput): FinalNoticeA
     ).interestCents;
     // Payments go to the fees first: any beyond them paid interest.
     interestToDateCents += Math.max(0, accrued - Math.max(0, paid - n.levyCents));
-    if (!(n.waivers ?? []).some((w) => w.kind === "WHOLE")) unpaidForDaily += BigInt(unpaid);
+    // A notice whose interest is waived in whole, or for a period covering the day stated as at, accrues nothing that day.
+    const waived = (n.waivers ?? []).some((w) => w.kind === "WHOLE" || (w.kind === "PERIOD" && (w.fromDate ?? "") <= input.asAt && input.asAt <= (w.toDate ?? "")));
+    if (!waived) unpaidForDaily += BigInt(unpaid);
   }
   // No interest charged (NONE, or a rate of 0): 0 to date and 0 a day.
-  if (rate == null || rate <= 0 || daysInYear == null) return { ok: true, feesCents, interestToDateCents: 0, dailyCents: 0 };
-  // unpaid cents x rate / 100 / days in a year, the rate in hundredths of a percent, rounded once, half up, to the cent.
-  const rateHundredths = BigInt(Math.round(rate * 100));
-  const denominator = BigInt(10_000) * BigInt(Math.round(daysInYear));
-  const dailyCents = Number((BigInt(2) * unpaidForDaily * rateHundredths + denominator) / (BigInt(2) * denominator));
+  if (rate == null || rate <= 0 || rateFraction == null || daysFraction == null) return { ok: true, feesCents, interestToDateCents: 0, dailyCents: 0 };
+  // unpaid cents x rate / 100 / days in a year, exactly, with the rate and the days at their full precision (review L6),
+  // rounded once, half up, to the cent.
+  const [rateNum, rateDen] = rateFraction;
+  const [daysNum, daysDen] = daysFraction;
+  const numerator = unpaidForDaily * rateNum * daysDen;
+  const denominator = rateDen * BigInt(100) * daysNum;
+  const dailyCents = Number((BigInt(2) * numerator + denominator) / (BigInt(2) * denominator));
   return { ok: true, feesCents, interestToDateCents, dailyCents };
+}
+
+/** A finite number of 0 or more as an exact fraction of its shortest decimal form ([numerator, denominator]), or null. */
+function decimalFraction(n: number): [bigint, bigint] | null {
+  if (!Number.isFinite(n) || n < 0) return null;
+  let text = String(n);
+  if (/e/i.test(text)) text = n.toFixed(20).replace(/0+$/, "").replace(/\.$/, "");
+  if (!/^\d+(\.\d+)?$/.test(text)) return null;
+  const [whole, part = ""] = text.split(".");
+  return [BigInt(whole + part), BigInt(10) ** BigInt(part.length)];
 }
