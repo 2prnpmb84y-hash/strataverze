@@ -42,17 +42,27 @@ function owners(scheme: ProxyScheme) {
   return { list, distinct: new Set(list.map((m) => m.profileId)).size, everyLotHasOne: lotIds.size > 0 && [...lotIds].every((id) => owned.has(id)) };
 }
 
-/** Victoria s 89C(10): the lots owing money on `on` whose owner's email is the holder's. */
-async function holderOwesOn(scheme: ProxyScheme, email: string | null, on: string): Promise<string[]> {
-  const key = (email ?? "").trim().toLowerCase();
-  if (!key) return [];
-  const lotIds = owners(scheme)
-    .list.filter((m) => (m.profile?.email ?? "").trim().toLowerCase() === key)
-    .map((m) => m.lotId as string);
-  if (lotIds.length === 0) return [];
-  const owing = await lotsOwingMoney({ id: scheme.id, timeZone: scheme.timeZone }, lotIds, on);
+const emailKey = (email: string | null | undefined) => (email ?? "").trim().toLowerCase();
+
+/** The building's lots whose owner's email is one of `emails`. */
+function ownedLots(scheme: ProxyScheme, emails: readonly (string | null)[]): string[] {
+  const keys = new Set(emails.map(emailKey).filter(Boolean));
+  if (keys.size === 0) return [];
+  return [...new Set(owners(scheme).list.filter((m) => keys.has(emailKey(m.profile?.email))).map((m) => m.lotId as string))];
+}
+
+/** Victoria s 89C(10): which of the lots whose owner's email is one of `emails` owe money on `on`, read once. */
+async function owingLots(scheme: ProxyScheme, emails: readonly (string | null)[], on: string): Promise<Set<string>> {
+  const lotIds = ownedLots(scheme, emails);
+  return lotIds.length === 0 ? new Set() : lotsOwingMoney({ id: scheme.id, timeZone: scheme.timeZone }, lotIds, on);
+}
+
+/** The lot numbers, among those owing money, whose owner's email is the holder's. */
+function holderOwesOn(scheme: ProxyScheme, email: string | null, owing: ReadonlySet<string>): string[] {
   const number = new Map(scheme.lots.map((l) => [l.id, String(l.lotNumber)]));
-  return lotIds.filter((id) => owing.has(id)).map((id) => number.get(id) ?? "?");
+  return ownedLots(scheme, [email])
+    .filter((id) => owing.has(id))
+    .map((id) => number.get(id) ?? "?");
 }
 
 function facts(scheme: ProxyScheme, base: Pick<ProxyCapFacts, "holderName" | "held" | "day" | "meetingDay" | "holderOwesOn">): ProxyCapFacts {
@@ -80,7 +90,7 @@ export async function proxyWarningsForNewProxy(
   if (!holder) return [];
   const on = proxy.meetingDate ?? todayIn(scheme.timeZone, now);
   const held = proxiesHeld(await activeProxies(scheme), holder, proxy.meetingDate) + 1;
-  const owes = pack.PROXY_RULES.holderInArrears ? await holderOwesOn(scheme, proxy.proxyEmail, on) : [];
+  const owes = pack.PROXY_RULES.holderInArrears ? holderOwesOn(scheme, proxy.proxyEmail, await owingLots(scheme, [proxy.proxyEmail], on)) : [];
   return proxyCapWarnings(pack, facts(scheme, { holderName: proxy.proxyName ?? "", held, day: on, meetingDay: !!proxy.meetingDate, holderOwesOn: owes }));
 }
 
@@ -97,10 +107,12 @@ export async function proxyWarningsForMeeting(pack: StatutoryRules, scheme: Prox
     const key = proxyHolderKey(p);
     if (key && !holders.has(key)) holders.set(key, p);
   }
+  // Review L7: the debts of every holder's lots are read once for the page.
+  const owing = pack.PROXY_RULES.holderInArrears ? await owingLots(scheme, [...holders.values()].map((p) => p.proxyEmail), meetingDay) : new Set<string>();
   const out: string[] = [];
   for (const [key, first] of holders) {
     const held = proxiesHeld(proxies, key, meetingDay);
-    const owes = pack.PROXY_RULES.holderInArrears ? await holderOwesOn(scheme, first.proxyEmail, meetingDay) : [];
+    const owes = pack.PROXY_RULES.holderInArrears ? holderOwesOn(scheme, first.proxyEmail, owing) : [];
     out.push(...proxyCapWarnings(pack, facts(scheme, { holderName: first.proxyName ?? "", held, day: meetingDay, meetingDay: true, holderOwesOn: owes })));
   }
   return out;

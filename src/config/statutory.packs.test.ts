@@ -229,7 +229,8 @@ describe("Australian Capital Territory pack (pending)", () => {
     expect(act.DECISIONS[7]).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-29" });
     expect(act.DECISIONS[7].decision).toContain("(D15)");
     expect(act.DECISIONS[7].decision).toContain("PROXY_RULES");
-    expect(act.FOR_REVIEW.some((p) => p.startsWith("Proxy caps") && p.includes("D15") && p.includes("may be over"))).toBe(true);
+    expect(act.FOR_REVIEW.some((p) => p.startsWith("Proxy caps") && p.includes("D15") && p.includes("may be over") && p.includes("which no screen has yet"))).toBe(true);
+    expect(act.FOR_REVIEW.some((p) => p.includes("when a proxy is checked"))).toBe(false);
     expect(act.FOR_REVIEW.some((p) => p.startsWith("Minutes (sch 2 s 2.1(1)(c)") && p.includes("Stage C"))).toBe(true);
     // The minutes now state the later effect, so the point saying they do not is gone.
     expect(act.FOR_REVIEW.some((p) => p.includes("The minutes do not state the later effect yet"))).toBe(false);
@@ -367,6 +368,10 @@ describe("Victorian pack (pending)", () => {
     for (const id of ["D15", "D16", "D17", "D18"]) expect(proxies.decision).toContain(`(${id})`);
     for (const id of ["D15", "D16", "D17"]) expect(vic.FOR_REVIEW.find((p) => p.key === "PROXY_CAPS")?.point).toContain(`(${id})`);
     expect(vic.FOR_REVIEW.find((p) => p.key === "MINUTES_CONTENTS")?.point).toContain("D18");
+    // Review (29 Oct 2026): where the warnings show, no floor below 1 proxy, joint owners and the in-force start, for Matthew Wrigley.
+    const caps = vic.FOR_REVIEW.find((p) => p.key === "PROXY_CAPS")?.point ?? "";
+    for (const words of ["proxy limits panel", "which no screen has yet", "no floor is applied", "larger of 1 and the share rounded down", "Joint owners", "9 Sep 2026"]) expect(caps).toContain(words);
+    expect(caps).not.toContain("when a proxy is checked");
     expect(vic.FOR_REVIEW.find((p) => p.key === "MINUTES_CONTENTS")?.point).toContain("Stage C");
     expect(vic.FOR_REVIEW.find((p) => p.key === "MEETING_RULES_PENDING")?.point).not.toContain("The minutes do not state the later effect yet");
     // Stage 2, PR 8b-iii: the committee notice not checked (D12) and business days (D14), kept in FOR_REVIEW.

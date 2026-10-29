@@ -504,7 +504,8 @@ export const PENDING_RULE_PACKS = {
     // decision D15 of 29 Oct 2026: warn only, rounding not confirmed so "may be over" above the share rounded down and
     // over above it rounded up). MEETING_RULES gains minutesContents: the kind of each special, unopposed and unanimous
     // resolution (sch 2 s 2.1(1)(c), CONFIRMED) and a reduced quorum decision's later effect; the members present and the
-    // proxy and absentee details wait for Stage C. Recorded in DECISIONS and kept in FOR_REVIEW. The MEETING_RULES header
+    // proxy and absentee details wait for Stage C. DECISIONS gains D15 only (the proxy caps). The minutes' later effect is a
+    // StrataVerze choice kept in FOR_REVIEW (the minutes point), not a decision. The MEETING_RULES header
     // and notes and FOR_REVIEW's reduced quorum point are rewritten, MEETING_RULES_STATUS gains minutesContents, and
     // FOR_REVIEW gains the minutes and proxy caps points. No legal value or status already recorded changed; still a draft.
     version: "2026.10.12",
@@ -635,7 +636,8 @@ export const PENDING_RULE_PACKS = {
     // 5% of the lot owners, and 1 lot owner always once CLAA 2026 Part 6 Div 2 is recorded as commenced; values
     // unchanged), the reg 8A exceptions and the s 89C(10) bar on an owner in arrears acting as a proxy, each warned only
     // (how they are applied STRATAVERZE, Matthew Wrigley's decisions D15 to D17 of 29 Oct 2026: warn only, rounding
-    // not confirmed so "may be over" above the share rounded down and over above it rounded up, 5% of the distinct
+    // not confirmed so "may be over" above the share rounded down and over above it rounded up, no floor where the
+    // share is less than 1 proxy, 5% of the distinct
     // owners recorded or the lots where any lot has none, the holder in arrears matched by email). MEETING_RULES gains
     // minutesContents: the votes counted for each item (s 81, decision D18) and an interim resolution's later effect;
     // the attendance parts wait for Stage C. All recorded in DECISIONS and kept in FOR_REVIEW (PROXY_CAPS,

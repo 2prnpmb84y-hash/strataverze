@@ -55,6 +55,8 @@ const RULES = {
 };
 const ZONES = { VIC: "Australia/Melbourne", ACT: "Australia/Sydney", WA: "Australia/Perth" } as const;
 const NO_DASH_OR_SEMICOLON = /[;–—]/;
+/** The day the minutes are assembled in these tests. */
+const TODAY = "2026-11-03";
 
 /** A pending row as the minutes read it. */
 function row(state: keyof typeof RULES, kind: "INTERIM_SPECIAL" | "INTERIM_NO_QUORUM" | "REDUCED_QUORUM" | "VOTING_PERIOD", over: Record<string, unknown> = {}) {
@@ -81,18 +83,18 @@ function row(state: keyof typeof RULES, kind: "INTERIM_SPECIAL" | "INTERIM_NO_QU
 describe("minutesLaterEffect", () => {
   it("words each kind as it stands, with its dates", () => {
     const out = {
-      vicSpecialPending: minutesLaterEffect(row("VIC", "INTERIM_SPECIAL")),
-      vicSpecialNoticeGiven: minutesLaterEffect(row("VIC", "INTERIM_SPECIAL", { noticeGivenOn: "2026-11-10" })),
-      vicSpecialCarried: minutesLaterEffect(row("VIC", "INTERIM_SPECIAL", { status: "CARRIED", endedBy: "PERIOD_ENDED", effectiveOn: "2026-12-02", noticeGivenOn: "2026-11-10" })),
-      vicSpecialPetition: minutesLaterEffect(row("VIC", "INTERIM_SPECIAL", { status: "LOST", endedBy: "PETITION", petitionReceivedOn: "2026-11-20" })),
-      vicNoQuorumPending: minutesLaterEffect(row("VIC", "INTERIM_NO_QUORUM")),
-      vicNoQuorumCalled: minutesLaterEffect(row("VIC", "INTERIM_NO_QUORUM", { meetingNoticeGivenOn: "2026-11-10", meetingHeldBy: "2026-12-08" })),
-      vicNoQuorumNotConfirmed: minutesLaterEffect(row("VIC", "INTERIM_NO_QUORUM", { status: "LOST", endedBy: "NOT_CONFIRMED" })),
-      actPending: minutesLaterEffect(row("ACT", "REDUCED_QUORUM", { noticeGivenOn: "2026-11-05" })),
-      actConfirmed: minutesLaterEffect(row("ACT", "REDUCED_QUORUM", { status: "CARRIED", endedBy: "CONFIRMED", effectiveOn: "2026-11-25" })),
-      waOpen: minutesLaterEffect(row("WA", "VOTING_PERIOD")),
-      waCarried: minutesLaterEffect(row("WA", "VOTING_PERIOD", { status: "CARRIED", endedBy: "VOTES_AT_CLOSE", effectiveOn: "2026-12-01" })),
-      waLost: minutesLaterEffect(row("WA", "VOTING_PERIOD", { status: "LOST", endedBy: "VOTES_AT_CLOSE" })),
+      vicSpecialPending: minutesLaterEffect(row("VIC", "INTERIM_SPECIAL"), TODAY),
+      vicSpecialNoticeGiven: minutesLaterEffect(row("VIC", "INTERIM_SPECIAL", { noticeGivenOn: "2026-11-10" }), TODAY),
+      vicSpecialCarried: minutesLaterEffect(row("VIC", "INTERIM_SPECIAL", { status: "CARRIED", endedBy: "PERIOD_ENDED", effectiveOn: "2026-12-02", noticeGivenOn: "2026-11-10" }), TODAY),
+      vicSpecialPetition: minutesLaterEffect(row("VIC", "INTERIM_SPECIAL", { status: "LOST", endedBy: "PETITION", petitionReceivedOn: "2026-11-20" }), TODAY),
+      vicNoQuorumPending: minutesLaterEffect(row("VIC", "INTERIM_NO_QUORUM"), TODAY),
+      vicNoQuorumCalled: minutesLaterEffect(row("VIC", "INTERIM_NO_QUORUM", { meetingNoticeGivenOn: "2026-11-10", meetingHeldBy: "2026-12-08" }), TODAY),
+      vicNoQuorumNotConfirmed: minutesLaterEffect(row("VIC", "INTERIM_NO_QUORUM", { status: "LOST", endedBy: "NOT_CONFIRMED" }), TODAY),
+      actPending: minutesLaterEffect(row("ACT", "REDUCED_QUORUM", { noticeGivenOn: "2026-11-05" }), TODAY),
+      actConfirmed: minutesLaterEffect(row("ACT", "REDUCED_QUORUM", { status: "CARRIED", endedBy: "CONFIRMED", effectiveOn: "2026-11-25" }), TODAY),
+      waOpen: minutesLaterEffect(row("WA", "VOTING_PERIOD"), TODAY),
+      waCarried: minutesLaterEffect(row("WA", "VOTING_PERIOD", { status: "CARRIED", endedBy: "VOTES_AT_CLOSE", effectiveOn: "2026-12-01" }), TODAY),
+      waLost: minutesLaterEffect(row("WA", "VOTING_PERIOD", { status: "LOST", endedBy: "VOTES_AT_CLOSE" }), TODAY),
     };
     for (const v of Object.values(out)) expect(v.words).not.toMatch(NO_DASH_OR_SEMICOLON);
     expect(out.vicSpecialPending).toEqual({
@@ -102,21 +104,24 @@ describe("minutesLaterEffect", () => {
       windowClosesOn: "2026-12-01",
       effectiveOn: "2026-12-02",
       words:
-        "Interim special resolution, decided later. Its period ends on 1 December 2026. Pending. Unless it is stopped by a petition first, it takes effect as a special resolution on 2 December 2026 at the earliest, once its notice to the owners is recorded as given.",
+        "Interim special resolution, decided later. Its period ends on 1 December 2026. Pending. It takes effect as a special resolution on 2 December 2026 at the earliest, once its notice to the owners is recorded as given, unless a petition stops it first.",
     });
     expect(out.vicSpecialNoticeGiven.words).toBe(
-      "Interim special resolution, decided later. Its period ends on 1 December 2026. Pending. Unless it is stopped by a petition first, it takes effect as a special resolution on 2 December 2026.",
+      "Interim special resolution, decided later. Its period ends on 1 December 2026. Pending. It takes effect as a special resolution on 2 December 2026, unless a petition stops it first.",
     );
     expect(out.vicSpecialCarried).toMatchObject({ status: "CARRIED", effectiveOn: "2026-12-02" });
-    expect(out.vicSpecialCarried.words).toBe("Interim special resolution, decided later. Its period ends on 1 December 2026. Took effect as a special resolution on 2 December 2026.");
+    expect(out.vicSpecialCarried.words).toBe("Interim special resolution, decided later. Its period ended on 1 December 2026. Took effect as a special resolution on 2 December 2026.");
     expect(out.vicSpecialPetition).toMatchObject({ status: "LOST", effectiveOn: null });
     expect(out.vicSpecialPetition.words).toMatch(/Stopped by a petition, so it is recorded as lost\.$/);
-    expect(out.vicNoQuorumPending.words).toMatch(/^Interim resolution, decided later\. .* Unless it is stopped by notice of a special general meeting first, it takes effect on 2 December 2026 at the earliest/);
+    // Review L4: notice of a special general meeting does not stop it, it makes it depend on that meeting (s 78(4)).
+    expect(out.vicNoQuorumPending.words).toBe(
+      "Interim resolution, decided later. Its period ends on 1 December 2026. Pending. It takes effect on 2 December 2026 at the earliest, once its notice to the owners is recorded as given. If notice of a special general meeting is given by 1 December 2026, it depends on that meeting instead.",
+    );
     expect(out.vicNoQuorumCalled).toMatchObject({ effectiveOn: null });
     expect(out.vicNoQuorumCalled.words).toMatch(/Pending\. A special general meeting was called for it on 10 November 2026, to be held by 8 December 2026\.$/);
     expect(out.vicNoQuorumNotConfirmed.words).toMatch(/Not confirmed at the special general meeting, so it is recorded as lost\.$/);
     expect(out.actPending.words).toBe(
-      "Reduced quorum decision, decided later. Its period ends on 30 November 2026. Pending. Unless it is stopped by a petition or confirmed at a later meeting first, it takes effect on 1 December 2026.",
+      "Reduced quorum decision, decided later. Its period ends on 30 November 2026. Pending. It takes effect on 1 December 2026, unless a petition stops it first. A later meeting that confirms it brings it forward to that meeting's day.",
     );
     expect(out.actConfirmed.words).toMatch(/Took effect on 25 November 2026\.$/);
     expect(out.waOpen).toMatchObject({ label: "Voting period", status: "PENDING", effectiveOn: "2026-12-01" });
@@ -126,12 +131,39 @@ describe("minutesLaterEffect", () => {
     expect(out.waCarried.words).toBe("Voting period. Voting closed on 30 November 2026. Carried on the votes at the close, as at 1 December 2026.");
     expect(out.waLost.words).toBe("Voting period. Voting closed on 30 November 2026. Lost on the votes at the close.");
   });
+
+  it("tells a period that has ended, still pending in its days of grace, in the past tense (review L4)", () => {
+    const wa = minutesLaterEffect(row("WA", "VOTING_PERIOD"), "2026-12-03");
+    expect(wa.words).toBe(
+      "Voting period. Voting closed on 30 November 2026. It is decided as at 1 December 2026 on the votes at the meeting and the written votes received by then. The result is recorded by 8 December 2026.",
+    );
+    expect(minutesLaterEffect(row("WA", "VOTING_PERIOD"), "2026-11-30").words).toMatch(/Voting is open until 30 November 2026\./);
+    expect(minutesLaterEffect(row("ACT", "REDUCED_QUORUM"), "2026-12-01").words).toMatch(/^Reduced quorum decision, decided later\. Its period ended on 30 November 2026\. Pending\./);
+    for (const w of [wa.words]) expect(w).not.toMatch(NO_DASH_OR_SEMICOLON);
+  });
 });
 
 describe("minutesVoting and minutesItemExtras", () => {
   it("reads the votes of a recorded count, and nothing where the event holds none", () => {
-    expect(minutesVoting({ tally: { forCount: 12, againstCount: 3, abstainCount: 1 }, notCounted: [{ lotId: "x" }] })).toEqual({ for: 12, against: 3, abstain: 1, poll: false, notCounted: 1 });
-    expect(minutesVoting({ tally: { forCount: 2, againstCount: 1, poll: true, forUE: 120, againstUE: 30 } })).toEqual({ for: 2, against: 1, abstain: 0, poll: true, forEntitlement: 120, againstEntitlement: 30, notCounted: 0 });
+    expect(minutesVoting({ tally: { forCount: 12, againstCount: 3, abstainCount: 1 }, notCounted: [{ lotId: "x" }] })).toEqual({
+      for: 12,
+      against: 3,
+      abstain: 1,
+      poll: false,
+      notCounted: 1,
+      words: "Votes counted: 12 for, 3 against, 1 abstaining. 1 vote not counted for money owed.",
+    });
+    // Review L5: what a poll is counted by is the pack's schedule name, given by the server.
+    expect(minutesVoting({ tally: { forCount: 2, againstCount: 1, poll: true, forUE: 120, againstUE: 30 } }, "lot entitlement")).toEqual({
+      for: 2,
+      against: 1,
+      abstain: 0,
+      poll: true,
+      forEntitlement: 120,
+      againstEntitlement: 30,
+      notCounted: 0,
+      words: "Votes counted: 2 for, 1 against. On a poll counted by lot entitlement, 120 for and 30 against.",
+    });
     expect(minutesVoting({ itemId: "i1", outcome: "RESOLVED" })).toBeNull();
     expect(minutesVoting(null)).toBeNull();
   });
@@ -148,12 +180,12 @@ describe("minutesVoting and minutesItemExtras", () => {
       { eventType: "NOTICE_ISSUED", payload: { itemId: "i3", tally: { forCount: 9, againstCount: 0 } } },
     ];
     const pending = [row("ACT", "REDUCED_QUORUM")];
-    const act = minutesItemExtras(RULES.ACT.minutesContents!, RULES.ACT.resolutionLabels, items, events, pending);
-    expect(act.get("i1")).toEqual({ kind: "Special Resolution", laterEffect: minutesLaterEffect(pending[0]) });
+    const act = minutesItemExtras(RULES.ACT.minutesContents!, RULES.ACT.resolutionLabels, items, events, pending, TODAY);
+    expect(act.get("i1")).toEqual({ kind: "Special Resolution", laterEffect: minutesLaterEffect(pending[0], TODAY) });
     expect(act.get("i2")).toEqual({});
     expect(act.get("i3")).toEqual({ kind: "Unanimous Resolution" });
-    const vic = minutesItemExtras(RULES.VIC.minutesContents!, RULES.VIC.resolutionLabels, items, events, []);
-    expect(vic.get("i2")).toEqual({ voting: { for: 6, against: 1, abstain: 0, poll: false, notCounted: 0 } });
+    const vic = minutesItemExtras(RULES.VIC.minutesContents!, RULES.VIC.resolutionLabels, items, events, [], TODAY, "lot entitlement");
+    expect(vic.get("i2")).toEqual({ voting: { for: 6, against: 1, abstain: 0, poll: false, notCounted: 0, words: "Votes counted: 6 for, 1 against." } });
     expect(vic.get("i1")).toEqual({});
     expect(vic.get("i3")).toEqual({});
   });
@@ -212,7 +244,7 @@ describe("assembleMinutesAction under the draft packs", () => {
     expect(await assembleMinutesAction("s1", "m1")).toEqual({ ok: true });
     expect(access).toEqual(["Meeting", "Scheme", "AgendaItem", "Minutes", "MeetingEvent", "PendingResolution", "Minutes", "MeetingEvent"]);
     const [i1, i2, i3] = stored();
-    expect(i1).toMatchObject({ outcome: "INTERIM", voting: { for: 6, against: 1, abstain: 1, poll: false, notCounted: 0 }, laterEffect: { kind: "INTERIM_SPECIAL", status: "PENDING", windowClosesOn: "2026-12-01", effectiveOn: "2026-12-02" } });
+    expect(i1).toMatchObject({ outcome: "INTERIM", voting: { for: 6, against: 1, abstain: 1, poll: false, notCounted: 0, words: "Votes counted: 6 for, 1 against, 1 abstaining." }, laterEffect: { kind: "INTERIM_SPECIAL", status: "PENDING", windowClosesOn: "2026-12-01", effectiveOn: "2026-12-02" } });
     expect(i1).not.toHaveProperty("kind");
     expect(i2).toEqual({
       position: 2,
@@ -220,7 +252,16 @@ describe("assembleMinutesAction under the draft packs", () => {
       resolutionText: null,
       explanatoryNote: null,
       outcome: "RESOLVED",
-      voting: { for: 7, against: 2, abstain: 0, poll: true, forEntitlement: 700, againstEntitlement: 200, notCounted: 2 },
+      voting: {
+        for: 7,
+        against: 2,
+        abstain: 0,
+        poll: true,
+        forEntitlement: 700,
+        againstEntitlement: 200,
+        notCounted: 2,
+        words: "Votes counted: 7 for, 2 against. On a poll counted by lot entitlement, 700 for and 200 against. 2 votes not counted for money owed.",
+      },
     });
     expect(i3).toEqual({ position: 3, title: "Elect the committee", resolutionText: null, explanatoryNote: null, outcome: "DEFERRED" });
   });
@@ -281,18 +322,18 @@ describe("MinutesSection under the draft packs", () => {
                 resolutionText: "That the roof be replaced.",
                 outcome: "INTERIM",
                 kind: "Special Resolution",
-                voting: { for: 6, against: 1, abstain: 1, poll: false, notCounted: 1 },
-                laterEffect: minutesLaterEffect(row("VIC", "INTERIM_SPECIAL")),
+                voting: { words: "Votes counted: 6 for, 1 against, 1 abstaining. 1 vote not counted for money owed." },
+                laterEffect: minutesLaterEffect(row("VIC", "INTERIM_SPECIAL"), TODAY),
               },
               {
                 position: 2,
                 title: "Adopt a by-law",
                 resolutionText: null,
                 outcome: "OPEN",
-                voting: { for: 7, against: 2, abstain: 0, poll: true, forEntitlement: 700, againstEntitlement: 200, notCounted: 0 },
-                laterEffect: minutesLaterEffect(row("WA", "VOTING_PERIOD")),
+                voting: { words: "Votes counted: 7 for, 2 against. On a poll counted by lot entitlement, 700 for and 200 against." },
+                laterEffect: minutesLaterEffect(row("WA", "VOTING_PERIOD"), TODAY),
               },
-              { position: 3, title: "Paint", resolutionText: null, outcome: "RESOLVED", voting: { for: 1, against: 0, abstain: 0, poll: false, notCounted: 2 } },
+              { position: 3, title: "Paint", resolutionText: null, outcome: "RESOLVED", voting: { words: "Votes counted: 1 for, 0 against. 2 votes not counted for money owed." } },
             ],
           },
         }}
@@ -303,7 +344,7 @@ describe("MinutesSection under the draft packs", () => {
     expect(html).not.toMatch(/— (INTERIM|OPEN)</);
     expect(html).toContain('<p class="mt-1 text-xs text-ink-muted">Special Resolution</p>');
     expect(html).toContain("Votes counted: 6 for, 1 against, 1 abstaining. 1 vote not counted for money owed.");
-    expect(html).toContain("Votes counted: 7 for, 2 against. On a poll, lot entitlement 700 for and 200 against.");
+    expect(html).toContain("Votes counted: 7 for, 2 against. On a poll counted by lot entitlement, 700 for and 200 against.");
     expect(html).toContain("Votes counted: 1 for, 0 against. 2 votes not counted for money owed.");
     expect(html).toContain("Interim special resolution, decided later. Its period ends on 1 December 2026.");
     expect(html).toContain("Voting period. Voting is open until 30 November 2026.");

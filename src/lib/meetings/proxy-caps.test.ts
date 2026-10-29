@@ -82,6 +82,19 @@ describe("Victoria (s 89D), warned only", () => {
     expect(exact).not.toContain("rounded");
   });
 
+  it("review M2: where 5% of the owners is less than 1 proxy, no floor: any proxy may be over, and no limit of 0 is stated", () => {
+    // More than 20 occupiable lots, 10 owners recorded: 0.5.
+    const [one] = warn(VIC, facts({ lotCount: 30, ownerCount: 10, held: 1 }));
+    expect(one).toBe(
+      "Pat Holder holds 1 proxy for the meeting on 20 November 2026, which may be over the limit. 5% of 10 lot owners recorded is 0.5, less than 1 proxy, and whether at least 1 is allowed is not confirmed. The limit does not apply to family members, one owner with multiple lots (prescribed) or owners corporations managing commercial, retail or industrial common property (prescribed) (Owners Corporations Regulations 2018 (Vic) reg 8A).",
+    );
+    expect(one).not.toContain("0 proxies");
+    // 2 is over whether or not at least 1 is allowed.
+    const [two] = warn(VIC, facts({ lotCount: 30, ownerCount: 10, held: 2 }));
+    expect(two).toMatch(/, over the limit of 5% of 10 lot owners recorded, which is 0\.5\. This is over it rounded either way\./);
+    expect(two).not.toContain("0 proxies");
+  });
+
   it("D16: the distinct owners recorded, or the lots where any lot has no owner, said so", () => {
     // 41 lots, but one owner holds many: 25 distinct owners, 1.25.
     expect(warn(VIC, facts({ lotCount: 41, ownerCount: 25, held: 2 }))[0]).toMatch(/may be over the limit of 5% of 25 lot owners recorded, which is 1\.25/);
@@ -97,8 +110,12 @@ describe("Victoria (s 89D), warned only", () => {
     const f = facts({ lotCount: 30, held: 2 });
     f.building = { scheme: { totalLots: 30 }, lots: [...lots(29), { id: "x", lotNumber: "30", lotType: "RESIDENTIAL", occupiable: null }] };
     const [w] = warn(VIC, f);
-    expect(w).toMatch(/which may be over the limit\. The limit is 1 proxy where there are 20 or fewer occupiable lots, and StrataVerze cannot tell how many lots are occupiable until every lot's answer is recorded\./);
+    expect(w).toMatch(/which may be over the limit\. The limit is 1 proxy where there are 20 or fewer occupiable lots, and StrataVerze cannot tell how many lots are occupiable because lot 30 has no answer for occupiable lot\./);
     expect(warn(VIC, { ...f, held: 1 })).toEqual([]);
+    // Review L2: the lots recorded do not match the building's total, said as it is.
+    const mismatch = facts({ lotCount: 30, held: 2 });
+    mismatch.building = { scheme: { totalLots: 32 }, lots: lots(30) };
+    expect(warn(VIC, mismatch)[0]).toMatch(/cannot tell how many lots are occupiable because 30 lots are recorded but the building's total is 32\./);
   });
 
   it("reads the limit on the day: none before 9 Sep 2026, and refused once 1 Dec 2027 passes with no commencement recorded", () => {
@@ -164,7 +181,7 @@ describe("the ACT (sch 3 s 3.26(3), (4)), warned only", () => {
     const f = facts({ lotCount: 30, held: 2 });
     f.building = { scheme: { totalLots: 35 }, lots: lots(30) };
     expect(warn(ACT, f)).toEqual([
-      "StrataVerze cannot work out the proxy limit for this building, so Pat Holder's 2 proxies for the meeting on 20 November 2026 are not checked. The proxy limit could not be worked out from the units recorded.",
+      "StrataVerze cannot work out the proxy limit for this building, so Pat Holder's 2 proxies for the meeting on 20 November 2026 are not checked. The proxy limit cannot be worked out because 30 units are recorded but the building's total is 35. Record what is missing in the building rules.",
     ]);
     expect(warn(ACT, { ...f, held: 1 })).toEqual([]);
   });

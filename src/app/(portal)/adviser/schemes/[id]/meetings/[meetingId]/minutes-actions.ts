@@ -1,7 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { dayIn, meetingZone } from "@/lib/jurisdiction/time-zone";
+import { dayIn, meetingZone, todayIn } from "@/lib/jurisdiction/time-zone";
+import { scheduleFor } from "@/lib/jurisdiction/building-data";
 import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
 import { AuthorisationError } from "@/lib/auth/require-membership";
 import { requireSchemeAccess } from "@/lib/auth/require-access";
@@ -64,6 +65,9 @@ export async function assembleMinutesAction(
           items,
           contents.voting ? await getMeetingEvents(meetingId) : [],
           contents.laterEffect ? await pendingRowsForMinutes(meetingId) : [],
+          todayIn(timeZoneOf(scheme)),
+          // What a poll is counted by, as the pack names it (review L5, as conduct names it).
+          contents.voting ? scheduleFor(pack, "POLL_VOTE").name : null,
         )
       : null;
 

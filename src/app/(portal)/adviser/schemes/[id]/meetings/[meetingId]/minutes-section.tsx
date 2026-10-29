@@ -20,19 +20,6 @@ const OUTCOME_LABELS: Record<string, string> = {
   OPEN: "Voting open",
 };
 
-/** The votes counted at an item, in plain words (the draft packs only, PR 8b-iv). */
-function votingWords(v: NonNullable<MinutesItem["voting"]>): string {
-  const counted = `Votes counted: ${v.for} for, ${v.against} against${v.abstain ? `, ${v.abstain} abstaining` : ""}.`;
-  const poll =
-    v.poll && v.forEntitlement != null && v.againstEntitlement != null
-      ? ` On a poll, lot entitlement ${v.forEntitlement} for and ${v.againstEntitlement} against.`
-      : v.poll
-        ? " On a poll."
-        : "";
-  const notCounted = v.notCounted ? ` ${v.notCounted} ${v.notCounted === 1 ? "vote" : "votes"} not counted for money owed.` : "";
-  return `${counted}${poll}${notCounted}`;
-}
-
 interface MinutesItem {
   position: number;
   title: string;
@@ -40,7 +27,8 @@ interface MinutesItem {
   outcome: string | null;
   /* The draft packs only (PR 8b-iv): left out of every other building's minutes. */
   kind?: string;
-  voting?: { for: number; against: number; abstain: number; poll: boolean; forEntitlement?: number; againstEntitlement?: number; notCounted: number };
+  /** The votes counted, with their words worked out on the server (review L5). */
+  voting?: { words?: string };
   laterEffect?: { words: string };
 }
 
@@ -196,7 +184,7 @@ export function MinutesSection({
                     </p>
                   )}
                   {item.kind && <p className="mt-1 text-xs text-ink-muted">{item.kind}</p>}
-                  {item.voting && <p className="mt-1 text-xs text-ink-muted">{votingWords(item.voting)}</p>}
+                  {item.voting?.words && <p className="mt-1 text-xs text-ink-muted">{item.voting.words}</p>}
                   {item.laterEffect?.words && <p className="mt-1 text-xs text-ink-muted">{item.laterEffect.words}</p>}
                 </li>
               ))}

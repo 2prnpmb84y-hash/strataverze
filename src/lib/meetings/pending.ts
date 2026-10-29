@@ -752,10 +752,15 @@ export interface MinutesLaterEffect {
   words: string;
 }
 
-/** The later effect of one pending row, for the minutes. */
-export function minutesLaterEffect(row: PendingPanelRow): MinutesLaterEffect {
+/**
+ * The later effect of one pending row, for the minutes, as at `today` (the
+ * day they are assembled, in the building's time zone): a period that has
+ * ended is told in the past tense (review L4).
+ */
+export function minutesLaterEffect(row: PendingPanelRow, today: string): MinutesLaterEffect {
   const rule = row.rule;
   const status = (["CARRIED", "LOST"].includes(row.status) ? row.status : "PENDING") as MinutesLaterEffect["status"];
+  const ended = today > row.windowClosesOn;
   const closes = formatDay(row.windowClosesOn);
   const next = addDays(row.windowClosesOn, 1);
   const base = { kind: row.kind, label: rule.label, status, windowClosesOn: row.windowClosesOn };
@@ -764,13 +769,17 @@ export function minutesLaterEffect(row: PendingPanelRow): MinutesLaterEffect {
       return { ...base, effectiveOn: row.effectiveOn, words: `${rule.label}. Voting closed on ${closes}. Carried on the votes at the close, as at ${row.effectiveOn ? formatDay(row.effectiveOn) : "a day not recorded"}.` };
     }
     if (status === "LOST") return { ...base, effectiveOn: null, words: `${rule.label}. Voting closed on ${closes}. Lost on the votes at the close.` };
+    // Review L4: during the days of grace the period has closed, and the result is recorded by the day after the grace.
+    const recordedBy = addDays(graceEndsOn(rule, row.windowClosesOn), 1);
     return {
       ...base,
       effectiveOn: next,
-      words: `${rule.label}. Voting is open until ${closes}. It is decided as at ${formatDay(next)} on the votes at the meeting and the written votes received by then.`,
+      words: ended
+        ? `${rule.label}. Voting closed on ${closes}. It is decided as at ${formatDay(next)} on the votes at the meeting and the written votes received by then. The result is recorded by ${formatDay(recordedBy)}.`
+        : `${rule.label}. Voting is open until ${closes}. It is decided as at ${formatDay(next)} on the votes at the meeting and the written votes received by then.`,
     };
   }
-  const head = `${rule.label}, decided later. Its period ends on ${closes}.`;
+  const head = `${rule.label}, decided later. Its period ${ended || status !== "PENDING" ? "ended" : "ends"} on ${closes}.`;
   if (status === "CARRIED") {
     const as = rule.takesEffectAs !== "SAME" ? ` as a ${rule.takesEffectAs.toLowerCase()} resolution` : "";
     return { ...base, effectiveOn: row.effectiveOn, words: `${head} Took effect${as} on ${row.effectiveOn ? formatDay(row.effectiveOn) : "a day not recorded"}.` };
@@ -793,16 +802,16 @@ export function minutesLaterEffect(row: PendingPanelRow): MinutesLaterEffect {
   }
   const effectiveOn = effectiveFrom(row, next);
   const awaitsNotice = rule.noticeRequiredBeforeEffect && !row.noticeGivenOn;
-  const sooner = [
-    rule.petition ? "stopped by a petition" : null,
-    rule.meetingNotice ? "stopped by notice of a special general meeting" : null,
-    rule.confirmedSoonerBy ? "confirmed at a later meeting" : null,
-  ].filter((x): x is string => !!x);
-  const unless = sooner.length ? `Unless it is ${sooner.join(" or ")} first, it` : "It";
   const as = rule.takesEffectAs !== "SAME" ? ` as a ${rule.takesEffectAs.toLowerCase()} resolution` : "";
+  // Review L4: a petition stops it, notice of a special general meeting (Victoria s 78(4)) makes it depend on that
+  // meeting, and a later meeting that confirms it (the ACT) brings it forward. Separate sentences, no semicolons.
+  const notice = awaitsNotice ? " at the earliest, once its notice to the owners is recorded as given" : "";
+  const petition = rule.petition ? ", unless a petition stops it first" : "";
+  const meeting = rule.meetingNotice ? ` If notice of a special general meeting is given by ${closes}, it depends on that meeting instead.` : "";
+  const confirmed = rule.confirmedSoonerBy ? " A later meeting that confirms it brings it forward to that meeting's day." : "";
   return {
     ...base,
     effectiveOn,
-    words: `${head} Pending. ${unless} takes effect${as} on ${formatDay(effectiveOn)}${awaitsNotice ? " at the earliest, once its notice to the owners is recorded as given" : ""}.`,
+    words: `${head} Pending. It takes effect${as} on ${formatDay(effectiveOn)}${notice}${petition}.${meeting}${confirmed}`,
   };
 }

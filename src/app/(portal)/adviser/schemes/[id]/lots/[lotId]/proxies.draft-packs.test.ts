@@ -160,6 +160,26 @@ describe("proxyWarningsForMeeting (the meeting page)", () => {
     expect(out[1]).toMatch(/^Sam Other holds 2 proxies for the meeting on 20 November 2026, over the limit of 1 proxy/);
   });
 
+  it("reads the debts once for the page, whatever the number of holders (review L7)", async () => {
+    seed(
+      "VIC",
+      15,
+      [
+        { lotId: "l5", proxyName: "Owner Three", proxyEmail: "owner3@example.com", meetingDate: "2026-11-20" },
+        { lotId: "l6", proxyName: "Owner Four", proxyEmail: "owner4@example.com", meetingDate: "2026-11-20" },
+        { lotId: "l7", proxyName: "Owner Nine", proxyEmail: "owner9@example.com", meetingDate: "2026-11-20" },
+      ],
+      [overdue("l3"), overdue("l9")],
+    );
+    const scheme = sharedFake.table("Scheme")[0] as never;
+    const out = await proxyWarningsForMeeting(PENDING_RULE_PACKS.VIC.rules as never, scheme, "2026-11-20");
+    expect(out).toEqual([
+      expect.stringMatching(/^Owner Three's email matches the owner of lot 3, which owes/),
+      expect.stringMatching(/^Owner Nine's email matches the owner of lot 9, which owes/),
+    ]);
+    expect(access.filter((a) => a === "LevyNotice")).toHaveLength(1);
+  });
+
   it("reads nothing for a pack without caps", async () => {
     seed("WA", 5, [{ lotId: "l1", ...HOLDER }, { lotId: "l2", ...HOLDER }]);
     const scheme = sharedFake.table("Scheme")[0] as never;

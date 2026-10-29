@@ -28,6 +28,8 @@ export interface MinutesVoting {
   againstEntitlement?: number;
   /** The votes entered but not counted (a lot owing money). */
   notCounted: number;
+  /** The votes in plain words, as the minutes show them. */
+  words: string;
 }
 
 export interface MinutesAgendaItem {
@@ -60,13 +62,17 @@ export interface MinutesEventSource {
 
 const count = (v: unknown): number => (typeof v === "number" && Number.isFinite(v) ? v : 0);
 
-/** The votes of a recorded count, or null where the event holds no count. */
-export function minutesVoting(payload: unknown): MinutesVoting | null {
+/**
+ * The votes of a recorded count, or null where the event holds no count,
+ * with their words (review L5: worked out here, so the browser takes no pack
+ * value). `pollCountedBy` names what a poll is counted by, from the pack.
+ */
+export function minutesVoting(payload: unknown, pollCountedBy: string | null = null): MinutesVoting | null {
   const p = (payload ?? {}) as { tally?: unknown; notCounted?: unknown };
   const tally = p.tally as Record<string, unknown> | null | undefined;
   if (!tally || typeof tally !== "object" || typeof tally.forCount !== "number" || typeof tally.againstCount !== "number") return null;
   const poll = tally.poll === true;
-  return {
+  const v = {
     for: count(tally.forCount),
     against: count(tally.againstCount),
     abstain: count(tally.abstainCount),
@@ -75,6 +81,21 @@ export function minutesVoting(payload: unknown): MinutesVoting | null {
     ...(poll && typeof tally.againstUE === "number" ? { againstEntitlement: tally.againstUE } : {}),
     notCounted: Array.isArray(p.notCounted) ? p.notCounted.length : 0,
   };
+  return { ...v, words: votingWords(v, pollCountedBy) };
+}
+
+/** The votes counted at an item, in plain words with no dashes or semicolons. */
+function votingWords(v: Omit<MinutesVoting, "words">, pollCountedBy: string | null): string {
+  const counted = `Votes counted: ${v.for} for, ${v.against} against${v.abstain ? `, ${v.abstain} abstaining` : ""}.`;
+  const by = pollCountedBy ? ` by ${pollCountedBy}` : "";
+  const poll =
+    v.poll && v.forEntitlement != null && v.againstEntitlement != null
+      ? ` On a poll counted${by}, ${v.forEntitlement} for and ${v.againstEntitlement} against.`
+      : v.poll
+        ? ` On a poll${pollCountedBy ? ` counted${by}` : ""}.`
+        : "";
+  const notCounted = v.notCounted ? ` ${v.notCounted} ${v.notCounted === 1 ? "vote" : "votes"} not counted for money owed.` : "";
+  return `${counted}${poll}${notCounted}`;
 }
 
 /**
@@ -89,13 +110,17 @@ export function minutesItemExtras(
   items: readonly MinutesItemSource[],
   events: readonly MinutesEventSource[],
   pending: readonly PendingPanelRow[],
+  /** The day the minutes are assembled, in the building's time zone. */
+  today: string,
+  /** How a poll is counted, as the pack names the schedule ("lot entitlement"). */
+  pollCountedBy: string | null = null,
 ): Map<string, Pick<MinutesAgendaItem, "kind" | "voting" | "laterEffect">> {
   const latestCount = new Map<string, MinutesVoting | null>();
   if (contents.voting) {
     for (const e of events) {
       if (e.eventType !== "AGENDA_OUTCOME_RECORDED") continue;
       const itemId = (e.payload as { itemId?: unknown } | null)?.itemId;
-      if (typeof itemId === "string") latestCount.set(itemId, minutesVoting(e.payload));
+      if (typeof itemId === "string") latestCount.set(itemId, minutesVoting(e.payload, pollCountedBy));
     }
   }
   const rows = new Map(contents.laterEffect ? pending.map((r) => [r.agendaItemId, r]) : []);
@@ -108,7 +133,7 @@ export function minutesItemExtras(
     out.set(item.id, {
       ...(kind ? { kind } : {}),
       ...(voting ? { voting } : {}),
-      ...(row ? { laterEffect: minutesLaterEffect(row) } : {}),
+      ...(row ? { laterEffect: minutesLaterEffect(row, today) } : {}),
     });
   }
   return out;

@@ -15,7 +15,10 @@
  *   Victoria, the ACT's chair) cannot be told from the records, so the words
  *   name them. A share is rounded in neither direction by the notes: a holder
  *   above the share rounded down "may be over", above it rounded up "is
- *   over", and the words say the rounding is not confirmed;
+ *   over", and the words say the rounding is not confirmed. Where the share
+ *   is less than 1 proxy (review M2), no floor is applied, as s 89D sets
+ *   none: any proxy "may be over", and the words say whether at least 1 is
+ *   allowed is not confirmed;
  * - D16: Victoria's 5% is of the distinct owners recorded on the building's
  *   lots, and of the lots where any lot has no owner recorded (said so);
  * - D17: a Victorian holder whose email matches an owner of a lot owing money
@@ -31,7 +34,7 @@
  */
 import type { StatutoryRules } from "@/config/statutory";
 import { ruleInForceOn, type DatedValueOf } from "@/lib/jurisdiction/dated-rules";
-import { buildingFacts, deriveSelector, lotNouns, type BuildingFactRecords } from "@/lib/jurisdiction/building-selectors";
+import { buildingFacts, deriveSelector, derivedProblem, gapWords, lotNouns, type BuildingFactRecords } from "@/lib/jurisdiction/building-selectors";
 import { formatDay } from "./pending";
 
 export type ProxyRules = NonNullable<StatutoryRules["PROXY_RULES"]>;
@@ -111,7 +114,8 @@ export function proxyCapWarnings(pack: PackRules, facts: ProxyCapFacts): string[
   const holds = `${who} holds ${proxiesWord(facts.held)} for ${when}`;
   const except = `The limit does not apply ${rules.exceptWords}.`;
   const rounding = rules.roundingStatus === "CONFIRMED" ? "" : " How the share is rounded is not confirmed.";
-  const values = buildingFacts(facts.building, pack).values;
+  const factsOf = buildingFacts(facts.building, pack);
+  const values = factsOf.values;
 
   /** The warning for a holder over a fixed limit, or over (or perhaps over) a share. */
   const fixed = (max: number, why: string, extra = "") => {
@@ -120,7 +124,11 @@ export function proxyCapWarnings(pack: PackRules, facts: ProxyCapFacts): string[
   const shareOf = (n: number, percent: number, of: string, extra = "") => {
     const { down, up } = share(n, percent);
     const limit = `${percent}% of ${n} ${of}, which is ${shareWords(n, percent)}`;
-    if (facts.held > up) {
+    if (down === 0 && facts.held <= up) {
+      // Review M2: the share is less than 1 proxy. s 89D sets no floor, so whether at least 1 is allowed is not
+      // confirmed (FOR_REVIEW PROXY_CAPS): any proxy may be over, and no limit of 0 proxies is stated.
+      out.push(`${holds}, which may be over the limit. ${percent}% of ${n} ${of} is ${shareWords(n, percent)}, less than 1 proxy, and whether at least 1 is allowed is not confirmed. ${except}${extra}`);
+    } else if (facts.held > up) {
       out.push(`${holds}, over the limit of ${limit}.${down === up ? "" : " This is over it rounded either way."} ${except}${extra}`);
     } else if (facts.held > down) {
       out.push(`${holds}, which may be over the limit of ${limit}. Rounded down the limit is ${proxiesWord(down)}, rounded up ${proxiesWord(up)}.${rounding} ${except}${extra}`);
@@ -143,13 +151,13 @@ export function proxyCapWarnings(pack: PackRules, facts: ProxyCapFacts): string[
       if (!above) {
         fixed(value.maxLotOwners, "", extra);
       } else {
-        const occupiable = values.OCCUPIABLE_LOT_COUNT;
+        const occupiable = factsOf.values.OCCUPIABLE_LOT_COUNT;
         const atMost = above.occupiableLotsMoreThan;
         if (typeof occupiable !== "number") {
           // Not every lot's occupiable answer is known: the stricter limit may apply.
           if (facts.held > value.maxLotOwners) {
             out.push(
-              `${holds}, which may be over the limit. The limit is ${proxiesWord(value.maxLotOwners)} where there are ${atMost} or fewer occupiable lots, and StrataVerze cannot tell how many lots are occupiable until every lot's answer is recorded. ${except}${extra}`,
+              `${holds}, which may be over the limit. The limit is ${proxiesWord(value.maxLotOwners)} where there are ${atMost} or fewer occupiable lots, and StrataVerze cannot tell how many lots are occupiable because ${gapWords(pack, "OCCUPIABLE_LOT_COUNT", factsOf)}. ${except}${extra}`,
             );
           }
         } else if (occupiable <= atMost) {
@@ -170,7 +178,7 @@ export function proxyCapWarnings(pack: PackRules, facts: ProxyCapFacts): string[
     const limit = derived.ok ? rules.band.limits.find((l) => l.value === derived.value) : undefined;
     if (!derived.ok || !limit) {
       if (facts.held > 1) {
-        const why = !derived.ok && "message" in derived ? derived.message : rules.band.selector.noRuleFits;
+        const why = (!derived.ok ? derivedProblem(pack, rules.band.selector, derived, factsOf) : null) ?? rules.band.selector.noRuleFits;
         out.push(`StrataVerze cannot work out the proxy limit for this building, so ${who}'s ${proxiesWord(facts.held)} for ${when} are not checked. ${why}`);
       }
     } else if ("proxies" in limit.max) {

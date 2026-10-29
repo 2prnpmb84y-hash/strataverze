@@ -154,10 +154,12 @@ export default async function MeetingDetailPage({
         )
       : null;
   // Proxy caps (the draft packs with proxy rules only, Victoria and the ACT, stage 2, PR 8b-iv): the holders of proxies
-  // for this meeting's day over, or perhaps over, the limit, warned only. Nothing more is read for any other building.
+  // for this meeting's day over, or perhaps over, the limit, warned only. The caps are general meeting rules (s 89D,
+  // sch 3 s 3.26), so a committee meeting has none (review L1). Nothing more is read for any other building.
   const packRules = rulesForState(scheme.state).rules;
+  const generalMeeting = normalisedType != null && normalisedType !== "COMMITTEE";
   let proxyWarnings: string[] = [];
-  if (packRules.PROXY_RULES) {
+  if (packRules.PROXY_RULES && generalMeeting) {
     try {
       proxyWarnings = await proxyWarningsForMeeting(
         packRules,
