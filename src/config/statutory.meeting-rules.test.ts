@@ -99,6 +99,8 @@ const NEW_KEYS = [
   // Stage 2, PR 8b-iii (29 Oct 2026).
   "categoryNoticeDays",
   "noticeNotCheckedFor",
+  // Stage 2, PR 8b-iv (29 Oct 2026).
+  "minutesContents",
 ] as const;
 const PACK_RULES = { VIC: PENDING_RULE_PACKS.VIC.rules, ACT: PENDING_RULE_PACKS.ACT.rules, WA: PENDING_RULE_PACKS.WA.rules };
 const NO_DASH_OR_SEMICOLON = /[;–—]/;
@@ -443,5 +445,55 @@ describe("notice by motion is wired consistently (stage 2, PR 8b-iii)", () => {
     for (const rs of [vic.MEETING_RULES, wa.MEETING_RULES]) expect(rs.categoryNoticeDays).toBeUndefined();
     expect(vic.MEETING_RULES_STATUS.noticeNotCheckedFor.status).toBe("STRATAVERZE");
     expect(wa.MEETING_RULES_STATUS.noticeNotCheckedFor.status).toBe("STRATAVERZE");
+  });
+});
+
+describe("minutes content and proxy caps are wired consistently (stage 2, PR 8b-iv)", () => {
+  const vic = PENDING_RULE_PACKS.VIC.rules;
+  const act = PENDING_RULE_PACKS.ACT.rules;
+  const wa = PENDING_RULE_PACKS.WA.rules;
+
+  it.each(DRAFTS)("%s: the minutes name only categories the pack has, give the later effect wherever a resolution is decided later, with a source and status", (state, rs) => {
+    const m = rs.minutesContents;
+    expect(m, state).toBeDefined();
+    for (const c of m!.kindFor ?? []) {
+      expect(rs.resolutionCategories[c], `${state} ${c}`).toBeDefined();
+      expect(rs.resolutionLabels[c]?.full, `${state} ${c}`).toMatch(/^[A-Z]/);
+    }
+    if (rs.pendingResolutions) expect(m!.laterEffect, state).toBe(true);
+    expect(m!.source).toMatch(/\S{5,}/);
+    expect(STATUSES).toContain(m!.status);
+  });
+
+  it("Victoria gives the votes per item (s 81, decision D18), the ACT the kind of special, unopposed and unanimous resolutions (sch 2 s 2.1(1)(c)), Western Australia the voting period's later effect", () => {
+    expect(vic.MEETING_RULES.minutesContents).toMatchObject({ voting: true, laterEffect: true });
+    expect(vic.MEETING_RULES.minutesContents?.kindFor).toBeUndefined();
+    expect(act.MEETING_RULES.minutesContents).toMatchObject({ kindFor: ["SPECIAL", "UNOPPOSED", "UNANIMOUS"], laterEffect: true });
+    expect(act.MEETING_RULES.minutesContents?.voting).toBeUndefined();
+    expect(wa.MEETING_RULES.minutesContents).toEqual({ laterEffect: true, source: expect.stringMatching(/ss 104\(1\)\(b\), 121$/), status: "STRATAVERZE" });
+    for (const p of [vic, act, wa]) expect(p.MEETING_RULES_STATUS.minutesContents.status).toBe("STRATAVERZE");
+  });
+
+  it("Victoria and the ACT have proxy caps from their own rules, warned only; Western Australia, NSW and Queensland have none", () => {
+    expect(vic.PROXY_RULES.datedLimit).toBe(vic.DATED_RULES.PROXY_LIMIT);
+    expect(vic.PROXY_RULES).toMatchObject({ shareOf: "LOT_OWNERS", roundingStatus: "NOT_CONFIRMED", status: "STRATAVERZE" });
+    expect(vic.PROXY_RULES.holderInArrears?.words).toMatch(/s 89C\(10\)\)\.$/);
+    expect(vic.PROXIES.ownerInArrearsMayBeProxy).toBe(false);
+    expect(vic.PROXY_RULES.band).toBeUndefined();
+    expect(act.PROXY_RULES.band?.selector).toBe(act.PROXY_LIMIT_BAND);
+    expect(act.PROXY_RULES.band?.limits).toEqual([
+      { value: "ONE_PROXY", max: { proxies: 1 } },
+      { value: "FIVE_PERCENT_OF_UNITS", max: { percentOfUnits: 5 } },
+    ]);
+    for (const l of act.PROXY_RULES.band!.limits) expect(act.PROXY_LIMIT_BAND.options.map((o) => o.value)).toContain(l.value);
+    expect(act.PROXY_RULES).toMatchObject({ shareOf: "UNITS", roundingStatus: "NOT_CONFIRMED", status: "STRATAVERZE" });
+    expect(act.PROXY_RULES.holderInArrears).toBeUndefined();
+    expect(act.PROXY_RULES.datedLimit).toBeUndefined();
+    for (const p of [vic.PROXY_RULES, act.PROXY_RULES]) {
+      expect(p.exceptWords).toMatch(/^to [a-z]/);
+      expect(p.exceptWords).not.toMatch(/[.;–—]$|[;–—]/);
+    }
+    expect(wa).not.toHaveProperty("PROXY_RULES");
+    for (const pack of Object.values(RULE_PACKS)) expect(pack.rules, pack.state).not.toHaveProperty("PROXY_RULES");
   });
 });

@@ -1006,6 +1006,70 @@ export interface DatedRule<T> {
 /** A pack's dated rules, by key. */
 export type DatedRules = Readonly<Record<string, DatedRule<unknown>>>;
 
+/*
+ * Proxy caps (VIC, ACT and WA stage 2, PR 8b-iv, 29 Oct 2026). Every cap
+ * warns only and never stops a proxy being saved (Matthew Wrigley's decision
+ * D15 of 29 Oct 2026): a proxy is held as free text on a lot, with no holder
+ * identity, so the count can only be StrataVerze's best match.
+ */
+
+/** A proxy limit as a pack holds it on a day (Victoria's s 89D, DATED_RULES.PROXY_LIMIT). */
+export interface ProxyLimitValue {
+  /** The most lot owners a person may hold proxies for, where `aboveThreshold` does not apply. */
+  maxLotOwners: number;
+  /** Where the limit depends on the building's size: above this many occupiable lots, a share of the lot owners. Null where it does not. */
+  aboveThreshold: {
+    occupiableLotsMoreThan: number;
+    maxPercentOfLotOwners: number;
+    counts: string;
+    roundingStatus: RuleStatus;
+  } | null;
+  /** Who the limit does not apply to. */
+  exceptions: readonly string[];
+  exceptionsStatus: RuleStatus;
+}
+
+/** A band of the building (the ACT's PROXY_LIMIT_BAND option) and the proxies a holder may have in it. */
+export interface ProxyBandLimit {
+  /** The option of the band selector. */
+  value: string;
+  /** A fixed number of proxies, or a share (percent) of the units. */
+  max: { proxies: number } | { percentOfUnits: number };
+}
+
+/**
+ * How many proxies one person may hold for a meeting, where the pack limits
+ * it. Read by `proxyCapWarnings` (src/lib/meetings/proxy-caps.ts) for the
+ * warnings shown when a proxy is checked and on the meeting page. A pack
+ * without PROXY_RULES has no cap checked (NSW, Queensland, Western
+ * Australia).
+ */
+export interface ProxyRules {
+  /** Victoria: the limit, read on the meeting's day (or today) with ruleInForceOn. Where the reader refuses, the warning says the limit cannot be told. */
+  datedLimit?: DatedRule<ProxyLimitValue>;
+  /** The ACT: the derived band of the building and each band's limit. Where the band cannot be worked out, the warning says so. */
+  band?: { selector: DerivedBuildingSelector; limits: readonly ProxyBandLimit[] };
+  /**
+   * What the share is of: LOT_OWNERS, the distinct owners recorded on the
+   * building's lots (Victoria, decision D16: the lot count where any lot has
+   * no owner recorded, and the warning says the owners may be incomplete),
+   * or UNITS, the building's units (the ACT).
+   */
+  shareOf: "LOT_OWNERS" | "UNITS";
+  /** Who the limit does not apply to, in plain words to follow "unless the holder is", with no full stop. */
+  exceptWords: string;
+  /** Whether the pack says how a share is rounded. Where it does not, a holder above the share rounded down "may be over" and above it rounded up "is over" (decision D15). */
+  roundingStatus: RuleStatus;
+  /**
+   * Victoria s 89C(10): an owner in arrears may not act as a proxy. Warned
+   * where the holder's email matches an owner of a lot owing money on the
+   * day (decision D17). `words` ends the warning, a sentence.
+   */
+  holderInArrears?: { words: string; source: string; status: RuleStatus };
+  source: string;
+  status: RuleStatus;
+}
+
 /** A StrataVerze fee (price book code and variant). */
 export interface FeeVariant {
   code: string;

@@ -45,6 +45,7 @@ import {
   type PendingDecision,
   type PendingFacts,
   type PendingPanelItem,
+  type PendingPanelRow,
   type PendingRowView,
   type PendingRuleSnapshot,
   type VotingPeriodFacts,
@@ -449,6 +450,23 @@ export async function pendingResolutionsForMeeting(meetingId: string) {
   if (rows.length === 0) return [];
   const lots = await db.orm.public.PendingResolutionLot.where((l) => l.pendingResolutionId.in(rows.map((r) => r.id))).all();
   return rows.map((r) => ({ row: r, lots: lots.filter((l) => l.pendingResolutionId === r.id && l.entry === "PETITION") }));
+}
+
+/**
+ * A meeting's pending rows (every status) as the minutes read them (VIC, ACT
+ * and WA stage 2, PR 8b-iv). Read only for a pack whose minutes give the
+ * later effect.
+ */
+export async function pendingRowsForMinutes(meetingId: string): Promise<PendingPanelRow[]> {
+  const rows = await db.orm.public.PendingResolution.where((p) => p.meetingId.eq(meetingId)).limit(500).all();
+  return rows.map((row) => ({
+    ...pendingView(row),
+    id: row.id,
+    agendaItemId: row.agendaItemId,
+    petitionReceivedOn: day(row.petitionReceivedOn),
+    effectiveOn: day(row.effectiveOn),
+    endedBy: row.endedBy ?? null,
+  }));
 }
 
 // ─── What an adviser records ───────────────────────────────────────────────

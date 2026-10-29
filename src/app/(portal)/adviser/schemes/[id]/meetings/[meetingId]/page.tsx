@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
-import { meetingZone } from "@/lib/jurisdiction/time-zone";
+import { dayIn, meetingZone } from "@/lib/jurisdiction/time-zone";
 import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { getMeetingById } from "@/lib/queries/meetings";
@@ -40,6 +40,7 @@ import { isChargeableMeetingType } from "@/lib/billing/hook-codes";
 import { needRule } from "@/config/statutory";
 import { pendingPanelData, settleDuePendingResolutions, type PendingPanelData } from "@/lib/meetings/pending-repo";
 import { logError } from "@/lib/log";
+import { proxyWarningsForMeeting } from "@/lib/meetings/proxy-caps-repo";
 
 export default async function MeetingDetailPage({
   params,
@@ -152,6 +153,30 @@ export default async function MeetingDetailPage({
           meetingZone(meeting, timeZoneOf(scheme)),
         )
       : null;
+  // Proxy caps (the draft packs with proxy rules only, Victoria and the ACT, stage 2, PR 8b-iv): the holders of proxies
+  // for this meeting's day over, or perhaps over, the limit, warned only. The caps are general meeting rules (s 89D,
+  // sch 3 s 3.26), so a committee meeting has none (review L1). Nothing more is read for any other building.
+  const packRules = rulesForState(scheme.state).rules;
+  const generalMeeting = normalisedType != null && normalisedType !== "COMMITTEE";
+  let proxyWarnings: string[] = [];
+  if (packRules.PROXY_RULES && generalMeeting) {
+    try {
+      proxyWarnings = await proxyWarningsForMeeting(
+        packRules,
+        {
+          id: scheme.id,
+          timeZone: timeZoneOf(scheme),
+          totalLots: scheme.totalLots ?? null,
+          lots: scheme.lots.map((l) => ({ id: l.id, lotNumber: String(l.lotNumber), lotType: l.lotType, occupiable: l.occupiable ?? null })),
+          memberships: scheme.memberships.map((m) => ({ role: String(m.role), isActive: m.isActive, lotId: m.lotId ?? null, profileId: m.profileId, profile: { email: m.profile?.email ?? null } })),
+        },
+        dayIn(meetingZone(meeting, timeZoneOf(scheme)), startIso),
+      );
+    } catch (err) {
+      logError("[meeting page] proxy limits could not be checked:", err);
+      proxyWarnings = ["StrataVerze could not check the proxy limits for this meeting. Check them before it is held."];
+    }
+  }
   // The categories short of their longer notice are named as the building's rules name them.
   const noticePeriod =
     noticeResult?.shortFor
@@ -351,6 +376,20 @@ export default async function MeetingDetailPage({
           adoptionCitation={needRule(rulesForState(scheme.state).rules, "CITATIONS").evotingAdoption}
           ownersCorporation={terms.ownersCorporation}
         />
+      )}
+
+      {/* Proxy limits, where the building's rules limit them: warned only */}
+      {proxyWarnings.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader title="Proxy limits" description="StrataVerze only warns. A proxy is never refused for these." />
+          <ul className="space-y-2">
+            {proxyWarnings.map((w) => (
+              <li key={w} className="rounded-[var(--radius-card)] bg-amber-50 border border-amber-200 px-4 py-2 text-xs text-amber-900">
+                {w}
+              </li>
+            ))}
+          </ul>
+        </Card>
       )}
 
       {/* Conduct */}
