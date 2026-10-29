@@ -41,6 +41,7 @@ import {
   chargeCloseProblem,
   chargeFacts,
   chargeRevocationProblem,
+  claimAmount,
   proceedingsStepType,
   recoveryGateProblem,
   recoveryGatesApply,
@@ -661,14 +662,35 @@ async function checkRecoveryStep(
   const today = todayIn(tz);
   // The day the case was opened, in the building's zone: a decision relied on must be on or after it (review L4).
   const caseOpenedOn = input.openedAt ? storedDayIn(tz, input.openedAt) || null : null;
-  // The amount owing now, worked out as opening a case does (the lot's overdue notices, with their late charge; review L3).
-  // With an amount threshold (PR 9c) it is also needed where proceedings are started, to check the decision again
-  // (decision of 30 Oct 2026).
   const recovery = rules.DEBT_RECOVERY;
   const threshold = !!recovery?.authorityToSue?.amountThreshold;
   const startsProceedings = input.stepType === proceedingsStepType(rules);
+  // The lot's notices overdue today (VIC, decision of 30 Oct 2026; stored as overdue, or issued with a balance and past
+  // their due day): at the final notice step and where proceedings are started under a pack with a final notice, one
+  // definition of the notices the final notice covers. Nothing is read for any other step or pack.
+  const finalNoticeStep = !!recovery?.finalNotice && input.stepType === recovery.finalNotice.stepType;
+  const claimStep = !!recovery?.finalNotice && (startsProceedings || finalNoticeStep);
+  // The amount owing now: needed where the decision is recorded, and (PR 9c) where proceedings are started under an amount
+  // threshold, to check the decision again. For a pack with a final notice or an amount threshold (VIC, review of
+  // 30 Oct 2026) it is the claim notices' amount (balance plus interest charged); for any other pack it is worked out
+  // as opening a case does (review L3), unchanged.
+  const needAmount = (needs?.authority && authority?.problem === null) || (threshold && startsProceedings);
+  const amountFromClaim = !!recovery?.finalNotice || threshold;
+  let claimNotices: ClaimNotice[] | undefined;
+  if (claimStep || (needAmount && amountFromClaim)) {
+    try {
+      claimNotices = await overdueNoticesForClaim(input.schemeId, input.lotId, tz, today);
+    } catch (err) {
+      logError("Failed to read the lot's overdue notices:", err);
+      return { error: claimStep ? "Could not check the lot's notices. Nothing was saved." : "Could not work out the amount owing. Nothing was saved." };
+    }
+  }
   let amountOwing: string | null = null;
-  if ((needs?.authority && authority?.problem === null) || (threshold && startsProceedings)) {
+  if (needAmount && amountFromClaim) {
+    amountOwing = claimAmount(claimNotices ?? []);
+    // An amount that cannot be read is never taken as smaller, nor recorded as 0.
+    if (amountOwing == null) return { error: "Could not work out the amount owing. Nothing was saved." };
+  } else if (needAmount) {
     try {
       amountOwing = await currentAmountOwing(input.schemeId, input.lotId);
     } catch (err) {
@@ -676,24 +698,14 @@ async function checkRecoveryStep(
       return { error: "Could not work out the amount owing. Nothing was saved." };
     }
   }
-  // A step counted from the lot's overdue notices' issue days (PR 9c): the notices, read only for such a step.
-  const countsFromNotices = (recovery?.stepTiming ?? []).some((t) => t.stepType === input.stepType && t.after.kind === "EACH_OVERDUE_NOTICE_ISSUED");
+  // A step counted from the lot's overdue notices' issue days (PR 9c): the notices, read only for such a step. At the
+  // final notice step the claim notices above are counted instead (decision of 30 Oct 2026).
+  const countsFromNotices =
+    !finalNoticeStep && (recovery?.stepTiming ?? []).some((t) => t.stepType === input.stepType && t.after.kind === "EACH_OVERDUE_NOTICE_ISSUED");
   let notices: TimingNotice[] | undefined;
   if (countsFromNotices) {
     try {
       notices = await overdueNoticesForTiming(input.schemeId, input.lotId, tz);
-    } catch (err) {
-      logError("Failed to read the lot's overdue notices:", err);
-      return { error: "Could not check the lot's notices. Nothing was saved." };
-    }
-  }
-  // Where proceedings are started under a pack with a final notice (VIC, decision of 30 Oct 2026): the lot's notices
-  // overdue today, as the claim is limited to those the final notice covered. Nothing is read for any other step or pack.
-  const claimStep = !!recovery?.finalNotice && startsProceedings;
-  let claimNotices: ClaimNotice[] | undefined;
-  if (claimStep) {
-    try {
-      claimNotices = await overdueNoticesForClaim(input.schemeId, input.lotId, tz, today);
     } catch (err) {
       logError("Failed to read the lot's overdue notices:", err);
       return { error: "Could not check the lot's notices. Nothing was saved." };

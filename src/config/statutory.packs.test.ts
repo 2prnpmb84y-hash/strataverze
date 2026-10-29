@@ -419,6 +419,18 @@ describe("Victorian pack (pending)", () => {
     }
     expect(review("S18_ANNUAL_FEES_COMPARATOR")).toContain("PROCEEDINGS_CLAIM_LIMIT");
     expect(review("S18_ANNUAL_FEES_COMPARATOR")).not.toContain("a larger amount is refused");
+    // Its review (30 Oct 2026): due before debt recovery is switched on, the claim limit is StrataVerze practice, the
+    // adviser waits or opens a new case (never a new final notice on this case), and one definition at both steps.
+    expect(vic.FOR_REVIEW.find((p) => p.key === "PROCEEDINGS_CLAIM_LIMIT")?.before).toBe("Victorian debt recovery is switched on");
+    for (const words of ["the notes record no amount limit in s 18(1)", "The Final Notice step uses the same definition", "close the case and open a new one"]) {
+      expect(claimLimit, words).toContain(words);
+    }
+    expect(claimLimit).not.toContain("s 18(1) states no amount limit");
+    expect(claimLimit).not.toContain("or a new one is needed");
+    const proceedingsGuidance = vic.DEBT_RECOVERY_GUIDANCE.PROCEEDINGS;
+    expect(proceedingsGuidance).toContain("StrataVerze practice (decision of 30 Oct 2026)");
+    expect(proceedingsGuidance).toContain("Wait until those fee notices are paid, or close the case and open a new one.");
+    expect(proceedingsGuidance).not.toMatch(/new final (fee )?notice/);
     expect(vic.NOT_CONFIRMED.some((p) => p.startsWith("What \"the total amount of the current annual fees\" in s 18(2) is"))).toBe(true);
     // Stage 2, PR 8b-iv: proxy caps (D15 to D17) and the minutes (D18), kept in FOR_REVIEW PROXY_CAPS and MINUTES_CONTENTS.
     const proxies = vic.DECISIONS.find((d) => d.decision.includes("PROXY_RULES"))!;

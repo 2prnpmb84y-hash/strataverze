@@ -8,7 +8,7 @@
 import type { Numeric } from "@prisma/orm-postgres/target/codec-types";
 import type { StatutoryRules } from "@/config/statutory";
 import { db } from "@/prisma/db";
-import type { ClaimNotice, RecordedRecoveryFacts, RecoveryRecordToWrite, TimingNotice } from "./recovery-gates";
+import { amountCents, type ClaimNotice, type RecordedRecoveryFacts, type RecoveryRecordToWrite, type TimingNotice } from "./recovery-gates";
 
 type Orm = typeof db.orm;
 
@@ -103,13 +103,16 @@ export async function overdueNoticesForTiming(schemeId: string, lotId: string, t
 
 /**
  * The lot's notices overdue on the building's day `today`, as the step that
- * starts proceedings reads them for a pack with a final notice (PR 9c,
- * Matthew Wrigley's decision of 30 Oct 2026): every notice stored as OVERDUE,
- * and every issued or part-paid notice with a balance whose due day is before
- * `today` (shown as overdue, effectiveStatus), each with its number, the day
- * issued in the building's zone `tz`, the day it fell due, the pack it was
- * issued under and whether it was brought across at takeover. Throws when they
- * cannot be read, so a failed read is never "none overdue".
+ * starts proceedings, the final notice step and the amount owing read them
+ * for a pack with a final notice or an amount threshold (PR 9c, Matthew
+ * Wrigley's decision of 30 Oct 2026): every notice stored as OVERDUE, and
+ * every issued or part-paid notice with a balance whose due day is before
+ * `today` (shown as overdue, effectiveStatus; nothing in the app stores
+ * OVERDUE), each with its number, the day issued in the building's zone `tz`,
+ * the day it fell due, the pack it was issued under, whether it was brought
+ * across at takeover and what it owes (balance plus interest charged, null
+ * where either cannot be read). Throws when they cannot be read, so a failed
+ * read is never "none overdue".
  */
 export async function overdueNoticesForClaim(schemeId: string, lotId: string, tz: string, today: string, orm: Orm = db.orm): Promise<ClaimNotice[]> {
   const { storedDayIn } = await import("@/lib/jurisdiction/time-zone");
@@ -127,7 +130,15 @@ export async function overdueNoticesForClaim(schemeId: string, lotId: string, tz
       dueOn: n.dueDate == null ? null : isoDay(n.dueDate) || null,
       rulePack: n.rulePack == null ? null : String(n.rulePack),
       takeover: n.migrationBatchId != null,
+      owingCents: owingCents(n.balanceOutstanding, n.interestCharged),
     }));
+}
+
+/** A notice's balance plus its interest charged, in whole cents, or null where either is not an amount. */
+function owingCents(balance: unknown, interest: unknown): number | null {
+  const b = amountCents(balance == null ? null : String(balance));
+  const i = interest == null ? 0 : amountCents(String(interest));
+  return b == null || i == null ? null : b + i;
 }
 
 /** Write the step's records, in the step's transaction (`orm` is the transaction's). */

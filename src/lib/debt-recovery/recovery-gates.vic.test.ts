@@ -12,6 +12,7 @@ import { PENDING_RULE_PACKS, type StatutoryRules } from "@/config/statutory";
 import {
   amountCents,
   authorityNeeded,
+  claimAmount,
   recoveryGateProblem,
   recoveryGatesApply,
   recoveryRecordsToWrite,
@@ -20,7 +21,6 @@ import {
   type ClaimNotice,
   type DebtAuthorityResolution,
   type RecoveryGateInput,
-  type TimingNotice,
 } from "./recovery-gates";
 
 type Rules = Pick<StatutoryRules, "DEBT_RECOVERY" | "DATED_RULES">;
@@ -36,9 +36,18 @@ const COMMITTEE: DebtAuthorityResolution = { meeting: "COMMITTEE", kind: "ANY", 
 const carried = (resolution: DebtAuthorityResolution, decidedOn = "2026-10-20"): AuthorityFact => ({ problem: null, resolution, decidedOn, meetingId: "m-1", itemId: "i-1" });
 const NOTHING = { authorityToSue: false, forum: null };
 const AUTHORISED = { authorityToSue: true, forum: null, authorisedResolutionKind: "SPECIAL", finalNoticeGivenOn: "2026-10-01" };
-const notice = (over: Partial<TimingNotice> = {}): TimingNotice => ({ number: "F-1", issuedOn: "2026-10-01", rulePack: `AU-VIC ${VIC_PACK.version}`, takeover: false, ...over });
+/** A notice of the lot overdue on the building's day (issued 1 Oct, due 29 Oct 2026, unless said), as overdueNoticesForClaim reads it. */
+const notice = (over: Partial<ClaimNotice> = {}): ClaimNotice => ({
+  number: "F-1",
+  issuedOn: "2026-10-01",
+  dueOn: "2026-10-29",
+  rulePack: `AU-VIC ${VIC_PACK.version}`,
+  takeover: false,
+  owingCents: 10_000,
+  ...over,
+});
 /** A notice overdue when proceedings are started; by default one the final notice given on 1 Oct 2026 covered (due 1 Sep, issued 1 Aug). */
-const claimNotice = (over: Partial<ClaimNotice> = {}): ClaimNotice => ({ ...notice({ issuedOn: "2026-08-01" }), dueOn: "2026-09-01", ...over });
+const claimNotice = (over: Partial<ClaimNotice> = {}): ClaimNotice => notice({ issuedOn: "2026-08-01", dueOn: "2026-09-01", ...over });
 /** The lot's overdue notices at the Proceedings step, each covered by the final notice (decision of 30 Oct 2026). */
 const CLAIM = { claimNotices: [claimNotice()], packCode: "AU-VIC" };
 
@@ -228,7 +237,7 @@ describe("the claim is limited to the notices the final notice covered (decision
   const at = (claimNotices: readonly ClaimNotice[] | undefined, over: Partial<Extract<RecoveryGateInput, { action: "COMPLETE_STEP" }>> = {}) =>
     complete("PROCEEDINGS", { recorded: AUTHORISED, forum: "VCAT", amountOwing: "5000.00", packCode: "AU-VIC", ...(claimNotices ? { claimNotices } : {}), ...over });
   const refusal = (numbers: string, why: string) =>
-    `Notice ${numbers} ${why} on the day the final fee notice was recorded as given (01/10/2026), so the final fee notice did not cover it. The claim must be limited to the notices the final fee notice covered, or a new one is needed for the others. StrataVerze does not record which notices a claim includes, so Proceedings cannot be completed while such a notice is overdue. Nothing was saved.`;
+    `Notice ${numbers} ${why} on the day the final fee notice was recorded as given (01/10/2026), so the final fee notice did not cover it. StrataVerze limits a claim to the notices the final fee notice covered (StrataVerze practice, decision of 30 Oct 2026) and does not record which notices a claim includes, so Proceedings cannot be completed while such a notice is overdue. Wait until it is paid, or close this case and open a new one. Nothing was saved.`;
 
   it("allows notices overdue and past the s 32(1) wait on the day the final notice was given, however the amount has grown", () => {
     expect(at([claimNotice(), claimNotice({ number: "F-0", issuedOn: "2026-07-01", dueOn: "2026-08-01" })])).toBeNull();
@@ -271,7 +280,7 @@ describe("the claim is limited to the notices the final notice covered (decision
   it("refuses where the final notice's own wait has no value", () => {
     const rules = withVic({ stepTiming: RECOVERY.stepTiming.map((t) => (t.stepType === "FINAL_NOTICE" ? { ...t, days: { value: null, status: "NOT_CONFIRMED", source: "x", note: "Days not read." } } : t)) });
     expect(complete("PROCEEDINGS", { recorded: AUTHORISED, forum: "VCAT", amountOwing: "1.00", ...CLAIM }, rules)).toBe(
-      "How long the final fee notice must wait after a notice is not confirmed, so which notices it covered cannot be told, and Proceedings cannot be completed. Nothing was saved.",
+      "How long the final fee notice must wait after a notice is not set or not confirmed for this building, so which notices it covered cannot be told, and Proceedings cannot be completed. Nothing was saved.",
     );
   });
 
@@ -286,7 +295,7 @@ describe("the final fee notice (D3)", () => {
 
   it("is refused for StrataVerze to give and for a notice given outside StrataVerze, whatever the day or notices", () => {
     expect(recoveryStepNeeds(VIC, "FINAL_NOTICE")).toEqual({ problem: refusal });
-    expect(complete("FINAL_NOTICE", { notices: [notice()], packCode: "AU-VIC", today: "2026-12-01", finalNoticeGivenOn: "2026-11-30" })).toBe(refusal);
+    expect(complete("FINAL_NOTICE", { claimNotices: [notice()], packCode: "AU-VIC", today: "2026-12-01", finalNoticeGivenOn: "2026-11-30" })).toBe(refusal);
     expect(recoveryRecordsToWrite(VIC, { stepType: "FINAL_NOTICE", authority: null, forum: null, today: "2026-12-01", amountOwing: "1", finalNoticeGivenOn: "2026-11-30" })).toEqual([]);
   });
 
@@ -297,7 +306,7 @@ describe("the final fee notice (D3)", () => {
 
   it("where recording one given outside is allowed (a fixture), the day given is asked for and recorded", () => {
     expect(recoveryStepNeeds(OUTSIDE_ALLOWED, "FINAL_NOTICE")).toEqual({ authority: null, forum: null, finalNotice: { words: "the final fee notice" } });
-    const base = { notices: [notice()], packCode: "AU-VIC", today: "2026-11-02" };
+    const base = { claimNotices: [notice()], packCode: "AU-VIC", today: "2026-11-02" };
     expect(complete("FINAL_NOTICE", base, OUTSIDE_ALLOWED)).toBe("Enter the day the final fee notice was given.");
     expect(complete("FINAL_NOTICE", { ...base, finalNoticeGivenOn: "2026-11-03" }, OUTSIDE_ALLOWED)).toBe("The day the final fee notice was given cannot be after today (02/11/2026).");
     expect(complete("FINAL_NOTICE", { ...base, finalNoticeGivenOn: "2026-10-30" }, OUTSIDE_ALLOWED)).toBeNull();
@@ -308,8 +317,8 @@ describe("the final fee notice (D3)", () => {
 });
 
 describe("the s 32(1) wait: from day 29 after the latest fee notice was issued (D4, D15)", () => {
-  const at = (today: string, notices: readonly TimingNotice[] | undefined = [notice()], given?: string) =>
-    complete("FINAL_NOTICE", { notices, packCode: "AU-VIC", today, finalNoticeGivenOn: given ?? today }, OUTSIDE_ALLOWED);
+  const at = (today: string, claimNotices: readonly ClaimNotice[] | undefined = [notice()], given?: string) =>
+    complete("FINAL_NOTICE", { ...(claimNotices ? { claimNotices } : {}), packCode: "AU-VIC", today, finalNoticeGivenOn: given ?? today }, OUTSIDE_ALLOWED);
 
   it("day 28 is refused and day 29 allowed", () => {
     expect(at("2026-10-29")).toBe(
@@ -345,11 +354,11 @@ describe("the s 32(1) wait: from day 29 after the latest fee notice was issued (
 
   it("a day count or its start with no value refuses with the pack's note", () => {
     const timing = (over: Record<string, unknown>) => withVic({ ...OUTSIDE_ALLOWED.DEBT_RECOVERY, stepTiming: RECOVERY.stepTiming.map((t) => (t.stepType === "FINAL_NOTICE" ? { ...t, ...over } : t)) });
-    expect(complete("FINAL_NOTICE", { notices: [notice()], packCode: "AU-VIC", today: "2026-12-01", finalNoticeGivenOn: "2026-12-01" }, timing({ days: { value: null, status: "NOT_CONFIRMED", source: "x", note: "Days not read." } }))).toBe(
+    expect(complete("FINAL_NOTICE", { claimNotices: [notice()], packCode: "AU-VIC", today: "2026-12-01", finalNoticeGivenOn: "2026-12-01" }, timing({ days: { value: null, status: "NOT_CONFIRMED", source: "x", note: "Days not read." } }))).toBe(
       "Final Notice cannot be completed: how many days it must wait is not confirmed. Days not read. Nothing was saved.",
     );
     expect(
-      complete("FINAL_NOTICE", { notices: [notice()], packCode: "AU-VIC", today: "2026-12-01", finalNoticeGivenOn: "2026-12-01" }, timing({ earliest: { value: null, status: "NOT_CONFIRMED", source: "x", note: "Not decided." } })),
+      complete("FINAL_NOTICE", { claimNotices: [notice()], packCode: "AU-VIC", today: "2026-12-01", finalNoticeGivenOn: "2026-12-01" }, timing({ earliest: { value: null, status: "NOT_CONFIRMED", source: "x", note: "Not decided." } })),
     ).toBe("Final Notice cannot be completed: from which day it may be completed is not confirmed. Not decided. Nothing was saved.");
   });
 });
@@ -379,6 +388,84 @@ describe("the s 163(2) wait: from day 29 after the final notice was recorded as 
   });
 });
 
+describe("one definition of the notices a final notice covers, at the Final Notice and Proceedings steps (review of 30 Oct 2026)", () => {
+  const finalNoticeAt = (claimNotices: readonly ClaimNotice[], given: string, today = given) =>
+    complete("FINAL_NOTICE", { claimNotices, packCode: "AU-VIC", today, finalNoticeGivenOn: given }, OUTSIDE_ALLOWED);
+  const proceedingsAt = (claimNotices: readonly ClaimNotice[], given: string, today: string) =>
+    complete("PROCEEDINGS", { recorded: { ...AUTHORISED, finalNoticeGivenOn: given }, forum: "VCAT", amountOwing: "1.00", claimNotices, packCode: "AU-VIC", today }, OUTSIDE_ALLOWED);
+  const dayAfter = (day: string, n: number) => new Date(Date.parse(`${day}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
+
+  it("refuses a final notice given before a notice was overdue: issued 1 Aug, due 15 Sep, given 1 Sep (the reviewer's case)", () => {
+    const n = notice({ number: "F-7", issuedOn: "2026-08-01", dueOn: "2026-09-15" });
+    expect(finalNoticeAt([n], "2026-09-01", "2026-09-20")).toBe(
+      "Notice F-7 was not yet overdue on the day the final fee notice was given (01/09/2026), so the final fee notice given that day did not cover it. StrataVerze records the final fee notice only where it covers every notice of the lot overdue now (StrataVerze practice, decision of 30 Oct 2026). Wait until that notice is paid, or give the final fee notice once it is overdue and record that day. Nothing was saved.",
+    );
+    // On its due day still refused; the day after, accepted, and then covered at Proceedings.
+    expect(finalNoticeAt([n], "2026-09-15", "2026-09-20")).toMatch(/^Notice F-7 was not yet overdue/);
+    expect(finalNoticeAt([n], "2026-09-16", "2026-09-20")).toBeNull();
+    expect(proceedingsAt([n], "2026-09-16", "2026-10-15")).toBeNull();
+    // Without the due-day check the old step accepted 1 Sep, and Proceedings then refused the same notice.
+    expect(proceedingsAt([n], "2026-09-01", "2026-10-15")).toMatch(/^Notice F-7 was not yet overdue on the day the final fee notice was recorded as given \(01\/09\/2026\)/);
+  });
+
+  it("refuses a notice with no due day at the Final Notice step", () => {
+    expect(finalNoticeAt([notice({ dueOn: null })], "2026-11-30")).toBe("The day notice F-1 was issued or fell due is not recorded, so Final Notice cannot be completed. Nothing was saved.");
+  });
+
+  it("a pack with a final notice but no wait counted from the overdue notices refuses at both steps, never skipping the wait", () => {
+    const noWait = withVic({ ...OUTSIDE_ALLOWED.DEBT_RECOVERY, stepTiming: RECOVERY.stepTiming.filter((t) => t.stepType !== "FINAL_NOTICE") });
+    expect(complete("FINAL_NOTICE", { claimNotices: [notice()], packCode: "AU-VIC", today: "2026-11-30", finalNoticeGivenOn: "2026-11-30" }, noWait)).toBe(
+      "How long the final fee notice must wait after a notice is not set or not confirmed for this building, so Final Notice cannot be completed. Nothing was saved.",
+    );
+    expect(complete("PROCEEDINGS", { recorded: AUTHORISED, forum: "VCAT", amountOwing: "1.00", ...CLAIM }, noWait)).toBe(
+      "How long the final fee notice must wait after a notice is not set or not confirmed for this building, so which notices it covered cannot be told, and Proceedings cannot be completed. Nothing was saved.",
+    );
+  });
+
+  it("property: any day the Final Notice step accepts covers the same notices at Proceedings", () => {
+    // A small seeded generator, so the run is the same every time.
+    let seed = 20261030;
+    const rand = (n: number) => {
+      seed = (seed * 1_103_515_245 + 12_345) % 2_147_483_648;
+      return seed % n;
+    };
+    let accepted = 0;
+    let refused = 0;
+    for (let i = 0; i < 3000; i++) {
+      const count = 1 + rand(4);
+      const notices = Array.from({ length: count }, (_, k) => {
+        const issuedOn = dayAfter("2026-01-01", rand(150));
+        return notice({ number: `N-${k}`, issuedOn, dueOn: dayAfter(issuedOn, rand(70) - 5) });
+      });
+      const given = dayAfter("2026-01-01", rand(260));
+      const finalToday = dayAfter(given, rand(15));
+      // The notices overdue when the Final Notice step is completed, as overdueNoticesForClaim reads them.
+      const overdue = notices.filter((n) => (n.dueOn as string) < finalToday);
+      if (overdue.length === 0) continue;
+      if (finalNoticeAt(overdue, given, finalToday) !== null) {
+        refused++;
+        continue;
+      }
+      accepted++;
+      // Proceedings once the s 163(2) wait has passed, for the same notices.
+      expect(proceedingsAt(overdue, given, dayAfter(given, 29 + rand(30))), JSON.stringify({ overdue, given, finalToday })).toBeNull();
+    }
+    // Both outcomes are exercised.
+    expect(accepted).toBeGreaterThan(100);
+    expect(refused).toBeGreaterThan(100);
+  });
+});
+
+describe("the claim amount (review of 30 Oct 2026)", () => {
+  it("adds each claim notice's balance and interest, to the cent, and is not known where any amount is not", () => {
+    expect(claimAmount([])).toBe("0.00");
+    expect(claimAmount([{ owingCents: 120_000 }, { owingCents: 30_505 }])).toBe("1505.05");
+    expect(claimAmount([{ owingCents: 7 }])).toBe("0.07");
+    expect(claimAmount([{ owingCents: 120_000 }, { owingCents: null }])).toBeNull();
+    expect(claimAmount([{ owingCents: Number.NaN }])).toBeNull();
+  });
+});
+
 describe("the payment plan pause guard (D14)", () => {
   const pending = (over: Record<string, unknown>) => ({
     PAYMENT_PLANS: {
@@ -394,7 +481,7 @@ describe("the payment plan pause guard (D14)", () => {
   it("the VIC pack: refused from the latest start date (1 Dec 2027), allowed the day before", () => {
     expect(complete("PROCEEDINGS", { recorded: AUTHORISED, forum: "VCAT", amountOwing: "1235.50", ...CLAIM, today: "2027-11-30" })).toBeNull();
     expect(complete("PROCEEDINGS", { recorded: AUTHORISED, forum: "COURT", amountOwing: "1235.50", ...CLAIM, today: "2027-12-01" })).toBe(paused("01/12/2027"));
-    const finalNotice = complete("FINAL_NOTICE", { notices: [notice()], packCode: "AU-VIC", today: "2027-12-01", finalNoticeGivenOn: "2027-12-01" }, OUTSIDE_ALLOWED);
+    const finalNotice = complete("FINAL_NOTICE", { claimNotices: [notice()], packCode: "AU-VIC", today: "2027-12-01", finalNoticeGivenOn: "2027-12-01" }, OUTSIDE_ALLOWED);
     expect(finalNotice).toBe("Final Notice cannot be completed: the law on payment plans may have started by today (01/12/2027), and the payment plan pause is not supported yet. Nothing was saved.");
   });
 

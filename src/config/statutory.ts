@@ -692,7 +692,11 @@ export const PENDING_RULE_PACKS = {
     // fee notices the final notice covered (refused while any overdue fee notice was not yet overdue, or was issued
     // less than 29 days before, on the day the final notice was recorded as given). FOR_REVIEW gains
     // PROCEEDINGS_CLAIM_LIMIT; S18_ANNUAL_FEES_COMPARATOR and the COMMITTEE_REVIEW and PROCEEDINGS guidance are
-    // rewritten. No migration. No legal value or status already recorded changed; still a draft.
+    // rewritten. After its review (same day, same version): the Final Notice step uses the same definition of the
+    // notices covered (a day given on or before a lot's overdue fee notice's due day is refused), the s 18(2) amount is
+    // that of the same notices, the claim limit is marked as StrataVerze practice (FINAL_NOTICE_OUTSIDE and the
+    // PROCEEDINGS guidance rewritten), and PROCEEDINGS_CLAIM_LIMIT is due before debt recovery is switched on. No
+    // migration. No legal value or status already recorded changed; still a draft.
     version: "2026.10.13",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",

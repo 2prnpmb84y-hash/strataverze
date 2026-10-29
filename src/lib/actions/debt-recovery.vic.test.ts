@@ -9,7 +9,8 @@
  * Wrigley's decision of 30 Oct 2026) a special resolution covers a larger
  * amount owing since the decision, an ordinary one is checked again (refused
  * while the comparator has no value), and a notice the final notice did not
- * cover refuses. Every record written passes the checks of migration
+ * cover refuses. The amount owing is that of every notice overdue today
+ * (review of 30 Oct 2026). Every record written passes the checks of migration
  * 20261125, and nothing is written on any refusal.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -228,6 +229,21 @@ describe("the Authority to Start Proceedings step (D2)", () => {
     expectRecordsValid();
   });
 
+  it("records the amount owing on every notice overdue today, an issued one past its due day too, with its interest (review of 30 Oct 2026)", async () => {
+    const issued = { id: "n-2", schemeId: SCHEME, lotId: "lot-1", noticeNumber: "F-2", status: "ISSUED", dueDate: "2026-10-01", issuedAt: "2026-09-01T00:00:00.000Z", balanceOutstanding: "300.00", interestCharged: "5.05", rulePack: LABEL, migrationBatchId: null };
+    const notYetDue = { ...issued, id: "n-3", noticeNumber: "F-3", dueDate: "2026-11-30", interestCharged: "0" };
+    seed({ currentOrder: order("COMMITTEE_REVIEW"), notices: [{ id: "n-1", schemeId: SCHEME, lotId: "lot-1", noticeNumber: "F-1", status: "OVERDUE", dueDate: "2026-07-01", issuedAt: "2026-06-01T00:00:00.000Z", balanceOutstanding: "1200.00", interestCharged: "0", rulePack: LABEL, migrationBatchId: null }, issued, notYetDue] });
+    expect(await complete("COMMITTEE_REVIEW", { authorityMeetingId: "agm", authorityItemId: "g-special" })).toEqual({ success: true });
+    expect(records()).toEqual([expect.objectContaining({ kind: "AUTHORITY_TO_SUE", amount: "1505.05" })]);
+    expectRecordsValid();
+  });
+
+  it("refuses where a notice's amount cannot be read, never recording a smaller amount, with nothing written", async () => {
+    seed({ currentOrder: order("COMMITTEE_REVIEW"), notices: [{ id: "n-1", schemeId: SCHEME, lotId: "lot-1", noticeNumber: "F-1", status: "OVERDUE", dueDate: "2026-07-01", issuedAt: "2026-06-01T00:00:00.000Z", balanceOutstanding: "not money", interestCharged: "0", rulePack: LABEL, migrationBatchId: null }] });
+    expect(await complete("COMMITTEE_REVIEW", { authorityMeetingId: "agm", authorityItemId: "g-special" })).toEqual({ error: "Could not work out the amount owing. Nothing was saved." });
+    expectNothingWritten("COMMITTEE_REVIEW", 0);
+  });
+
   it("records an interim special resolution once carried and taken effect, as of the day it took effect", async () => {
     seed({ currentOrder: order("COMMITTEE_REVIEW") });
     expect(await complete("COMMITTEE_REVIEW", { authorityMeetingId: "agm", authorityItemId: "g-interim-carried" })).toEqual({ success: true });
@@ -317,7 +333,7 @@ describe("the Proceedings step (D4, D5, D13)", () => {
     seed({ currentOrder: order("PROCEEDINGS"), records: [finalNoticeRecord("2026-10-01"), AUTHORITY_RECORD], notices: [F1, overdue("f-2", "2026-10-01", "2026-09-01T00:00:00.000Z")] });
     expect(await complete("PROCEEDINGS", { forum: "VCAT" })).toEqual({
       error:
-        "Notice F-2 was not yet overdue on the day the final fee notice was recorded as given (01/10/2026), so the final fee notice did not cover it. The claim must be limited to the notices the final fee notice covered, or a new one is needed for the others. StrataVerze does not record which notices a claim includes, so Proceedings cannot be completed while such a notice is overdue. Nothing was saved.",
+        "Notice F-2 was not yet overdue on the day the final fee notice was recorded as given (01/10/2026), so the final fee notice did not cover it. StrataVerze limits a claim to the notices the final fee notice covered (StrataVerze practice, decision of 30 Oct 2026) and does not record which notices a claim includes, so Proceedings cannot be completed while such a notice is overdue. Wait until it is paid, or close this case and open a new one. Nothing was saved.",
     });
     expectNothingWritten("PROCEEDINGS", 2);
   });

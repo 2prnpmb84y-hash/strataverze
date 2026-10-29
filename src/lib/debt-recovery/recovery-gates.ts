@@ -33,11 +33,13 @@
  *   decision is not refused for it; `upTo` is refused unless it would still
  *   decide that amount (never while the comparator or its amount is not
  *   known); a resolution that cannot be told refuses;
- * - finalNotice at proceedings (PR 9c, decision of 30 Oct 2026): the claim is
- *   limited to the notices the final notice covered. StrataVerze does not
- *   record what a claim includes, so the step that starts proceedings is
- *   refused while any of the lot's overdue notices was not covered
- *   (finalNoticeCoverageProblem), or where that cannot be told;
+ * - finalNotice coverage (PR 9c, decision of 30 Oct 2026, StrataVerze
+ *   practice): one definition (finalNoticeCoverage) of the notices a final
+ *   notice given on a day covers. The final notice step is refused unless it
+ *   covers every notice of the lot overdue on the building's day, and the
+ *   step that starts proceedings is refused while any of them was not
+ *   covered (StrataVerze does not record what a claim includes), or where
+ *   that cannot be told, including a pack with no wait for the final notice;
  * - stepTiming (PR 9c): a step is refused before day N + 1 after the day it is
  *   counted from (the latest overdue notice's issue day, only notices issued
  *   under the building's pack counting; or the day the final notice was
@@ -388,6 +390,23 @@ export interface TimingNotice {
 export interface ClaimNotice extends TimingNotice {
   /** The day it fell due (the last day to pay: it is overdue from the next day), or null where none is recorded. */
   dueOn: string | null;
+  /** What it owes now in whole cents (its balance plus the interest charged on it), or null where that cannot be read. */
+  owingCents: number | null;
+}
+
+/**
+ * The amount owing on the claim notices (PR 9c, review of 30 Oct 2026), two
+ * decimals: each notice's balance plus its interest. Null where any notice's
+ * amount cannot be read, so it is never taken as smaller than it is.
+ */
+export function claimAmount(notices: readonly Pick<ClaimNotice, "owingCents">[]): string | null {
+  let cents = 0;
+  for (const n of notices) {
+    if (n.owingCents == null || !Number.isSafeInteger(n.owingCents)) return null;
+    cents += n.owingCents;
+  }
+  const abs = Math.abs(cents);
+  return `${cents < 0 ? "-" : ""}${Math.floor(abs / 100)}.${String(abs % 100).padStart(2, "0")}`;
 }
 
 /**
@@ -457,11 +476,15 @@ export type RecoveryGateInput =
       /** The building's pack code ("AU-VIC"): only notices issued under it count (PR 9c). */
       packCode?: string;
       /**
-       * The lot's notices overdue on the building's day (PR 9c, decision of 30 Oct 2026), for the step that starts
-       * proceedings under a pack with a final notice, which is refused without them.
+       * The lot's notices overdue on the building's day (overdueNoticesForClaim; PR 9c, decision of 30 Oct 2026), for
+       * the final notice step and the step that starts proceedings under a pack with a final notice, which are refused
+       * without them. At the final notice step they are the notices its wait is counted from (`notices` is not read).
        */
       claimNotices?: readonly ClaimNotice[];
-      /** The lot's amount owing now, two decimals (PR 9c), for a pack with an amount threshold. */
+      /**
+       * The lot's amount owing now, two decimals (PR 9c), for a pack with an amount threshold: the claim notices'
+       * amount (claimAmount), as the server works it out for a pack with a final notice or an amount threshold.
+       */
       amountOwing?: string | null;
       /** The comparator's amount in cents (PR 9c), or null where StrataVerze does not work it out (it never does yet). */
       comparatorCents?: number | null;
@@ -572,7 +595,12 @@ export function recoveryGateProblem(rules: Rules, input: RecoveryGateInput): str
   // The days a step must wait, and a pending law that would pause it (PR 9c).
   const timing = timingProblem(rules, input);
   if (timing) return timing;
-  // The claim is limited to the notices the final notice covered (PR 9c, decision of 30 Oct 2026).
+  // One definition of the notices a final notice covers (PR 9c, decision of 30 Oct 2026): the final notice must cover
+  // every notice overdue now, and the claim is limited to the notices it covered.
+  if (r.finalNotice && input.stepType === r.finalNotice.stepType) {
+    const coverage = finalNoticeStepCoverageProblem(r, input);
+    if (coverage) return coverage;
+  }
   if (r.finalNotice && startsProceedings) {
     const coverage = finalNoticeCoverageProblem(r, input);
     if (coverage) return coverage;
@@ -642,22 +670,90 @@ function decisionCeilingProblem(a: AuthorityRule, recordedKind: string | null, a
   return `${was}, and the amount owing now (${money(claim)}) is more than ${t.words} (${money(t.multiple * comparatorCents)}). ${end}`;
 }
 
+/** Which notices a final notice given on a day covers, or why that cannot be told (finalNoticeCoverage). */
+export type FinalNoticeCoverage =
+  | { kind: "COVERED" }
+  | { kind: "NO_WAIT" }
+  | { kind: "FOREIGN" | "UNDATED" | "NOT_OVERDUE" | "TOO_RECENT"; notices: readonly ClaimNotice[] };
+
+/**
+ * Whether the final notice given on day `given` covers every one of
+ * `notices` (PR 9c, Matthew Wrigley's decision of 30 Oct 2026, StrataVerze
+ * practice). The one definition, used by the final notice step and by the
+ * step that starts proceedings, so any day the final notice step accepts
+ * covers the same notices at proceedings.
+ *
+ * A notice is covered where it was issued in StrataVerze under the building's
+ * pack (not brought across at takeover: the timing code's filter) and, on day
+ * `given`, it was already overdue (its due day before it) and past the final
+ * notice step's own wait from its issue day (for VIC, on or after day 29
+ * after it, s 32(1) as decision D4 counts it). The first reason found, in
+ * this order, is given: the pack has no wait for the final notice step
+ * (EACH_OVERDUE_NOTICE_ISSUED), or the wait has no value (NO_WAIT); a notice
+ * not issued under the pack (FOREIGN); a notice with no issue or due day
+ * (UNDATED); one not yet overdue (NOT_OVERDUE); one still inside the wait
+ * (TOO_RECENT).
+ */
+export function finalNoticeCoverage(r: RecoveryRules, notices: readonly ClaimNotice[], packCode: string | undefined, given: string): FinalNoticeCoverage {
+  const fn = r.finalNotice;
+  const wait = fn ? (r.stepTiming ?? []).find((t) => t.stepType === fn.stepType && t.after.kind === "EACH_OVERDUE_NOTICE_ISSUED") : undefined;
+  if (!wait || wait.days.value == null || wait.earliest.value == null || !isDay(given)) return { kind: "NO_WAIT" };
+  const days = wait.days.value;
+  const pack = (packCode ?? "").trim();
+  const foreign = notices.filter((n) => n.takeover || !pack || !(n.rulePack ?? "").startsWith(`${pack} `));
+  if (foreign.length > 0) return { kind: "FOREIGN", notices: foreign };
+  const undated = notices.filter((n) => !isDay(n.issuedOn) || !isDay(n.dueOn));
+  if (undated.length > 0) return { kind: "UNDATED", notices: undated };
+  const notOverdue = notices.filter((n) => (n.dueOn as string) >= given);
+  if (notOverdue.length > 0) return { kind: "NOT_OVERDUE", notices: notOverdue };
+  const tooRecent = notices.filter((n) => given < addDays(n.issuedOn as string, days + 1));
+  if (tooRecent.length > 0) return { kind: "TOO_RECENT", notices: tooRecent };
+  return { kind: "COVERED" };
+}
+
+const numbers = (list: readonly ClaimNotice[]) => list.map((n) => n.number).join(", ");
+const PRACTICE = "StrataVerze practice, decision of 30 Oct 2026";
+
+/**
+ * Why the final notice cannot be recorded as given on the day entered, or
+ * null (PR 9c, decision of 30 Oct 2026): it must cover every notice of the lot
+ * overdue on the building's day (finalNoticeCoverage), so a day on or before
+ * any such notice's due day is refused. Checked after the step's wait.
+ */
+function finalNoticeStepCoverageProblem(r: RecoveryRules, input: Extract<RecoveryGateInput, { action: "COMPLETE_STEP" }>): string | null {
+  const fn = r.finalNotice!;
+  const label = input.labels?.[input.stepType] ?? input.stepType;
+  const given = (input.finalNoticeGivenOn ?? "").trim();
+  if (!isDay(given)) return `Enter the day ${fn.words} was given.`;
+  const notices = input.claimNotices;
+  if (!notices) return `Could not check the lot's notices, so ${label} cannot be completed. Nothing was saved.`;
+  const c = finalNoticeCoverage(r, notices, input.packCode, given);
+  switch (c.kind) {
+    case "COVERED":
+      return null;
+    case "NO_WAIT":
+      return `How long ${fn.words} must wait after a notice is not set or not confirmed for this building, so ${label} cannot be completed. Nothing was saved.`;
+    case "FOREIGN":
+      return `Notice ${numbers(c.notices)} was not issued under this building's rules in StrataVerze (brought across at takeover, or issued under other rules), so ${label} cannot be completed. Nothing was saved.`;
+    case "UNDATED":
+      return `The day notice ${numbers(c.notices)} was issued or fell due is not recorded, so ${label} cannot be completed. Nothing was saved.`;
+    case "NOT_OVERDUE":
+      return `Notice ${numbers(c.notices)} was not yet overdue on the day ${fn.words} was given (${auDate(given)}), so ${fn.words} given that day did not cover it. StrataVerze records ${fn.words} only where it covers every notice of the lot overdue now (${PRACTICE}). Wait until that notice is paid, or give ${fn.words} once it is overdue and record that day. Nothing was saved.`;
+    case "TOO_RECENT":
+      return `${label} cannot have been given on ${auDate(given)} for notice ${numbers(c.notices)}, which was issued too recently. Nothing was saved.`;
+  }
+}
+
 /**
  * Why proceedings cannot be started for the lot's overdue notices, or null
- * (PR 9c, Matthew Wrigley's decision of 30 Oct 2026): the claim is limited to
- * the notices the final notice covered. StrataVerze does not record what a
- * claim includes, so every notice of the lot overdue on the building's day is
- * taken to be claimed (fails closed), and each must have been covered.
- *
- * A notice is covered by the final notice recorded as given on day G where it
- * was issued in StrataVerze under the building's pack (not brought across at
- * takeover: the timing code's filter) and, on day G, it was already overdue
- * (its due day before G) and past the final notice step's own wait from its
- * issue day (for VIC, G on or after day 29 after it, s 32(1) as decision D4
- * counts it). Those are the notices the final notice step could have been
- * completed for on day G. Interest on a covered notice since G is covered.
- * No final notice recorded as given, the notices not read, a notice whose
- * issue or due day is not recorded, and a wait with no value refuse.
+ * (PR 9c, Matthew Wrigley's decision of 30 Oct 2026, StrataVerze practice):
+ * the claim is limited to the notices the final notice covered
+ * (finalNoticeCoverage, on the day it was recorded as given). StrataVerze
+ * does not record what a claim includes, so every notice of the lot overdue
+ * on the building's day is taken to be claimed (fails closed), and each must
+ * have been covered. Interest on a covered notice since is covered. No final
+ * notice recorded as given, the notices not read, and every reason
+ * finalNoticeCoverage gives refuse.
  */
 function finalNoticeCoverageProblem(r: RecoveryRules, input: Extract<RecoveryGateInput, { action: "COMPLETE_STEP" }>): string | null {
   const fn = r.finalNotice!;
@@ -667,25 +763,23 @@ function finalNoticeCoverageProblem(r: RecoveryRules, input: Extract<RecoveryGat
   const notices = input.claimNotices;
   if (!notices) return `Could not check the lot's notices, so ${label} cannot be completed. Nothing was saved.`;
   const cannotTell = `so whether ${fn.words} covered it cannot be told, and ${label} cannot be completed. Nothing was saved.`;
-  const pack = (input.packCode ?? "").trim();
-  const foreign = notices.filter((n) => n.takeover || !pack || !(n.rulePack ?? "").startsWith(`${pack} `));
-  if (foreign.length > 0) {
-    return `Notice ${foreign.map((n) => n.number).join(", ")} was not issued under this building's rules in StrataVerze (brought across at takeover, or issued under other rules), ${cannotTell}`;
-  }
-  const undated = notices.filter((n) => !isDay(n.issuedOn) || !isDay(n.dueOn));
-  if (undated.length > 0) return `The day notice ${undated.map((n) => n.number).join(", ")} was issued or fell due is not recorded, ${cannotTell}`;
-  // The final notice step's own wait from each notice's issue day, where the pack has one.
-  const wait = (r.stepTiming ?? []).find((t) => t.stepType === fn.stepType && t.after.kind === "EACH_OVERDUE_NOTICE_ISSUED");
-  if (wait && (wait.days.value == null || wait.earliest.value == null)) {
-    return `How long ${fn.words} must wait after a notice is not confirmed, so which notices it covered cannot be told, and ${label} cannot be completed. Nothing was saved.`;
-  }
   const notCovered = (list: readonly ClaimNotice[], why: string) =>
-    `Notice ${list.map((n) => n.number).join(", ")} ${why} on the day ${fn.words} was recorded as given (${auDate(given)}), so ${fn.words} did not cover it. The claim must be limited to the notices ${fn.words} covered, or a new one is needed for the others. StrataVerze does not record which notices a claim includes, so ${label} cannot be completed while such a notice is overdue. Nothing was saved.`;
-  const notOverdue = notices.filter((n) => (n.dueOn as string) >= given);
-  if (notOverdue.length > 0) return notCovered(notOverdue, "was not yet overdue");
-  const tooRecent = wait ? notices.filter((n) => given < addDays(n.issuedOn as string, (wait.days.value as number) + 1)) : [];
-  if (tooRecent.length > 0) return notCovered(tooRecent, `was not yet past the wait before ${fn.words} may be given`);
-  return null;
+    `Notice ${numbers(list)} ${why} on the day ${fn.words} was recorded as given (${auDate(given)}), so ${fn.words} did not cover it. StrataVerze limits a claim to the notices ${fn.words} covered (${PRACTICE}) and does not record which notices a claim includes, so ${label} cannot be completed while such a notice is overdue. Wait until it is paid, or close this case and open a new one. Nothing was saved.`;
+  const c = finalNoticeCoverage(r, notices, input.packCode, given);
+  switch (c.kind) {
+    case "COVERED":
+      return null;
+    case "NO_WAIT":
+      return `How long ${fn.words} must wait after a notice is not set or not confirmed for this building, so which notices it covered cannot be told, and ${label} cannot be completed. Nothing was saved.`;
+    case "FOREIGN":
+      return `Notice ${numbers(c.notices)} was not issued under this building's rules in StrataVerze (brought across at takeover, or issued under other rules), ${cannotTell}`;
+    case "UNDATED":
+      return `The day notice ${numbers(c.notices)} was issued or fell due is not recorded, ${cannotTell}`;
+    case "NOT_OVERDUE":
+      return notCovered(c.notices, "was not yet overdue");
+    case "TOO_RECENT":
+      return notCovered(c.notices, `was not yet past the wait before ${fn.words} may be given`);
+  }
 }
 
 /**
@@ -723,8 +817,13 @@ function pauseProblem(rules: Rules, key: string, today: string, label: string): 
  * N + 1 after the day it is counted from. That is the latest issue day of the
  * lot's overdue notices, each issued under the building's pack (a takeover
  * notice or another pack's refuses), or the day the final notice was recorded
- * as given. The day checked is the building's day, or for the final notice
- * step the day the notice was given.
+ * as given. At the final notice step the notices are the claim notices (every
+ * notice of the lot overdue on the building's day, stored as overdue or issued
+ * with a balance and past its due day; overdueNoticesForClaim), and at any
+ * other step the notices stored as overdue (overdueNoticesForTiming). The day
+ * checked is the building's day, or for the final notice step the day the
+ * notice was given; that step then also needs every claim notice past its due
+ * day on that day (finalNoticeStepCoverageProblem).
  */
 function timingProblem(rules: Rules, input: Extract<RecoveryGateInput, { action: "COMPLETE_STEP" }>): string | null {
   const r = rules.DEBT_RECOVERY!;
@@ -766,7 +865,8 @@ function timingStart(
     if (!isDay(given)) return { problem: `${capitalise(finalNotice?.words ?? "the final notice")} is not recorded as given on this case, so ${label} cannot be completed. Nothing was saved.` };
     return { day: given };
   }
-  const notices = input.notices;
+  // At the final notice step, the claim notices (one definition with proceedings, decision of 30 Oct 2026).
+  const notices = finalNotice && finalNotice.stepType === input.stepType ? input.claimNotices : input.notices;
   if (!notices) return { problem: `Could not check the lot's notices, so ${label} cannot be completed. Nothing was saved.` };
   if (notices.length === 0) return { problem: `No notice of this lot is overdue, so ${label} cannot be completed. Nothing was saved.` };
   const pack = (input.packCode ?? "").trim();
