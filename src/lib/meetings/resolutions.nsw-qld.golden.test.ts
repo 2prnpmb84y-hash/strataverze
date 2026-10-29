@@ -7,6 +7,19 @@
  * refusals and rule sets after that change. Never regenerate these snapshots
  * to make a change pass: a difference is a change to NSW or Queensland.
  *
+ * One deliberate change (29 Oct 2026, approved by Matthew Wrigley): the
+ * Queensland pack 2026.10.20 leaves common property rows out of the count at
+ * conduct (excludeCommonPropertyRows), fixing the latent point recorded by
+ * LOTS_WITH_COMMON below. Only the entries holding a common property row were
+ * updated, by a targeted run of the four tests concerned, not regenerated:
+ * the Queensland commonProperty, commonPropertyEightLots,
+ * commonPropertyNoEntitlement and commonPropertyPoll counts on ORDINARY,
+ * SPECIAL, WITHOUT_DISSENT and MAJORITY (and their notice and outcome
+ * entries, added or removed as the count now succeeds or refuses), the
+ * Queensland general meeting voting views (no CP lot), and the Queensland
+ * rule sets (which now hold excludeCommonPropertyRows: true). Every NSW entry
+ * and every Queensland entry without a common property row is byte-identical.
+ *
  * Covered: evaluateResolution over every NSW and Queensland category and a
  * grid of tallies (two thirds exactly, the 25% caps, missing totals, polls,
  * an unknown category); resolveOutcome; the count at conduct
@@ -103,7 +116,8 @@ const LOTS: TallyLot[] = Array.from({ length: 8 }, (_, i) => ({
   entitlement: i === 7 ? 30 : 10,
   interestScheduleEntitlement: 5,
 }));
-// The same building with a common property row entered as a lot (the latent Queensland point: it is counted as a lot).
+// The same building with a common property row entered as a lot (the latent Queensland point: it was counted as a lot
+// until pack 2026.10.20, 29 Oct 2026; Queensland now leaves it out, NSW is not counted at conduct).
 const LOTS_WITH_COMMON = [...LOTS, { id: "cp", lotNumber: "CP", entitlement: 0, lotType: "COMMON" }] as TallyLot[];
 const LOTS_WITH_COMMON_NO_ENTITLEMENT = [...LOTS, { id: "cp", lotNumber: "CP", entitlement: null, lotType: "COMMON" }] as TallyLot[];
 

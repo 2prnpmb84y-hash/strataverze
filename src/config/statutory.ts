@@ -312,7 +312,14 @@ export const QLD_RULE_PACK = {
   // gains that choice and his go-live sign-off: the stage 2 FOR_REVIEW points accepted as built, except the debtor test
   // for voting, applied per lot (SM s 102(2)) in 2026.10.18. FOR_REVIEW is kept as the record, and gains a NOT CONFIRMED
   // point on whether a committee seat ends when a lot is sold. No rule of law changed, so the sign-off of 27 Oct 2026 stands.
-  version: "2026.10.19",
+  // 2026.10.20 (29 Oct 2026): common property rows are not counted at conduct (a fix approved by Matthew Wrigley on
+  // 29 Oct 2026). MEETING_RULES gains excludeCommonPropertyRows, as the draft packs have it: a common property row
+  // entered with the lots is no longer counted as a lot in the number of lots (Act s 106(3)(b)), the entitlement
+  // (s 106(3)(c)) or the lots entitled to vote (s 107), is not listed on the conduct screen, and a vote sent for it is
+  // refused. Before, a building with such a row could not count a special or majority resolution, and the row made a
+  // majority resolution harder to pass. No Queensland building was in production yet. No other rule value changed, so
+  // the sign-off of 27 Oct 2026 stands.
+  version: "2026.10.20",
   reviewer: "Matthew Wrigley",
   reviewedOn: "2026-10-27",
   rules: QLD,

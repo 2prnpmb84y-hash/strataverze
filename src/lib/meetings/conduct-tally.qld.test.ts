@@ -416,3 +416,77 @@ describe("the conduct screen's voting view", () => {
     expect(view.pollLabel).toBe("Poll asked for, counted by contribution schedule lot entitlement");
   });
 });
+
+describe("a common property row entered with the lots (pack 2026.10.20, 29 Oct 2026)", () => {
+  // The same eight lots, with the common property entered as a row of its own, with and without an entitlement.
+  const CP = { id: "cp", lotNumber: "CP", entitlement: null, lotType: "COMMON" };
+  const WITH_CP: TallyLot[] = [...LOTS, CP];
+  const withCp = { lots: WITH_CP };
+
+  it("is left out by the pack", () => {
+    expect(QLD.excludeCommonPropertyRows).toBe(true);
+    expect(NSW_RULE_SET.excludeCommonPropertyRows).toBeUndefined();
+  });
+
+  it("is not a lot of a special resolution: the 8 lots match, and its missing entitlement is not asked for", () => {
+    const r = count("SPECIAL", votes([3, 4, 5, 6, 7, 8], [1, 2]), withCp);
+    expect(counted(r).tally).toEqual({ forCount: 6, againstCount: 2, abstainCount: 0, totalLots: 8, totalEntitlement: 100, forUE: 80, againstUE: 20 });
+    expect(decide("SPECIAL", r).outcome).toBe("RESOLVED");
+    // Typed in any case, as the building facts read it.
+    expect(counted(count("SPECIAL", votes([3, 4, 5, 6, 7, 8], [1, 2]), { lots: [...LOTS, { ...CP, lotType: "common" }] })).tally?.totalLots).toBe(8);
+  });
+
+  it("is not counted in the building's number of lots", () => {
+    expect(count("SPECIAL", votes([1], []), { ...withCp, recordedLotCount: 9 })).toEqual({
+      ok: false,
+      error: "The building records 9 lots but 8 are entered, so this resolution cannot be counted. Enter every lot, or correct the number of lots, first.",
+    });
+    expect(count("MAJORITY", votes([1], []), { ...withCp, recordedLotCount: 9 })).toMatchObject({ ok: false });
+  });
+
+  it("is not one of the lots entitled to vote on a majority resolution", () => {
+    // 5 for of the 8 lots entitled.
+    const r = count("MAJORITY", votes([1, 2, 3, 4, 5], []), withCp);
+    expect(counted(r).tally).toMatchObject({ forCount: 5, totalLots: 8, eligibleLots: 8 });
+    expect(decide("MAJORITY", r, "MOTION_LOST").outcome).toBe("RESOLVED");
+    // Lot 8 owes: 4 for of the 7 lots entitled is more than half. Had the row been counted, 4 of 8 would not be.
+    const owing = count("MAJORITY", votes([1, 2, 3, 4], []), { ...withCp, owingLotIds: new Set(["lot-8", "cp"]) });
+    expect(counted(owing).tally).toMatchObject({ forCount: 4, totalLots: 8, eligibleLots: 7 });
+    expect(decide("MAJORITY", owing, "MOTION_LOST").outcome).toBe("RESOLVED");
+  });
+
+  it("is not a lot of an ordinary resolution or a poll", () => {
+    expect(counted(count("ORDINARY", votes([1, 2], [3]), withCp)).tally).toEqual({ forCount: 2, againstCount: 1, abstainCount: 0, totalLots: 8 });
+    expect(counted(count("ORDINARY", votes([1, 8], [2, 3, 4]), { ...withCp, poll: true })).tally).toMatchObject({ totalLots: 8, forUE: 40, againstUE: 30, poll: true });
+  });
+
+  it("refuses a vote the chair sends for it, naming it, and counts nothing", () => {
+    for (const c of ["ORDINARY", "SPECIAL", "MAJORITY", "WITHOUT_DISSENT", null]) {
+      expect(count(c, [vote(1, "FOR"), { lotId: "cp", vote: "FOR", byProxy: false }], withCp), String(c)).toEqual({
+        ok: false,
+        error: "Common property (entered as lot CP) is not a lot and has no vote, so nothing was counted. Reload the page and record the votes again.",
+      });
+    }
+  });
+
+  it("refuses a vote cast online for it, naming it", () => {
+    expect(count("ORDINARY", [], { ...withCp, onlineVotes: [{ lotId: "cp", voteValue: "FOR", isInformal: false }] })).toEqual({
+      ok: false,
+      error: "A vote cast online is for common property (entered as lot CP), which is not a lot and has no vote, so the votes cannot be counted.",
+    });
+    // An informal online vote for it is not a vote, as for any lot.
+    expect(count("ORDINARY", [], { ...withCp, onlineVotes: [{ lotId: "cp", voteValue: "SPOILT", isInformal: true }] }).ok).toBe(true);
+  });
+
+  it("still refuses a vote for a lot outside the building as before", () => {
+    expect(count("ORDINARY", [{ lotId: "elsewhere", vote: "FOR", byProxy: false }], withCp)).toEqual({
+      ok: false,
+      error: "A vote is for a lot that is not in this building.",
+    });
+  });
+
+  it("is not listed on the conduct screen", () => {
+    const view = conductVotingView(QLD, QLD_RULES, [CP, ...LOTS].reverse(), [{ id: "i1", resolutionCategory: "SPECIAL" }], "AGM")!;
+    expect(view.lots.map((l) => l.lotNumber)).toEqual(["1", "2", "3", "4", "5", "6", "7", "8"]);
+  });
+});

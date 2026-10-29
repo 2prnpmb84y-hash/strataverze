@@ -19222,73 +19222,28 @@ exports[`the count at conduct (golden) > builds the same tally, or refuses with 
     "ok": false,
   },
   "QLD/MAJORITY/commonProperty": {
-    "counted": [
-      "{"lotId":"lot-1","lotNumber":"1","vote":"FOR","byProxy":false,"source":"CHAIR"}",
-      "{"lotId":"lot-2","lotNumber":"2","vote":"FOR","byProxy":false,"source":"CHAIR"}",
-      "{"lotId":"lot-3","lotNumber":"3","vote":"FOR","byProxy":false,"source":"CHAIR"}",
-      "{"lotId":"lot-4","lotNumber":"4","vote":"FOR","byProxy":false,"source":"CHAIR"}",
-      "{"lotId":"lot-5","lotNumber":"5","vote":"FOR","byProxy":false,"source":"CHAIR"}",
-      "{"lotId":"lot-6","lotNumber":"6","vote":"FOR","byProxy":false,"source":"CHAIR"}",
-      "{"lotId":"lot-7","lotNumber":"7","vote":"AGAINST","byProxy":false,"source":"CHAIR"}",
-    ],
-    "notCounted": [],
-    "ok": true,
-    "tally": {
-      "abstainCount": 0,
-      "againstCount": 1,
-      "eligibleLots": 9,
-      "forCount": 6,
-      "totalLots": 9,
-    },
-  },
-  "QLD/MAJORITY/commonProperty/MOTION_LOST": {
-    "decided": {
-      "evaluation": {
-        "passed": true,
-        "reason": "Votes for are more than half of the lots entitled to vote",
-      },
-      "outcome": "RESOLVED",
-      "status": "CARRIED",
-    },
-    "disagreement": "The votes recorded show the motion is carried, not lost. Votes for are more than half of the lots entitled to vote. Nothing was saved. Check the votes entered, or record the outcome the count gives.",
-  },
-  "QLD/MAJORITY/commonProperty/RESOLVED": {
-    "decided": {
-      "evaluation": {
-        "passed": true,
-        "reason": "Votes for are more than half of the lots entitled to vote",
-      },
-      "outcome": "RESOLVED",
-      "status": "CARRIED",
-    },
-    "disagreement": null,
-  },
-  "QLD/MAJORITY/commonProperty/notice": null,
-  "QLD/MAJORITY/commonPropertyEightLots": {
-    "error": "The building records 8 lots but 9 are entered, so this resolution cannot be counted. Enter every lot, or correct the number of lots, first.",
+    "error": "The building records 9 lots but 8 are entered, so this resolution cannot be counted. Enter every lot, or correct the number of lots, first.",
     "ok": false,
   },
-  "QLD/MAJORITY/commonPropertyNoEntitlement": {
+  "QLD/MAJORITY/commonPropertyEightLots": {
     "counted": [
       "{"lotId":"lot-1","lotNumber":"1","vote":"FOR","byProxy":false,"source":"CHAIR"}",
       "{"lotId":"lot-2","lotNumber":"2","vote":"FOR","byProxy":false,"source":"CHAIR"}",
       "{"lotId":"lot-3","lotNumber":"3","vote":"FOR","byProxy":false,"source":"CHAIR"}",
       "{"lotId":"lot-4","lotNumber":"4","vote":"FOR","byProxy":false,"source":"CHAIR"}",
       "{"lotId":"lot-5","lotNumber":"5","vote":"FOR","byProxy":false,"source":"CHAIR"}",
-      "{"lotId":"lot-6","lotNumber":"6","vote":"FOR","byProxy":false,"source":"CHAIR"}",
-      "{"lotId":"lot-7","lotNumber":"7","vote":"AGAINST","byProxy":false,"source":"CHAIR"}",
     ],
     "notCounted": [],
     "ok": true,
     "tally": {
       "abstainCount": 0,
-      "againstCount": 1,
-      "eligibleLots": 9,
-      "forCount": 6,
-      "totalLots": 9,
+      "againstCount": 0,
+      "eligibleLots": 8,
+      "forCount": 5,
+      "totalLots": 8,
     },
   },
-  "QLD/MAJORITY/commonPropertyNoEntitlement/MOTION_LOST": {
+  "QLD/MAJORITY/commonPropertyEightLots/MOTION_LOST": {
     "decided": {
       "evaluation": {
         "passed": true,
@@ -19299,7 +19254,7 @@ exports[`the count at conduct (golden) > builds the same tally, or refuses with 
     },
     "disagreement": "The votes recorded show the motion is carried, not lost. Votes for are more than half of the lots entitled to vote. Nothing was saved. Check the votes entered, or record the outcome the count gives.",
   },
-  "QLD/MAJORITY/commonPropertyNoEntitlement/RESOLVED": {
+  "QLD/MAJORITY/commonPropertyEightLots/RESOLVED": {
     "decided": {
       "evaluation": {
         "passed": true,
@@ -19310,7 +19265,11 @@ exports[`the count at conduct (golden) > builds the same tally, or refuses with 
     },
     "disagreement": null,
   },
-  "QLD/MAJORITY/commonPropertyNoEntitlement/notice": null,
+  "QLD/MAJORITY/commonPropertyEightLots/notice": null,
+  "QLD/MAJORITY/commonPropertyNoEntitlement": {
+    "error": "The building records 9 lots but 8 are entered, so this resolution cannot be counted. Enter every lot, or correct the number of lots, first.",
+    "ok": false,
+  },
   "QLD/MAJORITY/commonPropertyPoll": {
     "error": "A poll can be taken only on an ordinary resolution.",
     "ok": false,
@@ -20024,7 +19983,7 @@ exports[`the count at conduct (golden) > builds the same tally, or refuses with 
       "abstainCount": 0,
       "againstCount": 1,
       "forCount": 6,
-      "totalLots": 9,
+      "totalLots": 8,
     },
   },
   "QLD/ORDINARY/commonProperty/MOTION_LOST": {
@@ -20064,7 +20023,7 @@ exports[`the count at conduct (golden) > builds the same tally, or refuses with 
       "abstainCount": 0,
       "againstCount": 0,
       "forCount": 5,
-      "totalLots": 9,
+      "totalLots": 8,
     },
   },
   "QLD/ORDINARY/commonPropertyEightLots/MOTION_LOST": {
@@ -20106,7 +20065,7 @@ exports[`the count at conduct (golden) > builds the same tally, or refuses with 
       "abstainCount": 0,
       "againstCount": 1,
       "forCount": 6,
-      "totalLots": 9,
+      "totalLots": 8,
     },
   },
   "QLD/ORDINARY/commonPropertyNoEntitlement/MOTION_LOST": {
@@ -20147,7 +20106,7 @@ exports[`the count at conduct (golden) > builds the same tally, or refuses with 
       "forCount": 2,
       "forUE": 20,
       "poll": true,
-      "totalLots": 9,
+      "totalLots": 8,
     },
   },
   "QLD/ORDINARY/commonPropertyPoll/MOTION_LOST": {
@@ -21039,15 +20998,54 @@ exports[`the count at conduct (golden) > builds the same tally, or refuses with 
     "ok": false,
   },
   "QLD/SPECIAL/commonProperty": {
-    "error": "The votes cannot be counted. Lot CP has no contribution schedule lot entitlement recorded. Enter it before this can be worked out.",
+    "error": "The building records 9 lots but 8 are entered, so this resolution cannot be counted. Enter every lot, or correct the number of lots, first.",
     "ok": false,
   },
   "QLD/SPECIAL/commonPropertyEightLots": {
-    "error": "The building records 8 lots but 9 are entered, so this resolution cannot be counted. Enter every lot, or correct the number of lots, first.",
-    "ok": false,
+    "counted": [
+      "{"lotId":"lot-1","lotNumber":"1","vote":"FOR","byProxy":false,"source":"CHAIR"}",
+      "{"lotId":"lot-2","lotNumber":"2","vote":"FOR","byProxy":false,"source":"CHAIR"}",
+      "{"lotId":"lot-3","lotNumber":"3","vote":"FOR","byProxy":false,"source":"CHAIR"}",
+      "{"lotId":"lot-4","lotNumber":"4","vote":"FOR","byProxy":false,"source":"CHAIR"}",
+      "{"lotId":"lot-5","lotNumber":"5","vote":"FOR","byProxy":false,"source":"CHAIR"}",
+    ],
+    "notCounted": [],
+    "ok": true,
+    "tally": {
+      "abstainCount": 0,
+      "againstCount": 0,
+      "againstUE": 0,
+      "forCount": 5,
+      "forUE": 50,
+      "totalEntitlement": 100,
+      "totalLots": 8,
+    },
   },
+  "QLD/SPECIAL/commonPropertyEightLots/MOTION_LOST": {
+    "decided": {
+      "evaluation": {
+        "passed": true,
+        "reason": "Votes for are at least 66.7% of the votes cast, and the votes and entitlement against are within the limits",
+      },
+      "outcome": "RESOLVED",
+      "status": "CARRIED",
+    },
+    "disagreement": "The votes recorded show the motion is carried, not lost. Votes for are at least 66.7% of the votes cast, and the votes and entitlement against are within the limits. Nothing was saved. Check the votes entered, or record the outcome the count gives.",
+  },
+  "QLD/SPECIAL/commonPropertyEightLots/RESOLVED": {
+    "decided": {
+      "evaluation": {
+        "passed": true,
+        "reason": "Votes for are at least 66.7% of the votes cast, and the votes and entitlement against are within the limits",
+      },
+      "outcome": "RESOLVED",
+      "status": "CARRIED",
+    },
+    "disagreement": null,
+  },
+  "QLD/SPECIAL/commonPropertyEightLots/notice": null,
   "QLD/SPECIAL/commonPropertyNoEntitlement": {
-    "error": "The votes cannot be counted. Lot CP has no contribution schedule lot entitlement recorded. Enter it before this can be worked out.",
+    "error": "The building records 9 lots but 8 are entered, so this resolution cannot be counted. Enter every lot, or correct the number of lots, first.",
     "ok": false,
   },
   "QLD/SPECIAL/commonPropertyPoll": {
@@ -22037,7 +22035,7 @@ exports[`the count at conduct (golden) > builds the same tally, or refuses with 
       "abstainCount": 0,
       "againstCount": 1,
       "forCount": 6,
-      "totalLots": 9,
+      "totalLots": 8,
     },
   },
   "QLD/WITHOUT_DISSENT/commonProperty/MOTION_LOST": {
@@ -22077,7 +22075,7 @@ exports[`the count at conduct (golden) > builds the same tally, or refuses with 
       "abstainCount": 0,
       "againstCount": 0,
       "forCount": 5,
-      "totalLots": 9,
+      "totalLots": 8,
     },
   },
   "QLD/WITHOUT_DISSENT/commonPropertyEightLots/MOTION_LOST": {
@@ -22119,7 +22117,7 @@ exports[`the count at conduct (golden) > builds the same tally, or refuses with 
       "abstainCount": 0,
       "againstCount": 1,
       "forCount": 6,
-      "totalLots": 9,
+      "totalLots": 8,
     },
   },
   "QLD/WITHOUT_DISSENT/commonPropertyNoEntitlement/MOTION_LOST": {
@@ -24151,10 +24149,6 @@ exports[`the count at conduct (golden) > gives the same voting view 1`] = `
         "id": "lot-8",
         "lotNumber": "8",
       },
-      {
-        "id": "cp",
-        "lotNumber": "CP",
-      },
     ],
     "pollLabel": "Poll asked for, counted by contribution schedule lot entitlement",
   },
@@ -24235,10 +24229,6 @@ exports[`the count at conduct (golden) > gives the same voting view 1`] = `
         "id": "lot-8",
         "lotNumber": "8",
       },
-      {
-        "id": "cp",
-        "lotNumber": "CP",
-      },
     ],
     "pollLabel": "Poll asked for, counted by contribution schedule lot entitlement",
   },
@@ -24317,10 +24307,6 @@ exports[`the count at conduct (golden) > gives the same voting view 1`] = `
       {
         "id": "lot-8",
         "lotNumber": "8",
-      },
-      {
-        "id": "cp",
-        "lotNumber": "CP",
       },
     ],
     "pollLabel": "Poll asked for, counted by contribution schedule lot entitlement",
@@ -24401,10 +24387,6 @@ exports[`the count at conduct (golden) > gives the same voting view 1`] = `
         "id": "lot-8",
         "lotNumber": "8",
       },
-      {
-        "id": "cp",
-        "lotNumber": "CP",
-      },
     ],
     "pollLabel": "Poll asked for, counted by contribution schedule lot entitlement",
   },
@@ -24483,10 +24465,6 @@ exports[`the count at conduct (golden) > gives the same voting view 1`] = `
       {
         "id": "lot-8",
         "lotNumber": "8",
-      },
-      {
-        "id": "cp",
-        "lotNumber": "CP",
       },
     ],
     "pollLabel": "Poll asked for, counted by contribution schedule lot entitlement",
@@ -24568,10 +24546,6 @@ exports[`the count at conduct (golden) > gives the same voting view 1`] = `
         "id": "lot-8",
         "lotNumber": "8",
       },
-      {
-        "id": "cp",
-        "lotNumber": "CP",
-      },
     ],
     "pollLabel": "Poll asked for, counted by contribution schedule lot entitlement",
   },
@@ -24650,10 +24624,6 @@ exports[`the count at conduct (golden) > gives the same voting view 1`] = `
       {
         "id": "lot-8",
         "lotNumber": "8",
-      },
-      {
-        "id": "cp",
-        "lotNumber": "CP",
       },
     ],
     "pollLabel": "Poll asked for, counted by contribution schedule lot entitlement",
@@ -24878,6 +24848,7 @@ exports[`the rule set a building is given (golden) > comes from the stored row w
       "WITHOUT_DISSENT",
     ],
     "effectiveFrom": "2026-10-28",
+    "excludeCommonPropertyRows": true,
     "generalMeetingCategories": [
       "ORDINARY",
       "SPECIAL",
@@ -25006,6 +24977,7 @@ exports[`the rule set a building is given (golden) > is the seed when no row is 
       "WITHOUT_DISSENT",
     ],
     "effectiveFrom": "2026-10-27",
+    "excludeCommonPropertyRows": true,
     "generalMeetingCategories": [
       "ORDINARY",
       "SPECIAL",
@@ -25114,6 +25086,7 @@ exports[`the rule set a building is given (golden) > is the seed when no row is 
       "WITHOUT_DISSENT",
     ],
     "effectiveFrom": "2026-10-27",
+    "excludeCommonPropertyRows": true,
     "generalMeetingCategories": [
       "ORDINARY",
       "SPECIAL",
@@ -25424,6 +25397,7 @@ exports[`the rule set a building is given (golden) > is the seed when no row is 
       "WITHOUT_DISSENT",
     ],
     "effectiveFrom": "2026-10-27",
+    "excludeCommonPropertyRows": true,
     "generalMeetingCategories": [
       "ORDINARY",
       "SPECIAL",
@@ -25532,6 +25506,7 @@ exports[`the rule set a building is given (golden) > is the seed when no row is 
       "WITHOUT_DISSENT",
     ],
     "effectiveFrom": "2026-10-27",
+    "excludeCommonPropertyRows": true,
     "generalMeetingCategories": [
       "ORDINARY",
       "SPECIAL",

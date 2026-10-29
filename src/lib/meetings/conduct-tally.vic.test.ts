@@ -65,7 +65,10 @@ describe("the lots counted", () => {
   });
 
   it("refuse a vote for the common property row", () => {
-    expect(count("ORDINARY", [{ lotId: "cp", vote: "FOR", byProxy: false }])).toEqual({ ok: false, error: "A vote is for a lot that is not in this building." });
+    expect(count("ORDINARY", [{ lotId: "cp", vote: "FOR", byProxy: false }])).toEqual({
+      ok: false,
+      error: "Common property (entered as lot CP) is not a lot and has no vote, so nothing was counted. Reload the page and record the votes again.",
+    });
   });
 
   it("leave it out of the conduct screen too", () => {

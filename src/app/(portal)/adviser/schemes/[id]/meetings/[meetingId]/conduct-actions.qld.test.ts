@@ -270,3 +270,52 @@ describe("an NSW building", () => {
     expect(sharedFake.tables).toEqual({});
   });
 });
+
+describe("a building with its common property entered as a row (pack 2026.10.20, 29 Oct 2026)", () => {
+  const cp = { id: "cp", schemeId: "s1", lotNumber: "CP", entitlement: null, interestScheduleEntitlement: null, lotType: "COMMON" };
+  const WITH_CP = { ...QLD_SCHEME, lots: [...lots, cp] };
+  const carried = [v(3, "FOR"), v(4, "FOR"), v(5, "FOR"), v(6, "FOR"), v(7, "FOR"), v(8, "FOR"), v(1, "AGAINST")];
+
+  it("counts a special resolution over the 8 lots the building records, without asking for the row's entitlement", async () => {
+    state.scheme = WITH_CP;
+    expect(await record("RESOLVED", carried)).toEqual({ ok: true });
+    const event = (recordMeetingEvent.mock.calls[0] as unknown[])[0] as { payload: Record<string, unknown> };
+    expect(event.payload.tally).toEqual({ forCount: 6, againstCount: 1, abstainCount: 0, totalLots: 8, totalEntitlement: 100, forUE: 80, againstUE: 10 });
+  });
+
+  it("leaves the row out of the lots entitled to vote on a majority resolution", async () => {
+    state.scheme = WITH_CP;
+    state.item = { id: "i1", meetingId: "m1", resolutionCategory: "MAJORITY" };
+    // 7 lots entitled (lot 2 owes): 4 for is more than half, so the count gives carried, not lost.
+    const r = await record("MOTION_LOST", [v(1, "FOR"), v(3, "FOR"), v(4, "FOR"), v(5, "FOR")]);
+    expect(r.error).toMatch(/^The votes recorded show the motion is carried, not lost\./);
+    expect(updateAgendaItem).not.toHaveBeenCalled();
+    expect(await record("MOTION_LOST", [v(1, "FOR"), v(3, "FOR"), v(4, "FOR")])).toEqual({ ok: true });
+    const event = (recordMeetingEvent.mock.calls[0] as unknown[])[0] as { payload: Record<string, unknown> };
+    expect(event.payload.tally).toMatchObject({ forCount: 3, eligibleLots: 7, totalLots: 8 });
+  });
+
+  it("refuses a vote sent for the row, writing nothing", async () => {
+    state.scheme = WITH_CP;
+    state.item = { id: "i1", meetingId: "m1", resolutionCategory: "ORDINARY" };
+    const r = await record("RESOLVED", [v(1, "FOR"), { lotId: "cp", vote: "FOR", byProxy: false }]);
+    expect(r.error).toBe("Common property (entered as lot CP) is not a lot and has no vote, so nothing was counted. Reload the page and record the votes again.");
+    expect(updateAgendaItem).not.toHaveBeenCalled();
+    expect(recordMeetingEvent).not.toHaveBeenCalled();
+  });
+
+  it("is refused when the building's number of lots counts the row as a lot", async () => {
+    state.scheme = { ...WITH_CP, totalLots: 9 };
+    const r = await record("RESOLVED", carried);
+    expect(r.error).toBe("The building records 9 lots but 8 are entered, so this resolution cannot be counted. Enter every lot, or correct the number of lots, first.");
+    expect(updateAgendaItem).not.toHaveBeenCalled();
+  });
+
+  it("changes nothing for an NSW building, which ignores the votes sent", async () => {
+    state.scheme = { id: "s1", state: "NSW", timeZone: "Australia/Sydney", totalLots: 8, lots: [...lots, cp] };
+    sharedFake.reset({});
+    expect(await record("RESOLVED", [{ lotId: "cp", vote: "FOR", byProxy: false }])).toEqual({ ok: true });
+    expect(updateAgendaItem).toHaveBeenCalledWith("m1", "i1", { outcome: "RESOLVED", status: "CARRIED" });
+    expect(sharedFake.tables).toEqual({});
+  });
+});

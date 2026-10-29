@@ -97,9 +97,15 @@ describe("stored rule set rows", () => {
     for (const state of ["NSW", "QLD"] as const) {
       first.mockResolvedValue(olderRow(state, state === "NSW" ? NSW_RULE_SET : QLD));
       const other = await getActiveRuleSet(state);
-      expect("excludeCommonPropertyRows" in other).toBe(false);
       expect("memberBandSelector" in other).toBe(false);
       expect("categoryRequiredAtGeneralMeetings" in other).toBe(false);
     }
+  });
+
+  it("give a stored Queensland row the seed's common property key, however old the row (2026.10.20), and never NSW", async () => {
+    first.mockResolvedValue(olderRow("QLD", QLD));
+    expect((await getActiveRuleSet("QLD")).excludeCommonPropertyRows).toBe(true);
+    first.mockResolvedValue(olderRow("NSW", NSW_RULE_SET));
+    expect("excludeCommonPropertyRows" in (await getActiveRuleSet("NSW"))).toBe(false);
   });
 });

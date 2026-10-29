@@ -121,7 +121,8 @@ describe("Queensland pack (active)", () => {
     expect(statutoryRulesFor("QLD")).toBe(qld);
     expect(SUPPORTED_SCHEME_STATES).toContain("QLD");
     expect(schemeStateProblem("QLD")).toBeNull();
-    expect(QLD_RULE_PACK.version).toBe("2026.10.19");
+    // 2026.10.20 (29 Oct 2026): common property rows are not counted at conduct.
+    expect(QLD_RULE_PACK.version).toBe("2026.10.20");
   });
 
   it("starts a new building's funds on the NSW accounting basis, as decided on 28 Oct 2026", () => {
