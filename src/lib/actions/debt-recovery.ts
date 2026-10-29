@@ -33,10 +33,19 @@ import {
   getPaymentPlanForCase,
   readDebtRecoverySteps,
 } from "@/lib/queries/debt-recovery";
-import { messageTermsFor, rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
-import { UnsupportedJurisdictionError, needRule } from "@/config/statutory";
+import { messageTermsFor, rulesForScheme, rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { UnsupportedJurisdictionError, needRule, type StatutoryRules } from "@/config/statutory";
 import { stepPausedByPlan } from "@/lib/debt-recovery/payment-plans";
 import { lotOwnerIds } from "@/lib/debt-recovery/lot-owners";
+import {
+  recoveryGateProblem,
+  recoveryGatesApply,
+  recoveryRecordsToWrite,
+  recoveryStepNeeds,
+  type AuthorityFact,
+  type RecoveryRecordToWrite,
+} from "@/lib/debt-recovery/recovery-gates";
+import { createRecoveryRecords, readRecoveryRecords, recordedFacts } from "@/lib/debt-recovery/recovery-records-repo";
 
 type ActionResult = { error?: string; success?: boolean; id?: string };
 
@@ -117,6 +126,10 @@ export async function initiateDebtRecoveryAction(
     if (!rules.FEATURES.debtRecoverySteps) return { error: "This is not available for this building." };
     // Resolved before anything is written, so a pack without steps leaves no case behind.
     const steps = needRule(rules, "DEBT_RECOVERY_STEPS");
+    // The draft packs' recovery rules, before anything is written: refused where
+    // StrataVerze cannot apply them. Null at once for NSW and Queensland.
+    const gate = recoveryGateProblem(rules, { action: "INITIATE" });
+    if (gate) return { error: gate };
     const caseNumber = await generateCaseNumber(schemeId);
 
     const newCase = await createDebtRecoveryCase({
@@ -237,6 +250,19 @@ export async function updateDebtRecoveryCaseAction(
         const label = rules.DEBT_RECOVERY_STEP_LABELS?.LEGAL_REFERRAL ?? "legal referral";
         return { error: `Complete the ${label} step before referring this case for legal recovery.` };
       }
+      // A draft pack's recovery rules: the decision to start proceedings must
+      // be recorded (never read for NSW or Queensland, which have none).
+      if (recoveryGatesApply(rules)) {
+        let recorded: ReturnType<typeof recordedFacts>;
+        try {
+          recorded = recordedFacts(await readRecoveryRecords(caseId));
+        } catch (err) {
+          logError("Failed to read the case's recovery records:", err);
+          return { error: "Could not check the case's records. Nothing was saved." };
+        }
+        const gate = recoveryGateProblem(rules, { action: "REFER_LEGAL", recorded, labels: rules.DEBT_RECOVERY_STEP_LABELS });
+        if (gate) return { error: gate };
+      }
     }
 
     if (status) data.status = status;
@@ -296,13 +322,24 @@ export async function completeDebtRecoveryStepAction(
     if (step.status === "COMPLETED") return { error: "This step is already complete" };
 
     // No recovery action for levies covered by a payment plan being followed (the building's rule pack).
-    const [{ rules, pack }, lotPlans] = await Promise.all([
+    const [{ rules, pack, label: rulePack }, lotPlans] = await Promise.all([
       rulesForScheme(schemeId),
       db.orm.public.PaymentPlan.where((p) => and(p.lotId.eq(caseRow.lotId), p.status.eq("ACTIVE"))).limit(5).all(),
     ]);
     // Only a pack with the payment plan workflow pauses recovery for a plan.
     if (rules.FEATURES.statutoryPaymentPlans && stepPausedByPlan(step.stepType, lotPlans, needRule(rules, "PAYMENT_PLANS"))) {
       return { error: "A payment plan is being followed for this lot, so this step waits. Mark the plan as not followed if instalments are missed." };
+    }
+
+    // A draft pack's recovery rules: what the step must record (the decision
+    // to start proceedings, where they were started), checked before anything
+    // is written and written with the step. Nothing is read for NSW or
+    // Queensland, which have none.
+    let records: RecoveryRecordToWrite[] = [];
+    if (recoveryGatesApply(rules)) {
+      const checked = await checkRecoveryStep(rules, { schemeId, caseId, stepType: step.stepType, formData, amountOwing: String(caseRow.totalOwed ?? "0") });
+      if ("error" in checked) return { error: checked.error };
+      records = checked.records;
     }
 
     await db.transaction(async (tx) => {
@@ -335,6 +372,10 @@ export async function completeDebtRecoveryStepAction(
         },
         tx.orm,
       );
+      // The step's records (a draft pack only), in the same transaction as the step.
+      if (records.length > 0) {
+        await createRecoveryRecords(tx.orm, { caseId, schemeId, state: pack.state, rulePack, recordedBy: profile.id }, records);
+      }
       // StrataVerze recovery step fee, recoverable from the defaulting owner.
       const variant = recoveryFeeVariant(step.stepType);
       if (variant) {
@@ -397,6 +438,13 @@ export async function closeDebtRecoveryCaseAction(
     const reason = (closedReason ?? "").trim();
     if (!reason) return { error: "Give a reason for closing the case" };
     if (reason.length > MAX_NOTE_LENGTH) return { error: "Reason is too long" };
+    // A draft pack's recovery rules. The case's pack comes from the label it
+    // was opened under, so nothing is read for an NSW or Queensland case.
+    const caseRules = rulesForCaseLabel(caseRow.rulePack);
+    if (caseRules && recoveryGatesApply(caseRules)) {
+      const gate = recoveryGateProblem(caseRules, { action: "CLOSE" });
+      if (gate) return { error: gate };
+    }
 
     await updateDebtRecoveryCase(caseId, {
       status,
@@ -418,9 +466,70 @@ export async function closeDebtRecoveryCaseAction(
     return { success: true };
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
+    if (err instanceof UnsupportedJurisdictionError) return { error: err.message };
     logError("Failed to close case:", err);
     return { error: "Failed to close case" };
   }
+}
+
+/**
+ * The rules of the pack a case was opened under, from its label ("AU-WA
+ * 2026.10.10"), without a read: the state's current pack (rulesForState,
+ * which throws for a state with no pack). A case with no label was opened
+ * before rule packs were recorded on cases, when only NSW existed, so it has
+ * no recovery gates (null).
+ */
+function rulesForCaseLabel(label: string | null | undefined): Pick<StatutoryRules, "DEBT_RECOVERY"> | null {
+  if (!label) return null;
+  const state = /^AU-([A-Z]+)\s/.exec(label)?.[1];
+  if (!state) throw new UnsupportedJurisdictionError(label);
+  return rulesForState(state).rules;
+}
+
+/**
+ * What completing a step under a draft pack's recovery rules records, or why
+ * it is refused (nothing written): the chosen resolution (authorityResolution)
+ * and forum from the form, against the case's records and steps and the
+ * building's day.
+ */
+async function checkRecoveryStep(
+  rules: StatutoryRules,
+  input: { schemeId: string; caseId: string; stepType: string; formData: FormData; amountOwing: string },
+): Promise<{ error: string } | { records: RecoveryRecordToWrite[] }> {
+  const needs = recoveryStepNeeds(rules, input.stepType);
+  if (needs && "problem" in needs) return { error: needs.problem };
+  let recorded: ReturnType<typeof recordedFacts>;
+  let caseSteps: Awaited<ReturnType<typeof readDebtRecoverySteps>>;
+  try {
+    [recorded, caseSteps] = await Promise.all([readRecoveryRecords(input.caseId).then(recordedFacts), readDebtRecoverySteps(input.caseId)]);
+  } catch (err) {
+    logError("Failed to read the case's recovery records:", err);
+    return { error: "Could not check the case's records. Nothing was saved." };
+  }
+  const text = (k: string) => {
+    const v = input.formData.get(k);
+    return typeof v === "string" && v.trim() ? v.trim() : null;
+  };
+  let authority: AuthorityFact | null = null;
+  if (needs?.authority) {
+    const { authorityResolution } = await import("@/lib/finance/resolutions");
+    authority = await authorityResolution(input.schemeId, text("authorityMeetingId"), text("authorityItemId"), needs.authority.accepted);
+  }
+  const forum = needs?.forum ? text("forum") : null;
+  const { schemeToday } = await import("@/lib/jurisdiction/scheme-time");
+  const today = await schemeToday(input.schemeId);
+  const gate = recoveryGateProblem(rules, {
+    action: "COMPLETE_STEP",
+    stepType: input.stepType,
+    caseSteps,
+    authority,
+    forum,
+    recorded,
+    today,
+    labels: rules.DEBT_RECOVERY_STEP_LABELS,
+  });
+  if (gate) return { error: gate };
+  return { records: recoveryRecordsToWrite(rules, { stepType: input.stepType, authority, forum, today, amountOwing: input.amountOwing }) };
 }
 
 // ─── Record Instalment Payment ──────────────────────────────────

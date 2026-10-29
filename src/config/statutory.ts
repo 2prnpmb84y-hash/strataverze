@@ -694,7 +694,19 @@ export const PENDING_RULE_PACKS = {
     // MEETING_RULES_STATUS gains noticeNotCheckedFor and its noticePeriods note cites by-law 8(2)(a) (the notice) in
     // place of 8(1) (the decisions), as COUNCIL.meetings and the notes give it, and FOR_REVIEW gains the council notice
     // point. No legal value or status already recorded changed; still a draft.
-    version: "2026.10.9",
+    // 2026.10.10 (29 Oct 2026): debt recovery (stage 2, PR 9a). DEBT_RECOVERY follows the shared DebtRecoveryRules
+    // shape, its other fields kept (its forum words move to forumWords, unchanged), and gains authorityToSue: a motion
+    // carried at a council meeting or a general meeting decides to start proceedings, never the strata manager alone
+    // (s 143(5)(e), CONFIRMED; who decides is not stated, so the accepted resolutions are STRATAVERZE, decision D9),
+    // recorded when COMMITTEE_REVIEW is completed and needed before the legal referral; and forum: a court of
+    // competent jurisdiction (s 100(4)(c), CONFIRMED), recorded when PROCEEDINGS is completed, SAT excluded
+    // (s 197(3)(f), CONFIRMED), the Magistrates Court limits guidance only, never applied (D13). DEBT_RECOVERY_STEPS
+    // (the NSW step types, D11), DEBT_RECOVERY_STEP_LABELS and DEBT_RECOVERY_GUIDANCE added: owner-facing text states
+    // only CONFIRMED law and says StrataVerze practice where a step is StrataVerze's own. NEVER_RECOVERABLE_FEE_VARIANTS
+    // lists all four recovery step fees (D10), and FEATURES.debtRecoverySteps is on (D11). Matthew Wrigley's decisions
+    // D1, D4 and D9 to D13 of 29 Oct 2026, recorded in DECISIONS and kept in FOR_REVIEW; the FOR_REVIEW forum point is
+    // rewritten. No legal value or status already recorded changed; still a draft.
+    version: "2026.10.10",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",
     reviewedOn: null,

@@ -8,8 +8,8 @@
  * Western Australia is not in SUPPORTED_SCHEME_STATES or the database's state
  * check. Every value below comes from the research notes of 27 Oct 2026 and
  * keeps their status (see RuleStatus in ./types). The StrataVerze decisions
- * so far are the payment order and the notice timing (DECISIONS,
- * 28 Oct 2026), and the points to decide are in FOR_REVIEW.
+ * so far are in DECISIONS (from 28 Oct 2026, the latest debt recovery on
+ * 29 Oct 2026), and the points to decide are in FOR_REVIEW.
  *
  * Sources, read on 27 Oct 2026:
  * - the STA, consolidated HTML on legislation.wa.gov.au, version 08-a0-00,
@@ -39,10 +39,14 @@
 
 import type { MeetingRuleSet } from "@/lib/meetings/rules";
 import type {
+  AuthorityToSueRule,
   BuildingFactDefinition,
   BuildingSelector,
+  DebtForumRule,
+  DebtRecoveryStepRule,
   DerivedBuildingSelector,
   EntitlementScheduleDefinition,
+  FeeVariant,
   FundDefinition,
   LateChargeRules,
   NoticeRules,
@@ -774,7 +778,77 @@ export const LATE_CHARGE: LateChargeRules = {
  */
 export const PAYMENT_ALLOCATION_ORDER: readonly PaymentAllocationPart[] = ["LEVY", "INTEREST", "RECOVERY_COSTS"];
 
-/** Recovering unpaid contributions (STA ss 47(8), 100(4)(c), 116(1)(f), 120(2), 143(5)(e), 197(3)(f)). */
+/**
+ * Who may decide to start proceedings, and where they go (stage 2, PR 9a,
+ * 29 Oct 2026), recorded on each case in debt_recovery_records.
+ *
+ * Matthew Wrigley's StrataVerze decisions of 29 Oct 2026 (DECISIONS), kept in
+ * FOR_REVIEW: a motion carried at a council meeting or at a general meeting
+ * decides (D9). The Act bars only the strata manager (s 143(5)(e),
+ * CONFIRMED); who within the strata company decides is not stated
+ * (NOT_CONFIRMED), so the accepted resolutions are a StrataVerze reading. The
+ * adviser can never decide alone: the step needs the meeting and the motion.
+ */
+const WA_DEBT_DECISION = "Matthew Wrigley's StrataVerze decision D9 of 29 Oct 2026 (DECISIONS)";
+const WA_AUTHORITY_TO_SUE: AuthorityToSueRule = {
+  recordedAtStep: "COMMITTEE_REVIEW",
+  accepted: {
+    value: [
+      { meeting: "COMMITTEE", kind: "ANY", words: "a motion carried at a council meeting" },
+      { meeting: "GENERAL", kind: "ANY", words: "a motion carried at a general meeting" },
+    ],
+    status: "STRATAVERZE",
+    source: `${STA} ss 135(1), 143(5)(e); ${WA_DEBT_DECISION}`,
+    note: "Who within the strata company decides to start proceedings is not stated in the Act (NOT_CONFIRMED). The council performs the company's functions (s 135(1)), and a general meeting may decide, so StrataVerze accepts either, never the strata manager alone.",
+  },
+  managerMayDecide: { value: false, status: "CONFIRMED", source: `${STA} s 143(5)(e)` },
+  source: `${STA} ss 135(1), 143(5)(e)`,
+  status: "STRATAVERZE",
+};
+
+/**
+ * Where proceedings go (D13): a court of competent jurisdiction (s 100(4)(c),
+ * CONFIRMED), never SAT (s 197(3)(f), CONFIRMED), recorded when PROCEEDINGS is
+ * completed. The Act names no particular court. The Magistrates Court limits
+ * are GUIDANCE (MAGISTRATES_COURT_LIMITS): shown to advisers, never applied
+ * and never in owner-facing text.
+ */
+const WA_DEBT_FORUM: DebtForumRule = {
+  recordedAtStep: "PROCEEDINGS",
+  options: [
+    {
+      key: "COURT",
+      words: "a court of competent jurisdiction",
+      status: "CONFIRMED",
+      limitCents: {
+        value: null,
+        status: "GUIDANCE",
+        guidance: 7_500_000,
+        note: "The Act names no particular court. The Magistrates Court hears a general procedure claim up to $75,000 and a minor case claim up to $10,000 (the court's website only, the Magistrates Court (Civil Proceedings) Act 2004 not read).",
+        source: MAGISTRATES_COURT,
+      },
+      source: `${STA} s 100(4)(c)`,
+    },
+  ],
+  excluded: [
+    {
+      key: "SAT",
+      words: "the State Administrative Tribunal (SAT)",
+      reason: "a dispute about an amount owed as a debt is not a scheme dispute (STA s 197(3)(f))",
+      status: "CONFIRMED",
+      source: `${STA} s 197(3)(f)`,
+    },
+  ],
+  source: `${STA} ss 100(4)(c), 197(3)(f)`,
+};
+
+/**
+ * Recovering unpaid contributions (STA ss 47(8), 100(4)(c), 116(1)(f),
+ * 120(2), 143(5)(e), 197(3)(f)), in the shared DebtRecoveryRules shape from
+ * stage 2, PR 9a (29 Oct 2026): `authorityToSue` and `forum` are read by the
+ * recovery gates; the other fields are kept for the review. `forum` was the
+ * forum's words before PR 9a; they are now `forumWords`, unchanged.
+ */
 export const DEBT_RECOVERY = {
   /** Contributions, with accrued interest, are recoverable as a debt in a court of competent jurisdiction; the company may compromise (ss 100(4)(c), 116(1)(f)). */
   recoverableAsDebtInCourt: true,
@@ -787,14 +861,18 @@ export const DEBT_RECOVERY = {
    * (GUIDANCE).
    */
   forumKind: "COURT",
-  forum: "a court of competent jurisdiction",
+  forumWords: "a court of competent jurisdiction",
   courtNamedInAct: false,
   satMayDecide: false,
+  /** Where proceedings go, recorded on the case (stage 2, PR 9a). */
+  forum: WA_DEBT_FORUM,
   /** No statutory pre-steps, pre-action or final notice in the STA or STGR (court rules not checked). */
   statutoryPreSteps: false,
   statutoryPreActionNotice: false,
   /** A strata manager cannot be authorised to commence proceedings (s 143(5)(e)). Who within the company decides is not stated (NOT_CONFIRMED). */
   strataManagerMayCommence: false,
+  /** Who may decide to start proceedings, recorded on the case (stage 2, PR 9a; decision D9, a StrataVerze reading). */
+  authorityToSue: WA_AUTHORITY_TO_SUE,
   /** No statutory payment plan scheme; compromise and instalment arrangements only. */
   statutoryPaymentPlans: false,
   /** An unfinancial owner cannot vote except on unanimous, without dissent, leasehold expiry postponement or termination resolutions (s 120(2)). */
@@ -807,6 +885,172 @@ export const DEBT_RECOVERY = {
   source: `${STA} ss 47(8), 100(4)(c), 116(1)(f), 120(2), 143(5)(e), 197(3)(f); ${LANDGATE_COMPANIES}`,
   status: "CONFIRMED" as RuleStatus,
 } as const;
+
+/**
+ * The recovery steps copied onto each new case (stage 2, PR 9a, 29 Oct 2026;
+ * decision D11): the NSW step types, so the case engine, fees and screens
+ * work unchanged. Each step's `status` says how far it was checked: owners see
+ * `actionRequired` and `legalBasis`, which state only CONFIRMED law, and say
+ * "StrataVerze practice" where a step is StrataVerze's own. The law sets no
+ * notice before proceedings (CONFIRMED absent from the STA and STGR; court
+ * rules not checked), so the contact, reminder and final notice steps are
+ * StrataVerze practice. The points not confirmed, SAT and the Magistrates
+ * Court are in DEBT_RECOVERY_GUIDANCE (advisers only).
+ */
+export const DEBT_RECOVERY_STEPS: readonly DebtRecoveryStepRule[] = [
+  {
+    stepType: "LEDGER_VERIFICATION",
+    stepOrder: 1,
+    actionRequired: "Check each unpaid contribution was levied and its notice given, and that payments were applied to contributions first, then interest, then recovery costs",
+    legalBasis: "StrataVerze practice",
+    responsibleParty: "ADVISER",
+    approvalRequired: false,
+    triggerCondition: "Case opened",
+    status: "STRATAVERZE",
+  },
+  {
+    stepType: "INITIAL_CONTACT",
+    stepOrder: 2,
+    actionRequired: "Contact the owner about the unpaid contributions and the amount owing, including any interest",
+    legalBasis: "StrataVerze practice",
+    responsibleParty: "ADVISER",
+    approvalRequired: false,
+    triggerCondition: "Ledger verified",
+    noticeType: "REMINDER",
+    status: "STRATAVERZE",
+  },
+  {
+    stepType: "REMINDER_NOTICE",
+    stepOrder: 3,
+    actionRequired: "Send a written reminder showing the unpaid contributions, any interest and any recovery costs separately",
+    legalBasis: "StrataVerze practice. Interest on an unpaid contribution: STA s 100(4)(b)",
+    responsibleParty: "ADVISER",
+    approvalRequired: false,
+    triggerCondition: "No payment after initial contact (period set by the building)",
+    noticeType: "DEMAND",
+    status: "STRATAVERZE",
+  },
+  {
+    stepType: "FINAL_NOTICE",
+    stepOrder: 4,
+    actionRequired: "Tell the owner in writing that the strata company may start proceedings in a court to recover the unpaid contributions and interest as a debt",
+    legalBasis: "StrataVerze practice. Recovery as a debt: STA s 100(4)(c)",
+    responsibleParty: "ADVISER",
+    approvalRequired: false,
+    triggerCondition: "Reminder unpaid",
+    noticeType: "FINAL_DEMAND",
+    status: "STRATAVERZE",
+  },
+  {
+    stepType: "HARDSHIP_REVIEW",
+    stepOrder: 5,
+    actionRequired: "If the owner asks, decide whether to agree to payment by instalments or to a compromise of the debt. A request can arrive at any step",
+    legalBasis: "StrataVerze practice. Compromise: STA ss 100(4)(c), 116(1)(f)",
+    responsibleParty: "COMMITTEE",
+    approvalRequired: true,
+    triggerCondition: "Owner asks to pay by instalments or for a compromise",
+    status: "STRATAVERZE",
+  },
+  {
+    stepType: "COMMITTEE_REVIEW",
+    stepOrder: 6,
+    actionRequired: "Decide whether to start proceedings to recover the debt, by a motion carried at a council meeting or a general meeting. A strata manager cannot be authorised to start proceedings",
+    legalBasis: "StrataVerze practice (a council meeting or a general meeting decides). Strata manager: STA s 143(5)(e)",
+    responsibleParty: "COMMITTEE",
+    approvalRequired: true,
+    triggerCondition: "Final notice unpaid",
+    status: "STRATAVERZE",
+  },
+  {
+    stepType: "LEGAL_REFERRAL",
+    stepOrder: 7,
+    actionRequired: "Refer the matter to a solicitor, or prepare the claim, with the ledger, the contribution notices and the strata company's decision",
+    legalBasis: "StrataVerze practice",
+    responsibleParty: "ADVISER",
+    approvalRequired: true,
+    triggerCondition: "Proceedings decided by the strata company",
+    status: "STRATAVERZE",
+  },
+  {
+    stepType: "PROCEEDINGS",
+    stepOrder: 8,
+    actionRequired: "Start proceedings in a court of competent jurisdiction to recover the unpaid contributions and interest as a debt",
+    legalBasis: "STA ss 100(4)(c), 197(3)(f)",
+    responsibleParty: "SOLICITOR",
+    approvalRequired: false,
+    triggerCondition: "Legal referral accepted",
+    status: "CONFIRMED",
+  },
+  {
+    stepType: "ENFORCEMENT",
+    stepOrder: 9,
+    actionRequired: "Enforce the judgment",
+    responsibleParty: "SOLICITOR",
+    approvalRequired: false,
+    triggerCondition: "Judgment obtained and unpaid",
+    status: "NOT_CONFIRMED",
+  },
+  {
+    stepType: "CLOSED",
+    stepOrder: 10,
+    actionRequired: "Close the case and reconcile the lot ledger",
+    legalBasis: "StrataVerze practice",
+    responsibleParty: "ADVISER",
+    approvalRequired: false,
+    triggerCondition: "Debt paid, settled or written off",
+    status: "STRATAVERZE",
+  },
+];
+
+/** DRAFT, FOR STRATAVERZE TO REVIEW: the name the screens show for each step type. */
+export const DEBT_RECOVERY_STEP_LABELS: Readonly<Record<string, string>> = {
+  LEDGER_VERIFICATION: "Ledger Verification",
+  INITIAL_CONTACT: "Initial Contact",
+  REMINDER_NOTICE: "Reminder Notice",
+  FINAL_NOTICE: "Final Notice",
+  HARDSHIP_REVIEW: "Instalment or Compromise Request",
+  COMMITTEE_REVIEW: "Decision to Start Proceedings",
+  LEGAL_REFERRAL: "Legal Referral",
+  PROCEEDINGS: "Proceedings",
+  ENFORCEMENT: "Enforcement",
+  CLOSED: "Closed",
+};
+
+/** Adviser-only guidance for each step, with the points not confirmed. */
+export const DEBT_RECOVERY_GUIDANCE: Readonly<Record<string, string>> = {
+  LEDGER_VERIFICATION:
+    "Check each unpaid contribution was levied by the strata company and its notice given, and that payments were applied to contributions first, then interest, then recovery costs. That order is a StrataVerze choice, as the law records none. This check, and showing contributions, interest and costs separately, is StrataVerze practice.",
+  INITIAL_CONTACT:
+    "Contact the owner informally about the unpaid contributions and the amount owing. Western Australian law has no statutory payment plan and no hardship statement. While a contribution is unpaid, the owner can vote only on a unanimous resolution, a resolution without dissent, a leasehold expiry postponement or a termination resolution (STA s 120(2)). This contact is StrataVerze practice.",
+  REMINDER_NOTICE:
+    "Send a written reminder showing the unpaid contributions, any interest and any recovery costs separately. Interest runs at 11% a year simple from the due date unless the strata company determines otherwise (STA s 100(4)(b), STGR reg 78). This reminder is StrataVerze practice.",
+  FINAL_NOTICE:
+    "Tell the owner in writing that the strata company may start proceedings in a court. The STA and STGR set no notice before proceedings (court rules not checked), so this notice is StrataVerze practice.",
+  HARDSHIP_REVIEW:
+    "The strata company may agree to a compromise of the debt and to instalment arrangements (STA ss 100(4)(c), 116(1)(f), 204(b)(v)). There is no statutory payment plan. Not confirmed: who within the strata company decides. This step is StrataVerze practice.",
+  COMMITTEE_REVIEW:
+    "Record the motion that decided to start proceedings: a motion carried at a council meeting or a general meeting. The case records the meeting, the motion and the amount owing. A strata manager cannot be authorised to start proceedings (STA s 143(5)(e)), so the adviser can never decide alone. Not confirmed: who within the strata company decides. Accepting a council or general meeting motion is Matthew Wrigley's StrataVerze decision D9 of 29 Oct 2026, for legal review. If the strata company decides not to start proceedings, close the case instead of completing this step.",
+  LEGAL_REFERRAL:
+    "Refer the matter with the ledger, the contribution notices and the recorded decision. The case cannot be marked as referred for legal recovery until this step is complete. Not confirmed: whether legal and collection costs can be recovered from the owner (no STA or STGR provision found). StrataVerze's recovery step fees are charged to the strata company and never passed to the owner (decision D10).",
+  PROCEEDINGS:
+    "Proceedings go to a court of competent jurisdiction (STA s 100(4)(c)), never SAT: a dispute about an amount owed as a debt is not a scheme dispute (STA s 197(3)(f)). The Act names no particular court. Guidance, not confirmed: the Magistrates Court hears a general procedure claim up to $75,000 and a minor case claim up to $10,000 (the court's website only). Record where proceedings were started when this step is completed.",
+  ENFORCEMENT: "Enforcing a judgment is not covered by the research notes (not confirmed). Take legal advice.",
+  CLOSED: "Close the case once the debt is paid, settled or written off, and reconcile the lot ledger. This step is StrataVerze practice.",
+};
+
+/**
+ * StrataVerze fees never passed to an owner in Western Australia (decision
+ * D10, 29 Oct 2026): every recovery step fee is charged to the strata company
+ * only. Whether legal and collection costs are recoverable from the owner is
+ * NOT_CONFIRMED (DEBT_RECOVERY.legalCostsRecoverable), so StrataVerze passes
+ * none on. No RECOVERY_COSTS_RECOVERABLE wording is set.
+ */
+export const NEVER_RECOVERABLE_FEE_VARIANTS: readonly FeeVariant[] = [
+  { code: "RECOVERY_STEP", variant: "REMINDER" },
+  { code: "RECOVERY_STEP", variant: "FINAL_NOTICE" },
+  { code: "RECOVERY_STEP", variant: "REFERRAL" },
+  { code: "RECOVERY_STEP", variant: "PAYMENT_PLAN" },
+];
 
 /** Magistrates Court limits, from the court's website only (the Magistrates Court (Civil Proceedings) Act 2004 not read). */
 export const MAGISTRATES_COURT_LIMITS = {
@@ -1662,8 +1906,8 @@ export const NOT_CONFIRMED = [
 /**
  * StrataVerze's decisions. The pack as a whole has not been reviewed; the
  * decisions so far are the payment order and the notice timing (28 Oct 2026),
- * the 2-lot quorum, the voting period and council notice not checked
- * (29 Oct 2026).
+ * the 2-lot quorum, the voting period, council notice not checked and debt
+ * recovery (29 Oct 2026).
  */
 export const DECISIONS: readonly { decision: string; decidedBy: string; decidedOn: string }[] = [
   {
@@ -1695,6 +1939,12 @@ export const DECISIONS: readonly { decision: string; decidedBy: string; decidedO
     decidedBy: "Matthew Wrigley",
     decidedOn: "2026-10-29",
   },
+  {
+    decision:
+      "Debt recovery (stage 2, PR 9, the PR 9 decisions as they apply to Western Australia and the shared recovery engine). Matthew Wrigley accepted the defaults on 29 Oct 2026, StrataVerze decisions kept in FOR_REVIEW for legal confirmation. (D1) The facts a case records under these rules (the resolution that decided to start proceedings, with the amount owing then, and where proceedings were started) are kept in a new table, debt_recovery_records (migration 20261125), applied before the pack is switched on. (D4) Where a pack's step may be completed only after a number of days, it may be completed from day N + 1 after the recorded day (a StrataVerze reading for review; Western Australia has no such step). (D9) The decision to start proceedings is a motion carried at a council meeting or a general meeting (DEBT_RECOVERY.authorityToSue), recorded when the Decision to Start Proceedings step (COMMITTEE_REVIEW) is completed, never the strata manager alone (STA s 143(5)(e)), a StrataVerze reading as the Act does not say who decides. (D10) Every StrataVerze recovery step fee is charged to the strata company only, never passed to the owner (NEVER_RECOVERABLE_FEE_VARIANTS lists all four), as whether legal and collection costs are recoverable is not confirmed. (D11) The NSW step list is reused (DEBT_RECOVERY_STEPS), and FEATURES.debtRecoverySteps is on in this draft pack, which no building reaches until it is switched on. (D12) The steps are completed in order, on the server, by the step order check every pack has. (D13) Where proceedings were started is recorded when the Proceedings step is completed, from the pack's options (DEBT_RECOVERY.forum: a court of competent jurisdiction); SAT is refused (STA s 197(3)(f)); the Magistrates Court and its limits are shown to advisers only, as guidance, never applied and never in owner-facing text.",
+    decidedBy: "Matthew Wrigley",
+    decidedOn: "2026-10-29",
+  },
 ];
 
 /**
@@ -1704,7 +1954,7 @@ export const DECISIONS: readonly { decision: string; decidedBy: string; decidedO
  */
 export const FOR_REVIEW = [
   "Supported options: `supported: true` for STRATA (SCHEME_TYPE), FREEHOLD (TENURE) and all three size classes (SCHEME_SIZE) is a StrataVerze proposal, not law. Survey-strata and leasehold schemes are proposed as not supported because they were researched at headline level only.",
-  "Levy debts go to a court, not SAT (s 100(4)(c), s 197(3)(f)). TERMINOLOGY.tribunal (\"SAT\") is the strata disputes tribunal only; shared code that names where levy claims are heard must take the forum from DEBT_RECOVERY, not from TERMINOLOGY.tribunal.",
+  "Levy debts go to a court, not SAT (s 100(4)(c), s 197(3)(f)). TERMINOLOGY.tribunal (\"SAT\") is the strata disputes tribunal only. Since stage 2, PR 9a (29 Oct 2026) shared code takes the forum from DEBT_RECOVERY.forum: a court of competent jurisdiction is recorded when the Proceedings step is completed, and SAT is refused. The Act names no court; the Magistrates Court limits are shown to advisers as guidance only. Confirm.",
   "Funds: both funds have `required: false`, and `requiredWhen` gives the law's test through the building selectors (stage 2, PR 3), read by defaultFunds and requiredFunds. The administrative fund reads the size class and ADMINISTRATIVE_FUND_BY_LAWS, the reserve fund the designated status. A fund that cannot be worked out is not given to a new building, and the building is flagged in Building data missing, as is a required fund it lacks or an administrative fund a 2-lot scheme may not have. The SAT order under s 140(3) is a new answer the first form did not hold.",
   "SAT order for a 2-lot scheme: the notes give s 140(3) (SAT may require a designated function on a member's application) without its scope or how it sits with s 140(1)(b) (a 2-lot scheme cannot establish an administrative fund unless its by-laws require one). A 2-lot scheme recorded with an SAT order is read as required, so it is never given fewer funds than an order may require, and that rule is NOT_CONFIRMED. For 3 to 5 lots the order is read as required (CONFIRMED). Confirm.",
   "Schemes with no fund (stage 2 PR 3 review): a building with no administrative and no reserve fund has no ledger, as the chart of accounts needs at least one fund. Onboarding refuses such a building in plain words: one whose funds cannot be worked out from the lots entered (every 2 to 5-lot scheme, since the wizard does not ask for the by-laws answer, the scheme type or the replacement cost), and one whose rules require no fund (a 2-lot scheme whose by-laws do not require an administrative fund and that is not designated). An existing building in that state is flagged in Building data missing. Decide how StrataVerze should handle such schemes: ask for the by-laws answer, scheme type and replacement cost during onboarding, keep a ledger with no statutory fund, or decline them.",
@@ -1727,13 +1977,16 @@ export const FOR_REVIEW = [
   "Council meeting notice (stage 2, PR 8b-iii, 29 Oct 2026), by Matthew Wrigley's StrataVerze decision D12 of 29 Oct 2026 (DECISIONS), kept here for confirmation: the council's 7 days' notice (Sch 1 by-law 8(2)(a)) is a default by-law a scheme may have changed, and StrataVerze does not hold the scheme's by-laws, so a council meeting's notice period is not checked. Such a notice is stored as not compliant with no period, with no database change (a notice with no period was always stored as compliant before), and shown as \"Notice period not checked\", never as met; it can still be issued. The 14 days' notice of the terms of a resolution (s 123) equals the general meeting notice, so nothing more is checked for it. Confirm, and decide whether a scheme's council notice should be recorded per building.",
   "Pre-meeting electronic voting is not offered for this draft (preMeetingEvoting is null). Before it is, closing a ballot must apply what the count at the meeting applies: the debtor condition (debtorRuleAppliesWhen), judged lot by lot as an owner's own vote is (debtorVoteCheck), the quorum answer, and any refusal of the whole count (Victoria's tier 5, Western Australia's 2-lot quorum). closeBallotAction applies none of these yet (stage 2, PR 8a-ii review). Confirm before any Western Australian ballot is offered.",
   "2-lot quorum (stage 2, PR 8a-ii, 29 Oct 2026, Matthew Wrigley's decision): a 2-lot scheme's quorum needs persons entitled to cast the votes of both lots, with no fallback after 30 minutes (s 130(2), (4)). StrataVerze does not record attendance, so at a general meeting of a 2-lot scheme (by the lots entered or the number the building records, which must agree) a count is refused unless both lots have a vote or an abstention recorded at the item, and nothing is written. A lot whose vote is not counted for money owed (s 120(2)) still makes up the quorum (Matthew Wrigley's decision, DECISIONS), and the resolution is decided by the counted votes. Fewer than 2 lots entered is refused. An item with no resolution category is not counted, so it is not checked. Other schemes' quorum (50% of the lots, then those present) is not checked, as before. Confirm.",
+  "Debt recovery (stage 2, PR 9a, 29 Oct 2026, Matthew Wrigley's decisions D1, D4 and D9 to D13, DECISIONS), to confirm: who decides to start proceedings (D9: a motion carried at a council meeting or a general meeting, any kind, recorded with the meeting, the motion, the day it took effect and the amount owing then; a general meeting resolution still in its voting period cannot be relied on until it is carried; the Act bars only the strata manager, s 143(5)(e), and does not say who decides, NOT_CONFIRMED); whether one decision may cover several cases (it may: the motion is chosen for each case); that the legal referral, the Proceedings step and marking the case as referred for legal recovery all need the decision recorded; the forum (D13: a court of competent jurisdiction, SAT refused, the Magistrates Court and its limits guidance only); the steps (D11: the NSW step types; the contact, reminder and final notice are StrataVerze practice, as the law sets no notice before proceedings, court rules not checked; Enforcement not confirmed); fees (D10: every recovery step fee charged to the strata company, never passed to the owner, as whether legal and collection costs are recoverable is not confirmed); and the committee's case page, which cannot record the decision or the forum: those steps are completed from the adviser's case page.",
 ] as const;
 
 /**
  * None of the NSW workflows applies in Western Australia: there is no
  * statutory payment plan, committee training, Strata Hub report or key
- * financial information form; the 10-year plan, the s 110 certificate,
- * records inspections and debt recovery are Western Australia's own.
+ * financial information form; the 10-year plan, the s 110 certificate and
+ * records inspections are Western Australia's own. The debt recovery steps
+ * are on from stage 2, PR 9a (decision D11), with Western Australia's own
+ * steps, authority and forum.
  */
 export const FEATURES: PackFeatures = {
   statutoryPaymentPlans: false,
@@ -1743,5 +1996,6 @@ export const FEATURES: PackFeatures = {
   keyFinancialInformation: false,
   strataInformationCertificate: false,
   recordsInspections: false,
-  debtRecoverySteps: false,
+  /** The recovery steps (stage 2, PR 9a, decision D11): on in this draft pack, which no building reaches until it is switched on. */
+  debtRecoverySteps: true,
 };

@@ -13,6 +13,8 @@ import { feeWordingFor } from "@/lib/billing/disclosure";
 import { needRule } from "@/config/statutory";
 import { caseWordsFor } from "@/lib/jurisdiction/screen-words";
 import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
+import { recoveryGatesApply } from "@/lib/debt-recovery/recovery-gates";
+import { recoveryStepRequirements } from "@/lib/debt-recovery/recovery-requirements";
 
 export default async function DebtRecoveryCaseDetailPage({
   params,
@@ -70,8 +72,16 @@ export default async function DebtRecoveryCaseDetailPage({
     }));
   }
 
+  // A draft pack's recovery rules: the extra fields a step records (the
+  // decision to start proceedings, the forum). Nothing is read or passed for
+  // NSW or Queensland, which have none, so their screen is unchanged.
+  const stepRequirements = recoveryGatesApply(rules)
+    ? await recoveryStepRequirements(id, rules, debtCase.id, debtCase.steps.map((s) => s.stepType))
+    : null;
+
   return (
     <CaseDetailClient
+      {...(stepRequirements ? { stepRequirements } : {})}
       recoveryFees={await previewRecoveryFees({ state: pack.state, wording: feeWordingFor(rules) })}
       stepGuidance={needRule(rules, "DEBT_RECOVERY_GUIDANCE")}
       stepLabels={needRule(rules, "DEBT_RECOVERY_STEP_LABELS")}

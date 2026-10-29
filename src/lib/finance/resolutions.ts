@@ -107,3 +107,74 @@ export async function resolutionDay(schemeId: string, meetingId: string, motionI
   }
   return meetingDay(schemeId, meetingId);
 }
+
+/** Committee meetings (the WA council, the ACT executive committee). */
+export const COMMITTEE_MEETING_TYPES = ["COMMITTEE"];
+
+/**
+ * A resolution a debt recovery decision may rely on (VIC, ACT and WA stage 2,
+ * PR 9a; a pack's DebtAuthorityResolution): a motion carried at a general
+ * meeting or a committee meeting, of any kind or recorded as an ORDINARY or
+ * SPECIAL resolution.
+ */
+export interface AuthorityResolutionKind {
+  meeting: "GENERAL" | "COMMITTEE";
+  kind: "ANY" | "ORDINARY" | "SPECIAL";
+  words: string;
+}
+
+/**
+ * The resolution among `accepted` that the chosen meeting and motion are, with
+ * the day it took effect, or why it cannot be relied on (VIC, ACT and WA
+ * stage 2, PR 9a). A general meeting's motion is checked as
+ * generalMeetingResolutionProblem (any kind) or resolutionOfKindProblem (an
+ * ORDINARY or SPECIAL kind) check it; a committee meeting's motion must be
+ * carried at that meeting of the scheme, and only any kind is supported. The
+ * day is resolutionDay's: a resolution still pending (a voting period) is
+ * refused until it is carried and has taken effect. Read only for a pack with
+ * DEBT_RECOVERY.authorityToSue; NSW and Queensland never reach it.
+ */
+export async function authorityResolution(
+  schemeId: string,
+  meetingId: string | null,
+  motionId: string | null,
+  accepted: readonly AuthorityResolutionKind[],
+): Promise<{ problem: string } | { problem: null; resolution: AuthorityResolutionKind; decidedOn: string; meetingId: string; itemId: string }> {
+  const words = accepted.map((a) => a.words).join(" or ");
+  if (accepted.length === 0) return { problem: "No resolution can decide this for this building." };
+  if (!meetingId || !motionId) return { problem: `Choose the meeting and the motion carried at it: ${words}.` };
+  const meeting = await db.orm.public.Meeting.where((m) => m.id.eq(meetingId)).first();
+  if (!meeting || meeting.schemeId !== schemeId) return { problem: "Choose a meeting of this scheme." };
+  const at = GENERAL_MEETING_TYPES.includes(meeting.meetingType) ? "GENERAL" : COMMITTEE_MEETING_TYPES.includes(meeting.meetingType) ? "COMMITTEE" : null;
+  const candidates = accepted.filter((a) => a.meeting === at);
+  if (candidates.length === 0) return { problem: `Choose ${words}.` };
+  let first: string | null = null;
+  for (const c of candidates) {
+    let problem: string | null;
+    if (c.meeting === "GENERAL") {
+      problem = c.kind === "ANY" ? await generalMeetingResolutionProblem(schemeId, meetingId, motionId) : await resolutionOfKindProblem(schemeId, meetingId, motionId, { kind: c.kind, words: c.words.replace(/^an? /, "") });
+    } else if (c.kind !== "ANY") {
+      problem = "A committee resolution of a particular kind cannot be checked yet, so it cannot be relied on.";
+    } else {
+      const motion = await db.orm.public.AgendaItem.where((a) => a.id.eq(motionId)).first();
+      problem = !motion || motion.meetingId !== meeting.id ? "Choose a motion from that meeting." : !carried(motion) ? "That motion was not carried, so it cannot be relied on." : null;
+    }
+    if (problem === null) {
+      const decidedOn = await resolutionDay(schemeId, meetingId, motionId);
+      if (!decidedOn) return { problem: "That resolution has not taken effect yet, so it cannot be relied on." };
+      return { problem: null, resolution: c, decidedOn, meetingId, itemId: motionId };
+    }
+    first ??= problem;
+  }
+  return { problem: first ?? `Choose ${words}.` };
+}
+
+/** Null when the chosen meeting and motion are a resolution among `accepted` that has taken effect; otherwise why not. */
+export async function authorityResolutionProblem(
+  schemeId: string,
+  meetingId: string | null,
+  motionId: string | null,
+  accepted: readonly AuthorityResolutionKind[],
+): Promise<string | null> {
+  return (await authorityResolution(schemeId, meetingId, motionId, accepted)).problem;
+}
