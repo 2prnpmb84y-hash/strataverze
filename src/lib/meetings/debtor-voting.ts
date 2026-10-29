@@ -19,17 +19,33 @@ export function checksDebtorVotes(ruleSet: Pick<MeetingRuleSet, "debtorsMayVoteO
 }
 
 /**
+ * Whether the pack's debtor rule applies to the building (VIC, ACT and WA
+ * stage 2, PR 8a-ii, 29 Oct 2026). A pack with no `debtorRuleAppliesWhen`
+ * applies it to every building. Otherwise `holds` is whether the building
+ * meets the condition, as `conditionHolds` gives it: the rule does not apply
+ * only where it is known not to hold (the ACT with 1 or 2 members, a tier 5
+ * Victorian owners corporation). Where it cannot be worked out (null), the
+ * rule applies: it fails closed.
+ */
+export function debtorRuleApplies(ruleSet: Pick<MeetingRuleSet, "debtorRuleAppliesWhen">, holds: boolean | null): boolean {
+  return !ruleSet.debtorRuleAppliesWhen || holds !== false;
+}
+
+/**
  * Whether one lot's vote on an item of `category` is barred because the lot
  * owes money (it is in `owingLotIds`). Judged for that lot alone, whoever owns
- * it and whatever else they own. Never barred under a pack with no such rule.
+ * it and whatever else they own. Never barred under a pack with no such rule,
+ * or where the rule does not apply to the building (`ruleApplies` false, from
+ * debtorRuleApplies; true where not given).
  */
 export function debtorBarsLot(
   ruleSet: Pick<MeetingRuleSet, "debtorsMayVoteOn" | "resolutionLabels">,
   category: string | null | undefined,
   lotId: string,
   owingLotIds: ReadonlySet<string>,
+  ruleApplies: boolean = true,
 ): boolean {
-  return owingLotIds.has(lotId) && debtorVoteRefusal(ruleSet, category, true, "") != null;
+  return ruleApplies && owingLotIds.has(lotId) && debtorVoteRefusal(ruleSet, category, true, "") != null;
 }
 
 /**

@@ -77,6 +77,14 @@ function rowToRuleSet(row: RuleSetRow, seed: MeetingRuleSet): MeetingRuleSet {
   if (seed.excludeCommonPropertyRows) ruleSet.excludeCommonPropertyRows = seed.excludeCommonPropertyRows;
   if (seed.memberBandSelector) ruleSet.memberBandSelector = seed.memberBandSelector;
   if (seed.categoryRequiredAtGeneralMeetings) ruleSet.categoryRequiredAtGeneralMeetings = seed.categoryRequiredAtGeneralMeetings;
+  // No column either, and only where the seed has them (the draft packs, VIC, ACT and WA stage 2,
+  // PR 8a-ii, 29 Oct 2026): the counting refusal, the debtor condition, the chair's answers and the
+  // 2-lot quorum. NSW and Queensland never have them.
+  if (seed.countingRefusedWhen) ruleSet.countingRefusedWhen = seed.countingRefusedWhen;
+  if (seed.debtorRuleAppliesWhen) ruleSet.debtorRuleAppliesWhen = seed.debtorRuleAppliesWhen;
+  if (seed.quorumAttestation) ruleSet.quorumAttestation = seed.quorumAttestation;
+  if (seed.votesPresentAttestation) ruleSet.votesPresentAttestation = seed.votesPresentAttestation;
+  if (seed.quorumNeedsEveryLot) ruleSet.quorumNeedsEveryLot = seed.quorumNeedsEveryLot;
   return ruleSet;
 }
 

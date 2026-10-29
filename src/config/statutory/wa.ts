@@ -1227,7 +1227,12 @@ export const RECORD_RETENTION = {
  *   resolutions (s 120(2));
  * - common property rows are not counted as lots;
  * - an item with no resolution category cannot be recorded as resolved at a
- *   general meeting, since nothing counts it (a StrataVerze choice).
+ *   general meeting, since nothing counts it (a StrataVerze choice);
+ * - in a 2-lot scheme the quorum needs both lots, with no fallback after 30
+ *   minutes (s 130(2), (4)): since stage 2, PR 8a-ii (29 Oct 2026, Matthew
+ *   Wrigley's decision) a count is refused unless both lots have a vote or an
+ *   abstention recorded at the item (quorumNeedsEveryLot). A lot whose vote is
+ *   not counted for money owed (s 120(2)) still makes up the quorum.
  */
 
 const WA_GENERAL_QUORUM = {
@@ -1239,6 +1244,8 @@ const WA_GENERAL_QUORUM = {
 } as const;
 
 const WA_TOO_FEW_LOTS = "This resolution needs a scheme of at least 2 lots, and fewer are recorded";
+const WA_TWO_LOT_QUORUM =
+  `In a 2-lot scheme the meeting has a quorum only with both lots present or represented, and there is no fallback (${STA} s 130(2), (4)). Both lots must have a vote or an abstention entered at this item (a lot whose vote is not counted for money owed still makes up the quorum), so the votes cannot be counted`;
 const WA_MIN_LOTS_FOR = SIZE_CLASSES.THREE_TO_FIVE_LOT.specialResolutionMinLotsFor;
 const WA_SMALL_SPECIAL = (lots: 3 | 4 | 5) => ({
   when: { lotsAtLeast: lots, lotsAtMost: lots },
@@ -1323,8 +1330,10 @@ export const MEETING_RULES: MeetingRuleSet = {
   excludeCommonPropertyRows: true,
   // Every outcome at a general meeting comes from the count, so an item with no category cannot be recorded as resolved there.
   categoryRequiredAtGeneralMeetings: true,
+  // A 2-lot scheme's quorum needs both lots (s 130(2), (4)): Matthew Wrigley's decision of 29 Oct 2026 (DECISIONS).
+  quorumNeedsEveryLot: { lotsAtMost: 2, refusal: WA_TWO_LOT_QUORUM, source: `${STA} s 130(2), (4)`, status: "CONFIRMED" },
   notes:
-    "Draft, from the Western Australian pack (not signed off), VIC, ACT and WA stage 2, PR 8a-i. Special, without dissent and unanimous resolutions are decided when their 28-day voting period closes, which is not tracked yet.",
+    "Draft, from the Western Australian pack (not signed off), VIC, ACT and WA stage 2, PR 8a-i and 8a-ii. Special, without dissent and unanimous resolutions are decided when their 28-day voting period closes, which is not tracked yet. A 2-lot scheme's count needs both lots recorded at the item.",
 };
 
 /** How far each part of MEETING_RULES not carrying its own status is checked. */
@@ -1335,7 +1344,11 @@ export const MEETING_RULES_STATUS = {
     note: "14 days for a general meeting. The council's 7 days (Sch 1 by-law 8(1)) is a default by-law a scheme may have changed, so council notice is not checked.",
   },
   minutesDeadlines: { status: "CONFIRMED" as RuleStatus, source: MEETINGS.source, note: "No deadline for distributing minutes was found in the STA or STGR read." },
-  quorumRules: { status: "CONFIRMED" as RuleStatus, source: `${STA} s 130`, note: "Held as data; not evaluated. A 2-lot scheme needs both lots (s 130(2), (4)), which the shared basis does not hold. The council's quorum is a default by-law and is not held." },
+  quorumRules: {
+    status: "CONFIRMED" as RuleStatus,
+    source: `${STA} s 130`,
+    note: "Held as data; not evaluated. A 2-lot scheme needs both lots (s 130(2), (4)), which the shared basis does not hold: since stage 2, PR 8a-ii its count is refused unless both lots are recorded at the item (quorumNeedsEveryLot). The council's quorum is a default by-law and is not held.",
+  },
   retention: {
     status: "STRATAVERZE" as RuleStatus,
     source: RECORD_RETENTION.source,
@@ -1592,7 +1605,8 @@ export const NOT_CONFIRMED = [
 
 /**
  * StrataVerze's decisions. The pack as a whole has not been reviewed; the
- * decisions so far are the payment order and the notice timing (28 Oct 2026).
+ * decisions so far are the payment order and the notice timing (28 Oct 2026),
+ * and the 2-lot quorum (29 Oct 2026).
  */
 export const DECISIONS: readonly { decision: string; decidedBy: string; decidedOn: string }[] = [
   {
@@ -1605,6 +1619,12 @@ export const DECISIONS: readonly { decision: string; decidedBy: string; decidedO
       "Notice timing (NOTICE_RULES): each levy notice goes out 35 days before it falls due and is never given less than 14 days' notice, and a due date is never moved, because the decision to make the levy fixes it (STA s 100(4)(a)). Matthew Wrigley's StrataVerze decision of 28 Oct 2026: the STA and STGR set no notice rule, so these are StrataVerze choices, not rules of law.",
     decidedBy: "Matthew Wrigley",
     decidedOn: "2026-10-28",
+  },
+  {
+    decision:
+      "2-lot quorum (MEETING_RULES.quorumNeedsEveryLot): at a general meeting of a 2-lot scheme, where the quorum needs both lots with no fallback (STA s 130(2), (4)), a count is refused unless both lots are recorded at the item, voting or abstaining, with a clear refusal and nothing written. A lot that owes money can make up the quorum: a lot whose vote is not counted for money owed (s 120(2)) still makes up the quorum if it is recorded at the item (s 130), and the ordinary resolution is then decided by the counted votes. Matthew Wrigley's StrataVerze decision of 29 Oct 2026 (the stricter reading first applied, that such a lot does not make up the quorum, was relaxed the same day). Fewer than 2 lots entered is refused too.",
+    decidedBy: "Matthew Wrigley",
+    decidedOn: "2026-10-29",
   },
 ];
 
@@ -1635,6 +1655,8 @@ export const FOR_REVIEW = [
   "An unfinancial owner (s 120(2)) is read as a lot with a levy notice issued, past its due date and not paid in full on the meeting's date, as for Queensland. A special resolution is measured against all lots, so a lot whose vote is not counted for money owed still counts in the total. Confirm.",
   "The meeting record is kept 20 years (retention), the period for special, unanimous and without dissent resolutions; minutes alone are kept 7 (reg 83). Confirm.",
   "Not applied: the scheme developer's exclusion from defect resolutions for 10 years (s 80(2), (3)); council meeting notice (a default by-law); a deadline for minutes (none found).",
+  "Pre-meeting electronic voting is not offered for this draft (preMeetingEvoting is null). Before it is, closing a ballot must apply what the count at the meeting applies: the debtor condition (debtorRuleAppliesWhen), judged lot by lot as an owner's own vote is (debtorVoteCheck), the quorum answer, and any refusal of the whole count (Victoria's tier 5, Western Australia's 2-lot quorum). closeBallotAction applies none of these yet (stage 2, PR 8a-ii review). Confirm before any Western Australian ballot is offered.",
+  "2-lot quorum (stage 2, PR 8a-ii, 29 Oct 2026, Matthew Wrigley's decision): a 2-lot scheme's quorum needs persons entitled to cast the votes of both lots, with no fallback after 30 minutes (s 130(2), (4)). StrataVerze does not record attendance, so at a general meeting of a 2-lot scheme (by the lots entered or the number the building records, which must agree) a count is refused unless both lots have a vote or an abstention recorded at the item, and nothing is written. A lot whose vote is not counted for money owed (s 120(2)) still makes up the quorum (Matthew Wrigley's decision, DECISIONS), and the resolution is decided by the counted votes. Fewer than 2 lots entered is refused. An item with no resolution category is not counted, so it is not checked. Other schemes' quorum (50% of the lots, then those present) is not checked, as before. Confirm.",
 ] as const;
 
 /**

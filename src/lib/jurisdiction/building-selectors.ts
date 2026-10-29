@@ -219,6 +219,25 @@ export function selectorValueProblem(rules: SelectorRules, key: string, value: s
 /** Where a selector's value comes from, as the general reader sees it. */
 export type SelectorHolding = "COLUMN" | "RECORDED" | "DERIVED";
 
+/**
+ * The recorded selector values as the rules read them (VIC, ACT and WA
+ * stage 2, PR 8a-ii review, 29 Oct 2026): a value recorded for one of the
+ * pack's recorded selectors that is not one of its options is read as not
+ * recorded, so a test on it cannot be decided and fails closed (a band of
+ * members not known never lifts the debtor rule, an owners corporation answer
+ * not known never lets the tier be worked out). Values for keys the pack does
+ * not list as recorded selectors are kept as they are.
+ */
+export function knownRecorded(rules: SelectorRules, recorded: RecordedValues): RecordedValues {
+  const out: Record<string, string | null | undefined> = { ...recorded };
+  for (const selector of buildingSelectors(rules)) {
+    if (selector.held !== "RECORDED") continue;
+    const value = (recorded[selector.key] ?? "").trim();
+    if (value && !selector.options.some((o) => o.value === value)) out[selector.key] = null;
+  }
+  return out;
+}
+
 /** A building's data the general reader reads every selector from. */
 export interface SelectorBuilding extends BuildingFactRecords {
   scheme: BuildingFactRecords["scheme"] & { regulationModule?: string | null; planFormat?: string | null };
@@ -229,7 +248,9 @@ export interface SelectorBuilding extends BuildingFactRecords {
  * The value of any selector a building's pack has, by key: Queensland's
  * regulation module and plan format from their own columns, a recorded
  * selector from the shared store, and a derived one worked out from the
- * building's facts. Null when the pack has no such selector.
+ * building's facts. Null when the pack has no such selector. A recorded
+ * value that is not one of the selector's options reads as none
+ * (knownRecorded), there and in what a derived selector reads.
  */
 export function selectorValue(
   rules: SelectorRules,
@@ -244,8 +265,9 @@ export function selectorValue(
   }
   const selector = buildingSelectors(rules).find((s) => s.key === key);
   if (!selector) return null;
-  if (selector.held === "RECORDED") return { holding: "RECORDED", value: (building.recorded[key] ?? "").trim() || null };
-  const derived = deriveSelector(selector, buildingFacts(building, rules).values, building.recorded);
+  const recorded = knownRecorded(rules, building.recorded);
+  if (selector.held === "RECORDED") return { holding: "RECORDED", value: (recorded[key] ?? "").trim() || null };
+  const derived = deriveSelector(selector, buildingFacts(building, rules).values, recorded);
   return { holding: "DERIVED", value: derived.ok ? derived.value : null, derived };
 }
 
@@ -331,6 +353,8 @@ export function missingWords(rules: SelectorRules, ref: FactRef, building: Selec
     const key = ref.slice("selector:".length);
     const selector = buildingSelectors(rules).find((s) => s.key === key);
     if (selector?.held === "DERIVED") return `the ${lower(selector.label)} cannot be worked out`;
+    const stored = (building.recorded[key] ?? "").trim();
+    if (selector && stored && !(knownRecorded(rules, building.recorded)[key] ?? "").trim()) return `the ${lower(selector.label)} recorded is not one StrataVerze knows`;
     const label = selector?.label ?? [rules.REGULATION_MODULE, rules.PLAN_FORMAT].find((c) => c?.key === key)?.label;
     return label ? `no answer is recorded for ${lower(label)}` : "a building setting the pack reads is missing";
   }
@@ -377,7 +401,7 @@ export function buildingSelectorProblems(rules: SelectorRules, building: Selecto
     const problem =
       selector.held === "RECORDED"
         ? recordedProblem(selector, building.recorded[selector.key])
-        : derivedProblem(rules, selector, deriveSelector(selector, facts.values, building.recorded), facts);
+        : derivedProblem(rules, selector, deriveSelector(selector, facts.values, knownRecorded(rules, building.recorded)), facts);
     if (problem && !problems.includes(problem)) problems.push(problem);
   }
   return problems;
@@ -484,7 +508,7 @@ export function buildingRulesView(rules: SelectorRules, building: SelectorBuildi
       });
       continue;
     }
-    const result = deriveSelector(s, facts.values, building.recorded);
+    const result = deriveSelector(s, facts.values, knownRecorded(rules, building.recorded));
     const option = result.ok ? s.options.find((o) => o.value === result.value) : undefined;
     view.derived.push({
       key: s.key,

@@ -17,7 +17,9 @@ import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
 import { lotFinancialStatus, UNFINANCIAL_NOTICE_STATUSES } from "@/lib/levies/financial-status";
 import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
 import { dayIn, todayIn } from "@/lib/jurisdiction/time-zone";
-import { checksDebtorVotes, debtorBarsLot, debtorVoteRefusal } from "./debtor-voting";
+import { conditionHolds } from "@/lib/jurisdiction/building-selectors";
+import { selectorBuildingFor } from "@/lib/queries/building-selectors";
+import { checksDebtorVotes, debtorBarsLot, debtorRuleApplies, debtorVoteRefusal } from "./debtor-voting";
 
 /**
  * Which of `lotIds` owe the body corporate money on `asOf` (yyyy-mm-dd),
@@ -91,6 +93,14 @@ export async function debtorVoteCheck(params: {
   if (!checksDebtorVotes(ruleSet)) return everyLot(false);
   // A category the debtor may vote on needs no lookup.
   if (debtorVoteRefusal(ruleSet, params.category, true, "") == null) return everyLot(true);
+  // Where the pack applies the rule only to some buildings (the ACT: 3 or more members; Victoria:
+  // tiers 1 to 4; VIC, ACT and WA stage 2, PR 8a-ii), the building is read and the rule is not applied
+  // where it is known not to hold. Unknown applies it (debtorRuleApplies). NSW and Queensland read nothing more.
+  if (ruleSet.debtorRuleAppliesWhen) {
+    const selectorBuilding = await selectorBuildingFor(params.schemeId);
+    const holds = selectorBuilding ? conditionHolds(pack.rules, ruleSet.debtorRuleAppliesWhen, selectorBuilding).holds : null;
+    if (!debtorRuleApplies(ruleSet, holds)) return everyLot(false);
+  }
 
   const building = { id: params.schemeId, timeZone: scheme.timeZone };
   const day = params.meetingAt ? dayIn(timeZoneOf(building), params.meetingAt) : undefined;

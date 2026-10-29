@@ -446,7 +446,26 @@ export const PENDING_RULE_PACKS = {
     // item with no category not recorded as resolved at a general meeting (categoryRequiredAtGeneralMeetings) are
     // StrataVerze choices. The LATE_CHARGE GO-LIVE GAP and FOR_REVIEW are rewritten (votes present revisited with quorum). No legal value or status already
     // recorded changed; still a draft.
-    version: "2026.10.8",
+    // 2026.10.9 (29 Oct 2026): quorum attestation and the debtor condition (stage 2, PR 8a-ii). MEETING_RULES gains
+    // quorumAttestation: whether the meeting had a standard quorum (sch 3 s 3.9) is the chair's answer for each motion,
+    // never worked out or assumed, kept in the meeting record with who recorded it (Matthew Wrigley's decision of
+    // 29 Oct 2026, recorded in DECISIONS); a motion not answered is refused, and "no" (a reduced quorum, ss 3.10, 3.11)
+    // is refused until those decisions are tracked (stage 2, PR 8b). votesPresentAttestation: the units present or
+    // represented for a special resolution are the chair's count, which must equal the units entered at the motion
+    // (s 3.16(1), absentees present, s 3.31(4)), a StrataVerze check. The debtor rule is applied (s 3.20(3), CONFIRMED):
+    // debtorsMayVoteOn unanimous and unopposed only, with debtorRuleAppliesWhen 3 or more members (MEMBER_BAND); with
+    // none recorded it applies. So an ordinary resolution (3 or more members, the same test) and a special resolution
+    // (4 or more members) are now recorded from the count, and a carried special resolution can set the LATE_CHARGE
+    // rate (its GO-LIVE GAP is rewritten). With 1 or 2 members a resolution is counted (no vote against and at least 1 for,
+    // ss 3.15(2), 3.16(3), 3.18(2), CONFIRMED; Matthew Wrigley's decision of 29 Oct 2026, recorded in DECISIONS): the
+    // three variants lose their refusal and MEMBER_BAND marks the band supported. The 3-member special test and an
+    // unopposed resolution stay refused.
+    // MEETING_RULES_STATUS and FOR_REVIEW (member band, votes present, refusals, debtor rule, quorum, LATE_CHARGE) are
+    // rewritten, and DECISIONS gains the quorum answer and 1 or 2 members. MEETING_RULES_STATUS.debtorsMayVoteOn moves
+    // from STRATAVERZE to CONFIRMED, as the rule is now applied; the 1 or 2 member tests carry their own refusal without a
+    // quorum (s 3.12: the meeting is adjourned). FOR_REVIEW gains a point on ballots for the draft packs. No legal value
+    // already recorded changed, and no other status; still a draft.
+    version: "2026.10.9",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",
     reviewedOn: null,
@@ -534,7 +553,20 @@ export const PENDING_RULE_PACKS = {
     // MEETING_RULES_INTERIM, MEETING_RULES_ORDINARY, MEETING_RULES_TIER_5, MEETING_RULES_ARREARS and
     // MEETING_RULES_NOTICE_AND_MINUTES, and DEFERRED_SHARED_SHAPES and the GO-LIVE GAP on lot entitlement are rewritten.
     // No legal value or status already recorded changed; still a draft.
-    version: "2026.10.8",
+    // 2026.10.9 (29 Oct 2026): quorum attestation and tier 5 (stage 2, PR 8a-ii). MEETING_RULES gains quorumAttestation:
+    // whether the meeting had a quorum (s 77) is the chair's answer for each item whose test depends on it (ordinary and
+    // special resolutions), never worked out or assumed, kept in the meeting record with who recorded it (Matthew
+    // Wrigley's decision of 29 Oct 2026, recorded in DECISIONS); an item not answered is refused, and a "no" the votes
+    // counted contradict (half of all lots counted) is refused. So an ordinary resolution is recorded as carried or lost
+    // with "yes", and as lost with "no" (carried without a quorum is interim, s 78, still refused). countingRefusedWhen:
+    // a tier 5 owners corporation (ss 7(6), 7A, 8, CONFIRMED) is not counted at all, and neither is one whose tier cannot
+    // be worked out (a StrataVerze choice, it fails closed), which tightens 8a-i. debtorRuleAppliesWhen: the arrears rule
+    // (s 89B) applies to tiers 1 to 4 only (s 7A), and where the tier cannot be worked out it applies. MEETING_RULES_STATUS
+    // gains quorumAttestation and countingRefusedWhen and its arrears note is rewritten; FOR_REVIEW gains
+    // MEETING_RULES_QUORUM and MEETING_RULES_BALLOTS, and MEETING_RULES_ORDINARY, MEETING_RULES_TIER_5 and MEETING_RULES_ARREARS are rewritten (a
+    // carried ordinary resolution can now authorise LATE_CHARGE interest); the lot entitlement GO-LIVE note is
+    // rewritten. No legal value or status already recorded changed; still a draft.
+    version: "2026.10.9",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",
     reviewedOn: null,
@@ -584,7 +616,14 @@ export const PENDING_RULE_PACKS = {
     // votes. Retention of the meeting record for 20 years, names, lists, common property rows not counted, no pre-meeting
     // voting and an item with no category not recorded as resolved at a general meeting (categoryRequiredAtGeneralMeetings)
     // are StrataVerze choices. FOR_REVIEW gains the points. No legal value or status already recorded changed; still a draft.
-    version: "2026.10.6",
+    // 2026.10.7 (29 Oct 2026): the 2-lot quorum (stage 2, PR 8a-ii). MEETING_RULES gains quorumNeedsEveryLot: a 2-lot
+    // scheme's quorum needs both lots with no fallback (s 130(2), (4), CONFIRMED), so at a general meeting its count is
+    // refused unless both lots have a vote or an abstention recorded at the item, and nothing is written (Matthew
+    // Wrigley's decision of 29 Oct 2026, recorded in DECISIONS). A lot whose vote is not counted for money owed (s 120(2))
+    // still makes up the quorum if it is recorded at the item (s 130), as he decided the same day, relaxing the stricter
+    // reading first applied; the resolution is then decided by the counted votes. Fewer than 2 lots entered is refused. MEETING_RULES_STATUS's quorum note is rewritten and FOR_REVIEW gains the
+    // point, and one on ballots for the draft packs. No legal value or status already recorded changed; still a draft.
+    version: "2026.10.7",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",
     reviewedOn: null,

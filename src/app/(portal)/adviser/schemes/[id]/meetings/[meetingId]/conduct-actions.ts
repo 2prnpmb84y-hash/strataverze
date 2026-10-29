@@ -12,16 +12,24 @@ import { canTransition } from "@/lib/meetings/lifecycle";
 import { resolveOutcome, isOutcome, type Outcome } from "@/lib/meetings/conduct";
 import {
   buildConductTally,
+  countingRefusal,
   countNeedsMemberBand,
+  countNeedsQuorum,
+  countNeedsVotesPresent,
   countsVotesAtMeeting,
   laterDecisionRefusal,
   notCountedNotice,
   outcomeDisagreement,
+  parseAttestation,
   parseChairVotes,
+  quorumAnswerProblem,
   uncategorisedRefusal,
   writtenVotesRefusal,
 } from "@/lib/meetings/conduct-tally";
 import { conductVotingData } from "@/lib/meetings/conduct-tally-repo";
+import { debtorRuleApplies } from "@/lib/meetings/debtor-voting";
+import { conditionHolds, type SelectorBuilding } from "@/lib/jurisdiction/building-selectors";
+import { getRecordedSelectorValues } from "@/lib/queries/building-selectors";
 import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { scheduleFor } from "@/lib/jurisdiction/building-data";
 import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
@@ -107,6 +115,13 @@ export async function recordAgendaOutcomeAction(
   votes?: unknown,
   /** Whether a poll was asked for on the item. Ignored where votes are not counted. */
   poll?: unknown,
+  /**
+   * The chair's answers for the item (VIC, ACT and WA stage 2, PR 8a-ii,
+   * 29 Oct 2026): { quorumPresent?, unitsPresent? }. Read only where the
+   * item's test needs them (Victoria and the ACT), and ignored entirely
+   * otherwise (NSW, Queensland, Western Australia).
+   */
+  attestation?: unknown,
 ): Promise<ConductActionState> {
   try {
     const { profile } = await requireSchemeAccess(schemeId, "governance.manage");
@@ -143,6 +158,7 @@ export async function recordAgendaOutcomeAction(
         requestedOutcome,
         votes,
         poll,
+        attestation,
       });
     }
     const result = resolveOutcome(ruleSet, {
@@ -174,18 +190,32 @@ export async function recordAgendaOutcomeAction(
  * votes and the chair's votes, with the building's totals, and passed to
  * resolveOutcome. An outcome the count does not give is refused, and nothing
  * is written. The votes, the tally and the result go in the meeting event.
+ *
+ * Under a draft pack (VIC, ACT and WA stage 2, PR 8a-ii, 29 Oct 2026): a
+ * building the pack does not count (Victoria's tier 5, or a tier that cannot
+ * be worked out) is refused before the votes are read; where the item's test
+ * needs them, the chair's answers (whether there was a quorum, and for the
+ * ACT's special resolution the lots present) are read, an item not answered
+ * is refused, and the answers go in the meeting event with the chair's
+ * actor; a "no quorum" answer the votes contradict is refused (Victoria);
+ * the debtor rule applies only where the pack's condition does not fail.
+ * NSW and Queensland read nothing more and record exactly as before.
  */
 async function recordCountedOutcome(p: {
   actorId: string;
   schemeId: string;
   meetingId: string;
-  meeting: { startTime?: unknown; scheduledAt?: unknown };
+  meeting: { startTime?: unknown; scheduledAt?: unknown; meetingType?: string | null };
   item: { id: string; resolutionCategory: string | null };
   scheme: {
     id: string;
     state: string;
     timeZone: string | null;
     totalLots: number | null;
+    servicesOnly?: boolean | null;
+    replacementCost?: unknown;
+    regulationModule?: string | null;
+    planFormat?: string | null;
     lots: readonly {
       id: string;
       lotNumber: string;
@@ -193,12 +223,14 @@ async function recordCountedOutcome(p: {
       interestScheduleEntitlement?: number | null;
       lotEntitlement?: number | null;
       lotType?: string | null;
+      occupiable?: boolean | null;
     }[];
   };
   ruleSet: MeetingRuleSet;
   requestedOutcome: Outcome;
   votes: unknown;
   poll: unknown;
+  attestation?: unknown;
 }): Promise<ConductActionState> {
   // Decided on written votes, which are not recorded yet: refused before anything is read.
   const written = writtenVotesRefusal(p.ruleSet, p.item.resolutionCategory, p.requestedOutcome);
@@ -206,6 +238,16 @@ async function recordCountedOutcome(p: {
   // Decided when its voting period closes (Western Australia): refused before anything is read.
   const later = laterDecisionRefusal(p.ruleSet, p.item.resolutionCategory, p.requestedOutcome);
   if (later) return { error: later };
+  const { rules } = rulesForState(p.scheme.state);
+  // The building's selectors, read once and only where the pack needs them (the draft packs: the counting refusal,
+  // the debtor condition and the band of members). NSW and Queensland read nothing here.
+  const needsBuilding = !!(p.ruleSet.countingRefusedWhen?.length || p.ruleSet.debtorRuleAppliesWhen || p.ruleSet.memberBandSelector);
+  const building: SelectorBuilding | null = needsBuilding
+    ? { scheme: p.scheme, lots: p.scheme.lots, recorded: await getRecordedSelectorValues(p.scheme.id) }
+    : null;
+  // A building whose votes the pack does not count (Victoria's tier 5, or a tier that cannot be worked out): refused before the votes are read.
+  const buildingRefusal = building ? countingRefusal(rules, p.ruleSet, building) : null;
+  if (buildingRefusal) return { error: buildingRefusal };
   // Every lot of the building, as read with it. Its type lets Queensland and the draft packs leave common property rows out.
   const lots = p.scheme.lots.map((l) => ({
     id: l.id,
@@ -219,7 +261,28 @@ async function recordCountedOutcome(p: {
   if (!chairVotes || (p.poll != null && typeof p.poll !== "boolean")) {
     return { error: "The votes sent could not be read. Reload the page and record them again." };
   }
-  const { rules } = rulesForState(p.scheme.state);
+  // The chair's answers, only where the item's test needs them (Victoria and the ACT). Otherwise ignored: not read, not stored.
+  const asksQuorum = countNeedsQuorum(p.ruleSet, p.item.resolutionCategory);
+  const asksUnitsPresent = countNeedsVotesPresent(p.ruleSet, p.item.resolutionCategory);
+  let answers: { quorumPresent?: boolean; unitsPresent?: number } = {};
+  if (asksQuorum || asksUnitsPresent) {
+    const lotCount = p.ruleSet.excludeCommonPropertyRows ? lots.filter((l) => String(l.lotType ?? "").toUpperCase() !== "COMMON").length : lots.length;
+    const parsed = parseAttestation(p.attestation, lotCount);
+    if (!parsed) return { error: "The quorum answer sent could not be read. Reload the page and record it again." };
+    // Never assumed: an item whose test needs the answer is refused until the chair gives it.
+    if (asksQuorum && parsed.quorumPresent == null) {
+      const question = p.ruleSet.quorumAttestation?.label;
+      return {
+        error: question
+          ? `Answer "${question}" before recording this item's outcome. Nothing was saved.`
+          : "Record whether the meeting had a quorum for this item before recording its outcome. Nothing was saved.",
+      };
+    }
+    answers = {
+      ...(asksQuorum ? { quorumPresent: parsed.quorumPresent } : {}),
+      ...(asksUnitsPresent && parsed.unitsPresent != null ? { unitsPresent: parsed.unitsPresent } : {}),
+    };
+  }
   // Debts are judged on the meeting's date in the building's time zone.
   const meetingDay = dayIn(timeZoneOf(p.scheme), String(p.meeting.startTime ?? p.meeting.scheduledAt));
   const data = await conductVotingData({
@@ -230,11 +293,11 @@ async function recordCountedOutcome(p: {
     meetingDay,
     itemId: p.item.id,
     category: p.item.resolutionCategory,
-    // The band of members, read only where the item's test depends on it (the ACT).
-    ...(p.ruleSet.memberBandSelector && countNeedsMemberBand(p.ruleSet, p.item.resolutionCategory)
-      ? { memberBandSelector: p.ruleSet.memberBandSelector }
-      : {}),
   });
+  // The band of members, given only where the item's test depends on it (the ACT), from the selector values read above.
+  const bandKey = p.ruleSet.memberBandSelector;
+  const memberBand =
+    bandKey && building && countNeedsMemberBand(p.ruleSet, p.item.resolutionCategory) ? (building.recorded[bandKey] ?? "").trim() || null : undefined;
   const count = buildConductTally({
     ruleSet: p.ruleSet,
     rules,
@@ -245,11 +308,28 @@ async function recordCountedOutcome(p: {
     chairVotes,
     poll: p.poll === true,
     owingLotIds: data.owingLotIds,
-    ...(data.memberBand !== undefined ? { memberBand: data.memberBand } : {}),
+    ...(memberBand !== undefined ? { memberBand } : {}),
+    ...(asksQuorum ? { quorumPresent: answers.quorumPresent } : {}),
+    ...(asksUnitsPresent ? { unitsPresent: answers.unitsPresent ?? null } : {}),
+    // Where the pack's debtor rule applies only to some buildings: not applied only where it is known not to hold.
+    ...(p.ruleSet.debtorRuleAppliesWhen && building
+      ? { debtorRuleApplies: debtorRuleApplies(p.ruleSet, conditionHolds(rules, p.ruleSet.debtorRuleAppliesWhen, building).holds) }
+      : {}),
   });
   if (!count.ok) return { error: count.error };
 
   const { tally, counted, notCounted } = count.value;
+  // A "no quorum" answer the votes counted contradict (Victoria): refused, nothing written.
+  if (asksQuorum) {
+    const contradiction = quorumAnswerProblem(
+      p.ruleSet,
+      p.meeting.meetingType,
+      answers.quorumPresent,
+      counted.length,
+      Math.max(tally?.totalLots ?? 0, p.scheme.totalLots ?? 0),
+    );
+    if (contradiction) return { error: contradiction };
+  }
   const result = resolveOutcome(p.ruleSet, {
     requestedOutcome: p.requestedOutcome,
     resolutionCategory: p.item.resolutionCategory,
@@ -277,6 +357,8 @@ async function recordCountedOutcome(p: {
       notCounted,
       tally,
       evaluation: result.evaluation ?? null,
+      // The chair's own answers, only where they were asked (the draft packs).
+      ...(asksQuorum || asksUnitsPresent ? { attestation: answers } : {}),
     },
   });
   revalidate(p.schemeId, p.meetingId);

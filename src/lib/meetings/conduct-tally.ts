@@ -39,6 +39,18 @@
  * voting period closes (Western Australia) is refused before anything is
  * read. An item with no category cannot be recorded as resolved at their
  * general meetings, since nothing counts it (uncategorisedRefusal).
+ *
+ * Quorum attestation (VIC, ACT and WA stage 2, PR 8a-ii, 29 Oct 2026): where
+ * an item's test depends on whether the meeting had a quorum (Victoria's
+ * ordinary and special resolutions, every ACT resolution), the chair answers
+ * it for the item (countNeedsQuorum) and the answer goes on the tally; it is
+ * never worked out or assumed, so an item not answered is refused. The ACT's
+ * special resolution also takes the chair's count of the lots present or
+ * represented (countNeedsVotesPresent), which must match the lots entered. A
+ * Victorian building of tier 5, or whose tier cannot be worked out, is not
+ * counted at all (countingRefusal). A pack's debtor rule may apply only to
+ * some buildings (debtorRuleApplies). A Western Australian 2-lot scheme's
+ * count needs both lots recorded at the item (quorumNeedsEveryLot).
  */
 import type { StatutoryRules } from "@/config/statutory";
 import {
@@ -49,11 +61,21 @@ import {
   type EntitlementUse,
   type LotEntitlements,
 } from "@/lib/jurisdiction/building-data";
+import {
+  buildingSelectors,
+  conditionHolds,
+  lotNouns,
+  missingWords,
+  selectorValue,
+  underlyingMissing,
+  type SelectorBuilding,
+} from "@/lib/jurisdiction/building-selectors";
 import { debtorBarsLot } from "./debtor-voting";
 import {
   isResolutionCategory,
   usesDraftKeys,
   type MeetingRuleSet,
+  type MeetingType,
   type ResolutionCategory,
   type ResolutionRule,
   type ResolutionTally,
@@ -140,6 +162,64 @@ export function countNeedsMemberBand(ruleSet: MeetingRuleSet, category: string |
   if (!isResolutionCategory(ruleSet, category)) return false;
   const rule = ruleSet.resolutionCategories[category];
   return !!rule && draftNeeds(rule, false).memberBand;
+}
+
+/**
+ * Whether the count of an item needs the chair's answer whether the meeting
+ * had a quorum for it (VIC, ACT and WA stage 2, PR 8a-ii): its rule, one of
+ * its variants or the rule of the category it may pass as instead says what
+ * happens without a quorum, or passes only at a meeting with one. Victoria's
+ * ordinary and special resolutions and every ACT resolution; never an NSW or
+ * Queensland one, whose rules have none of those keys.
+ */
+export function countNeedsQuorum(ruleSet: MeetingRuleSet, category: string | null | undefined): boolean {
+  if (!isResolutionCategory(ruleSet, category)) return false;
+  const rule = ruleSet.resolutionCategories[category];
+  if (!rule || !usesDraftKeys(rule)) return false;
+  const quorumRule = (r: ResolutionRule) => !!r.withoutQuorum || !!r.orNoneAgainstAtQuorateMeeting;
+  const interimRules = withVariants(rule).flatMap((r) => {
+    const interim = r.interimCategory ? ruleSet.resolutionCategories[r.interimCategory] : undefined;
+    return interim ? withVariants(interim) : [];
+  });
+  return [...withVariants(rule), ...interimRules].some(quorumRule);
+}
+
+/** Whether the count of an item needs the chair's count of the lots present or represented (the ACT's special resolution; VIC, ACT and WA stage 2, PR 8a-ii). */
+export function countNeedsVotesPresent(ruleSet: MeetingRuleSet, category: string | null | undefined): boolean {
+  if (!isResolutionCategory(ruleSet, category)) return false;
+  const rule = ruleSet.resolutionCategories[category];
+  return !!rule && draftNeeds(rule, false).votesPresent;
+}
+
+/** The chair's answers for an item, as sent from the browser and read by parseAttestation. */
+export interface Attestation {
+  quorumPresent?: boolean;
+  unitsPresent?: number;
+}
+
+const ATTESTATION_KEYS = ["quorumPresent", "unitsPresent"];
+
+/**
+ * The chair's answers as sent from the browser, or null when they are not
+ * well formed (VIC, ACT and WA stage 2, PR 8a-ii). Absent gives no answers.
+ * `quorumPresent` is true or false, `unitsPresent` a whole number from 0 to
+ * `lotCount`; either may be left out or null (not answered). Any other key or
+ * value is refused, so an answer is never guessed.
+ */
+export function parseAttestation(input: unknown, lotCount: number): Attestation | null {
+  if (input == null) return {};
+  if (typeof input !== "object" || Array.isArray(input)) return null;
+  const record = input as Record<string, unknown>;
+  if (Object.keys(record).some((k) => !ATTESTATION_KEYS.includes(k))) return null;
+  const { quorumPresent, unitsPresent } = record;
+  if (quorumPresent != null && typeof quorumPresent !== "boolean") return null;
+  if (unitsPresent != null && !(typeof unitsPresent === "number" && Number.isInteger(unitsPresent) && unitsPresent >= 0 && unitsPresent <= lotCount)) {
+    return null;
+  }
+  return {
+    ...(typeof quorumPresent === "boolean" ? { quorumPresent } : {}),
+    ...(typeof unitsPresent === "number" ? { unitsPresent } : {}),
+  };
 }
 
 /** Whether a lot row is a lot, not the common property (as the building facts read it). */
@@ -249,7 +329,8 @@ const sentenceArticle = (text: string) => (/^[aeiou]/i.test(text) && !/^(?:unan|
  */
 export function buildConductTally(input: {
   ruleSet: MeetingRuleSet;
-  rules: Pick<StatutoryRules, "ENTITLEMENT_SCHEDULES">;
+  /** The pack's rules; its TERMINOLOGY, where given, names the lots in the chair's words (the ACT's units). */
+  rules: Pick<StatutoryRules, "ENTITLEMENT_SCHEDULES"> & Partial<Pick<StatutoryRules, "TERMINOLOGY">>;
   category: string | null | undefined;
   /** Every lot of the building. */
   lots: readonly TallyLot[];
@@ -262,6 +343,17 @@ export function buildConductTally(input: {
   owingLotIds: ReadonlySet<string>;
   /** The building's band of members, as its building rules record it, where a rule needs it (the ACT). */
   memberBand?: string | null;
+  /*
+   * The chair's answers and the debtor condition (VIC, ACT and WA stage 2,
+   * PR 8a-ii). Each is given only where the pack needs it, and never for NSW
+   * or Queensland.
+   */
+  /** Whether the meeting had a quorum for the item, as the chair answers it. Put on the tally only where the test needs it (countNeedsQuorum). */
+  quorumPresent?: boolean | null;
+  /** The lots present or represented for the item, as the chair counts them, where the test measures the votes present (countNeedsVotesPresent). */
+  unitsPresent?: number | null;
+  /** Whether the pack's debtor rule applies to the building (debtorRuleApplies). True where not given. */
+  debtorRuleApplies?: boolean;
 }): ConductTallyResult {
   // Queensland and the draft packs leave common property rows out of the lots; NSW counts every row, as before.
   const params = input.ruleSet.excludeCommonPropertyRows ? { ...input, lots: input.lots.filter(isLotRow) } : input;
@@ -285,7 +377,7 @@ export function buildConductTally(input: {
   const lotsById = new Map(params.lots.map((l) => [l.id, l]));
   // Whether a lot owing money is left out of the count for this item, lot by
   // lot, as for an owner's own vote online (debtorVoteCheck).
-  const debtorBarred = (lotId: string) => debtorBarsLot(ruleSet, category, lotId, params.owingLotIds);
+  const debtorBarred = (lotId: string) => debtorBarsLot(ruleSet, category, lotId, params.owingLotIds, params.debtorRuleApplies ?? true);
 
   const seen = new Map<string, "ONLINE" | "CHAIR">();
   const counted: CountedVote[] = [];
@@ -350,6 +442,53 @@ export function buildConductTally(input: {
     };
   }
 
+  // Western Australia's 2-lot scheme (VIC, ACT and WA stage 2, PR 8a-ii): the quorum needs both lots, so each must be recorded
+  // at the item, with a vote or an abstention. A lot whose vote is not counted for money owed was still there, so it makes up
+  // the quorum (Matthew Wrigley's decision of 29 Oct 2026); the resolution is then decided by the counted votes. A building
+  // that is that small by the lots entered or the number it records is checked, and they must agree.
+  const everyLot = ruleSet.quorumNeedsEveryLot;
+  if (everyLot && (params.lots.length <= everyLot.lotsAtMost || (params.recordedLotCount != null && params.recordedLotCount <= everyLot.lotsAtMost))) {
+    if (params.recordedLotCount == null) {
+      return { ok: false, error: "The building's number of lots is not recorded, so this resolution cannot be counted. Record it in the building's details first." };
+    }
+    if (params.recordedLotCount !== params.lots.length) {
+      return {
+        ok: false,
+        error: `The building records ${params.recordedLotCount} lots but ${params.lots.length} are entered, so this resolution cannot be counted. Enter every lot, or correct the number of lots, first.`,
+      };
+    }
+    // Fewer lots than the smallest scheme the rule names (2 in Western Australia) is not a scheme whose quorum can be met (PR 8a-ii review).
+    if (params.lots.length < everyLot.lotsAtMost) {
+      const entered = params.lots.length === 1 ? "Only 1 lot is" : `Only ${params.lots.length} lots are`;
+      return {
+        ok: false,
+        error: `${entered} entered, and a scheme needs at least ${everyLot.lotsAtMost}, so this resolution cannot be counted. Enter every lot, or correct the number of lots, first.`,
+      };
+    }
+    // Each lot is recorded once (counted, or not counted for money owed), so this is every lot entered.
+    if (counted.length + notCounted.length < params.lots.length) return { ok: false, error: `${everyLot.refusal}. Nothing was saved. The item can be deferred.` };
+  }
+
+  // The ACT's special resolution (VIC, ACT and WA stage 2, PR 8a-ii): the votes present are those the chair counts as present or
+  // represented, which must be the lots entered at the item, so a lot present that did not vote is not left out. A lot barred for
+  // money owed was present, but cannot cast a vote, so it is not counted in the votes present.
+  if (draft.votesPresent) {
+    const { lot, lots } = lotNouns(params.rules);
+    const recorded = counted.length + notCounted.length;
+    const present = params.unitsPresent;
+    if (present == null) {
+      return { ok: false, error: `How many ${lots} were present or represented for this item is not recorded, so the votes cannot be counted. Record it, then save again.` };
+    }
+    if (present !== recorded) {
+      const were = present === 1 ? `1 ${lot} was` : `${present} ${lots} were`;
+      const have = recorded === 1 ? "1 has" : `${recorded} have`;
+      return {
+        ok: false,
+        error: `${were} present or represented for this item, but ${have} a vote or an abstention entered. Enter each ${lot} present, as Abstain if it did not vote, or correct the number present. Nothing was saved.`,
+      };
+    }
+  }
+
   const tally: ResolutionTally = { forCount: 0, againstCount: 0, abstainCount: 0, totalLots: params.lots.length };
   for (const v of counted) {
     if (v.vote === "FOR") tally.forCount += 1;
@@ -397,6 +536,8 @@ export function buildConductTally(input: {
   if (draft.votesPresent) tally.votesPresentCount = counted.length;
   if (draft.lotsRecorded) tally.lotsRecorded = counted.length;
   if (draft.memberBand && params.memberBand) tally.memberBand = params.memberBand;
+  // The chair's answer, only where the test depends on it (VIC, ACT and WA stage 2, PR 8a-ii). Not answered, it stays off, and the test refuses.
+  if (typeof params.quorumPresent === "boolean" && countNeedsQuorum(ruleSet, category)) tally.quorumPresent = params.quorumPresent;
 
   return { ok: true, value: { tally, counted, notCounted } };
 }
@@ -428,6 +569,67 @@ export function laterDecisionRefusal(ruleSet: MeetingRuleSet, category: string |
   if (days == null) return null;
   const name = (ruleSet.resolutionLabels[category]?.full ?? category).toLowerCase();
   return `${sentenceArticle(name)} is decided when its ${days}-day voting period closes, which StrataVerze does not track yet. It cannot be recorded as resolved or lost at the meeting. It can be deferred.`;
+}
+
+type SelectorRules = Parameters<typeof conditionHolds>[0];
+
+const andList = (items: readonly string[]) => (items.length > 1 ? `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}` : (items[0] ?? ""));
+
+/**
+ * Why the votes of this building are not counted at all, or null (VIC, ACT
+ * and WA stage 2, PR 8a-ii, 29 Oct 2026). Where a pack's `countingRefusedWhen`
+ * holds for the building (Victoria's tier 5), the pack's refusal. Where it
+ * cannot be worked out, it fails closed: the chair is told what the building
+ * rules are missing. Read before the votes, for every outcome but a deferral,
+ * whatever the item's category. Null for a pack with no such rule (NSW,
+ * Queensland, Western Australia, the ACT).
+ */
+export function countingRefusal(
+  rules: SelectorRules,
+  ruleSet: Pick<MeetingRuleSet, "countingRefusedWhen">,
+  building: SelectorBuilding,
+): string | null {
+  for (const r of ruleSet.countingRefusedWhen ?? []) {
+    const t = conditionHolds(rules, r.when, building);
+    if (t.holds === true) return `${r.refusal}. Nothing was saved. The item can be deferred.`;
+    if (t.holds === null) {
+      const missing = underlyingMissing(rules, t.missing, building);
+      const reasons = [...new Set(missing.map((m) => missingWords(rules, m, building)))];
+      // A derived selector refused for a reason other than a missing fact says why (several owners corporations on the plan).
+      const why = missing.flatMap((m) => {
+        if (!m.startsWith("selector:")) return [];
+        const key = m.slice("selector:".length);
+        const derived = buildingSelectors(rules).some((sel) => sel.key === key && sel.held === "DERIVED") ? selectorValue(rules, key, building)?.derived : undefined;
+        return derived && !derived.ok && derived.kind !== "MISSING" ? [derived.message] : [];
+      });
+      const extra = [...new Set(why)].map((w) => ` ${w}`).join("");
+      return `${r.undecided}, because ${andList(reasons)}.${extra} Check the building rules. Nothing was saved. The item can be deferred.`;
+    }
+  }
+  return null;
+}
+
+/**
+ * Why the chair's "no quorum" answer is refused, or null (VIC, ACT and WA
+ * stage 2, PR 8a-ii). Where the meeting's quorum is a share of the lots
+ * (Victoria), and the lots whose votes are counted at the item already make
+ * up that share of every lot, the meeting had a quorum for it, so "no"
+ * contradicts the votes. Lots barred for money owed are not counted here, so
+ * this can only refuse an answer the votes prove wrong. `totalLots` is the
+ * larger of the lots entered and the number the building records.
+ */
+export function quorumAnswerProblem(
+  ruleSet: Pick<MeetingRuleSet, "quorumRules">,
+  meetingType: string | null | undefined,
+  quorumPresent: boolean | null | undefined,
+  countedLots: number,
+  totalLots: number,
+): string | null {
+  if (quorumPresent !== false || totalLots <= 0) return null;
+  const rule = ruleSet.quorumRules[String(meetingType ?? "").trim().toUpperCase() as MeetingType];
+  if (rule?.basis !== "PERCENT_OF_LOTS_ELSE_ENTITLEMENT" || rule.percent == null) return null;
+  if (countedLots * 100 < rule.percent * totalLots) return null;
+  return `The answer says the meeting had no quorum for this item, but ${countedLots} of the ${totalLots} lots have a vote counted on it, which is at least ${rule.percent}% of the lots, so it had one. Check the quorum answer and the votes entered. Nothing was saved.`;
 }
 
 /**
@@ -474,10 +676,18 @@ export function notCountedNotice(notCounted: readonly CountedVote[], ownersCorpo
 export interface ConductVotingView {
   /** Every lot, in lot number order. */
   lots: { id: string; lotNumber: string }[];
-  /** For each agenda item: whether a poll may be asked for, and whether a proxy may vote. */
-  items: Record<string, { pollAllowed: boolean; proxiesAllowed: boolean }>;
+  /**
+   * For each agenda item: whether a poll may be asked for, and whether a
+   * proxy may vote. Where the item's test needs them (the draft packs, VIC,
+   * ACT and WA stage 2, PR 8a-ii), `quorumAsked` and `unitsPresentAsked`:
+   * the chair must answer whether there was a quorum, and count the lots
+   * present or represented. Left out otherwise, never false.
+   */
+  items: Record<string, { pollAllowed: boolean; proxiesAllowed: boolean; quorumAsked?: true; unitsPresentAsked?: true }>;
   /** The poll choice, naming the entitlement a poll counts by. */
   pollLabel: string;
+  /** The questions' words, from the pack, where an item asks them (VIC, ACT and WA stage 2, PR 8a-ii). Left out otherwise. */
+  attestation?: { quorum?: { label: string; help: string }; unitsPresent?: { label: string; help: string } };
 }
 
 /** The conduct screen's voting view, or null where the meeting's votes are not counted at conduct (NSW, or a committee meeting). */
@@ -498,6 +708,12 @@ export function conductVotingView(
     if (!(err instanceof EntitlementRuleError)) throw err;
   }
   const allowed = (list: readonly string[] | undefined, c: string | null) => !!c && !!list?.includes(c);
+  // The chair's answers (the draft packs only): asked only where the item's test needs them and the pack words the question.
+  const quorumAsked = (c: string | null) => !!ruleSet.quorumAttestation && countNeedsQuorum(ruleSet, c);
+  const unitsPresentAsked = (c: string | null) => !!ruleSet.votesPresentAttestation && countNeedsVotesPresent(ruleSet, c);
+  const words = (a: { label: string; help: string }) => ({ label: a.label, help: a.help });
+  const asksQuorum = items.some((i) => quorumAsked(i.resolutionCategory));
+  const asksUnitsPresent = items.some((i) => unitsPresentAsked(i.resolutionCategory));
   return {
     lots: rows
       .map((l) => ({ id: l.id, lotNumber: String(l.lotNumber) }))
@@ -508,9 +724,19 @@ export function conductVotingView(
         {
           pollAllowed: allowed(ruleSet.pollCategories, i.resolutionCategory),
           proxiesAllowed: !allowed(ruleSet.proxiesBarredOn, i.resolutionCategory),
+          ...(quorumAsked(i.resolutionCategory) ? { quorumAsked: true as const } : {}),
+          ...(unitsPresentAsked(i.resolutionCategory) ? { unitsPresentAsked: true as const } : {}),
         },
       ]),
     ),
     pollLabel,
+    ...(asksQuorum || asksUnitsPresent
+      ? {
+          attestation: {
+            ...(asksQuorum && ruleSet.quorumAttestation ? { quorum: words(ruleSet.quorumAttestation) } : {}),
+            ...(asksUnitsPresent && ruleSet.votesPresentAttestation ? { unitsPresent: words(ruleSet.votesPresentAttestation) } : {}),
+          },
+        }
+      : {}),
   };
 }
