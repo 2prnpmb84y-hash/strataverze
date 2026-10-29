@@ -1660,7 +1660,7 @@ export const MEETING_RULES: MeetingRuleSet = {
   },
   votesPresentAttestation: {
     label: "Units present or represented for this motion",
-    help: "Count every unit whose voter was present in person, by proxy or by an absentee vote when this motion was decided, including those that did not vote and those that cannot vote because an amount is unpaid. Enter each of them above, as Abstain if it did not vote.",
+    help: "Count every unit whose voter was present in person, by proxy or by an absentee vote when this motion was decided, including those that did not vote and those that cannot vote because an amount is unpaid. Enter each of them in the votes for this motion, as Abstain if it did not vote.",
     source: `${UTMA} sch 3 ss 3.16(1), 3.31(4)`,
     status: "STRATAVERZE",
   },
