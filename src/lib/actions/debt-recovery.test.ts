@@ -32,7 +32,7 @@ const queries = {
   getInstalmentsForPlan: vi.fn(),
   updateDebtRecoveryStep: vi.fn(),
 };
-vi.mock("@/lib/queries/debt-recovery", () => ({ ...queries, getDebtRecoverySteps: vi.fn(async () => []) }));
+vi.mock("@/lib/queries/debt-recovery", () => ({ ...queries, getDebtRecoverySteps: vi.fn(async () => []), readDebtRecoverySteps: vi.fn(async () => []) }));
 const schemeRules = vi.fn();
 vi.mock("@/lib/jurisdiction/scheme-rules", async () => {
   const { PAYMENT_PLANS, FEATURES, TERMINOLOGY } = await vi.importActual<typeof import("@/config/statutory")>("@/config/statutory");
@@ -362,14 +362,29 @@ describe("updateDebtRecoveryCaseAction referral while a payment plan is followed
 
   it("allows it for a pack without the payment plan workflow", async () => {
     const { QLD_RULE_PACK } = await vi.importActual<typeof import("@/config/statutory")>("@/config/statutory");
-    const { getDebtRecoverySteps } = await import("@/lib/queries/debt-recovery");
+    const { readDebtRecoverySteps } = await import("@/lib/queries/debt-recovery");
     schemeRules.mockResolvedValueOnce({ rules: QLD_RULE_PACK.rules, pack: { state: "QLD" }, label: "AU-QLD test" });
     lotPlansAll.mockResolvedValue([{ status: "ACTIVE" }]);
     // The case's legal referral step is complete.
-    vi.mocked(getDebtRecoverySteps).mockResolvedValueOnce([{ stepType: "LEGAL_REFERRAL", status: "COMPLETED" }] as never);
+    vi.mocked(readDebtRecoverySteps).mockResolvedValueOnce([{ stepType: "LEGAL_REFERRAL", status: "COMPLETED" }] as never);
     const r = await actions.updateDebtRecoveryCaseAction("case-1", SCHEME_A, referral());
     expect(r).toEqual({ success: true });
     expect(queries.updateDebtRecoveryCase).toHaveBeenCalledWith("case-1", expect.objectContaining({ status: "REFERRED_LEGAL" }));
+  });
+});
+
+describe("updateDebtRecoveryCaseAction referral when the steps cannot be read", () => {
+  it("says the steps could not be checked, not that the referral step is incomplete, and saves nothing", async () => {
+    const { QLD_RULE_PACK } = await vi.importActual<typeof import("@/config/statutory")>("@/config/statutory");
+    const { readDebtRecoverySteps } = await import("@/lib/queries/debt-recovery");
+    schemeRules.mockResolvedValueOnce({ rules: QLD_RULE_PACK.rules, pack: { state: "QLD" }, label: "AU-QLD test" });
+    vi.mocked(readDebtRecoverySteps).mockRejectedValueOnce(new Error("connection lost"));
+    const f = new FormData();
+    f.set("status", "REFERRED_LEGAL");
+    const r = await actions.updateDebtRecoveryCaseAction("case-1", SCHEME_A, f);
+    expect(r).toEqual({ error: "Could not check the case's steps. Nothing was saved." });
+    expect(queries.updateDebtRecoveryCase).not.toHaveBeenCalled();
+    expect(queries.logDebtRecoveryActivity).not.toHaveBeenCalled();
   });
 });
 

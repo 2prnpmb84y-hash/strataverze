@@ -186,13 +186,18 @@ export async function generateCaseNumber(schemeId: string): Promise<string> {
 
 export async function getDebtRecoverySteps(caseId: string) {
   try {
-    return await db.orm.public.DebtRecoveryStep
-      .where((s) => s.caseId.eq(caseId))
-      .orderBy((s) => s.stepOrder.asc())
-      .all();
+    return await readDebtRecoverySteps(caseId);
   } catch {
     return [];
   }
+}
+
+/** A case's steps in step order. Throws when they cannot be read, for a check that must not take a failed read for no steps. */
+export async function readDebtRecoverySteps(caseId: string, orm: typeof db.orm = db.orm) {
+  return orm.public.DebtRecoveryStep
+    .where((s) => s.caseId.eq(caseId))
+    .orderBy((s) => s.stepOrder.asc())
+    .all();
 }
 
 export async function createDebtRecoveryStep(data: {

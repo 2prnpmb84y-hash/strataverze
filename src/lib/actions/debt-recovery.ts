@@ -31,7 +31,7 @@ import {
   getOverdueLevyNoticesForLot,
   getDebtRecoveryCaseById,
   getPaymentPlanForCase,
-  getDebtRecoverySteps,
+  readDebtRecoverySteps,
 } from "@/lib/queries/debt-recovery";
 import { messageTermsFor, rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
 import { UnsupportedJurisdictionError, needRule } from "@/config/statutory";
@@ -200,6 +200,10 @@ export async function updateDebtRecoveryCaseAction(
     const exclusionReason = formData.get("exclusionReason") as string;
 
     if (status && !isCaseStatus(status)) return { error: "Invalid case status" };
+    // No screen reopens a closed case (its current step is CLOSED), so its status stays.
+    if (status && status !== caseRow.status && isCaseClosed(caseRow)) {
+      return { error: "This case is closed, so its status cannot be changed." };
+    }
     // Closing goes through closeDebtRecoveryCaseAction, which records a reason.
     if (status && isClosedStatus(status) && status !== caseRow.status) {
       return { error: "Close the case from the close case form" };
@@ -221,7 +225,15 @@ export async function updateDebtRecoveryCaseAction(
       // Referred for legal recovery only once the case's legal referral step
       // is complete, as the steps are completed in order on the case screen.
       // A completed step is never reopened, so no lock is needed.
-      if (!legalReferralComplete(await getDebtRecoverySteps(caseId))) {
+      let caseSteps: Awaited<ReturnType<typeof readDebtRecoverySteps>>;
+      try {
+        caseSteps = await readDebtRecoverySteps(caseId);
+      } catch (err) {
+        // A failed read is not "no referral step": say so, and save nothing.
+        logError("Failed to read the case's recovery steps:", err);
+        return { error: "Could not check the case's steps. Nothing was saved." };
+      }
+      if (!legalReferralComplete(caseSteps)) {
         const label = rules.DEBT_RECOVERY_STEP_LABELS?.LEGAL_REFERRAL ?? "legal referral";
         return { error: `Complete the ${label} step before referring this case for legal recovery.` };
       }

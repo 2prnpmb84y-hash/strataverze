@@ -213,6 +213,19 @@ describe("updateDebtRecoveryCaseAction: REFERRED_LEGAL only after the legal refe
     expect((await setStatus("REFERRED_LEGAL")).error).toMatch(/payment plan is being followed/);
   });
 
+  it("refuses any status change on a closed case, writing nothing (no screen reopens one)", async () => {
+    for (const status of ["OPEN", "IN_PROGRESS", "ON_HOLD", "PAYMENT_PLAN", "REFERRED_LEGAL", "CLOSED_SETTLED"]) {
+      seed("NSW", 10, { caseStatus: "CLOSED_PAID", currentStep: "CLOSED" });
+      expect(await setStatus(status), status).toEqual({ error: "This case is closed, so its status cannot be changed." });
+      expect(caseRow().status).toBe("CLOSED_PAID");
+      expect(activities()).toEqual([]);
+    }
+    // Saving the same closed status (no change) is as before.
+    seed("NSW", 10, { caseStatus: "CLOSED_PAID", currentStep: "CLOSED" });
+    expect(await setStatus("CLOSED_PAID", { notes: "Paid by the buyer" })).toEqual({ success: true });
+    expect(caseRow().status).toBe("CLOSED_PAID");
+  });
+
   it("leaves the other statuses, and a case already referred, as they were", async () => {
     seed("NSW", 2);
     expect(await setStatus("ON_HOLD")).toEqual({ success: true });

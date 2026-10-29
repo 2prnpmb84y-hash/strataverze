@@ -220,6 +220,31 @@ describe("owner debt recovery", () => {
     expect(html).toContain("Payment Arrangement");
     expect(visibleText(html)).not.toMatch(NSW_WORDS);
   });
+
+  it("offers the committee Mark Complete only on the current step while it is not complete (step order fix)", () => {
+    const step = (stepOrder: number, stepType: string, status: string) => ({
+      id: `s${stepOrder}`, stepType, stepOrder, actionRequired: "Do it", legalBasis: null, responsibleParty: "ADVISER", status, completedAt: null, outcome: null, evidenceNotes: null,
+    });
+    const page = (currentStep: string, steps: ReturnType<typeof step>[]) =>
+      renderToStaticMarkup(
+        <CaseDetailOwnerClient
+          debtCase={{
+            ...CASE, status: "OPEN", currentStep, totalOwed: 100, principalOwed: 100, interestOwed: 0, costsOwed: 0,
+            solicitorName: null, solicitorRef: null, courtFileNumber: null, hasDispute: false, disputeDetails: null,
+            hasHardshipRequest: false, hardshipDetails: null, notes: null, closedAt: null, closedReason: null,
+            steps, paymentPlan: null, instalments: [], documents: [], activities: [],
+          }}
+          isCommittee
+          recoveryLaw="Qld Body Corporate and Community Management Act 1997"
+          stepLabels={QLD.DEBT_RECOVERY_STEP_LABELS!}
+          lateChargeLabel="Penalty"
+          caseWords={caseWordsFor(QLD)}
+        />,
+      );
+    expect(page("ENFORCEMENT", [step(9, "ENFORCEMENT", "PENDING"), step(10, "CLOSED", "PENDING")]).match(/Mark Complete/g)).toHaveLength(1);
+    // The last step completed: the case stays at it, and it is not offered again.
+    expect(page("CLOSED", [step(9, "ENFORCEMENT", "COMPLETED"), step(10, "CLOSED", "COMPLETED")])).not.toContain("Mark Complete");
+  });
 });
 
 describe("owner levies", () => {
