@@ -51,12 +51,13 @@
  * Shared shapes: TERMINOLOGY, FUND_CATALOGUE, ENTITLEMENT_SCHEDULES and
  * FEATURES are given, LATE_CHARGE (from INTEREST) and
  * PAYMENT_ALLOCATION_ORDER (a StrataVerze choice) since stage 2, PR 5, and
- * NOTICE_RULES (from FEE_NOTICES, with checked values) since stage 2, PR 6a.
- * MEETING_RULES is deferred, with the reason in DEFERRED_SHARED_SHAPES; its
- * Victorian rules are held as plain data in MEETINGS, RESOLUTIONS and
- * PROXIES. The final fee notice (s 32) stays in FEE_NOTICES.finalNotice.
+ * NOTICE_RULES (from FEE_NOTICES, with checked values) since stage 2, PR 6a,
+ * and MEETING_RULES (from MEETINGS, RESOLUTIONS, ARREARS and RECORDS) since
+ * stage 2, PR 8a-i, so no shared shape is deferred (DEFERRED_SHARED_SHAPES is
+ * empty). The final fee notice (s 32) stays in FEE_NOTICES.finalNotice.
  */
 
+import type { MeetingRuleSet } from "@/lib/meetings/rules";
 import type {
   BuildingFactDefinition,
   BuildingSelector,
@@ -690,8 +691,10 @@ export const FUND_RULES = {
  * holding at least 25% of lot entitlements, of the person who convenes a
  * special general meeting or arranges a ballot (ss 74, 83 to 85), and VCAT
  * consent to a plan change (SA s 34D(3)(ba)), by lot entitlement.
- * A Victorian building's lots are not counted at conduct yet (MEETING_RULES
- * is deferred), so nothing reads the voting and quorum keys until then.
+ * Since stage 2, PR 8a-i the count at conduct reads POLL_VOTE, and
+ * SPECIAL_RESOLUTION and UNANIMOUS_RESOLUTION on a poll (MEETING_RULES); a
+ * poll is taken on an ordinary resolution only, so only POLL_VOTE is read at
+ * a meeting. Nothing reads QUORUM_FALLBACK yet.
  *
  * Each value is held as a whole number of at least 1, the shape of the lot
  * columns. The notes do not say that Victorian lot liability or lot
@@ -747,15 +750,20 @@ export const ENTITLEMENT_SCHEDULES: readonly EntitlementScheduleDefinition[] = [
  *   A lot without it is flagged in "Building data missing" on the building
  *   and lot pages. A state change clears it, as it does each lot's
  *   occupiable answer, since a lot has no state for a database check.
- * - Read: nothing applied reads it yet. Every reader fails closed on a lot
- *   with no lot entitlement (src/lib/jurisdiction/building-data.ts).
+ * - Read: since stage 2 PR 8a-i, the count at conduct on a poll on an
+ *   ordinary resolution (s 89(3)), refused where a lot that voted has none.
+ *   The ordinary resolution's outcome is itself refused until whether the
+ *   meeting had a quorum is recorded (stage 2 PR 8a-ii), so nothing is
+ *   recorded from it yet. Every reader fails closed on a lot with no lot
+ *   entitlement (src/lib/jurisdiction/building-data.ts).
  * - Not applied yet: the s 23A insurance premium fee. The pack has no
  *   CONTRIBUTION_INSURANCE, so the whole of every Victorian fee, insurance
  *   included, is shared by lot liability (s 23(3)) until FOR_REVIEW
- *   CONTRIBUTION_INSURANCE_S23A is decided. Also not applied: polls, special
- *   and unanimous resolutions and the quorum fallback by lot entitlement
- *   (MEETING_RULES is deferred, stage 2 PR 8a); recovery of the excess,
- *   premium and damage from a culpable owner (s 23A); the cap on
+ *   CONTRIBUTION_INSURANCE_S23A is decided. Also not applied: special and
+ *   unanimous resolutions by lot entitlement on a ballot or poll (a poll is
+ *   taken on an ordinary resolution only, and ballots are not recorded,
+ *   MEETING_RULES since stage 2 PR 8a-i) and the quorum fallback; recovery of
+ *   the excess, premium and damage from a culpable owner (s 23A); the cap on
  *   contributions (s 28(2)).
  */
 
@@ -2632,14 +2640,158 @@ export const DATED_RULES = {
   },
 } as const satisfies DatedRules;
 
-/** Shared shapes this draft does not give yet, and why. */
-export const DEFERRED_SHARED_SHAPES = [
-  {
-    shape: "MEETING_RULES",
-    reason:
-      "MEETING_RULES is now a shared rule (MeetingRuleSet); a pending pack need not give it, and the ACT draft does not. A Victorian set needs a minutes deadline for ordinary meetings (not found in the notes), Victoria's interim resolutions and ballots mapped to its categories, and StrataVerze choices on wording and pre-meeting voting. Until then Victoria's meeting, resolution and proxy rules are held as data in MEETINGS, RESOLUTIONS and PROXIES.",
+/*
+ * The meeting rules in the shared shape (VIC, ACT and WA stage 2, PR 8a-i,
+ * 28 Oct 2026), from MEETINGS, RESOLUTIONS, ARREARS and RECORDS. Each
+ * resolution rule carries its source and status; MEETING_RULES_STATUS gives
+ * those of the other parts. What the count at a meeting records and refuses:
+ * - an ordinary resolution: a majority of the votes cast, by lot entitlement
+ *   on a poll (s 89). Refused until whether the meeting had a quorum is
+ *   recorded for the item (without one it is an interim resolution, s 78),
+ *   and on equal votes (the casting vote of s 89A is not recorded);
+ * - a special resolution: 75% of all lots for, debtors included as they may
+ *   vote on it (ss 89B, 96). Where it fails it may pass as an interim special
+ *   resolution (s 97), which is refused at the meeting until interim
+ *   resolutions are recorded (stage 2, PR 8b). Its second route needs at
+ *   least 1 vote for (StrataVerze's reading of s 97(1A), for review);
+ * - a unanimous resolution: every lot for (s 95);
+ * - a poll is taken on an ordinary resolution only (a StrataVerze choice);
+ * - common property rows are not counted as lots.
+ * - an item with no resolution category cannot be recorded as resolved at a
+ *   general meeting, since nothing counts it (a StrataVerze choice).
+ * Tier 5 owners corporations (2-lot and services only, ss 7A, 8) are not
+ * handled yet (stage 2, PR 8a-ii): the general tests are applied, except that
+ * with 2 lots or fewer a failed special resolution is refused rather than
+ * tested as an interim special resolution, which s 97 does not give them.
+ */
+
+const VIC_TIE =
+  `The votes are equal. A chair who is a lot owner or a proxy has a casting vote, and without it the resolution is not passed (${OCA} s 89A). StrataVerze does not record who chaired or a casting vote yet, so the count cannot decide it`;
+
+const VIC_TWO_LOT_INTERIM =
+  `An owners corporation of 2 lots cannot pass an interim special resolution, and its special resolution means a unanimous one (${OCA} s 7A). StrataVerze does not apply the rules for 2-lot owners corporations yet, so the count cannot decide it`;
+
+const VIC_GENERAL_QUORUM = {
+  basis: "PERCENT_OF_LOTS_ELSE_ENTITLEMENT",
+  percent: MEETINGS.quorum.percentOfTotalLots,
+  otherwisePercentOfEntitlement: MEETINGS.quorum.otherwisePercentOfTotalLotEntitlement,
+  source: `${OCA} s 77`,
+  status: "CONFIRMED",
+} as const;
+
+export const MEETING_RULES: MeetingRuleSet = {
+  state: "VIC",
+  version: "VIC-2026.1",
+  effectiveFrom: "2026-10-28",
+  // Whole days only: the committee's 3 business days (s 109) are not held (MEETING_RULES_STATUS).
+  noticePeriods: { AGM: MEETINGS.agmNoticeDays, FIRST_AGM: MEETINGS.agmNoticeDays, EGM: MEETINGS.sgmNoticeDays },
+  // No deadline for ordinary minutes was found (NOT_CONFIRMED); only interim resolutions have one (s 78), 8b.
+  minutesDeadlines: {},
+  quorumRules: {
+    AGM: VIC_GENERAL_QUORUM,
+    EGM: VIC_GENERAL_QUORUM,
+    FIRST_AGM: VIC_GENERAL_QUORUM,
+    COMMITTEE: { basis: "HALF_MEMBERS", source: `${OCA} s 112(1)`, status: "CONFIRMED" },
   },
-] as const;
+  resolutionCategories: {
+    ORDINARY: {
+      basis: "COUNT_MAJORITY",
+      tieRefusedBecause: VIC_TIE,
+      withoutQuorum: "INTERIM",
+      source: `${OCA} ss 78(1), 89(1) to (5), 89A`,
+      status: "CONFIRMED",
+    },
+    SPECIAL: {
+      basis: "SHARE_OF_ALL_LOTS",
+      forAtLeastFractionOfAllLots: RESOLUTIONS.SPECIAL.fractionOfTotalVotes,
+      pollForAtLeastFractionOfAllEntitlement: RESOLUTIONS.SPECIAL.fractionOfTotalLotEntitlementsOnBallotOrPoll,
+      entitlementUse: "SPECIAL_RESOLUTION",
+      interimCategory: "INTERIM_SPECIAL",
+      source: `${OCA} ss 96, 97`,
+      status: "CONFIRMED",
+    },
+    UNANIMOUS: {
+      basis: "SHARE_OF_ALL_LOTS",
+      forAtLeastFractionOfAllLots: 1,
+      pollForAtLeastFractionOfAllEntitlement: 1,
+      entitlementUse: "UNANIMOUS_RESOLUTION",
+      source: `${OCA} s 95`,
+      status: "CONFIRMED",
+    },
+    // Never on an agenda: a special resolution that fails may pass as one. On a poll its first route is NOT_CONFIRMED,
+    // so it has no poll test and is refused on a poll (FOR_REVIEW MEETING_RULES_INTERIM). A 2-lot owners corporation
+    // is exempt from s 97 (s 7A), so with 2 lots or fewer it is refused, never reported as interim, until the 2-lot
+    // rules are applied (stage 2, PR 8a-ii; FOR_REVIEW MEETING_RULES_TIER_5).
+    INTERIM_SPECIAL: {
+      basis: "BY_VARIANT",
+      variants: [
+        {
+          when: { lotsAtMost: 2 },
+          rule: { basis: "SHARE_OF_ALL_LOTS", refusedBecause: VIC_TWO_LOT_INTERIM },
+          source: `${OCA} s 7A`,
+          status: "CONFIRMED",
+        },
+        {
+          when: { lotsAtLeast: 3 },
+          rule: {
+            basis: "SHARE_OF_ALL_LOTS",
+            forAtLeastFractionOfAllLots: RESOLUTIONS.INTERIM_SPECIAL.route1.forAtLeastFractionOfTotalVotes,
+            againstNotMoreThanFractionOfAllLots: RESOLUTIONS.INTERIM_SPECIAL.route1.againstNotMoreThanFractionOfTotalVotes,
+            orNoneAgainstAtQuorateMeeting: RESOLUTIONS.INTERIM_SPECIAL.route2.noVotesAgainst,
+          },
+          source: `${OCA} s 97(1), (1A)`,
+          status: "CONFIRMED",
+        },
+      ],
+      source: `${OCA} ss 7A, 97(1), (1A)`,
+      status: "CONFIRMED",
+    },
+  },
+  retention: { generalYears: RECORDS.retention.othersAtLeastYears, secretBallotMonths: RECORDS.retention.votingPapersMonthsAfterVote },
+  preMeetingEvoting: null,
+  resolutionLabels: {
+    ORDINARY: { short: "Ordinary", full: "Ordinary Resolution" },
+    SPECIAL: { short: "Special", full: "Special Resolution" },
+    UNANIMOUS: { short: "Unanimous", full: "Unanimous Resolution" },
+    INTERIM_SPECIAL: { short: "Interim special", full: "Interim Special Resolution" },
+  },
+  generalMeetingCategories: ["ORDINARY", "SPECIAL", "UNANIMOUS"],
+  committeeCategories: ["ORDINARY"],
+  committeeCategoryRefusal:
+    "Only an ordinary resolution can go on a committee meeting agenda. Put this motion on a general meeting agenda instead.",
+  motionCategories: ["ORDINARY", "SPECIAL", "UNANIMOUS"],
+  debtorsMayVoteOn: ARREARS.mayStillVoteOn,
+  pollCategories: ["ORDINARY"],
+  excludeCommonPropertyRows: true,
+  // Every outcome at a general meeting comes from the count, so an item with no category cannot be recorded as resolved there.
+  categoryRequiredAtGeneralMeetings: true,
+  notes:
+    "Draft, from the Victorian pack (not signed off), VIC, ACT and WA stage 2, PR 8a-i. Interim resolutions, ballots and the minutes deadline are not applied yet.",
+};
+
+/** How far each part of MEETING_RULES not carrying its own status is checked. */
+export const MEETING_RULES_STATUS = {
+  noticePeriods: {
+    status: "CONFIRMED" as RuleStatus,
+    source: `${OCA} ss 72, 76`,
+    note: "14 days for an AGM, the first AGM and a special general meeting. The committee's 3 business days (s 109) are not held, as the shape holds whole days only, so committee notice is not checked.",
+  },
+  minutesDeadlines: {
+    status: "NOT_CONFIRMED" as RuleStatus,
+    source: `${OCA} ss 78, 81, 97`,
+    note: "No deadline for sending ordinary minutes was found; interim resolutions have one (14 days), applied with them (stage 2, PR 8b).",
+  },
+  retention: {
+    status: "CONFIRMED" as RuleStatus,
+    source: `${OCA} s 145`,
+    note: "At least 7 years; voting papers and ballots 12 months after the vote, held as the secret ballot period (a StrataVerze mapping).",
+  },
+  debtorsMayVoteOn: { status: "CONFIRMED" as RuleStatus, source: ARREARS.source, note: "An owner in arrears may vote only on special and unanimous resolutions (s 89B). Arrears are read as an overdue fee notice (FOR_REVIEW MEETING_RULES_ARREARS)." },
+  labelsAndLists: { status: "STRATAVERZE" as RuleStatus, source: "StrataVerze", note: "The names, the categories each meeting and the motions list offer, the poll categories, pre-meeting voting not offered and common property rows not counted are StrataVerze choices (FOR_REVIEW MEETING_RULES)." },
+} as const;
+
+/** Shared shapes this draft does not give yet, and why. None since stage 2, PR 8a-i (MEETING_RULES). */
+export const DEFERRED_SHARED_SHAPES: readonly { shape: string; reason: string }[] = [];
 
 /** What was not confirmed on 27 Oct 2026, for the review. */
 export const NOT_CONFIRMED = [
@@ -2767,8 +2919,54 @@ export const FOR_REVIEW = [
   },
   {
     key: "DEFERRED_SHARED_SHAPES",
-    point: "MEETING_RULES is deferred (DEFERRED_SHARED_SHAPES). LATE_CHARGE and PAYMENT_ALLOCATION_ORDER are given since stage 2, PR 5, and NOTICE_RULES since stage 2, PR 6a.",
+    point: "No shared shape is deferred: LATE_CHARGE and PAYMENT_ALLOCATION_ORDER are given since stage 2, PR 5, NOTICE_RULES since stage 2, PR 6a, and MEETING_RULES since stage 2, PR 8a-i (DEFERRED_SHARED_SHAPES is empty).",
     before: "the pack moves to RULE_PACKS",
+    kind: "STRATAVERZE",
+  },
+  {
+    key: "MEETING_RULES",
+    point:
+      "MEETING_RULES (stage 2, PR 8a-i) is StrataVerze's mapping of MEETINGS, RESOLUTIONS, ARREARS and RECORDS to the shared shape. StrataVerze choices: the names (Ordinary, Special, Unanimous and Interim Special Resolution); a general meeting and the motions list offer ordinary, special and unanimous resolutions, and a committee ordinary resolutions only; an interim special resolution is never put on an agenda; pre-meeting electronic voting is not offered; common property rows are not counted as lots; voting papers are kept 12 months as the secret ballot period; an item with no resolution category (such as an election) cannot be recorded as resolved at a general meeting, because every outcome there comes from the count and such an item has no test to count it by (it can be recorded as lost, or deferred). Confirm each.",
+    before: "Victorian meetings are run",
+    kind: "STRATAVERZE",
+  },
+  {
+    key: "MEETING_RULES_SPECIAL",
+    point:
+      "A special resolution counted at a meeting (a show of hands) needs 75% of all lots for, not of the votes cast (s 96). An owner in arrears may vote on it (s 89B), so the lots in arrears are counted for and in the total like any other. A poll is taken on an ordinary resolution only, so a special or unanimous resolution is never counted by lot entitlement at a meeting (s 96 counts it by lot entitlement \"on a ballot or poll\"; who may ask for a poll on it is not in the notes). A unanimous resolution needs every lot for (s 95). Confirm.",
+    before: "Victorian meetings are run",
+    kind: "LEGAL",
+  },
+  {
+    key: "MEETING_RULES_INTERIM",
+    point:
+      "A special resolution that fails may pass as an interim special resolution (s 97): at least 50% of all lots for and not more than 25% of all lots against, or no vote against at a meeting with a quorum. The count says so, but an interim resolution is not recorded at the meeting until StrataVerze records interim resolutions, their notice and the 29-day petition period (stage 2, PR 8b); the chair is told and may defer the item. It is tested only from a special resolution item. How the first route is counted on a poll is NOT_CONFIRMED, so it is refused on a poll. StrataVerze reads the second route (s 97(1A), no vote against at a meeting with a quorum) as needing at least 1 vote for, so a meeting where nobody votes passes nothing (to confirm). Confirm.",
+    before: "Victorian meetings are run",
+    kind: "LEGAL",
+  },
+  {
+    key: "MEETING_RULES_ORDINARY",
+    point:
+      "An ordinary resolution counted at a meeting is refused until whether the meeting had a quorum is recorded for the item (stage 2, PR 8a-ii): without a quorum every resolution is interim (s 78). Equal votes are refused too: a chair who is a lot owner or a proxy has a casting vote and without it the resolution is not passed (s 89A), and StrataVerze does not record who chaired or a casting vote. Confirm.",
+    before: "Victorian meetings are run",
+    kind: "STRATAVERZE",
+  },
+  {
+    key: "MEETING_RULES_TIER_5",
+    point: "Tier 5 owners corporations (2-lot subdivisions and services only) are exempt from the meeting and resolution rules in ss 7A and 8, and for a 2-lot owners corporation a special resolution means a unanimous one. Not handled yet (stage 2, PR 8a-ii): the general tests are applied, which for 2 lots needs both lots for a special resolution, as unanimity does. Section 97 does not apply to a 2-lot owners corporation (s 7A), so with 2 lots or fewer a special resolution that fails the general test is never tested as an interim special resolution: the count is refused, saying the 2-lot rules are not applied yet, rather than reporting it as interim (1 lot for and none against was reported as an interim special resolution before) or recording it as lost. Nothing is written either way. That refusal reads the number of lots counted, not the tier, so a services only owners corporation is not caught until the tier is read (stage 2, PR 8a-ii).",
+    before: "Victorian meetings are run",
+    kind: "LEGAL",
+  },
+  {
+    key: "MEETING_RULES_ARREARS",
+    point: "An owner in arrears is read as a lot with a fee notice issued, past its due date and not paid in full on the meeting's date, as for Queensland. The rule that a payment other than cash counts only if made at least 4 business days before the vote (s 89B) is not applied. Confirm.",
+    before: "Victorian meetings are run",
+    kind: "LEGAL",
+  },
+  {
+    key: "MEETING_RULES_NOTICE_AND_MINUTES",
+    point: "Committee meeting notice (3 business days, s 109) is not checked, as the shape holds whole days only, and no deadline for ordinary minutes is checked, as none was found. Confirm.",
+    before: "Victorian meetings are run",
     kind: "STRATAVERZE",
   },
   {

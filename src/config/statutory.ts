@@ -428,7 +428,18 @@ export const PENDING_RULE_PACKS = {
     // notices never list), the fund and totals (withheld after a budget revision) and the proportion (only where every
     // amount is the unit's share by its current unit entitlement) points, and a point that the contents are read and
     // checked again from the data as it is when a notice is emailed or its PDF downloaded. Still a draft.
-    version: "2026.10.7",
+    // 2026.10.8 (28 Oct 2026): resolution bases and categories (stage 2, PR 8a-i). MEETING_RULES added in the shared shape,
+    // from MEETINGS, RESOLUTIONS and RECORDS unchanged: notice 14 days (general) and 7 days (executive committee), minutes
+    // within 14 days, quorum per motion as data, retention 7 years, each CONFIRMED; the tests by the number of members (sch 3
+    // ss 3.15 to 3.18, CONFIRMED) chosen by MEMBER_BAND, a new recorded building selector (1 or 2, 3, or 4 or more members;
+    // only 4 or more supported, a StrataVerze proposal); the 3-member special test (NOT_CONFIRMED), the unopposed resolution
+    // (scope NOT_CONFIRMED) and 1 or 2 members refused; equal votes refused (casting vote not recorded); every count
+    // refused until quorum is recorded for each motion (stage 2, PR 8a-ii). The debtor rule (sch 3 s 3.20(3)) is not
+    // applied yet (debtorsMayVoteOn left out). Names, lists, common property rows not counted, no pre-meeting voting and an
+    // item with no category not recorded as resolved at a general meeting (categoryRequiredAtGeneralMeetings) are
+    // StrataVerze choices. The LATE_CHARGE GO-LIVE GAP and FOR_REVIEW are rewritten (votes present revisited with quorum). No legal value or status already
+    // recorded changed; still a draft.
+    version: "2026.10.8",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",
     reviewedOn: null,
@@ -501,7 +512,22 @@ export const PENDING_RULE_PACKS = {
     // FOR_REVIEW gains NOTICE_RULES, NOTICE_MINIMUM, NOTICE_MAXIMUM, NOTICE_DISPUTE_PROCESS, NOTICE_DUE_DATE_MOVE,
     // NOTICE_TIER_5 and FINAL_FEE_NOTICE, and APPROVED_FORMS_DATE, APPROVED_FORMS_USE and DEFERRED_SHARED_SHAPES are
     // updated. No legal value or status already recorded changed; still a draft.
-    version: "2026.10.7",
+    // 2026.10.8 (28 Oct 2026): resolution bases and categories (stage 2, PR 8a-i). MEETING_RULES added in the shared shape,
+    // from MEETINGS, RESOLUTIONS, ARREARS and RECORDS unchanged: notice 14 days for general meetings, quorum as data,
+    // retention 7 years and voting papers 12 months, owners in arrears voting on special and unanimous resolutions only
+    // (s 89B), each CONFIRMED; ordinary resolutions by a majority of votes cast and a poll by lot entitlement (s 89),
+    // refused on equal votes (s 89A) and until quorum is recorded for the item (s 78; stage 2, PR 8a-ii); special
+    // resolutions by 75% of all lots (s 96) and unanimous by every lot (s 95), CONFIRMED; the interim special resolution
+    // (s 97) as the category a failed special resolution passes as, refused at the meeting until interim resolutions are
+    // recorded (stage 2, PR 8b); its second route needs at least 1 vote for (StrataVerze's reading), and with 2 lots or
+    // fewer it is refused (s 7A; the 2-lot rules are stage 2, PR 8a-ii). No minutes deadline (NOT_CONFIRMED) and no
+    // committee notice (business days). Names, lists, a poll on ordinary resolutions only, common property rows not
+    // counted, no pre-meeting voting and an item with no category not recorded as resolved at a general meeting
+    // (categoryRequiredAtGeneralMeetings) are StrataVerze choices. DEFERRED_SHARED_SHAPES is now empty. FOR_REVIEW gains MEETING_RULES, MEETING_RULES_SPECIAL,
+    // MEETING_RULES_INTERIM, MEETING_RULES_ORDINARY, MEETING_RULES_TIER_5, MEETING_RULES_ARREARS and
+    // MEETING_RULES_NOTICE_AND_MINUTES, and DEFERRED_SHARED_SHAPES and the GO-LIVE GAP on lot entitlement are rewritten.
+    // No legal value or status already recorded changed; still a draft.
+    version: "2026.10.8",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",
     reviewedOn: null,
@@ -541,7 +567,17 @@ export const PENDING_RULE_PACKS = {
     // fixes it) are StrataVerze choices Matthew Wrigley made on 28 Oct 2026, recorded in DECISIONS; one notice for each
     // instalment is a StrataVerze choice for review. FOR_REVIEW gains the points. No legal value or status already
     // recorded changed; still a draft.
-    version: "2026.10.5",
+    // 2026.10.6 (28 Oct 2026): resolution bases and categories (stage 2, PR 8a-i). MEETING_RULES added in the shared shape,
+    // from MEETINGS, RESOLUTIONS, SIZE_CLASSES, DEBT_RECOVERY and RECORD_RETENTION unchanged: notice 14 days for general
+    // meetings, quorum as data, an ordinary resolution by more than half of the lots voting (a tie fails) and by unit
+    // entitlement where demanded, the special, without dissent and unanimous tests by size class (s 123), unfinancial
+    // owners voting on unanimous and without dissent resolutions only (s 120(2)), each CONFIRMED. Special, without
+    // dissent and unanimous resolutions are decided when their 28-day voting period closes (s 121), so the meeting cannot
+    // record them as resolved or lost until that is tracked (stage 2, PR 8b), and their count is undetermined whatever the
+    // votes. Retention of the meeting record for 20 years, names, lists, common property rows not counted, no pre-meeting
+    // voting and an item with no category not recorded as resolved at a general meeting (categoryRequiredAtGeneralMeetings)
+    // are StrataVerze choices. FOR_REVIEW gains the points. No legal value or status already recorded changed; still a draft.
+    version: "2026.10.6",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",
     reviewedOn: null,

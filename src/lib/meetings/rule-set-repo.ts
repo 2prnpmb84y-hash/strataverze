@@ -70,6 +70,11 @@ function rowToRuleSet(row: RuleSetRow, seed: MeetingRuleSet): MeetingRuleSet {
   // No column either: polls and proxies at conduct (Queensland only).
   if (seed.pollCategories) ruleSet.pollCategories = seed.pollCategories;
   if (seed.proxiesBarredOn) ruleSet.proxiesBarredOn = seed.proxiesBarredOn;
+  // No column either, and only where the seed has them (the draft packs, VIC,
+  // ACT and WA stage 2, PR 8a-i): an NSW or Queensland rule set never has the keys.
+  if (seed.excludeCommonPropertyRows) ruleSet.excludeCommonPropertyRows = seed.excludeCommonPropertyRows;
+  if (seed.memberBandSelector) ruleSet.memberBandSelector = seed.memberBandSelector;
+  if (seed.categoryRequiredAtGeneralMeetings) ruleSet.categoryRequiredAtGeneralMeetings = seed.categoryRequiredAtGeneralMeetings;
   return ruleSet;
 }
 

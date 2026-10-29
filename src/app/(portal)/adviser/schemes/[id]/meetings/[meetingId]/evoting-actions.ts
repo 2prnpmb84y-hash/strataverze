@@ -151,6 +151,8 @@ export async function closeBallotAction(
           item.resolutionCategory as ResolutionCategory,
           tally,
         );
+        // Neither carried nor lost (a draft pack's interim or undecided result; never NSW): not written.
+        if (evaluation.result) continue;
         const outcome = resolveOutcome(ruleSet, {
           requestedOutcome: evaluation.passed ? "RESOLVED" : "MOTION_LOST",
           resolutionCategory: item.resolutionCategory,

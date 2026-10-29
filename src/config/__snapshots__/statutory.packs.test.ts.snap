@@ -424,6 +424,33 @@ exports[`Australian Capital Territory pack (pending) > is the rules recorded for
       "source": "Unit Titles (Management) Act 2011 (ACT) sch 2 ss 2.1(1)(g), 2.1A",
       "status": "CONFIRMED",
     },
+    {
+      "held": "RECORDED",
+      "help": "How many members the owners corporation has. It decides the resolution tests at its meetings. Members are not the same as units: each owner of a unit, including each part-owner, is a member. Update it when the owners change.",
+      "key": "memberBand",
+      "label": "Number of members",
+      "options": [
+        {
+          "label": "1 or 2 members",
+          "note": "The resolution tests for 1 or 2 members are not applied yet, so the votes at its meetings are not counted.",
+          "supported": false,
+          "value": "ONE_OR_TWO",
+        },
+        {
+          "label": "3 members",
+          "note": "The special resolution test for 3 members is not confirmed, so a special resolution at its meetings is not counted.",
+          "supported": false,
+          "value": "THREE",
+        },
+        {
+          "label": "4 or more members",
+          "supported": true,
+          "value": "FOUR_OR_MORE",
+        },
+      ],
+      "source": "Unit Titles (Management) Act 2011 (ACT) s 10; sch 3 ss 3.15, 3.16, 3.18",
+      "status": "CONFIRMED",
+    },
   ],
   "CLASS_B_ONLY_PLAN": {
     "held": "RECORDED",
@@ -845,7 +872,7 @@ exports[`Australian Capital Territory pack (pending) > is the rules recorded for
     "FOR LEGAL REVIEW: what the opening words of UTMA s 94(1), "unless otherwise decided by ordinary resolution", let an ordinary resolution do (INTEREST.openingWords).",
     "BUILDING_SELECTORS: the scheme type and the three plan variants (retirement village, mixed use, class B units only) are recorded by the adviser or StrataVerze in the Building rules section, outside the locked building record. Each variant's "yes" is marked not supported because StrataVerze applies none of their rules yet (a StrataVerze proposal). The unit thresholds (bank account exemption, sinking fund, communications officer, proxy limit, the unit leg of the audit test) are worked out from the number of units: the building's lots other than common property rows, read only where it matches the building's total lots. The member thresholds (1 to 3 members, 4 or more members) are not worked out, because members are not units. The annual budget leg of the audit test is not a recorded fact, so at 100 units or fewer the value says the budget decides.",
     "DATED_RULES restates the Bill's quorum and absentee vote changes as NOT LAW values that are never applied, beside the in-force values from R25 (26 Jun 2026; earlier days have no value). When the Bill passes and pt 6 is notified, a new pack version restates them as enacted with the day they commence. Confirm both choices.",
-    "LATE_CHARGE (stage 2, PR 5): 10% a year by default and 0 to 20% by special resolution are from the notes (s 94(1)). Three accrual values are NOT_CONFIRMED, so no interest is charged until a pack version records them: the day interest starts (the due date, or the day after), any grace period, and the days a year's rate is shared over (365, or another basis). The special resolution is checked against the motion's recorded category (SPECIAL) and outcome (CARRIED). GO-LIVE GAP: the meeting engine's CARRIED does not apply the sch 3 s 3.16 special resolution test yet, so the recorded outcome is relied on until it does. Rounding (once, half up, to the cent, on the sum of the days, as NSW interest) and applying each payment to the contribution first are StrataVerze choices. Confirm each.",
+    "LATE_CHARGE (stage 2, PR 5): 10% a year by default and 0 to 20% by special resolution are from the notes (s 94(1)). Three accrual values are NOT_CONFIRMED, so no interest is charged until a pack version records them: the day interest starts (the due date, or the day after), any grace period, and the days a year's rate is shared over (365, or another basis). The special resolution is checked against the motion's recorded category (SPECIAL) and outcome (CARRIED). GO-LIVE GAP: since stage 2, PR 8a-i the meeting engine holds the sch 3 s 3.16(1) test and an ACT general meeting records CARRIED only from the count, but every ACT count is refused until quorum is recorded for each motion (stage 2, PR 8a-ii), and the 3-member test and 1 or 2 members are refused, so no ACT special resolution can be recorded as CARRIED at a meeting yet. Rounding (once, half up, to the cent, on the sum of the days, as NSW interest) and applying each payment to the contribution first are StrataVerze choices. Confirm each.",
     "PAYMENT_ALLOCATION_ORDER: contributions, then interest, then recovery costs, as NSW. Decided by Matthew Wrigley on 28 Oct 2026 as a StrataVerze choice (DECISIONS), since the notes record no order. Recorded here so the decision is visible at sign-off.",
     "NOTICE_RULES (stage 2, PR 6a): each notice goes out 28 days before it falls due and never with less than 14 days' notice, as Matthew Wrigley decided on 28 Oct 2026 (DECISIONS); the 28 days is the most the law allows (UTMA ss 79(2)(e), 90(2)(e)). A due date more than 28 days after the notice is refused, and a special contribution due further away is planned 28 days before it falls due. Recorded here so the decision is visible at sign-off.",
     "FOR LEGAL REVIEW: whether a general fund contribution payable by instalments is given one notice for each instalment as it falls due (StrataVerze's reading, NOTICE_RULES.checked.noticeMode) or one notice that states every instalment date (UTMA s 79(2)(f)).",
@@ -858,6 +885,13 @@ exports[`Australian Capital Territory pack (pending) > is the rules recorded for
     "Each unit's contribution, the fund total and the proportion are read from the data as it is when a notice is checked, emailed or its PDF downloaded, and checked again each time: an issued notice that can no longer state them all is not emailed (the building's activity records LEVY_NOTICES_NOT_EMAILED with the reason) and its PDF is refused with the reason, rather than given without them. A PDF is rebuilt from the data on each download; keeping the content as it was on the day of issue needs a database change and is not done yet. Confirm.",
     "Form 1 (AF2012-112) was not read, so whether ACT contribution notices must be in an approved form is not recorded (NOTICE_RULES.checked.form is null). Check it before any ACT notice is issued.",
     "A notice that goes out late states a later due date, 14 days after it goes out and within the 28 days: StrataVerze's reading of UTMA ss 80, 91 (the notes say only that a contribution is payable on the date stated in the notice), recorded as STRATAVERZE, not CONFIRMED. Confirm.",
+    "MEETING_RULES (stage 2, PR 8a-i) is StrataVerze's mapping of MEETINGS and RESOLUTIONS to the shared shape. StrataVerze choices: the names (Ordinary, Special, Unopposed and Unanimous Resolution); a general meeting and the motions list offer ordinary and special resolutions, and an executive committee ordinary resolutions only; unopposed and unanimous resolutions are not offered on an agenda (their 21 days' notice, sch 3 s 3.6(2), is not checked); pre-meeting electronic voting (sch 3 s 3.31A) is not offered; common property rows are not counted as units; an item with no resolution category (such as an election) cannot be recorded as resolved at a general meeting, because every outcome there comes from the count and such an item has no test to count it by (it can be recorded as lost, or deferred). Confirm each.",
+    "The number of members (MEMBER_BAND: 1 or 2, 3, or 4 or more) is recorded by the adviser or StrataVerze in the Building rules section, because members are not units (s 10: each part-owner is a member). It can go out of date when the owners change, and nothing checks it against the roll. Only 4 or more members is marked supported. With none recorded, or a value not known, every count is refused. Confirm who records it and when it is checked.",
+    "Votes present (sch 3 s 3.16(1), "the total votes that can be cast by people present, including proxy votes") are counted as the units with a vote or an abstention recorded at the item, including absentee votes the chair enters (an absentee voter is taken to be present, s 3.31(4)), and not a unit barred for money owed. A person present who casts no vote and is not recorded as abstaining is not counted, so the votes present can be fewer than the Act's and the test is stricter than the Act's (the votes against are measured against a smaller number). This is revisited when quorum is recorded for each motion (stage 2, PR 8a-ii), which records who is present. Confirm.",
+    "Refused at a meeting until confirmed: the 3-member special resolution test (s 3.16(2): against less than 1/3, of what is NOT_CONFIRMED); an unopposed resolution (s 3.17: its member scope is NOT_CONFIRMED; confirming it would let it be counted); 1 or 2 members (ss 3.15(2), 3.16(3), 3.18(2), with the quorum of s 3.12), counted from stage 2, PR 8a-ii. Equal votes on an ordinary or special resolution are refused, because whether the chair has a casting vote with more than 2 members is not in the notes (with 2 members there is none, s 3.30) and StrataVerze does not record one.",
+    "A unanimous resolution (s 3.18(1)) needs a vote or an abstention recorded for every unit: a unit with nothing recorded refuses the count, since StrataVerze cannot tell whether its voter was present. Confirm.",
+    "FOR LEGAL REVIEW: the debtor rule (sch 3 s 3.20(3): with 3 or more members a unit cannot vote on an ordinary or special resolution while an amount is unpaid) is not applied yet. MEETING_RULES.debtorsMayVoteOn is left out, so no vote is barred, which is safe only because every count is refused until quorum is recorded for each motion. Both are planned together (stage 2, PR 8a-ii), as is what counts as an unpaid amount.",
+    "Quorum (sch 3 ss 3.9 to 3.11) is counted for each motion, and a decision with a reduced quorum takes effect 28 days later unless disallowed. Until quorum is recorded for each motion (stage 2, PR 8a-ii), every count at a meeting is refused; a reduced quorum decision is refused until its later effect is tracked (stage 2, PR 8b).",
   ],
   "FUND_CATALOGUE": [
     {
@@ -1308,6 +1342,280 @@ exports[`Australian Capital Territory pack (pending) > is the rules recorded for
       "unitEntitlementFraction": 0.25,
     },
     "source": "Unit Titles (Management) Act 2011 (ACT) s 41; sch 2 ss 2.1, 2.8; sch 3 ss 3.1 to 3.13, 3.31, 3.31A; Unit Titles (Management) Regulation 2011 (ACT) s 10; Unit Titles (Management) (Meeting Agenda) Guidelines 2023 (NI2023-528)",
+    "status": "CONFIRMED",
+  },
+  "MEETING_RULES": {
+    "categoryRequiredAtGeneralMeetings": true,
+    "committeeCategories": [
+      "ORDINARY",
+    ],
+    "committeeCategoryRefusal": "Only an ordinary resolution can go on an executive committee meeting agenda. Put this motion on a general meeting agenda instead.",
+    "effectiveFrom": "2026-10-28",
+    "excludeCommonPropertyRows": true,
+    "generalMeetingCategories": [
+      "ORDINARY",
+      "SPECIAL",
+    ],
+    "memberBandSelector": "memberBand",
+    "minutesDeadlines": {
+      "AGM": 14,
+      "COMMITTEE": 14,
+      "EGM": 14,
+      "FIRST_AGM": 14,
+    },
+    "motionCategories": [
+      "ORDINARY",
+      "SPECIAL",
+    ],
+    "notes": "Draft, from the ACT pack (not signed off), VIC, ACT and WA stage 2, PR 8a-i. Every count at a meeting is refused until quorum is recorded for each motion; the debtor rule is not applied yet.",
+    "noticePeriods": {
+      "AGM": 14,
+      "COMMITTEE": 7,
+      "EGM": 14,
+      "FIRST_AGM": 14,
+    },
+    "pollCategories": [
+      "ORDINARY",
+      "SPECIAL",
+    ],
+    "preMeetingEvoting": null,
+    "quorumRules": {
+      "AGM": {
+        "basis": "FRACTION_OF_UNITS_PER_MOTION",
+        "fractionOfUnits": 0.5,
+        "reducedQuorumMinPeople": 2,
+        "source": "Unit Titles (Management) Act 2011 (ACT) sch 3 s 3.9",
+        "status": "CONFIRMED",
+        "waitMinutes": 30,
+      },
+      "EGM": {
+        "basis": "FRACTION_OF_UNITS_PER_MOTION",
+        "fractionOfUnits": 0.5,
+        "reducedQuorumMinPeople": 2,
+        "source": "Unit Titles (Management) Act 2011 (ACT) sch 3 s 3.9",
+        "status": "CONFIRMED",
+        "waitMinutes": 30,
+      },
+      "FIRST_AGM": {
+        "basis": "FRACTION_OF_UNITS_PER_MOTION",
+        "fractionOfUnits": 0.5,
+        "reducedQuorumMinPeople": 2,
+        "source": "Unit Titles (Management) Act 2011 (ACT) sch 3 s 3.9",
+        "status": "CONFIRMED",
+        "waitMinutes": 30,
+      },
+    },
+    "resolutionCategories": {
+      "ORDINARY": {
+        "basis": "BY_VARIANT",
+        "noVariantFitsRefusal": "The building's number of members recorded is not one StrataVerze knows, so this resolution's test cannot be chosen. Record it again in the building rules",
+        "source": "Unit Titles (Management) Act 2011 (ACT) sch 3 s 3.15",
+        "status": "CONFIRMED",
+        "variants": [
+          {
+            "rule": {
+              "basis": "NONE_AGAINST_AT_LEAST_ONE_FOR",
+              "refusedBecause": "StrataVerze does not count the votes of an owners corporation with 1 or 2 members yet",
+            },
+            "source": "Unit Titles (Management) Act 2011 (ACT) sch 3 s 3.15(2)",
+            "status": "CONFIRMED",
+            "when": {
+              "memberBands": [
+                "ONE_OR_TWO",
+              ],
+            },
+          },
+          {
+            "rule": {
+              "basis": "COUNT_MAJORITY",
+              "tieRefusedBecause": "The votes are equal. Whether the chair has a casting vote is not confirmed (with 2 members there is none, Unit Titles (Management) Act 2011 (ACT) sch 3 s 3.30), and StrataVerze does not record one, so the count cannot decide it",
+            },
+            "source": "Unit Titles (Management) Act 2011 (ACT) sch 3 s 3.15(1)",
+            "status": "CONFIRMED",
+            "when": {
+              "memberBands": [
+                "THREE",
+                "FOUR_OR_MORE",
+              ],
+            },
+          },
+        ],
+        "withoutQuorum": "DECIDED_LATER",
+      },
+      "SPECIAL": {
+        "basis": "BY_VARIANT",
+        "noVariantFitsRefusal": "The building's number of members recorded is not one StrataVerze knows, so this resolution's test cannot be chosen. Record it again in the building rules",
+        "source": "Unit Titles (Management) Act 2011 (ACT) sch 3 s 3.16",
+        "status": "CONFIRMED",
+        "variants": [
+          {
+            "rule": {
+              "basis": "NONE_AGAINST_AT_LEAST_ONE_FOR",
+              "refusedBecause": "StrataVerze does not count the votes of an owners corporation with 1 or 2 members yet",
+            },
+            "source": "Unit Titles (Management) Act 2011 (ACT) sch 3 s 3.16(3)",
+            "status": "CONFIRMED",
+            "when": {
+              "memberBands": [
+                "ONE_OR_TWO",
+              ],
+            },
+          },
+          {
+            "rule": {
+              "basis": "AGAINST_SHARE_OF_VOTES_PRESENT",
+              "refusedBecause": "The special resolution test for an owners corporation with 3 members (votes against less than 1/3, Unit Titles (Management) Act 2011 (ACT) sch 3 s 3.16(2)) does not say what the 1/3 is measured against, so StrataVerze cannot count it until that is confirmed",
+            },
+            "source": "Unit Titles (Management) Act 2011 (ACT) sch 3 s 3.16(2)",
+            "status": "NOT_CONFIRMED",
+            "when": {
+              "memberBands": [
+                "THREE",
+              ],
+            },
+          },
+          {
+            "rule": {
+              "againstNotMoreThanFractionOfVotesPresent": 0.25,
+              "basis": "AGAINST_SHARE_OF_VOTES_PRESENT",
+              "tieRefusedBecause": "The votes are equal. Whether the chair has a casting vote is not confirmed (with 2 members there is none, Unit Titles (Management) Act 2011 (ACT) sch 3 s 3.30), and StrataVerze does not record one, so the count cannot decide it",
+            },
+            "source": "Unit Titles (Management) Act 2011 (ACT) sch 3 s 3.16(1)",
+            "status": "CONFIRMED",
+            "when": {
+              "memberBands": [
+                "FOUR_OR_MORE",
+              ],
+            },
+          },
+        ],
+        "withoutQuorum": "DECIDED_LATER",
+      },
+      "UNANIMOUS": {
+        "basis": "BY_VARIANT",
+        "noVariantFitsRefusal": "The building's number of members recorded is not one StrataVerze knows, so this resolution's test cannot be chosen. Record it again in the building rules",
+        "source": "Unit Titles (Management) Act 2011 (ACT) sch 3 s 3.18",
+        "status": "CONFIRMED",
+        "variants": [
+          {
+            "rule": {
+              "basis": "NONE_AGAINST_AT_LEAST_ONE_FOR",
+              "refusedBecause": "StrataVerze does not count the votes of an owners corporation with 1 or 2 members yet",
+            },
+            "source": "Unit Titles (Management) Act 2011 (ACT) sch 3 s 3.18(2)",
+            "status": "CONFIRMED",
+            "when": {
+              "memberBands": [
+                "ONE_OR_TWO",
+              ],
+            },
+          },
+          {
+            "rule": {
+              "basis": "EVERY_LOT_RECORDED_NONE_AGAINST",
+            },
+            "source": "Unit Titles (Management) Act 2011 (ACT) sch 3 s 3.18(1)",
+            "status": "CONFIRMED",
+            "when": {
+              "memberBands": [
+                "THREE",
+                "FOUR_OR_MORE",
+              ],
+            },
+          },
+        ],
+        "withoutQuorum": "DECIDED_LATER",
+      },
+      "UNOPPOSED": {
+        "basis": "NONE_AGAINST_AT_LEAST_ONE_FOR",
+        "refusedBecause": "Which owners corporations an unopposed resolution applies to is not confirmed (Unit Titles (Management) Act 2011 (ACT) sch 3 s 3.17), so StrataVerze cannot count it yet",
+        "source": "Unit Titles (Management) Act 2011 (ACT) sch 3 s 3.17",
+        "status": "NOT_CONFIRMED",
+        "withoutQuorum": "DECIDED_LATER",
+      },
+    },
+    "resolutionLabels": {
+      "ORDINARY": {
+        "full": "Ordinary Resolution",
+        "short": "Ordinary",
+      },
+      "SPECIAL": {
+        "full": "Special Resolution",
+        "short": "Special",
+      },
+      "UNANIMOUS": {
+        "full": "Unanimous Resolution",
+        "short": "Unanimous",
+      },
+      "UNOPPOSED": {
+        "full": "Unopposed Resolution",
+        "short": "Unopposed",
+      },
+    },
+    "retention": {
+      "generalYears": 7,
+      "secretBallotMonths": null,
+    },
+    "state": "ACT",
+    "version": "ACT-2026.1",
+  },
+  "MEETING_RULES_STATUS": {
+    "debtorsMayVoteOn": {
+      "note": "Left out: with 3 or more members a unit cannot vote on an ordinary or special resolution while an amount is unpaid, which the shared rule cannot express. Not applied until stage 2, PR 8a-ii; every count is refused until then.",
+      "source": "Unit Titles (Management) Act 2011 (ACT) sch 3 s 3.20(3)",
+      "status": "STRATAVERZE",
+    },
+    "labelsAndLists": {
+      "note": "The names, the categories each meeting and the motions list offer, pre-meeting voting not offered and common property rows not counted are StrataVerze choices (FOR_REVIEW).",
+      "source": "StrataVerze",
+      "status": "STRATAVERZE",
+    },
+    "minutesDeadlines": {
+      "note": "A copy to each member within 14 days, general and executive committee meetings.",
+      "source": "Unit Titles (Management) Act 2011 (ACT) sch 2 s 2.1(2)",
+      "status": "CONFIRMED",
+    },
+    "noticePeriods": {
+      "note": "14 days for a general meeting and 7 days for an executive committee meeting. A general meeting's notice must reasonably be expected to be received 14 days before, which the whole-day check does not test, and 21 days where an unopposed or unanimous resolution is moved, neither of which is offered on an agenda.",
+      "source": "Unit Titles (Management) Act 2011 (ACT) sch 2 s 2.8(2); sch 3 s 3.6(2)",
+      "status": "CONFIRMED",
+    },
+    "quorumRules": {
+      "note": "Held as data; not evaluated. The executive committee's quorum (more than half) has no shared basis, so it is not held.",
+      "source": "Unit Titles (Management) Act 2011 (ACT) sch 3 ss 3.9 to 3.12",
+      "status": "CONFIRMED",
+    },
+    "retention": {
+      "note": "At least 7 years; no separate period for ballot papers was found.",
+      "source": "Unit Titles (Management) Act 2011 (ACT) ss 113 to 118, 120A, 121; sch 2 s 2.1; dictionary "eligible person"; Unit Titles (Management) Regulation 2011 (ACT) s 8; Unit Titles (Management) (Fees) Determination 2026 (DI2026-115)",
+      "status": "CONFIRMED",
+    },
+  },
+  "MEMBER_BAND": {
+    "held": "RECORDED",
+    "help": "How many members the owners corporation has. It decides the resolution tests at its meetings. Members are not the same as units: each owner of a unit, including each part-owner, is a member. Update it when the owners change.",
+    "key": "memberBand",
+    "label": "Number of members",
+    "options": [
+      {
+        "label": "1 or 2 members",
+        "note": "The resolution tests for 1 or 2 members are not applied yet, so the votes at its meetings are not counted.",
+        "supported": false,
+        "value": "ONE_OR_TWO",
+      },
+      {
+        "label": "3 members",
+        "note": "The special resolution test for 3 members is not confirmed, so a special resolution at its meetings is not counted.",
+        "supported": false,
+        "value": "THREE",
+      },
+      {
+        "label": "4 or more members",
+        "supported": true,
+        "value": "FOUR_OR_MORE",
+      },
+    ],
+    "source": "Unit Titles (Management) Act 2011 (ACT) s 10; sch 3 ss 3.15, 3.16, 3.18",
     "status": "CONFIRMED",
   },
   "MIXED_USE_PLAN": {
@@ -4147,12 +4455,7 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
       "proposedOn": "2026-10-28",
     },
   ],
-  "DEFERRED_SHARED_SHAPES": [
-    {
-      "reason": "MEETING_RULES is now a shared rule (MeetingRuleSet); a pending pack need not give it, and the ACT draft does not. A Victorian set needs a minutes deadline for ordinary meetings (not found in the notes), Victoria's interim resolutions and ballots mapped to its categories, and StrataVerze choices on wording and pre-meeting voting. Until then Victoria's meeting, resolution and proxy rules are held as data in MEETINGS, RESOLUTIONS and PROXIES.",
-      "shape": "MEETING_RULES",
-    },
-  ],
+  "DEFERRED_SHARED_SHAPES": [],
   "DISPUTES": {
     "afterNoticeToRectify": [
       "give more time",
@@ -4739,7 +5042,49 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
       "before": "the pack moves to RULE_PACKS",
       "key": "DEFERRED_SHARED_SHAPES",
       "kind": "STRATAVERZE",
-      "point": "MEETING_RULES is deferred (DEFERRED_SHARED_SHAPES). LATE_CHARGE and PAYMENT_ALLOCATION_ORDER are given since stage 2, PR 5, and NOTICE_RULES since stage 2, PR 6a.",
+      "point": "No shared shape is deferred: LATE_CHARGE and PAYMENT_ALLOCATION_ORDER are given since stage 2, PR 5, NOTICE_RULES since stage 2, PR 6a, and MEETING_RULES since stage 2, PR 8a-i (DEFERRED_SHARED_SHAPES is empty).",
+    },
+    {
+      "before": "Victorian meetings are run",
+      "key": "MEETING_RULES",
+      "kind": "STRATAVERZE",
+      "point": "MEETING_RULES (stage 2, PR 8a-i) is StrataVerze's mapping of MEETINGS, RESOLUTIONS, ARREARS and RECORDS to the shared shape. StrataVerze choices: the names (Ordinary, Special, Unanimous and Interim Special Resolution); a general meeting and the motions list offer ordinary, special and unanimous resolutions, and a committee ordinary resolutions only; an interim special resolution is never put on an agenda; pre-meeting electronic voting is not offered; common property rows are not counted as lots; voting papers are kept 12 months as the secret ballot period; an item with no resolution category (such as an election) cannot be recorded as resolved at a general meeting, because every outcome there comes from the count and such an item has no test to count it by (it can be recorded as lost, or deferred). Confirm each.",
+    },
+    {
+      "before": "Victorian meetings are run",
+      "key": "MEETING_RULES_SPECIAL",
+      "kind": "LEGAL",
+      "point": "A special resolution counted at a meeting (a show of hands) needs 75% of all lots for, not of the votes cast (s 96). An owner in arrears may vote on it (s 89B), so the lots in arrears are counted for and in the total like any other. A poll is taken on an ordinary resolution only, so a special or unanimous resolution is never counted by lot entitlement at a meeting (s 96 counts it by lot entitlement "on a ballot or poll"; who may ask for a poll on it is not in the notes). A unanimous resolution needs every lot for (s 95). Confirm.",
+    },
+    {
+      "before": "Victorian meetings are run",
+      "key": "MEETING_RULES_INTERIM",
+      "kind": "LEGAL",
+      "point": "A special resolution that fails may pass as an interim special resolution (s 97): at least 50% of all lots for and not more than 25% of all lots against, or no vote against at a meeting with a quorum. The count says so, but an interim resolution is not recorded at the meeting until StrataVerze records interim resolutions, their notice and the 29-day petition period (stage 2, PR 8b); the chair is told and may defer the item. It is tested only from a special resolution item. How the first route is counted on a poll is NOT_CONFIRMED, so it is refused on a poll. StrataVerze reads the second route (s 97(1A), no vote against at a meeting with a quorum) as needing at least 1 vote for, so a meeting where nobody votes passes nothing (to confirm). Confirm.",
+    },
+    {
+      "before": "Victorian meetings are run",
+      "key": "MEETING_RULES_ORDINARY",
+      "kind": "STRATAVERZE",
+      "point": "An ordinary resolution counted at a meeting is refused until whether the meeting had a quorum is recorded for the item (stage 2, PR 8a-ii): without a quorum every resolution is interim (s 78). Equal votes are refused too: a chair who is a lot owner or a proxy has a casting vote and without it the resolution is not passed (s 89A), and StrataVerze does not record who chaired or a casting vote. Confirm.",
+    },
+    {
+      "before": "Victorian meetings are run",
+      "key": "MEETING_RULES_TIER_5",
+      "kind": "LEGAL",
+      "point": "Tier 5 owners corporations (2-lot subdivisions and services only) are exempt from the meeting and resolution rules in ss 7A and 8, and for a 2-lot owners corporation a special resolution means a unanimous one. Not handled yet (stage 2, PR 8a-ii): the general tests are applied, which for 2 lots needs both lots for a special resolution, as unanimity does. Section 97 does not apply to a 2-lot owners corporation (s 7A), so with 2 lots or fewer a special resolution that fails the general test is never tested as an interim special resolution: the count is refused, saying the 2-lot rules are not applied yet, rather than reporting it as interim (1 lot for and none against was reported as an interim special resolution before) or recording it as lost. Nothing is written either way. That refusal reads the number of lots counted, not the tier, so a services only owners corporation is not caught until the tier is read (stage 2, PR 8a-ii).",
+    },
+    {
+      "before": "Victorian meetings are run",
+      "key": "MEETING_RULES_ARREARS",
+      "kind": "LEGAL",
+      "point": "An owner in arrears is read as a lot with a fee notice issued, past its due date and not paid in full on the meeting's date, as for Queensland. The rule that a payment other than cash counts only if made at least 4 business days before the vote (s 89B) is not applied. Confirm.",
+    },
+    {
+      "before": "Victorian meetings are run",
+      "key": "MEETING_RULES_NOTICE_AND_MINUTES",
+      "kind": "STRATAVERZE",
+      "point": "Committee meeting notice (3 business days, s 109) is not checked, as the shape holds whole days only, and no deadline for ordinary minutes is checked, as none was found. Confirm.",
     },
     {
       "before": "sign-off",
@@ -5496,6 +5841,176 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
     "source": "Owners Corporations Act 2006 (Vic) ss 66, 67, 67A, 67B, 69, 70(1), 71(2), 72, 74, 76, 77, 78, 80(1), 81, 82, 89(6); Owners Corporations Regulations 2018 (Vic) reg 7A",
     "status": "CONFIRMED",
     "teleconferenceParticipantPresentInPerson": true,
+  },
+  "MEETING_RULES": {
+    "categoryRequiredAtGeneralMeetings": true,
+    "committeeCategories": [
+      "ORDINARY",
+    ],
+    "committeeCategoryRefusal": "Only an ordinary resolution can go on a committee meeting agenda. Put this motion on a general meeting agenda instead.",
+    "debtorsMayVoteOn": [
+      "SPECIAL",
+      "UNANIMOUS",
+    ],
+    "effectiveFrom": "2026-10-28",
+    "excludeCommonPropertyRows": true,
+    "generalMeetingCategories": [
+      "ORDINARY",
+      "SPECIAL",
+      "UNANIMOUS",
+    ],
+    "minutesDeadlines": {},
+    "motionCategories": [
+      "ORDINARY",
+      "SPECIAL",
+      "UNANIMOUS",
+    ],
+    "notes": "Draft, from the Victorian pack (not signed off), VIC, ACT and WA stage 2, PR 8a-i. Interim resolutions, ballots and the minutes deadline are not applied yet.",
+    "noticePeriods": {
+      "AGM": 14,
+      "EGM": 14,
+      "FIRST_AGM": 14,
+    },
+    "pollCategories": [
+      "ORDINARY",
+    ],
+    "preMeetingEvoting": null,
+    "quorumRules": {
+      "AGM": {
+        "basis": "PERCENT_OF_LOTS_ELSE_ENTITLEMENT",
+        "otherwisePercentOfEntitlement": 50,
+        "percent": 50,
+        "source": "Owners Corporations Act 2006 (Vic) s 77",
+        "status": "CONFIRMED",
+      },
+      "COMMITTEE": {
+        "basis": "HALF_MEMBERS",
+        "source": "Owners Corporations Act 2006 (Vic) s 112(1)",
+        "status": "CONFIRMED",
+      },
+      "EGM": {
+        "basis": "PERCENT_OF_LOTS_ELSE_ENTITLEMENT",
+        "otherwisePercentOfEntitlement": 50,
+        "percent": 50,
+        "source": "Owners Corporations Act 2006 (Vic) s 77",
+        "status": "CONFIRMED",
+      },
+      "FIRST_AGM": {
+        "basis": "PERCENT_OF_LOTS_ELSE_ENTITLEMENT",
+        "otherwisePercentOfEntitlement": 50,
+        "percent": 50,
+        "source": "Owners Corporations Act 2006 (Vic) s 77",
+        "status": "CONFIRMED",
+      },
+    },
+    "resolutionCategories": {
+      "INTERIM_SPECIAL": {
+        "basis": "BY_VARIANT",
+        "source": "Owners Corporations Act 2006 (Vic) ss 7A, 97(1), (1A)",
+        "status": "CONFIRMED",
+        "variants": [
+          {
+            "rule": {
+              "basis": "SHARE_OF_ALL_LOTS",
+              "refusedBecause": "An owners corporation of 2 lots cannot pass an interim special resolution, and its special resolution means a unanimous one (Owners Corporations Act 2006 (Vic) s 7A). StrataVerze does not apply the rules for 2-lot owners corporations yet, so the count cannot decide it",
+            },
+            "source": "Owners Corporations Act 2006 (Vic) s 7A",
+            "status": "CONFIRMED",
+            "when": {
+              "lotsAtMost": 2,
+            },
+          },
+          {
+            "rule": {
+              "againstNotMoreThanFractionOfAllLots": 0.25,
+              "basis": "SHARE_OF_ALL_LOTS",
+              "forAtLeastFractionOfAllLots": 0.5,
+              "orNoneAgainstAtQuorateMeeting": true,
+            },
+            "source": "Owners Corporations Act 2006 (Vic) s 97(1), (1A)",
+            "status": "CONFIRMED",
+            "when": {
+              "lotsAtLeast": 3,
+            },
+          },
+        ],
+      },
+      "ORDINARY": {
+        "basis": "COUNT_MAJORITY",
+        "source": "Owners Corporations Act 2006 (Vic) ss 78(1), 89(1) to (5), 89A",
+        "status": "CONFIRMED",
+        "tieRefusedBecause": "The votes are equal. A chair who is a lot owner or a proxy has a casting vote, and without it the resolution is not passed (Owners Corporations Act 2006 (Vic) s 89A). StrataVerze does not record who chaired or a casting vote yet, so the count cannot decide it",
+        "withoutQuorum": "INTERIM",
+      },
+      "SPECIAL": {
+        "basis": "SHARE_OF_ALL_LOTS",
+        "entitlementUse": "SPECIAL_RESOLUTION",
+        "forAtLeastFractionOfAllLots": 0.75,
+        "interimCategory": "INTERIM_SPECIAL",
+        "pollForAtLeastFractionOfAllEntitlement": 0.75,
+        "source": "Owners Corporations Act 2006 (Vic) ss 96, 97",
+        "status": "CONFIRMED",
+      },
+      "UNANIMOUS": {
+        "basis": "SHARE_OF_ALL_LOTS",
+        "entitlementUse": "UNANIMOUS_RESOLUTION",
+        "forAtLeastFractionOfAllLots": 1,
+        "pollForAtLeastFractionOfAllEntitlement": 1,
+        "source": "Owners Corporations Act 2006 (Vic) s 95",
+        "status": "CONFIRMED",
+      },
+    },
+    "resolutionLabels": {
+      "INTERIM_SPECIAL": {
+        "full": "Interim Special Resolution",
+        "short": "Interim special",
+      },
+      "ORDINARY": {
+        "full": "Ordinary Resolution",
+        "short": "Ordinary",
+      },
+      "SPECIAL": {
+        "full": "Special Resolution",
+        "short": "Special",
+      },
+      "UNANIMOUS": {
+        "full": "Unanimous Resolution",
+        "short": "Unanimous",
+      },
+    },
+    "retention": {
+      "generalYears": 7,
+      "secretBallotMonths": 12,
+    },
+    "state": "VIC",
+    "version": "VIC-2026.1",
+  },
+  "MEETING_RULES_STATUS": {
+    "debtorsMayVoteOn": {
+      "note": "An owner in arrears may vote only on special and unanimous resolutions (s 89B). Arrears are read as an overdue fee notice (FOR_REVIEW MEETING_RULES_ARREARS).",
+      "source": "Owners Corporations Act 2006 (Vic) ss 89B, 89C(10), 103(7)",
+      "status": "CONFIRMED",
+    },
+    "labelsAndLists": {
+      "note": "The names, the categories each meeting and the motions list offer, the poll categories, pre-meeting voting not offered and common property rows not counted are StrataVerze choices (FOR_REVIEW MEETING_RULES).",
+      "source": "StrataVerze",
+      "status": "STRATAVERZE",
+    },
+    "minutesDeadlines": {
+      "note": "No deadline for sending ordinary minutes was found; interim resolutions have one (14 days), applied with them (stage 2, PR 8b).",
+      "source": "Owners Corporations Act 2006 (Vic) ss 78, 81, 97",
+      "status": "NOT_CONFIRMED",
+    },
+    "noticePeriods": {
+      "note": "14 days for an AGM, the first AGM and a special general meeting. The committee's 3 business days (s 109) are not held, as the shape holds whole days only, so committee notice is not checked.",
+      "source": "Owners Corporations Act 2006 (Vic) ss 72, 76",
+      "status": "CONFIRMED",
+    },
+    "retention": {
+      "note": "At least 7 years; voting papers and ballots 12 months after the vote, held as the secret ballot period (a StrataVerze mapping).",
+      "source": "Owners Corporations Act 2006 (Vic) s 145",
+      "status": "CONFIRMED",
+    },
   },
   "MULTIPLE_OWNERS_CORPORATIONS": {
     "changingTheShiftNeeds": "a special resolution of each owners corporation",
@@ -7477,6 +7992,13 @@ exports[`Western Australia pack (pending) > is the rules recorded for review 1`]
     "NOTICE_RULES (stage 2, PR 6a): each notice goes out 35 days before it falls due, never with less than 14 days' notice, as Matthew Wrigley decided on 28 Oct 2026 (DECISIONS). A due date is never moved (s 100(4)(a): the levy decision fixes it), so a notice that can no longer be given 14 days' notice cannot go out: the Adviser is told, and the levy must be decided again with a later date. Recorded here so the decision is visible at sign-off.",
     "NOTICE_RULES: one notice for each instalment as it falls due is a StrataVerze choice (the STA and STGR set no notice rule). Scheme by-laws were not checked: one may set a notice form, content or period, or an early payment discount. Confirm.",
     "NOTICE_RULES, notices that cannot go out because their due date cannot move: the daily job logs them as held (LEVY_NOTICES_HELD) again on every run until the planned notices are stopped, and when the Adviser sends overdue notices they are held while the others go out. When a schedule is first planned, one such instalment refuses the whole schedule (nothing is planned). Decide whether to keep both.",
+    "MEETING_RULES (stage 2, PR 8a-i) is StrataVerze's mapping of MEETINGS, RESOLUTIONS and SIZE_CLASSES to the shared shape. StrataVerze choices: the names (Ordinary, Special, Unanimous Resolution and Resolution without Dissent); a general meeting and the motions list offer all four, and a council meeting ordinary resolutions only; pre-meeting voting and voting outside a meeting (s 120(3)) are not offered; common property rows are not counted as lots; a poll means unit entitlement counting demanded on an ordinary resolution (s 122); an item with no resolution category (such as an election) cannot be recorded as resolved at a general meeting, because every outcome there comes from the count and such an item has no test to count it by (it can be recorded as lost, or deferred). Confirm each.",
+    "Special, without dissent and unanimous resolutions stay open for 28 days after the meeting (s 121), and owners with no-one present may still vote by written notice (s 121(2)), so the count at the meeting cannot decide them. Until the voting period is tracked (stage 2, PR 8b), the meeting cannot record them as resolved or lost: the chair is told, and may defer the item. The count itself gives no result for them either (it is undetermined, whatever the votes), so closing a ballot never records one.",
+    "A 2-lot special resolution and resolution without dissent are counted as unanimous: every lot for (s 123(3), (5)). Below 2 lots no test fits and the count is refused. The 3 to 5-lot special resolution is read as at least 50% of the total unit entitlement for (s 123(6) says "unit entitlement"). Confirm.",
+    "A resolution without dissent with no vote cast at all passes the test (no vote against, s 123(2)). Confirm that reading, once these resolutions are recorded.",
+    "An unfinancial owner (s 120(2)) is read as a lot with a levy notice issued, past its due date and not paid in full on the meeting's date, as for Queensland. A special resolution is measured against all lots, so a lot whose vote is not counted for money owed still counts in the total. Confirm.",
+    "The meeting record is kept 20 years (retention), the period for special, unanimous and without dissent resolutions; minutes alone are kept 7 (reg 83). Confirm.",
+    "Not applied: the scheme developer's exclusion from defect resolutions for 10 years (s 80(2), (3)); council meeting notice (a default by-law); a deadline for minutes (none found).",
   ],
   "FUND_CATALOGUE": [
     {
@@ -7887,6 +8409,240 @@ exports[`Western Australia pack (pending) > is the rules recorded for review 1`]
     "source": "Strata Titles Act 1985 (WA) ss 77, 104(1)(b), 120(3), (8), 127 to 132; Strata Titles (General) Regulations 2019 (WA) regs 83, 89",
     "status": "CONFIRMED",
     "votingOutsideMeeting": true,
+  },
+  "MEETING_RULES": {
+    "categoryRequiredAtGeneralMeetings": true,
+    "committeeCategories": [
+      "ORDINARY",
+    ],
+    "committeeCategoryRefusal": "Only an ordinary resolution can go on a council meeting agenda. Put this motion on a general meeting agenda instead.",
+    "debtorsMayVoteOn": [
+      "UNANIMOUS",
+      "WITHOUT_DISSENT",
+    ],
+    "effectiveFrom": "2026-10-28",
+    "excludeCommonPropertyRows": true,
+    "generalMeetingCategories": [
+      "ORDINARY",
+      "SPECIAL",
+      "WITHOUT_DISSENT",
+      "UNANIMOUS",
+    ],
+    "minutesDeadlines": {},
+    "motionCategories": [
+      "ORDINARY",
+      "SPECIAL",
+      "WITHOUT_DISSENT",
+      "UNANIMOUS",
+    ],
+    "notes": "Draft, from the Western Australian pack (not signed off), VIC, ACT and WA stage 2, PR 8a-i. Special, without dissent and unanimous resolutions are decided when their 28-day voting period closes, which is not tracked yet.",
+    "noticePeriods": {
+      "AGM": 14,
+      "EGM": 14,
+      "FIRST_AGM": 14,
+    },
+    "pollCategories": [
+      "ORDINARY",
+    ],
+    "preMeetingEvoting": null,
+    "quorumRules": {
+      "AGM": {
+        "basis": "PERCENT_OF_LOTS_THEN_THOSE_PRESENT",
+        "percent": 50,
+        "source": "Strata Titles Act 1985 (WA) s 130",
+        "status": "CONFIRMED",
+        "waitMinutes": 30,
+      },
+      "EGM": {
+        "basis": "PERCENT_OF_LOTS_THEN_THOSE_PRESENT",
+        "percent": 50,
+        "source": "Strata Titles Act 1985 (WA) s 130",
+        "status": "CONFIRMED",
+        "waitMinutes": 30,
+      },
+      "FIRST_AGM": {
+        "basis": "PERCENT_OF_LOTS_THEN_THOSE_PRESENT",
+        "percent": 50,
+        "source": "Strata Titles Act 1985 (WA) s 130",
+        "status": "CONFIRMED",
+        "waitMinutes": 30,
+      },
+    },
+    "resolutionCategories": {
+      "ORDINARY": {
+        "basis": "COUNT_MAJORITY",
+        "source": "Strata Titles Act 1985 (WA) ss 122, 123(7)",
+        "status": "CONFIRMED",
+      },
+      "SPECIAL": {
+        "basis": "BY_VARIANT",
+        "noVariantFitsRefusal": "This resolution needs a scheme of at least 2 lots, and fewer are recorded",
+        "source": "Strata Titles Act 1985 (WA) ss 121, 122, 123(4) to (6)",
+        "status": "CONFIRMED",
+        "variants": [
+          {
+            "rule": {
+              "basis": "SHARE_OF_ALL_LOTS",
+              "forAtLeastFractionOfAllLots": 1,
+            },
+            "source": "Strata Titles Act 1985 (WA) s 123(5)",
+            "status": "CONFIRMED",
+            "when": {
+              "lotsAtLeast": 2,
+              "lotsAtMost": 2,
+            },
+          },
+          {
+            "rule": {
+              "basis": "SHARE_OF_ALL_LOTS",
+              "forAtLeastFractionOfAllEntitlement": 0.5,
+              "forAtLeastLots": 2,
+            },
+            "source": "Strata Titles Act 1985 (WA) s 123(6)",
+            "status": "CONFIRMED",
+            "when": {
+              "lotsAtLeast": 3,
+              "lotsAtMost": 3,
+            },
+          },
+          {
+            "rule": {
+              "basis": "SHARE_OF_ALL_LOTS",
+              "forAtLeastFractionOfAllEntitlement": 0.5,
+              "forAtLeastLots": 3,
+            },
+            "source": "Strata Titles Act 1985 (WA) s 123(6)",
+            "status": "CONFIRMED",
+            "when": {
+              "lotsAtLeast": 4,
+              "lotsAtMost": 4,
+            },
+          },
+          {
+            "rule": {
+              "basis": "SHARE_OF_ALL_LOTS",
+              "forAtLeastFractionOfAllEntitlement": 0.5,
+              "forAtLeastLots": 4,
+            },
+            "source": "Strata Titles Act 1985 (WA) s 123(6)",
+            "status": "CONFIRMED",
+            "when": {
+              "lotsAtLeast": 5,
+              "lotsAtMost": 5,
+            },
+          },
+          {
+            "rule": {
+              "againstLessThanFractionOfAllEntitlement": 0.25,
+              "againstLessThanFractionOfAllLots": 0.25,
+              "basis": "SHARE_OF_ALL_LOTS",
+              "forAtLeastFractionOfAllEntitlement": 0.5,
+              "forAtLeastFractionOfAllLots": 0.5,
+            },
+            "source": "Strata Titles Act 1985 (WA) ss 122, 123(4)",
+            "status": "CONFIRMED",
+            "when": {
+              "lotsAtLeast": 6,
+            },
+          },
+        ],
+        "votingPeriodDays": 28,
+      },
+      "UNANIMOUS": {
+        "basis": "SHARE_OF_ALL_LOTS",
+        "forAtLeastFractionOfAllLots": 1,
+        "source": "Strata Titles Act 1985 (WA) ss 121, 122, 123(1)",
+        "status": "CONFIRMED",
+        "votingPeriodDays": 28,
+      },
+      "WITHOUT_DISSENT": {
+        "basis": "BY_VARIANT",
+        "noVariantFitsRefusal": "This resolution needs a scheme of at least 2 lots, and fewer are recorded",
+        "source": "Strata Titles Act 1985 (WA) ss 121, 122, 123(2), (3)",
+        "status": "CONFIRMED",
+        "variants": [
+          {
+            "rule": {
+              "basis": "SHARE_OF_ALL_LOTS",
+              "forAtLeastFractionOfAllLots": 1,
+            },
+            "source": "Strata Titles Act 1985 (WA) s 123(3)",
+            "status": "CONFIRMED",
+            "when": {
+              "lotsAtLeast": 2,
+              "lotsAtMost": 2,
+            },
+          },
+          {
+            "rule": {
+              "basis": "NO_AGAINST",
+            },
+            "source": "Strata Titles Act 1985 (WA) s 123(2)",
+            "status": "CONFIRMED",
+            "when": {
+              "lotsAtLeast": 3,
+            },
+          },
+        ],
+        "votingPeriodDays": 28,
+      },
+    },
+    "resolutionLabels": {
+      "ORDINARY": {
+        "full": "Ordinary Resolution",
+        "short": "Ordinary",
+      },
+      "SPECIAL": {
+        "full": "Special Resolution",
+        "short": "Special",
+      },
+      "UNANIMOUS": {
+        "full": "Unanimous Resolution",
+        "short": "Unanimous",
+      },
+      "WITHOUT_DISSENT": {
+        "full": "Resolution without Dissent",
+        "short": "Without dissent",
+      },
+    },
+    "retention": {
+      "generalYears": 20,
+      "secretBallotMonths": null,
+    },
+    "state": "WA",
+    "version": "WA-2026.1",
+  },
+  "MEETING_RULES_STATUS": {
+    "debtorsMayVoteOn": {
+      "note": "An unfinancial owner votes only on unanimous and without dissent resolutions (and leasehold expiry postponement and termination resolutions, which are not categories). Unfinancial is read as a levy notice issued, past its due date and not paid in full (FOR_REVIEW).",
+      "source": "Strata Titles Act 1985 (WA) s 120(2)",
+      "status": "CONFIRMED",
+    },
+    "labelsAndLists": {
+      "note": "The names, the categories each meeting and the motions list offer, the poll categories, pre-meeting voting not offered and common property rows not counted are StrataVerze choices (FOR_REVIEW).",
+      "source": "StrataVerze",
+      "status": "STRATAVERZE",
+    },
+    "minutesDeadlines": {
+      "note": "No deadline for distributing minutes was found in the STA or STGR read.",
+      "source": "Strata Titles Act 1985 (WA) ss 77, 104(1)(b), 120(3), (8), 127 to 132; Strata Titles (General) Regulations 2019 (WA) regs 83, 89",
+      "status": "CONFIRMED",
+    },
+    "noticePeriods": {
+      "note": "14 days for a general meeting. The council's 7 days (Sch 1 by-law 8(1)) is a default by-law a scheme may have changed, so council notice is not checked.",
+      "source": "Strata Titles Act 1985 (WA) s 129(1)",
+      "status": "CONFIRMED",
+    },
+    "quorumRules": {
+      "note": "Held as data; not evaluated. A 2-lot scheme needs both lots (s 130(2), (4)), which the shared basis does not hold. The council's quorum is a default by-law and is not held.",
+      "source": "Strata Titles Act 1985 (WA) s 130",
+      "status": "CONFIRMED",
+    },
+    "retention": {
+      "note": "20 years, the longest period for a meeting's records: special, unanimous and without dissent resolutions are kept 20 years and minutes 7 (reg 83). Keeping the whole meeting record for 20 years is a StrataVerze choice (FOR_REVIEW).",
+      "source": "Strata Titles Act 1985 (WA) ss 104, 105; Strata Titles (General) Regulations 2019 (WA) regs 83, 84",
+      "status": "STRATAVERZE",
+    },
   },
   "NOTICE_RULES": {
     "checked": {
