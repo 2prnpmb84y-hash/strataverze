@@ -96,6 +96,9 @@ const NEW_KEYS = [
   // Stage 2, PR 8b-i (29 Oct 2026).
   "pendingResolutions",
   "reducedQuorumAttestation",
+  // Stage 2, PR 8b-iii (29 Oct 2026).
+  "categoryNoticeDays",
+  "noticeNotCheckedFor",
 ] as const;
 const PACK_RULES = { VIC: PENDING_RULE_PACKS.VIC.rules, ACT: PENDING_RULE_PACKS.ACT.rules, WA: PENDING_RULE_PACKS.WA.rules };
 const NO_DASH_OR_SEMICOLON = /[;–—]/;
@@ -395,5 +398,50 @@ describe("pending resolutions are wired to the categories that give them (stage 
         else if (view) expect(view.items[c], `${state} ${c}`).not.toHaveProperty("reducedQuorumAsked");
       }
     }
+  });
+});
+
+describe("notice by motion is wired consistently (stage 2, PR 8b-iii)", () => {
+  const vic = PENDING_RULE_PACKS.VIC.rules;
+  const act = PENDING_RULE_PACKS.ACT.rules;
+  const wa = PENDING_RULE_PACKS.WA.rules;
+
+  it.each(DRAFTS)("%s: a longer notice is for a category the pack has and is longer than every general meeting's, and a type not checked has no period", (state, rs) => {
+    for (const [c, rule] of Object.entries(rs.categoryNoticeDays ?? {}) as [ResolutionCategory, { days: number; source: string; status: RuleStatus }][]) {
+      expect(rs.resolutionCategories[c], `${state} ${c}`).toBeDefined();
+      for (const t of ["AGM", "EGM", "FIRST_AGM"] as const) expect(rule.days, `${state} ${c} ${t}`).toBeGreaterThan(rs.noticePeriods[t] ?? 0);
+      expect(rule.source).toMatch(/\S{5,}/);
+      expect(STATUSES).toContain(rule.status);
+    }
+    for (const [t, reason] of Object.entries(rs.noticeNotCheckedFor ?? {})) {
+      expect(rs.noticePeriods[t as keyof typeof rs.noticePeriods], `${state} ${t}`).toBeUndefined();
+      expect(reason).toMatch(/^[A-Z]/);
+      expect(reason).not.toMatch(/[.;–—]$|[;–—]/);
+    }
+  });
+
+  it("the ACT: 21 days for an unopposed or unanimous resolution, a unanimous one on a general meeting agenda but not the motions list, an unopposed one on neither (decision D13)", () => {
+    const rs = act.MEETING_RULES;
+    expect(rs.categoryNoticeDays).toEqual({
+      UNOPPOSED: { days: 21, source: expect.stringMatching(/sch 3 s 3\.6\(2\)$/), status: "CONFIRMED" },
+      UNANIMOUS: { days: 21, source: expect.stringMatching(/sch 3 s 3\.6\(2\)$/), status: "CONFIRMED" },
+    });
+    expect(rs.categoryNoticeDays?.UNANIMOUS?.days).toBe(act.MEETINGS.noticeDaysForUnopposedOrUnanimous);
+    expect(rs.generalMeetingCategories).toEqual(["ORDINARY", "SPECIAL", "UNANIMOUS"]);
+    expect(rs.motionCategories).toEqual(["ORDINARY", "SPECIAL"]);
+    expect(rs.committeeCategories).toEqual(["ORDINARY"]);
+    expect(rs.resolutionCategories.UNOPPOSED?.refusedBecause).toBeDefined();
+    expect(rs.noticeNotCheckedFor).toBeUndefined();
+    expect(act.MEETING_RULES_STATUS.categoryNoticeDays.status).toBe("STRATAVERZE");
+  });
+
+  it("Victoria and Western Australia: the committee's or council's notice is not checked, and nothing needs a longer notice (decisions D12 and D14)", () => {
+    expect(Object.keys(vic.MEETING_RULES.noticeNotCheckedFor ?? {})).toEqual(["COMMITTEE"]);
+    expect(vic.MEETING_RULES.noticeNotCheckedFor?.COMMITTEE).toMatch(/3 business days.*s 109\).*business days/);
+    expect(Object.keys(wa.MEETING_RULES.noticeNotCheckedFor ?? {})).toEqual(["COMMITTEE"]);
+    expect(wa.MEETING_RULES.noticeNotCheckedFor?.COMMITTEE).toMatch(/7 days by default.*by-law 8\(2\)\(a\)/);
+    for (const rs of [vic.MEETING_RULES, wa.MEETING_RULES]) expect(rs.categoryNoticeDays).toBeUndefined();
+    expect(vic.MEETING_RULES_STATUS.noticeNotCheckedFor.status).toBe("STRATAVERZE");
+    expect(wa.MEETING_RULES_STATUS.noticeNotCheckedFor.status).toBe("STRATAVERZE");
   });
 });

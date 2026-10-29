@@ -1247,7 +1247,12 @@ export const RECORD_RETENTION = {
  *   minutes (s 130(2), (4)): since stage 2, PR 8a-ii (29 Oct 2026, Matthew
  *   Wrigley's decision) a count is refused unless both lots have a vote or an
  *   abstention recorded at the item (quorumNeedsEveryLot). A lot whose vote is
- *   not counted for money owed (s 120(2)) still makes up the quorum.
+ *   not counted for money owed (s 120(2)) still makes up the quorum;
+ * - a council meeting's notice (7 days by default, Sch 1 by-law 8(2)(a), a
+ *   default by-law a scheme may have changed) is not checked: since stage 2,
+ *   PR 8b-iii (29 Oct 2026, Matthew Wrigley's decision D12) such a notice is
+ *   stored as not compliant with no period (noticeNotCheckedFor) and shown
+ *   as "Notice period not checked", never as met.
  */
 
 /** The days of grace after a voting period closes before the daily run records its decision (Matthew Wrigley's decision of 29 Oct 2026). */
@@ -1280,7 +1285,8 @@ export const MEETING_RULES: MeetingRuleSet = {
   state: "WA",
   version: "WA-2026.1",
   effectiveFrom: "2026-10-28",
-  // The council's 7 days is a default by-law a scheme may have changed, so it is not held.
+  // The council's 7 days is a default by-law a scheme may have changed, so it is not held. Since stage 2, PR 8b-iii its
+  // notice is recorded as not checked (noticeNotCheckedFor, decision D12).
   noticePeriods: { AGM: MEETINGS.noticeDays, EGM: MEETINGS.noticeDays, FIRST_AGM: MEETINGS.noticeDays },
   // No deadline for distributing minutes was found (MEETINGS.minutesDistributionDeadlineDays).
   minutesDeadlines: {},
@@ -1373,8 +1379,12 @@ export const MEETING_RULES: MeetingRuleSet = {
       status: "STRATAVERZE",
     },
   },
+  // Stage 2, PR 8b-iii (29 Oct 2026, Matthew Wrigley's decision D12): a council meeting's notice is not checked.
+  noticeNotCheckedFor: {
+    COMMITTEE: `A council meeting's notice is set by the scheme's by-laws, ${COUNCIL.meetings.memberMayCallOnDaysNotice} days by default (${STA} Sch 1 by-law 8(2)(a)), and StrataVerze does not hold the scheme's by-laws`,
+  },
   notes:
-    "Draft, from the Western Australian pack (not signed off), VIC, ACT and WA stage 2, PR 8a-i, 8a-ii and 8b-ii. Special, without dissent and unanimous resolutions stay open for their 28-day voting period: the meeting records the votes, written votes are recorded after it, and the resolution is decided when the period closes. A 2-lot scheme's count needs both lots recorded at the item.",
+    "Draft, from the Western Australian pack (not signed off), VIC, ACT and WA stage 2, PR 8a-i, 8a-ii, 8b-ii and 8b-iii. A council meeting's notice period is not checked. Special, without dissent and unanimous resolutions stay open for their 28-day voting period: the meeting records the votes, written votes are recorded after it, and the resolution is decided when the period closes. A 2-lot scheme's count needs both lots recorded at the item.",
 };
 
 /** How far each part of MEETING_RULES not carrying its own status is checked. */
@@ -1382,7 +1392,12 @@ export const MEETING_RULES_STATUS = {
   noticePeriods: {
     status: "CONFIRMED" as RuleStatus,
     source: `${STA} s 129(1)`,
-    note: "14 days for a general meeting. The council's 7 days (Sch 1 by-law 8(1)) is a default by-law a scheme may have changed, so council notice is not checked.",
+    note: "14 days for a general meeting. The council's 7 days (Sch 1 by-law 8(2)(a)) is a default by-law a scheme may have changed, so council notice is not checked.",
+  },
+  noticeNotCheckedFor: {
+    status: "STRATAVERZE" as RuleStatus,
+    source: `${STA} s 129(1); Sch 1 by-law 8(2)(a)`,
+    note: "Since stage 2, PR 8b-iii a council meeting's notice is stored as not compliant with no period and shown as \"Notice period not checked\" (Matthew Wrigley's decision D12 of 29 Oct 2026, DECISIONS): its 7 days is a default by-law a scheme may have changed, and the scheme's by-laws are not held (FOR_REVIEW). The 14 days' notice of the terms of a resolution (s 123) equals the general meeting notice, so nothing more is checked.",
   },
   minutesDeadlines: { status: "CONFIRMED" as RuleStatus, source: MEETINGS.source, note: "No deadline for distributing minutes was found in the STA or STGR read." },
   quorumRules: {
@@ -1647,7 +1662,8 @@ export const NOT_CONFIRMED = [
 /**
  * StrataVerze's decisions. The pack as a whole has not been reviewed; the
  * decisions so far are the payment order and the notice timing (28 Oct 2026),
- * the 2-lot quorum and the voting period (29 Oct 2026).
+ * the 2-lot quorum, the voting period and council notice not checked
+ * (29 Oct 2026).
  */
 export const DECISIONS: readonly { decision: string; decidedBy: string; decidedOn: string }[] = [
   {
@@ -1670,6 +1686,12 @@ export const DECISIONS: readonly { decision: string; decidedBy: string; decidedO
   {
     decision:
       "Voting period (MEETING_RULES.pendingResolutions VOTING_PERIOD, STA s 121; stage 2, PR 8b-ii). Matthew Wrigley's StrataVerze decisions of 29 Oct 2026, kept in FOR_REVIEW for legal confirmation: a special, without dissent or unanimous resolution counted at a general meeting is recorded with the votes cast and stays open (the item stored as OPEN), and the 2-lot quorum (quorumNeedsEveryLot) still applies at the meeting. Day counting (D1): a written vote can be received up to and including the 28th day after the day it was made, and it is decided as at the next day. The day it is made (D2) is the later of the meeting's start day and the day it is recorded, in the building's time zone. Late voters (D8): the lots with nothing entered at the item at the meeting, for or against only, a debt (s 120(2)) judged on the day the written vote was received, one written vote per lot; the written notice of the outcome (s 121(2)) must be recorded as given before the close is decided whenever such a lot exists. No early decision (D9): decided only at the close, even if every lot has voted. Locked (D10): an item with a voting period cannot be recorded again, deferred or deleted. A daily run (D11) decides it, and only after 7 days of grace (settleAfterGraceDays), the day it is decided staying the day after the close. At the close the votes at the meeting and the written votes are counted by the s 123 test for the building's size, as it was at the meeting: carried or lost, ended by VOTES_AT_CLOSE. A count that cannot be made, or a missing outcome notice, leaves it open with what stops it.",
+    decidedBy: "Matthew Wrigley",
+    decidedOn: "2026-10-29",
+  },
+  {
+    decision:
+      "Notice not checked (MEETING_RULES.noticeNotCheckedFor, stage 2, PR 8b-iii): (D12) a council meeting's notice, whose 7 days is a default by-law a scheme may have changed (Sch 1 by-law 8(2)(a)), is not checked. Such a notice is stored as not compliant with no period, with no database change, and shown as \"Notice period not checked\", never as met. Matthew Wrigley's StrataVerze decision of 29 Oct 2026, kept for confirmation (FOR_REVIEW).",
     decidedBy: "Matthew Wrigley",
     decidedOn: "2026-10-29",
   },
@@ -1701,7 +1723,8 @@ export const FOR_REVIEW = [
   "A resolution without dissent with no vote cast at all passes the test (no vote against, s 123(2)). Since stage 2, PR 8b-ii these resolutions are recorded, so one with no vote at the meeting and no written vote is carried at the close. Confirm that reading.",
   "An unfinancial owner (s 120(2)) is read as a lot with a levy notice issued, past its due date and not paid in full on the meeting's date, as for Queensland. A special resolution is measured against all lots, so a lot whose vote is not counted for money owed still counts in the total. Confirm.",
   "The meeting record is kept 20 years (retention), the period for special, unanimous and without dissent resolutions; minutes alone are kept 7 (reg 83). Confirm.",
-  "Not applied: the scheme developer's exclusion from defect resolutions for 10 years (s 80(2), (3)); council meeting notice (a default by-law); a deadline for minutes (none found).",
+  "Not applied: the scheme developer's exclusion from defect resolutions for 10 years (s 80(2), (3)); council meeting notice (a default by-law, see the next point); a deadline for minutes (none found).",
+  "Council meeting notice (stage 2, PR 8b-iii, 29 Oct 2026), by Matthew Wrigley's StrataVerze decision D12 of 29 Oct 2026 (DECISIONS), kept here for confirmation: the council's 7 days' notice (Sch 1 by-law 8(2)(a)) is a default by-law a scheme may have changed, and StrataVerze does not hold the scheme's by-laws, so a council meeting's notice period is not checked. Such a notice is stored as not compliant with no period, with no database change (a notice with no period was always stored as compliant before), and shown as \"Notice period not checked\", never as met; it can still be issued. The 14 days' notice of the terms of a resolution (s 123) equals the general meeting notice, so nothing more is checked for it. Confirm, and decide whether a scheme's council notice should be recorded per building.",
   "Pre-meeting electronic voting is not offered for this draft (preMeetingEvoting is null). Before it is, closing a ballot must apply what the count at the meeting applies: the debtor condition (debtorRuleAppliesWhen), judged lot by lot as an owner's own vote is (debtorVoteCheck), the quorum answer, and any refusal of the whole count (Victoria's tier 5, Western Australia's 2-lot quorum). closeBallotAction applies none of these yet (stage 2, PR 8a-ii review). Confirm before any Western Australian ballot is offered.",
   "2-lot quorum (stage 2, PR 8a-ii, 29 Oct 2026, Matthew Wrigley's decision): a 2-lot scheme's quorum needs persons entitled to cast the votes of both lots, with no fallback after 30 minutes (s 130(2), (4)). StrataVerze does not record attendance, so at a general meeting of a 2-lot scheme (by the lots entered or the number the building records, which must agree) a count is refused unless both lots have a vote or an abstention recorded at the item, and nothing is written. A lot whose vote is not counted for money owed (s 120(2)) still makes up the quorum (Matthew Wrigley's decision, DECISIONS), and the resolution is decided by the counted votes. Fewer than 2 lots entered is refused. An item with no resolution category is not counted, so it is not checked. Other schemes' quorum (50% of the lots, then those present) is not checked, as before. Confirm.",
 ] as const;

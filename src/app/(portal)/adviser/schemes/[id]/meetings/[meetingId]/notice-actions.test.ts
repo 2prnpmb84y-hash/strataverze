@@ -44,7 +44,7 @@ vi.mock("@/lib/queries/notice", () => ({
   createNoticeRecipient: vi.fn(),
 }));
 vi.mock("@/lib/meetings/rule-set-repo", () => ({ getActiveRuleSet: vi.fn(async () => ({})) }));
-vi.mock("@/lib/meetings/rules", () => ({ validateNoticePeriod: () => ({ requiredDays: 21, actualDays: 30, compliant: true }) }));
+vi.mock("@/lib/meetings/rules", () => ({ noticeCheck: () => ({ requiredDays: 21, actualDays: 30, compliant: true }) }));
 vi.mock("@/lib/meetings/notice", () => ({ assembleNoticeContent: () => ({}) }));
 vi.mock("@/lib/meetings/events", () => ({ recordMeetingEvent: vi.fn() }));
 vi.mock("@/lib/notifications", () => ({ notifyMeetingScheduled: (...a: unknown[]) => notify(...(a as [])) }));

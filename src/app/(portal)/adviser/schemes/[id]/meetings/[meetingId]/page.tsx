@@ -31,7 +31,7 @@ import { getMotionLibrary, getAgendaTemplate } from "@/lib/meetings/templates";
 import { getActiveRuleSet } from "@/lib/meetings/rule-set-repo";
 import { evotingNotOfferedReason } from "@/lib/meetings/evoting";
 import { conductVotingView } from "@/lib/meetings/conduct-tally";
-import { validateNoticePeriod, type MeetingType } from "@/lib/meetings/rules";
+import { noticeCheck, type MeetingType } from "@/lib/meetings/rules";
 import { canEditDetails, canTransition, isBeforeNotice, meetingStatusLabel } from "@/lib/meetings/lifecycle";
 import { connection } from "next/server";
 import { hasFeeEvent, previewUsageFee } from "@/lib/billing/capture";
@@ -139,16 +139,24 @@ export default async function MeetingDetailPage({
   // Notice context
   const notices = await getNoticesForMeeting(meetingId);
   const startIso = String(meeting.startTime ?? meeting.scheduledAt);
-  const noticePeriod =
+  // With the agenda's categories (the draft packs only: some need a longer notice, and some meeting types' notice is
+  // not checked, VIC, ACT and WA stage 2, PR 8b-iii). For NSW and Queensland this is exactly validateNoticePeriod.
+  const noticeResult =
     normalisedType != null
-      ? validateNoticePeriod(
+      ? noticeCheck(
           ruleSet,
           normalisedType as MeetingType,
+          agendaItems.map((a) => a.resolutionCategory),
           new Date(),
           new Date(startIso),
           meetingZone(meeting, timeZoneOf(scheme)),
         )
       : null;
+  // The categories short of their longer notice are named as the building's rules name them.
+  const noticePeriod =
+    noticeResult?.shortFor
+      ? { ...noticeResult, shortFor: noticeResult.shortFor.map((c) => ruleSet.resolutionLabels[c]?.full ?? c) }
+      : noticeResult;
   const recipientCount = scheme.memberships.filter(
     (m) => m.profile?.email,
   ).length;
@@ -160,6 +168,9 @@ export default async function MeetingDetailPage({
     status: n.status,
     issuedAt: String(n.issuedAt),
     compliant: n.compliant,
+    // Not compliant with no period: a notice period not checked (decision D12, the draft packs only). Before PR 8b-iii
+    // a notice with no period was always recorded as compliant, so this pair never comes from NSW or Queensland.
+    ...(!n.compliant && n.noticePeriodDays == null ? { periodNotChecked: true as const } : {}),
     recipients: n.recipients.map((r) => ({
       name: r.name,
       email: r.email,

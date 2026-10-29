@@ -337,6 +337,18 @@ export interface PendingResolutionRule {
   status: ResolutionRuleStatus;
 }
 
+/**
+ * The longer notice a meeting needs when an item of a resolution category is
+ * on its agenda (VIC, ACT and WA stage 2, PR 8b-iii, 29 Oct 2026: the ACT's
+ * 21 days where an unopposed or unanimous resolution is to be moved, sch 3
+ * s 3.6(2)), in whole days counted as the meeting type's notice period is.
+ */
+export interface CategoryNoticeRule {
+  days: number;
+  source: string;
+  status: ResolutionRuleStatus;
+}
+
 export interface MeetingRuleSet {
   state: string;
   version: string;
@@ -459,6 +471,27 @@ export interface MeetingRuleSet {
    * the standard quorum, whether a reduced quorum was present for the item.
    */
   reducedQuorumAttestation?: AttestationWords;
+  /*
+   * The keys below are the draft packs' (VIC, ACT and WA stage 2, PR 8b-iii,
+   * 29 Oct 2026). Each is optional and seed-only, and NSW and Queensland have
+   * none of them, so their notice period is checked exactly as before.
+   */
+  /**
+   * Where the pack records it (the ACT): the longer notice an agenda item of
+   * a category needs. The notice period is then the longest of the meeting
+   * type's and those of the categories on the agenda, an item of such a
+   * category cannot be added once the notice is issued, and it cannot be
+   * recorded as resolved unless the notice issued gave at least its days.
+   */
+  categoryNoticeDays?: Partial<Record<ResolutionCategory, CategoryNoticeRule>>;
+  /**
+   * Where the pack records it (Victoria and Western Australia, committee and
+   * council meetings): the meeting types whose notice period StrataVerze
+   * cannot check, each with why, in plain words ready to follow with a full
+   * stop. Such a notice is stored as not compliant with no period (decision
+   * D12), shown as "Notice period not checked", never as met.
+   */
+  noticeNotCheckedFor?: Partial<Record<MeetingType, string>>;
   notes?: string;
 }
 
@@ -499,6 +532,17 @@ export interface NoticeValidation {
   requiredDays: number | null;
   actualDays: number;
   compliant: boolean;
+  /**
+   * The draft packs only (PR 8b-iii): the categories on the agenda whose
+   * longer notice (`categoryNoticeDays`) is not met. Left out otherwise.
+   */
+  shortFor?: ResolutionCategory[];
+  /**
+   * The draft packs only (PR 8b-iii): why the notice period of this meeting
+   * type is not checked (`noticeNotCheckedFor`). Then `requiredDays` is null
+   * and `compliant` false (decision D12). Left out otherwise.
+   */
+  notChecked?: string;
 }
 
 /** Validate the gap between the notice issue date and the meeting date. */
@@ -517,6 +561,72 @@ export function validateNoticePeriod(
     actualDays,
     compliant: requiredDays == null ? true : actualDays >= requiredDays,
   };
+}
+
+/**
+ * The notice period check for a meeting with these agenda items' categories
+ * (VIC, ACT and WA stage 2, PR 8b-iii, 29 Oct 2026). Where the rule set has
+ * neither `categoryNoticeDays` nor `noticeNotCheckedFor` (NSW and
+ * Queensland), it is exactly validateNoticePeriod. Otherwise:
+ * - a meeting type in `noticeNotCheckedFor` is not checked: no period, not
+ *   compliant, and why (decision D12);
+ * - the period is the longest of the meeting type's and those of the
+ *   categories on the agenda with a longer notice, and the categories whose
+ *   notice is not met are listed in `shortFor`.
+ */
+export function noticeCheck(
+  ruleSet: MeetingRuleSet,
+  meetingType: MeetingType,
+  categories: readonly (string | null | undefined)[],
+  issueDate: Date,
+  meetingDate: Date,
+  /** The meeting's time zone: days are counted in it. */
+  timeZone: string,
+): NoticeValidation {
+  const base = validateNoticePeriod(ruleSet, meetingType, issueDate, meetingDate, timeZone);
+  if (!ruleSet.categoryNoticeDays && !ruleSet.noticeNotCheckedFor) return base;
+  const notChecked = ruleSet.noticeNotCheckedFor?.[meetingType];
+  if (notChecked) return { requiredDays: null, actualDays: base.actualDays, compliant: false, notChecked };
+  const present = new Set(categories.filter((c): c is string => typeof c === "string"));
+  const longer = (Object.entries(ruleSet.categoryNoticeDays ?? {}) as [ResolutionCategory, CategoryNoticeRule | undefined][]).filter(
+    (e): e is [ResolutionCategory, CategoryNoticeRule] => e[1] != null && present.has(e[0]),
+  );
+  if (longer.length === 0) return base;
+  const requiredDays = Math.max(base.requiredDays ?? 0, ...longer.map(([, r]) => r.days));
+  const shortFor = longer.filter(([, r]) => base.actualDays < r.days).map(([c]) => c);
+  return {
+    requiredDays,
+    actualDays: base.actualDays,
+    compliant: base.actualDays >= requiredDays,
+    ...(shortFor.length > 0 ? { shortFor } : {}),
+  };
+}
+
+/**
+ * Why an item of this category cannot be recorded as resolved for want of
+ * notice (the ACT, PR 8b-iii, Matthew Wrigley's decision D13 of 29 Oct
+ * 2026), or null. Only where the rule set gives the category a longer notice
+ * (`categoryNoticeDays`): the latest notice issued for the meeting must be
+ * recorded as compliant with a period of at least its days. With no notice
+ * issued, or one not checked, it is refused (it fails closed); with no
+ * notice issued the words say so. Plain words, with no dash or semicolon.
+ */
+export function categoryNoticeRefusal(
+  ruleSet: Pick<MeetingRuleSet, "categoryNoticeDays" | "resolutionLabels">,
+  category: string | null | undefined,
+  latestIssued: { compliant: boolean; noticePeriodDays: number | null } | null,
+): string | null {
+  const rule = category ? ruleSet.categoryNoticeDays?.[category as ResolutionCategory] : undefined;
+  if (!rule) return null;
+  if (latestIssued && latestIssued.compliant && latestIssued.noticePeriodDays != null && latestIssued.noticePeriodDays >= rule.days) return null;
+  const name = (ruleSet.resolutionLabels[category as ResolutionCategory]?.full ?? String(category)).toLowerCase();
+  const article = /^[aeiou]/.test(name) && !/^(?:unan|uni|use|usu)/.test(name) ? "An" : "A";
+  // No notice in force: a revised notice whose issue failed when the meeting changed meanwhile leaves the earlier ones
+  // superseded (PR 8b-iii review L2, FOR_REVIEW), so say why the days cannot be checked.
+  if (!latestIssued) {
+    return `${article} ${name} needs at least ${rule.days} days' notice of the meeting. No notice is recorded as issued for this meeting, so the ${rule.days} days cannot be checked and this item cannot be recorded as resolved. Issue the notice again. Nothing was saved. The item can be deferred.`;
+  }
+  return `${article} ${name} needs at least ${rule.days} days' notice of the meeting, and the notice issued for this meeting is not recorded as giving it, so this item cannot be recorded as resolved. Nothing was saved. The item can be deferred.`;
 }
 
 /** The date by which minutes must be distributed after a meeting. */

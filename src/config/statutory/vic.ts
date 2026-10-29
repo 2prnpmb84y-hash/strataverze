@@ -2694,6 +2694,15 @@ export const DATED_RULES = {
  * meeting must be held by) ends (settleAfterGraceDays), so a petition or
  * notice received in time can still be recorded; the day it takes effect does
  * not move.
+ * Since stage 2, PR 8b-iii (29 Oct 2026, Matthew Wrigley's decisions D12 and
+ * D14, DECISIONS): a committee meeting's notice (at least 3 business days, or
+ * as the owners corporation decides, s 109) is not checked, because
+ * "business day" and a public holiday source are not decided: counting
+ * Monday to Friday would overstate the business days around a public
+ * holiday, which is the unsafe direction. Such a notice is stored as not
+ * compliant with no period (noticeNotCheckedFor) and shown as "Notice period
+ * not checked", never as met. The 4 business days of s 89B (a payment other
+ * than cash) stay not applied for the same reason.
  */
 
 /** Days of grace before the daily run records a period's end (Matthew Wrigley's decision of 29 Oct 2026, review M1). */
@@ -2720,7 +2729,8 @@ export const MEETING_RULES: MeetingRuleSet = {
   state: "VIC",
   version: "VIC-2026.1",
   effectiveFrom: "2026-10-28",
-  // Whole days only: the committee's 3 business days (s 109) are not held (MEETING_RULES_STATUS).
+  // Whole days only: the committee's 3 business days (s 109) are not held. Since stage 2, PR 8b-iii its notice is
+  // recorded as not checked (noticeNotCheckedFor, decisions D12 and D14).
   noticePeriods: { AGM: MEETINGS.agmNoticeDays, FIRST_AGM: MEETINGS.agmNoticeDays, EGM: MEETINGS.sgmNoticeDays },
   // No deadline for ordinary minutes was found (NOT_CONFIRMED); only interim resolutions have one (s 78), 8b.
   minutesDeadlines: {},
@@ -2856,8 +2866,12 @@ export const MEETING_RULES: MeetingRuleSet = {
       status: "STRATAVERZE",
     },
   },
+  // Stage 2, PR 8b-iii (29 Oct 2026, Matthew Wrigley's decisions D12 and D14): a committee meeting's notice is not checked.
+  noticeNotCheckedFor: {
+    COMMITTEE: `A committee meeting needs at least ${COMMITTEE.meetingNoticeBusinessDays} business days' notice, or the notice the owners corporation decides (${OCA} s 109), and StrataVerze does not count business days yet`,
+  },
   notes:
-    "Draft, from the Victorian pack (not signed off), VIC, ACT and WA stage 2, PR 8a-i, 8a-ii and 8b-i. Quorum is the chair's answer for each item; tier 5 is not counted. Interim resolutions are recorded as pending and decided later. Ballots and the minutes deadline are not applied yet.",
+    "Draft, from the Victorian pack (not signed off), VIC, ACT and WA stage 2, PR 8a-i, 8a-ii, 8b-i and 8b-iii. Quorum is the chair's answer for each item; tier 5 is not counted. Interim resolutions are recorded as pending and decided later. A committee meeting's notice period is not checked. Ballots and the minutes deadline are not applied yet.",
 };
 
 /** How far each part of MEETING_RULES not carrying its own status is checked. */
@@ -2866,6 +2880,11 @@ export const MEETING_RULES_STATUS = {
     status: "CONFIRMED" as RuleStatus,
     source: `${OCA} ss 72, 76`,
     note: "14 days for an AGM, the first AGM and a special general meeting. The committee's 3 business days (s 109) are not held, as the shape holds whole days only, so committee notice is not checked.",
+  },
+  noticeNotCheckedFor: {
+    status: "STRATAVERZE" as RuleStatus,
+    source: `${OCA} ss 89B, 109`,
+    note: "The 3 business days (s 109) is CONFIRMED. Since stage 2, PR 8b-iii a committee meeting's notice is stored as not compliant with no period and shown as \"Notice period not checked\" (Matthew Wrigley's decision D12 of 29 Oct 2026), and business days stay not checked until \"business day\" and a public holiday source are decided (decision D14), as is the 4 business days of s 89B (FOR_REVIEW MEETING_RULES_NOTICE_AND_MINUTES).",
   },
   minutesDeadlines: {
     status: "NOT_CONFIRMED" as RuleStatus,
@@ -3071,7 +3090,7 @@ export const FOR_REVIEW = [
   {
     key: "MEETING_RULES_ARREARS",
     point:
-      "An owner in arrears is read as a lot with a fee notice issued, past its due date and not paid in full on the meeting's date, as for Queensland. The rule that a payment other than cash counts only if made at least 4 business days before the vote (s 89B) is not applied. Since stage 2, PR 8a-ii (29 Oct 2026) the rule applies to tiers 1 to 4 only, as tier 5 is exempt from s 89B (s 7A): an owner of a tier 5 owners corporation is not barred from voting online on a motion. Where the tier cannot be worked out, the owner is barred as in tiers 1 to 4 (a StrataVerze choice: it fails closed). At a meeting both are moot, as neither is counted. Confirm.",
+      "An owner in arrears is read as a lot with a fee notice issued, past its due date and not paid in full on the meeting's date, as for Queensland. The rule that a payment other than cash counts only if made at least 4 business days before the vote (s 89B) is not applied: business days stay not checked until \"business day\" and a public holiday source are decided (Matthew Wrigley's decision D14 of 29 Oct 2026, DECISIONS). Since stage 2, PR 8a-ii (29 Oct 2026) the rule applies to tiers 1 to 4 only, as tier 5 is exempt from s 89B (s 7A): an owner of a tier 5 owners corporation is not barred from voting online on a motion. Where the tier cannot be worked out, the owner is barred as in tiers 1 to 4 (a StrataVerze choice: it fails closed). At a meeting both are moot, as neither is counted. Confirm.",
     before: "Victorian meetings are run",
     kind: "LEGAL",
   },
@@ -3097,7 +3116,8 @@ export const FOR_REVIEW = [
   },
   {
     key: "MEETING_RULES_NOTICE_AND_MINUTES",
-    point: "Committee meeting notice (3 business days, s 109) is not checked, as the shape holds whole days only, and no deadline for ordinary minutes is checked, as none was found. Confirm.",
+    point:
+      "Committee meeting notice (at least 3 business days, or as the owners corporation decides, s 109) is not checked, and no deadline for ordinary minutes is checked, as none was found. Since stage 2, PR 8b-iii (29 Oct 2026), by Matthew Wrigley's StrataVerze decisions of 29 Oct 2026 (DECISIONS), each kept here for confirmation: (D12) a notice whose period StrataVerze cannot check is stored as not compliant with no period, with no database change (a notice with no period was always stored as compliant before), and shown as \"Notice period not checked\", never as met; the notice can still be issued. (D14) Business days (the s 109 committee notice and the 4 business days of s 89B) stay not checked until what \"business day\" means and a source of Victorian public holidays are decided: the notes do not define it, and counting Monday to Friday would overstate the business days around a public holiday, which is the unsafe direction. Whether a notice determined by the owners corporation (s 109) should be recorded per building is for the same decision. Confirm each.",
     before: "Victorian meetings are run",
     kind: "STRATAVERZE",
   },
@@ -3216,8 +3236,8 @@ export const FOR_REVIEW = [
  * StrataVerze choices this draft proposes. Matthew Wrigley has not reviewed
  * the draft, so `decidedBy` and `decidedOn` stay null on each, except the
  * payment order and the notice timing he decided on 28 Oct 2026, and the
- * quorum answer, interim resolutions and their grace before settling he
- * decided on 29 Oct 2026.
+ * quorum answer, interim resolutions, their grace before settling and the
+ * committee notice not checked he decided on 29 Oct 2026.
  */
 export const DECISIONS: readonly { decision: string; proposedOn: string; decidedBy: string | null; decidedOn: string | null }[] = [
   { decision: "Support unlimited owners corporations first; limited owners corporations are listed but blocked (OWNERS_CORPORATION_TYPE).", proposedOn: "2026-10-27", decidedBy: null, decidedOn: null },
@@ -3257,6 +3277,13 @@ export const DECISIONS: readonly { decision: string; proposedOn: string; decided
   {
     decision:
       "Interim resolutions settle after a grace (MEETING_RULES.pendingResolutions.settleAfterGraceDays, stage 2, PR 8b-i review M1): the daily run records an interim resolution as having taken effect at the end of its period (PERIOD_ENDED, or MEETING_NOT_HELD under s 78) only once 7 days have passed after the last day of the 29 days, or after the day the special general meeting must be held by. During those 7 days a petition or a special general meeting notice received within the 29 days can still be recorded (its day is still checked against the 29 days). The day it takes effect stays the day after the period ends. A confirmation or a petition is not delayed. Matthew Wrigley's StrataVerze decision of 29 Oct 2026, kept for legal confirmation (FOR_REVIEW MEETING_RULES_PENDING).",
+    proposedOn: "2026-10-29",
+    decidedBy: "Matthew Wrigley",
+    decidedOn: "2026-10-29",
+  },
+  {
+    decision:
+      "Notice not checked (MEETING_RULES.noticeNotCheckedFor, stage 2, PR 8b-iii): (D12) a notice whose period StrataVerze cannot check, a committee meeting's, is stored as not compliant with no period, with no database change, and shown as \"Notice period not checked\", never as met; (D14) business days (the s 109 committee notice of at least 3 business days and the 4 business days of s 89B for a payment other than cash) stay not checked until what \"business day\" means and a public holiday source are decided. Matthew Wrigley's StrataVerze decisions of 29 Oct 2026, kept for confirmation (FOR_REVIEW MEETING_RULES_NOTICE_AND_MINUTES).",
     proposedOn: "2026-10-29",
     decidedBy: "Matthew Wrigley",
     decidedOn: "2026-10-29",

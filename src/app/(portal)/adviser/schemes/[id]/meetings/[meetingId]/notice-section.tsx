@@ -19,7 +19,29 @@ export interface NoticeView {
   status: string;
   issuedAt: string;
   compliant: boolean;
+  /**
+   * Issued with its notice period not checked (stored as not compliant with
+   * no period, decision D12; VIC, ACT and WA stage 2, PR 8b-iii). Left out
+   * otherwise.
+   */
+  periodNotChecked?: true;
   recipients: NoticeRecipientView[];
+}
+
+/** The notice period check for the meeting as it stands, as the page gives it. */
+export interface NoticePeriodView {
+  requiredDays: number | null;
+  actualDays: number;
+  compliant: boolean;
+  /** The draft packs only: the resolutions on the agenda whose longer notice is not met, by name. */
+  shortFor?: string[];
+  /** The draft packs only: why this meeting type's notice period is not checked. */
+  notChecked?: string;
+}
+
+/** Names joined for a sentence: "A", "A and B", "A, B and C". */
+function listed(names: readonly string[]): string {
+  return names.length <= 1 ? names.join("") : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
 }
 
 export function NoticeSection({
@@ -40,7 +62,7 @@ export function NoticeSection({
   canIssue: boolean;
   agendaItemCount: number;
   recipientCount: number;
-  noticePeriod: { requiredDays: number | null; actualDays: number; compliant: boolean } | null;
+  noticePeriod: NoticePeriodView | null;
   notices: NoticeView[];
   /** The StrataVerze fee issuing this notice will attract, if any. */
   fee?: FeeView | null;
@@ -100,6 +122,17 @@ export function NoticeSection({
                   {noticePeriod.compliant
                     ? `The meeting is ${noticePeriod.actualDays} days away, which meets the ${noticePeriod.requiredDays}-day notice period.`
                     : `The meeting is only ${noticePeriod.actualDays} days away, short of the ${noticePeriod.requiredDays}-day notice period. You can still issue, but the notice will be flagged as short.`}
+                  {!noticePeriod.compliant && noticePeriod.shortFor && noticePeriod.shortFor.length > 0 && (
+                    <>
+                      {" "}
+                      {`The longer period is needed for the ${listed(noticePeriod.shortFor)} on the agenda, which cannot be recorded as resolved at the meeting unless the notice gives it.`}
+                    </>
+                  )}
+                </div>
+              )}
+              {noticePeriod?.notChecked && (
+                <div className="rounded-[var(--radius-card)] px-4 py-2.5 text-xs bg-amber-50 border border-amber-200 text-amber-800">
+                  {`Notice period not checked. ${noticePeriod.notChecked}. Check the notice period yourself before you issue the notice.`}
                 </div>
               )}
               <p className="text-sm text-ink-muted">
@@ -132,9 +165,12 @@ export function NoticeSection({
                   : "bg-amber-100 text-amber-800"
               }`}
             >
-              {current.compliant ? "Notice period met" : "Short notice"}
+              {current.periodNotChecked ? "Notice period not checked" : current.compliant ? "Notice period met" : "Short notice"}
             </span>
           </div>
+          {current.periodNotChecked && noticePeriod?.notChecked && (
+            <p className="text-xs text-ink-muted">{`${noticePeriod.notChecked}.`}</p>
+          )}
 
           <div>
             <h4 className="text-xs font-semibold uppercase tracking-wide text-ink-muted mb-2">

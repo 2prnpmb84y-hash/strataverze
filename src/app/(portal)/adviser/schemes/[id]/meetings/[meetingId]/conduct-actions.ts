@@ -35,7 +35,8 @@ import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { scheduleFor } from "@/lib/jurisdiction/building-data";
 import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
 import { dayIn, todayIn } from "@/lib/jurisdiction/time-zone";
-import type { MeetingRuleSet } from "@/lib/meetings/rules";
+import { categoryNoticeRefusal, type MeetingRuleSet, type ResolutionCategory } from "@/lib/meetings/rules";
+import { getLatestIssuedNotice } from "@/lib/queries/notice";
 import {
   DECIDED_LATER_ITEM_REFUSAL,
   PENDING_ITEM_REFUSAL,
@@ -161,6 +162,13 @@ export async function recordAgendaOutcomeAction(
     // Queensland read nothing more.
     const pendingStatus = ruleSet.pendingResolutions ? await pendingStatusForItem(itemId) : null;
     if (pendingStatus) return { error: pendingStatus === "PENDING" ? PENDING_ITEM_REFUSAL : DECIDED_LATER_ITEM_REFUSAL };
+    // A category needing a longer notice (the ACT's unanimous resolution, VIC, ACT and WA stage 2, PR 8b-iii, decision
+    // D13): resolved only where the latest notice issued is recorded as giving it. Read only where the pack gives the
+    // item's category a longer notice: NSW and Queensland read nothing more.
+    if (requestedOutcome === "RESOLVED" && ruleSet.categoryNoticeDays?.[item.resolutionCategory as ResolutionCategory]) {
+      const shortNotice = categoryNoticeRefusal(ruleSet, item.resolutionCategory, await getLatestIssuedNotice(meetingId));
+      if (shortNotice) return { error: shortNotice };
+    }
     // Queensland general meetings: the outcome is checked against the count
     // of the votes. A deferral needs no count, and a committee meeting is
     // decided by its members. NSW counts nothing here and goes on as before.

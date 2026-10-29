@@ -9,7 +9,7 @@ import { PLATFORM_TIME_ZONE, zoneOr } from "@/lib/jurisdiction/time-zone";
 import { recordMeetingEvent } from "./events";
 import {
   earliestCompliantMeetingDate,
-  validateNoticePeriod,
+  noticeCheck,
   type MeetingRuleSet,
   type MeetingType,
 } from "./rules";
@@ -92,9 +92,13 @@ export function validateMeetingSetup(
   }
 
   if (type && start && !Number.isNaN(start.getTime())) {
-    const v = validateNoticePeriod(ruleSet, type, now, start, zoneOr(input.timezone, PLATFORM_TIME_ZONE));
+    // No agenda yet, so only the meeting type's period (exactly validateNoticePeriod for NSW and Queensland).
+    const v = noticeCheck(ruleSet, type, [], now, start, zoneOr(input.timezone, PLATFORM_TIME_ZONE));
     if (!v.compliant && v.requiredDays != null) {
       warnings.startTime = `This is short of the ${v.requiredDays}-day notice period for this meeting type (currently ${v.actualDays} day(s) away).`;
+    } else if (v.notChecked) {
+      // A draft pack's meeting type whose notice StrataVerze cannot check (VIC, ACT and WA stage 2, PR 8b-iii).
+      warnings.startTime = `StrataVerze does not check the notice period for this meeting type. ${v.notChecked}.`;
     }
   }
 
@@ -105,6 +109,8 @@ export interface SetupPreviewRow {
   meetingType: MeetingType;
   noticeDays: number | null;
   earliestDate: string | null;
+  /** The draft packs only (PR 8b-iii): why this meeting type's notice period is not checked. */
+  notChecked?: string;
 }
 
 /** The earliest compliant meeting date for each meeting type, for the UI preview. */
@@ -114,10 +120,12 @@ export function buildSetupPreview(
 ): SetupPreviewRow[] {
   return MEETING_TYPES.map((t) => {
     const earliest = earliestCompliantMeetingDate(ruleSet, t, now);
+    const notChecked = ruleSet.noticeNotCheckedFor?.[t];
     return {
       meetingType: t,
       noticeDays: ruleSet.noticePeriods[t] ?? null,
       earliestDate: earliest ? earliest.toISOString() : null,
+      ...(notChecked ? { notChecked } : {}),
     };
   });
 }

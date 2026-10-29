@@ -89,6 +89,10 @@ function rowToRuleSet(row: RuleSetRow, seed: MeetingRuleSet): MeetingRuleSet {
   // 29 Oct 2026): the resolutions decided later and the reduced quorum answer. NSW and Queensland never have them.
   if (seed.pendingResolutions) ruleSet.pendingResolutions = seed.pendingResolutions;
   if (seed.reducedQuorumAttestation) ruleSet.reducedQuorumAttestation = seed.reducedQuorumAttestation;
+  // No column either, and only where the seed has them (the draft packs, VIC, ACT and WA stage 2, PR 8b-iii,
+  // 29 Oct 2026): the longer notice of some categories and the meeting types whose notice is not checked.
+  if (seed.categoryNoticeDays) ruleSet.categoryNoticeDays = seed.categoryNoticeDays;
+  if (seed.noticeNotCheckedFor) ruleSet.noticeNotCheckedFor = seed.noticeNotCheckedFor;
   return ruleSet;
 }
 

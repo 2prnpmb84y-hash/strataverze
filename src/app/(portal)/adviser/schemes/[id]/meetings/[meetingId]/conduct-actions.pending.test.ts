@@ -122,7 +122,7 @@ describe("Victoria s 97: an interim special resolution", () => {
       madeOn: "2026-11-02",
       windowClosesOn: "2026-12-01",
       noticeDueOn: "2026-11-16",
-      rulePack: "AU-VIC 2026.10.10",
+      rulePack: "AU-VIC 2026.10.11",
       recordedBy: "chair",
     });
     const snapshot = rows()[0].rule as { pending: { label: string; windowDays: number }; resolution: { basis: string } };
