@@ -565,16 +565,26 @@ describe("Western Australia pack (pending)", () => {
   const pack = PENDING_RULE_PACKS.WA;
   const wa = pack.rules;
 
-  it("is a draft, not yet signed off, with only the payment order, the notice timing and the 2-lot quorum decided", () => {
-    expect(pack.version).toBe("2026.10.7");
+  it("is a draft, not yet signed off, with only the payment order, the notice timing, the 2-lot quorum and the voting period decided", () => {
+    expect(pack.version).toBe("2026.10.8");
     expect(pack.status).toBe("DRAFT");
     expect(pack.reviewedOn).toBeNull();
-    expect(wa.DECISIONS).toHaveLength(3);
+    expect(wa.DECISIONS).toHaveLength(4);
     for (const d of wa.DECISIONS.slice(0, 2)) expect(d).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-28" });
     expect(wa.DECISIONS[1].decision).toContain("NOTICE_RULES");
     // Stage 2, PR 8a-ii: the 2-lot quorum (29 Oct 2026).
     expect(wa.DECISIONS[2]).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-29" });
     expect(wa.DECISIONS[2].decision).toContain("quorumNeedsEveryLot");
+    // Stage 2, PR 8b-ii: the voting period (29 Oct 2026), kept in FOR_REVIEW for legal confirmation.
+    expect(wa.DECISIONS[3]).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-29" });
+    for (const d of ["D1", "D2", "D8", "D9", "D10", "D11"]) expect(wa.DECISIONS[3].decision).toContain(`(${d})`);
+    for (const w of ["VOTING_PERIOD", "settleAfterGraceDays", "VOTES_AT_CLOSE", "quorumNeedsEveryLot"]) expect(wa.DECISIONS[3].decision).toContain(w);
+    expect(wa.MEETING_RULES.pendingResolutions?.VOTING_PERIOD?.settleAfterGraceDays).toBe(7);
+    const point = wa.FOR_REVIEW.find((p) => p.startsWith("Voting period (stage 2, PR 8b-ii"));
+    for (const d of ["D1", "D2", "D8", "D9"]) expect(point).toContain(`(${d}:`);
+    expect(point).toContain("7 days of grace");
+    // The point it replaces, that the meeting cannot record these resolutions, is gone.
+    expect(wa.FOR_REVIEW.some((p) => p.includes("Until the voting period is tracked"))).toBe(false);
     expect(wa.NOT_CONFIRMED.length).toBeGreaterThan(0);
     expect(wa.FOR_REVIEW.length).toBeGreaterThan(0);
   });

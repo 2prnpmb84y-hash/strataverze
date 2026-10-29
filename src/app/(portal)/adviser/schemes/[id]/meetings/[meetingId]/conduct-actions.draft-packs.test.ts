@@ -114,20 +114,69 @@ beforeEach(() => {
 });
 
 describe("Western Australia", () => {
-  it("refuses a special, without dissent or unanimous resolution as resolved or lost, before reading anything", async () => {
+  it("records the votes on a special, without dissent or unanimous resolution and keeps it open for its voting period (stage 2, PR 8b-ii)", async () => {
     for (const c of ["SPECIAL", "WITHOUT_DISSENT", "UNANIMOUS"]) {
-      for (const outcome of ["RESOLVED", "MOTION_LOST"]) {
-        at("WA", c);
-        sharedFake.reset({});
-        const r = await record(outcome, [v(1, "FOR")]);
-        expect(r.error).toMatch(/is decided when its 28-day voting period closes, which StrataVerze does not track yet\. It cannot be recorded as resolved or lost at the meeting\. It can be deferred\.$/);
-        expect(sharedFake.tables).toEqual({});
-      }
+      vi.clearAllMocks();
+      at("WA", c);
+      // Every lot for: still open, decided only when the period closes (D9).
+      const r = await record("RESOLVED", lots.slice(0, 8).map((l, i) => v(i + 1, "FOR")));
+      expect(r, c).toMatchObject({ ok: true, notice: expect.stringMatching(/^Recorded\. Its voting period is open until /) });
+      expect(r.notice).not.toMatch(/[;–—]/);
+      // Written in its own transaction, never as carried.
+      expect(updateAgendaItem).not.toHaveBeenCalled();
+      expect(sharedFake.table("AgendaItem")[0]).toMatchObject({ status: "OPEN", outcome: "OPEN" });
+      expect(sharedFake.table("PendingResolution")[0]).toMatchObject({ state: "WA", kind: "VOTING_PERIOD", category: c, takesEffectAs: c, status: "PENDING", noticeDueOn: null });
+      const event = payloadOf();
+      expect(event).toMatchObject({ actorId: "adviser" });
+      expect(event.payload).toMatchObject({ itemId: "i1", outcome: "OPEN", later: { kind: "VOTING_PERIOD", noticeDueOn: null }, evaluation: { result: "OPEN", laterKind: "VOTING_PERIOD" } });
     }
-    nothingWritten();
+  });
+
+  it("refuses Motion lost on an item whose voting period the votes open, writing nothing, and still defers", async () => {
     at("WA", "SPECIAL");
+    const r = await record("MOTION_LOST", [v(1, "AGAINST")]);
+    expect(r.error).toMatch(/^The votes at the meeting cannot decide this motion\. Its 28-day voting period is open, so it is decided when the period closes\./);
+    expect(r.error).toMatch(/Nothing was saved\. Record the votes to start its voting period, or check the votes entered\.$/);
+    expect(r.error).not.toMatch(/[;–—]/);
+    expect(sharedFake.table("PendingResolution")).toHaveLength(0);
+    nothingWritten();
     expect(await record("DEFERRED")).toEqual({ ok: true });
     expect(updateAgendaItem).toHaveBeenCalledWith("m1", "i1", { outcome: "DEFERRED", status: "DEFERRED" });
+  });
+
+  it("keeps the votes at the meeting with the row, a lot owing money not counted on a special resolution", async () => {
+    at("WA", "SPECIAL", { LevyNotice: [overdue] });
+    expect(await record("RESOLVED", [v(1, "FOR"), v(2, "FOR"), v(3, "AGAINST")])).toMatchObject({ ok: true });
+    const row = sharedFake.table("PendingResolution")[0];
+    const votes = row.meetingVotes as { counted: { lotId: string }[]; notCounted: { lotId: string }[]; tally: Record<string, unknown> };
+    expect(votes.counted.map((x) => x.lotId)).toEqual(["lot-1", "lot-3"]);
+    expect(votes.notCounted.map((x) => x.lotId)).toEqual(["lot-2"]);
+    expect(votes.tally).toMatchObject({ forCount: 1, againstCount: 1, forUE: 10, againstUE: 10, totalLots: 8, totalEntitlement: 80 });
+    expect((row.rule as { resolution: { votingPeriodDays: number } }).resolution.votingPeriodDays).toBe(28);
+  });
+
+  it("refuses an item already open, writing nothing more (D10)", async () => {
+    at("WA", "UNANIMOUS");
+    await record("RESOLVED", [v(1, "FOR")]);
+    state.item = { ...(state.item as object), status: "OPEN", outcome: "OPEN" };
+    vi.clearAllMocks();
+    for (const o of ["RESOLVED", "MOTION_LOST", "DEFERRED"]) expect((await record(o, [v(2, "FOR")])).error).toMatch(/^This item is decided later/);
+    nothingWritten();
+    expect(sharedFake.table("PendingResolution")).toHaveLength(1);
+  });
+
+  it("still applies the 2-lot quorum at the meeting before opening the voting period", async () => {
+    state.scheme = { ...scheme("WA"), totalLots: 2, lots: [lots[0], lots[1], lots[8]] };
+    state.item = { id: "i1", meetingId: "m1", resolutionCategory: "SPECIAL" };
+    sharedFake.reset({ LevyNotice: [], ElectronicBallot: [], ElectronicVote: [], AgendaItem: [{ id: "i1", meetingId: "m1", resolutionCategory: "SPECIAL", status: "PENDING", outcome: null }] });
+    const r = await record("RESOLVED", [v(1, "FOR")]);
+    expect(r.error).toMatch(/^In a 2-lot scheme the meeting has a quorum only with both lots present or represented/);
+    expect(sharedFake.table("PendingResolution")).toHaveLength(0);
+    // A lot owing money still makes up the quorum.
+    sharedFake.table("LevyNotice").push(overdue);
+    expect(await record("RESOLVED", [v(1, "FOR"), v(2, "FOR")])).toMatchObject({ ok: true });
+    const votes = sharedFake.table("PendingResolution")[0].meetingVotes as { counted: unknown[]; notCounted: unknown[] };
+    expect([votes.counted.length, votes.notCounted.length]).toEqual([1, 1]);
   });
 
   it("records an ordinary resolution from the count, the common property row left out", async () => {
@@ -384,7 +433,7 @@ describe("closing a ballot under the Western Australian pack, with the totals", 
     );
     sharedFake.reset({});
     expect(await closeBallotAction("s1", "m1")).toEqual({ ok: true });
-    // Only the ordinary resolution is written: the other three are undetermined, whatever the votes.
+    // Only the ordinary resolution is written: the other three stay open for their voting period, whatever the votes.
     expect(updateAgendaItem).toHaveBeenCalledTimes(1);
     expect(updateAgendaItem).toHaveBeenCalledWith("m1", "i4", { outcome: "RESOLVED", status: "CARRIED" });
     expect(recordMeetingEvent).toHaveBeenCalledWith({

@@ -157,6 +157,28 @@ export function countsVotesAtConduct(ruleSet: Pick<MeetingRuleSet, "resolutionCa
   return Object.values(ruleSet.resolutionCategories).some((rule) => !!rule && countedRule(rule));
 }
 
+/**
+ * The entitlement a draft rule's count weighs the votes by, where any of its
+ * tests (or its variants') measures entitlement, or null where none does
+ * (VIC, ACT and WA stage 2, PR 8b-ii: the late written votes counted when a
+ * voting period closes are weighed as the votes at the meeting were).
+ */
+export function countEntitlementUse(rule: ResolutionRule): EntitlementUse | null {
+  const needs = draftNeeds(rule, false);
+  return needs.entitlement ? needs.entitlementUse : null;
+}
+
+/**
+ * Whether an item's count leaves the vote open for a voting period the pack
+ * records (Western Australia, PR 8b-ii): its rule, or one of its variants,
+ * has a voting period, and the pack records VOTING_PERIOD.
+ */
+export function countOpensVotingPeriod(ruleSet: MeetingRuleSet, category: string | null | undefined): boolean {
+  if (!ruleSet.pendingResolutions?.VOTING_PERIOD || !isResolutionCategory(ruleSet, category)) return false;
+  const rule = ruleSet.resolutionCategories[category];
+  return !!rule && withVariants(rule).some((r) => r.votingPeriodDays != null);
+}
+
 /** Whether the count of an item needs the building's band of members (the ACT). */
 export function countNeedsMemberBand(ruleSet: MeetingRuleSet, category: string | null | undefined): boolean {
   if (!isResolutionCategory(ruleSet, category)) return false;
@@ -589,12 +611,16 @@ export function writtenVotesRefusal(ruleSet: MeetingRuleSet, category: string | 
  * Why the chair cannot record the outcome at the meeting, or null (VIC, ACT
  * and WA stage 2, PR 8a-i). A resolution whose vote stays open after the
  * meeting (Western Australia's special, without dissent and unanimous
- * resolutions) is decided when its voting period closes, which StrataVerze
- * does not track yet, so neither resolved nor lost can be recorded at the
- * meeting. Deferring it is still allowed.
+ * resolutions) is decided when its voting period closes, so neither resolved
+ * nor lost can be recorded at the meeting while StrataVerze does not track
+ * the period. Deferring it is still allowed. Null where the pack records the
+ * voting period (`pendingResolutions.VOTING_PERIOD`, PR 8b-ii): the votes at
+ * the meeting are then recorded and the item stays open until it closes.
  */
 export function laterDecisionRefusal(ruleSet: MeetingRuleSet, category: string | null | undefined, requested: Outcome): string | null {
   if (requested === "DEFERRED" || !isResolutionCategory(ruleSet, category)) return null;
+  // Where the pack records the voting period (Western Australia, PR 8b-ii): the votes are recorded and the item stays open.
+  if (ruleSet.pendingResolutions?.VOTING_PERIOD) return null;
   const days = ruleSet.resolutionCategories[category]?.votingPeriodDays;
   if (days == null) return null;
   const name = (ruleSet.resolutionLabels[category]?.full ?? category).toLowerCase();
@@ -728,6 +754,13 @@ export interface ConductVotingItem {
   unitsPresentAsked?: { label: string; help: string };
   /** After "no" to the quorum, whether a reduced quorum was present (the ACT, PR 8b-i). Left out otherwise. */
   reducedQuorumAsked?: { label: string; help: string };
+  /**
+   * Where the item's vote stays open for the voting period the pack records
+   * (Western Australia, PR 8b-ii): what the chair is told, from the pack. The
+   * screen then offers "Record the votes", which sends RESOLVED, in place of
+   * Resolved and Motion lost. Left out otherwise.
+   */
+  votingPeriod?: { help: string };
 }
 
 /** The conduct screen's voting view, or null where the meeting's votes are not counted at conduct (NSW, or a committee meeting). */
@@ -753,6 +786,7 @@ export function conductVotingView(
   const quorumWords = ruleSet.quorumAttestation;
   const unitsPresentWords = ruleSet.votesPresentAttestation;
   const reducedQuorumWords = ruleSet.reducedQuorumAttestation;
+  const votingPeriodRule = ruleSet.pendingResolutions?.VOTING_PERIOD;
   return {
     lots: rows
       .map((l) => ({ id: l.id, lotNumber: String(l.lotNumber) }))
@@ -766,6 +800,9 @@ export function conductVotingView(
           ...(quorumWords && countNeedsQuorum(ruleSet, i.resolutionCategory) ? { quorumAsked: words(quorumWords) } : {}),
           ...(unitsPresentWords && countNeedsVotesPresent(ruleSet, i.resolutionCategory) ? { unitsPresentAsked: words(unitsPresentWords) } : {}),
           ...(reducedQuorumWords && countNeedsReducedQuorum(ruleSet, i.resolutionCategory) ? { reducedQuorumAsked: words(reducedQuorumWords) } : {}),
+          ...(votingPeriodRule && countOpensVotingPeriod(ruleSet, i.resolutionCategory)
+            ? { votingPeriod: { help: votingPeriodRule.conductHelp ?? votingPeriodRule.help } }
+            : {}),
         },
       ]),
     ),

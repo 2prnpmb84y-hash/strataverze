@@ -46,15 +46,28 @@ const valueOf = (r: ReturnType<typeof count>) => {
 };
 
 describe("the voting period (s 121)", () => {
-  it("refuses a special, without dissent or unanimous resolution recorded as resolved or lost, and allows deferral", () => {
-    expect(laterDecisionRefusal(WA, "SPECIAL", "RESOLVED")).toBe(
+  /** The pack before it recorded the voting period (2026.10.7): the meeting could not record these resolutions. */
+  const UNTRACKED = { ...WA, pendingResolutions: undefined };
+
+  it("refuses nothing where the pack records the voting period (PR 8b-ii): the votes are recorded and the item stays open", () => {
+    for (const c of ["SPECIAL", "WITHOUT_DISSENT", "UNANIMOUS", "ORDINARY"]) {
+      for (const o of ["RESOLVED", "MOTION_LOST", "DEFERRED"] as const) expect(laterDecisionRefusal(WA, c, o), `${c} ${o}`).toBeNull();
+    }
+    expect(conductVotingView(WA, WA_RULES, LOTS, [{ id: "s", resolutionCategory: "SPECIAL" }, { id: "o", resolutionCategory: "ORDINARY" }], "AGM")?.items).toEqual({
+      s: { pollAllowed: false, proxiesAllowed: true, votingPeriod: { help: WA.pendingResolutions!.VOTING_PERIOD!.conductHelp } },
+      o: { pollAllowed: true, proxiesAllowed: true },
+    });
+  });
+
+  it("refuses a special, without dissent or unanimous resolution recorded as resolved or lost where the period is not tracked, and allows deferral", () => {
+    expect(laterDecisionRefusal(UNTRACKED, "SPECIAL", "RESOLVED")).toBe(
       "A special resolution is decided when its 28-day voting period closes, which StrataVerze does not track yet. It cannot be recorded as resolved or lost at the meeting. It can be deferred.",
     );
-    expect(laterDecisionRefusal(WA, "WITHOUT_DISSENT", "MOTION_LOST")).toMatch(/^A resolution without dissent is decided when its 28-day voting period closes/);
-    expect(laterDecisionRefusal(WA, "UNANIMOUS", "RESOLVED")).toMatch(/^A unanimous resolution is decided/);
-    for (const c of ["SPECIAL", "WITHOUT_DISSENT", "UNANIMOUS"]) expect(laterDecisionRefusal(WA, c, "DEFERRED")).toBeNull();
-    for (const c of ["ORDINARY", null, "BOGUS"]) expect(laterDecisionRefusal(WA, c, "RESOLVED")).toBeNull();
-    expect(laterDecisionRefusal(WA, "SPECIAL", "RESOLVED")).not.toMatch(/[;–—]|\(s \d/);
+    expect(laterDecisionRefusal(UNTRACKED, "WITHOUT_DISSENT", "MOTION_LOST")).toMatch(/^A resolution without dissent is decided when its 28-day voting period closes/);
+    expect(laterDecisionRefusal(UNTRACKED, "UNANIMOUS", "RESOLVED")).toMatch(/^A unanimous resolution is decided/);
+    for (const c of ["SPECIAL", "WITHOUT_DISSENT", "UNANIMOUS"]) expect(laterDecisionRefusal(UNTRACKED, c, "DEFERRED")).toBeNull();
+    for (const c of ["ORDINARY", null, "BOGUS"]) expect(laterDecisionRefusal(UNTRACKED, c, "RESOLVED")).toBeNull();
+    expect(laterDecisionRefusal(UNTRACKED, "SPECIAL", "RESOLVED")).not.toMatch(/[;–—]|\(s \d/);
   });
 
   it("is never refused under the NSW or Queensland rules", () => {

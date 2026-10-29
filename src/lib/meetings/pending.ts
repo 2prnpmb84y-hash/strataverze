@@ -28,16 +28,39 @@
  *   notice received within the window can still be recorded during the
  *   grace. A confirmation or a petition decides it at once.
  *
+ * Western Australia's voting period (STA s 121; PR 8b-ii, 29 Oct 2026), with
+ * Matthew Wrigley's decisions of the same day: D1 and D2 as above (a written
+ * vote can arrive up to and including the day the 28 days end, and it is
+ * decided the next day); D8: the late voters are the lots with nothing
+ * entered at the item, FOR or AGAINST only, a debt (s 120(2)) judged on the
+ * day the vote was received, and where such a lot exists the written notice
+ * of the outcome (s 121(2)) must be recorded as given before the close is
+ * decided; D9: decided only at the close, even if every lot has voted; the
+ * same 7 days of grace before the daily run records it, the day it is
+ * decided unchanged. At the close the votes at the meeting and the written
+ * votes are counted with the category's test as it was at the meeting
+ * (evaluateResolution with atClose): CARRIED or LOST, ended by
+ * VOTES_AT_CLOSE. A count that cannot be made, or a missing outcome notice,
+ * leaves it pending with what stops it.
+ *
  * Every day is a calendar day (YYYY-MM-DD) in the building's time zone. The
  * row's own snapshot of the pack's rule is used, never the pack as it is now,
  * so a later pack change never moves its dates or tests.
  */
 import { addDays } from "@/lib/levies/notice-plan";
 import { isCalendarDay } from "@/lib/jurisdiction/time-zone";
-import type { PendingKind, PendingResolutionRule, ResolutionRule } from "./rules";
+import {
+  evaluateResolution,
+  type PendingKind,
+  type PendingResolutionRule,
+  type ResolutionCategory,
+  type ResolutionOutcome,
+  type ResolutionRule,
+  type ResolutionTally,
+} from "./rules";
 
-/** The kinds this PR records (Western Australia's voting period is PR 8b-ii). */
-export const PENDING_KINDS: readonly PendingKind[] = ["INTERIM_SPECIAL", "INTERIM_NO_QUORUM", "REDUCED_QUORUM"];
+/** The kinds recorded (Western Australia's voting period from PR 8b-ii). */
+export const PENDING_KINDS: readonly PendingKind[] = ["INTERIM_SPECIAL", "INTERIM_NO_QUORUM", "REDUCED_QUORUM", "VOTING_PERIOD"];
 
 /** What a pending row stores of the rules at the meeting (`pending_resolutions.rule`). */
 export interface PendingRuleSnapshot {
@@ -93,10 +116,47 @@ export interface PendingFacts {
    * Undefined when not read, null when it is not found.
    */
   linkedMeeting?: { openedOn: string | null } | null;
+  /**
+   * Western Australia's voting period (PR 8b-ii): the votes to count at the
+   * close. Undefined when not read, null when they cannot be read.
+   */
+  votingPeriod?: VotingPeriodFacts | null;
+}
+
+/** A written vote received after the meeting (Western Australia s 121(2), PR 8b-ii). */
+export interface LateVote {
+  lotId: string;
+  vote: "FOR" | "AGAINST";
+  receivedOn: string;
+  /** The lot's entitlement by the schedule the count weighs votes by, where it weighs them; null where it cannot be read. */
+  entitlement: number | null;
+}
+
+/** What the close of a voting period counts (Western Australia, PR 8b-ii). */
+export interface VotingPeriodFacts {
+  /** The item's category. */
+  category: string;
+  /** The category's rule at the meeting (the row's snapshot), or null where it was not kept. */
+  resolution: ResolutionRule | null;
+  /** The meeting's tally as stored with the row, or null where it cannot be read. */
+  meetingTally: ResolutionTally | null;
+  /** The lots with a vote or an abstention entered at the item at the meeting, counted or not counted for money owed. */
+  enteredLotIds: readonly string[];
+  /** The written votes received since, one per lot. */
+  lateVotes: readonly LateVote[];
 }
 
 export type PendingDecision =
   | { settle: true; status: "CARRIED"; endedBy: "PERIOD_ENDED" | "MEETING_NOT_HELD"; effectiveOn: string }
+  | {
+      settle: true;
+      status: "CARRIED" | "LOST";
+      endedBy: "VOTES_AT_CLOSE";
+      effectiveOn: string | null;
+      /** The count at the close: the tally of the votes at the meeting and the written votes, and its evaluation. */
+      tally: ResolutionTally;
+      evaluation: ResolutionOutcome;
+    }
   | { settle: false; waitUntil: string | null; blocker: string | null };
 
 const wait = (until: string): PendingDecision => ({ settle: false, waitUntil: until, blocker: null });
@@ -143,6 +203,15 @@ const effectiveFrom = (row: PendingRowView, from: string) => (row.noticeGivenOn 
  */
 export function pendingDecision(row: PendingRowView, today: string, facts: PendingFacts = {}): PendingDecision {
   if (row.status !== "PENDING") return { settle: false, waitUntil: null, blocker: null };
+  // Western Australia's voting period (PR 8b-ii): decided only after it closes (D9), on the votes then, after the grace.
+  if (row.kind === "VOTING_PERIOD") {
+    const settleFrom = addDays(graceEndsOn(row.rule, row.windowClosesOn), 1);
+    if (today <= row.windowClosesOn) return wait(settleFrom);
+    const close = votingPeriodClose(row, facts.votingPeriod);
+    if ("blocker" in close) return blocked(close.blocker);
+    if (today < settleFrom) return wait(settleFrom);
+    return { settle: true, ...close };
+  }
   // Victoria s 78: once a special general meeting is called, it waits for that meeting.
   if (row.kind === "INTERIM_NO_QUORUM" && row.meetingNoticeGivenOn) {
     const heldBy = row.meetingHeldBy;
@@ -167,6 +236,109 @@ export function pendingDecision(row: PendingRowView, today: string, facts: Pendi
   if (notice) return blocked(notice);
   if (today < settleFrom) return wait(settleFrom);
   return { settle: true, status: "CARRIED", endedBy: "PERIOD_ENDED", effectiveOn: effectiveFrom(row, addDays(row.windowClosesOn, 1)) };
+}
+
+// ─── Western Australia's voting period (STA s 121; PR 8b-ii) ──────────────
+
+/**
+ * The lots with nothing entered at the item at the meeting (D8), by number:
+ * the lots of the scheme at the meeting less those with a vote or an
+ * abstention entered. Null where the number of lots was not kept.
+ */
+export function absentLotCount(facts: Pick<VotingPeriodFacts, "meetingTally" | "enteredLotIds">): number | null {
+  const total = facts.meetingTally?.totalLots;
+  if (total == null) return null;
+  return Math.max(0, total - new Set(facts.enteredLotIds).size);
+}
+
+/**
+ * The tally at the close: the meeting's tally with each written vote added,
+ * weighed by its lot's entitlement where the meeting's votes were. A count
+ * the written votes cannot be added to (a poll, the votes present, the lots
+ * entitled to vote), or a written vote whose entitlement is missing where it
+ * is needed, is refused: it fails closed.
+ */
+export function closeTally(meeting: ResolutionTally, late: readonly Pick<LateVote, "vote" | "entitlement">[]): { tally: ResolutionTally } | { error: string } {
+  if (meeting.poll || meeting.votesPresentCount != null || meeting.votesPresentEntitlement != null || meeting.eligibleLots != null) {
+    return { error: "The votes at the meeting were counted in a way the written votes cannot be added to, so it cannot be decided here." };
+  }
+  const tally: ResolutionTally = { ...meeting };
+  const weighs = meeting.forUE != null || meeting.againstUE != null;
+  for (const v of late) {
+    if (v.vote === "FOR") tally.forCount += 1;
+    else tally.againstCount += 1;
+    if (!weighs) continue;
+    if (v.entitlement == null) {
+      return { error: "The entitlement of a lot with a written vote is not recorded, so the votes cannot be counted. Record it in the building's lots." };
+    }
+    if (v.vote === "FOR") tally.forUE = (tally.forUE ?? 0) + v.entitlement;
+    else tally.againstUE = (tally.againstUE ?? 0) + v.entitlement;
+  }
+  if (tally.lotsRecorded != null) tally.lotsRecorded += late.length;
+  return { tally };
+}
+
+/** A voting period decided at its close: the decision without `settle`. */
+type CloseResult = Omit<Extract<PendingDecision, { endedBy: "VOTES_AT_CLOSE" }>, "settle">;
+
+/**
+ * The count when a voting period has closed (D8, D9): the outcome notice
+ * first, where the pack requires it and a lot had nothing entered at the
+ * meeting (or that cannot be told), then the votes at the meeting and the
+ * written votes, by the category's test as it was at the meeting. Carried
+ * takes effect the day after the close; lost has no day. What stops it
+ * otherwise is the blocker.
+ */
+export function votingPeriodClose(row: PendingRowView, facts: VotingPeriodFacts | null | undefined): CloseResult | { blocker: string } {
+  if (!facts || !facts.meetingTally || !facts.resolution) {
+    return { blocker: "The votes recorded at the meeting cannot be read, so it cannot be decided. Nothing is recorded until they are checked." };
+  }
+  const late = row.rule.lateVotes;
+  if (late?.outcomeNoticeRequired && !row.noticeGivenOn) {
+    const absent = absentLotCount(facts);
+    if (absent == null || absent > 0) {
+      return { blocker: `The ${late.noticeWords} is not recorded as given, so it cannot be decided. Record the day it was given.` };
+    }
+  }
+  const counted = closeTally(facts.meetingTally, facts.lateVotes);
+  if ("error" in counted) return { blocker: counted.error };
+  const category = facts.category as ResolutionCategory;
+  const evaluation = evaluateResolution({ resolutionCategories: { [category]: facts.resolution } }, category, counted.tally, "unit entitlement", { atClose: true });
+  if (evaluation.result) return { blocker: `The votes when its voting period closed cannot decide it. ${evaluation.reason}.` };
+  return evaluation.passed
+    ? { status: "CARRIED", endedBy: "VOTES_AT_CLOSE", effectiveOn: addDays(row.windowClosesOn, 1), tally: counted.tally, evaluation }
+    : { status: "LOST", endedBy: "VOTES_AT_CLOSE", effectiveOn: null, tally: counted.tally, evaluation };
+}
+
+/**
+ * Why a written vote received after the meeting cannot be recorded, or null
+ * (D8): only under a rule that takes them, FOR or AGAINST, from a lot of the
+ * building with nothing entered at the item and no written vote yet, received
+ * from the day it was made to the day the period closes, and never after
+ * today. A debt is judged by the caller, on the day it was received.
+ */
+export function lateVoteProblem(
+  row: PendingRowView,
+  c: {
+    lotId: string;
+    /** The lot's number, or null where it is not a lot of the building (common property is not a lot). */
+    lotNumber: string | null;
+    vote: string;
+    receivedOn: string;
+    today: string;
+    enteredLotIds: readonly string[];
+    lateLotIds: readonly string[];
+  },
+): string | null {
+  if (row.status !== "PENDING") return "This resolution is already decided. Nothing was saved.";
+  if (!row.rule.lateVotes) return "Written votes after the meeting are not taken on this resolution. Nothing was saved.";
+  if (c.vote !== "FOR" && c.vote !== "AGAINST") return "Choose For or Against. Nothing was saved.";
+  if (c.lotNumber == null) return "Choose a lot of this building. Nothing was saved.";
+  if (c.enteredLotIds.includes(c.lotId)) {
+    return `Lot ${c.lotNumber} had a vote or an abstention entered at the meeting, so it cannot vote again in writing. Nothing was saved.`;
+  }
+  if (c.lateLotIds.includes(c.lotId)) return `A written vote for lot ${c.lotNumber} is already recorded. Each lot votes once. Nothing was saved.`;
+  return dayProblem(c.receivedOn, row.madeOn, row.windowClosesOn, c.today, "the written vote was received");
 }
 
 /** Why a day an adviser records is refused, or null. `from` and `to` bound it (inclusive); it is never after today. */
@@ -266,6 +438,11 @@ const article = (text: string) => (/^[aeiou]/i.test(text) && !/^(?:unan|uni|use|
  * Plain words with no dashes or semicolons.
  */
 export function pendingRecordedNotice(rule: PendingResolutionRule, dates: PendingDates): string {
+  // Western Australia's voting period (PR 8b-ii): open until it closes, then decided on the votes then.
+  if (rule.lateVotes) {
+    const notice = rule.lateVotes.outcomeNoticeRequired ? ` Give the ${rule.lateVotes.noticeWords} and record the day it was given.` : "";
+    return `Recorded. Its voting period is open until ${formatDay(dates.windowClosesOn)}. It is decided as at ${formatDay(addDays(dates.windowClosesOn, 1))} on the votes at the meeting and the written votes received by then.${notice} Record each written vote under Decided later on this page.`;
+  }
   const name = rule.label.toLowerCase();
   const notice = dates.noticeDueOn ? ` Give the owners notice of it by ${formatDay(dates.noticeDueOn)} and record the day it was given.` : "";
   return `Recorded as ${article(name)}, decided later. It was made on ${formatDay(dates.madeOn)}.${notice} Unless it is stopped sooner, it takes effect on ${formatDay(addDays(dates.windowClosesOn, 1))} at the earliest. See Decided later on this page.`;
@@ -292,6 +469,10 @@ export const DECIDED_LATER_ITEM_REFUSAL =
 
 /** Why the chair cannot record as lost a count that makes the motion a resolution decided later. */
 export function laterLostRefusal(rule: PendingResolutionRule, reason: string): string {
+  // Western Australia's voting period (PR 8b-ii): neither carried nor lost at the meeting.
+  if (rule.lateVotes) {
+    return `The votes at the meeting cannot decide this motion. ${reason}. Nothing was saved. Record the votes to start its voting period, or check the votes entered.`;
+  }
   return `The votes recorded make this motion ${article(rule.label.toLowerCase())}, decided later, not lost. ${reason}. Nothing was saved. Record it as resolved to start its period, or check the votes entered.`;
 }
 
@@ -333,6 +514,14 @@ export interface PendingPanelItem {
   madeOn: string;
   windowClosesOn: string;
   today: string;
+  /** Where the notice recorded is not the usual one (Western Australia's outcome notice, PR 8b-ii): the question for its day. */
+  noticeLabel?: string;
+  /**
+   * Western Australia's written votes after the meeting (PR 8b-ii), while
+   * one can be recorded: who may vote and until when, and the lots that may.
+   * Left out otherwise.
+   */
+  lateVote?: { words: string; lots: { id: string; lotNumber: string }[] };
 }
 
 /**
@@ -354,6 +543,17 @@ function pendingStanding(row: PendingRowView): string {
     : `Pending. ${takesEffect} unless ${by} is recorded.`;
 }
 
+/**
+ * Where a voting period stands while it is open or in its grace (Western
+ * Australia, PR 8b-ii). Plain words with no dashes or semicolons.
+ */
+function votingStanding(row: PendingRowView): string {
+  const decidedOn = formatDay(addDays(row.windowClosesOn, 1));
+  const recordedOn = addDays(graceEndsOn(row.rule, row.windowClosesOn), 1);
+  const grace = recordedOn > addDays(row.windowClosesOn, 1) ? ` StrataVerze records the decision on ${formatDay(recordedOn)}, so a written vote received in time can still be recorded.` : "";
+  return `Voting is open until ${formatDay(row.windowClosesOn)}. It is decided as at ${decidedOn} on the votes at the meeting and the written votes received by then.${grace}`;
+}
+
 const lotWords = (numbers: readonly string[]) =>
   numbers.length > 1 ? `lots ${numbers.slice(0, -1).join(", ")} and ${numbers[numbers.length - 1]}` : `lot ${numbers[0] ?? ""}`;
 
@@ -370,12 +570,33 @@ export function pendingPanelItem(
     calledMeeting?: string | null;
     /** The meeting and motion that confirmed it or not, as named on the page. */
     confirmedBy?: string | null;
+    /** The building's lots (common property left out), for the written votes after the meeting (Western Australia, PR 8b-ii). */
+    lots?: readonly { id: string; lotNumber: string }[];
   },
 ): PendingPanelItem {
   const rule = row.rule;
   const status = (["CARRIED", "LOST"].includes(row.status) ? row.status : "PENDING") as PendingPanelItem["status"];
   const pending = status === "PENDING";
   const facts: string[] = [`Made on ${formatDay(row.madeOn)}.`, `Its period ends on ${formatDay(row.windowClosesOn)}.`];
+  // Western Australia's voting period (PR 8b-ii): the votes at the meeting, the outcome notice and the written votes since.
+  const voting = row.kind === "VOTING_PERIOD" ? ctx.facts?.votingPeriod : undefined;
+  const lateRule = row.kind === "VOTING_PERIOD" ? rule.lateVotes : undefined;
+  const absent = voting ? absentLotCount(voting) : null;
+  const noticeWanted = !!lateRule?.outcomeNoticeRequired && (absent == null || absent > 0);
+  if (row.kind === "VOTING_PERIOD") {
+    const t = voting?.meetingTally;
+    if (t) facts.push(`Votes at the meeting: ${t.forCount} for, ${t.againstCount} against${t.abstainCount ? `, ${t.abstainCount} abstaining` : ""}.`);
+    if (lateRule && row.noticeGivenOn) {
+      const after = row.noticeGivenOn > row.windowClosesOn ? ", after its voting period closed" : "";
+      facts.push(`The ${lateRule.noticeWords} was given on ${formatDay(row.noticeGivenOn)}${after}.`);
+    } else if (lateRule && noticeWanted) {
+      facts.push(`The ${lateRule.noticeWords} is not recorded yet.`);
+    }
+    const number = new Map((ctx.lots ?? []).map((l) => [l.id, l.lotNumber]));
+    for (const v of voting?.lateVotes ?? []) {
+      facts.push(`Lot ${number.get(v.lotId) ?? "?"} voted ${v.vote === "FOR" ? "for" : "against"} in writing, received on ${formatDay(v.receivedOn)}.`);
+    }
+  }
   if (row.noticeDueOn) {
     if (row.noticeGivenOn) {
       const late = row.noticeGivenOn > row.noticeDueOn;
@@ -402,6 +623,7 @@ export function pendingPanelItem(
       PERIOD_ENDED: "after its period ended",
       CONFIRMED: "when a later meeting confirmed it",
       MEETING_NOT_HELD: "because the special general meeting was not held in time",
+      VOTES_AT_CLOSE: "on the votes when its voting period closed",
     };
     const as = rule.takesEffectAs !== "SAME" ? ` as a ${rule.takesEffectAs.toLowerCase()} resolution` : "";
     standing = `Took effect${as} on ${row.effectiveOn ? formatDay(row.effectiveOn) : "a day not recorded"}, ${how[row.endedBy ?? ""] ?? "as recorded"}.`;
@@ -411,12 +633,16 @@ export function pendingPanelItem(
         ? "Stopped by a petition, so it is recorded as lost."
         : row.endedBy === "NOT_CONFIRMED"
           ? "Not confirmed at the special general meeting, so it is recorded as lost."
-          : "Recorded as lost.";
+          : row.endedBy === "VOTES_AT_CLOSE"
+            ? "Lost on the votes when its voting period closed."
+            : "Recorded as lost.";
   } else {
     const decision = pendingDecision(row, ctx.today, ctx.facts ?? {});
     if (!decision.settle && decision.blocker) {
-      standing = "Waiting for something to be recorded before it can take effect.";
+      standing = `Waiting for something to be recorded before it can ${row.kind === "VOTING_PERIOD" ? "be decided" : "take effect"}.`;
       blocker = decision.blocker;
+    } else if (row.kind === "VOTING_PERIOD") {
+      standing = votingStanding(row);
     } else if (row.kind === "INTERIM_NO_QUORUM" && row.meetingHeldBy) {
       standing =
         ctx.today <= row.meetingHeldBy
@@ -427,6 +653,9 @@ export function pendingPanelItem(
     }
   }
 
+  // The lots that may still vote in writing (D8): nothing entered at the meeting and no written vote yet.
+  const taken = new Set([...(voting?.enteredLotIds ?? []), ...(voting?.lateVotes ?? []).map((v) => v.lotId)]);
+  const lateLots = lateRule && voting && pending ? (ctx.lots ?? []).filter((l) => !taken.has(l.id)) : [];
   return {
     id: row.id,
     itemId: row.agendaItemId,
@@ -437,7 +666,7 @@ export function pendingPanelItem(
     standing,
     facts,
     blocker,
-    canRecordNotice: pending && rule.noticeWithinDays != null && !row.noticeGivenOn,
+    canRecordNotice: pending && !row.noticeGivenOn && (rule.noticeWithinDays != null || noticeWanted),
     petitionWords: pending && rule.petition ? rule.petition.words : null,
     meetingNoticeWords: pending && row.kind === "INTERIM_NO_QUORUM" && rule.meetingNotice && !row.meetingNoticeGivenOn ? rule.meetingNotice.words : null,
     canConfirm:
@@ -445,5 +674,7 @@ export function pendingPanelItem(
     madeOn: row.madeOn,
     windowClosesOn: row.windowClosesOn,
     today: ctx.today,
+    ...(lateRule ? { noticeLabel: lateRule.noticeLabel } : {}),
+    ...(lateRule && lateLots.length > 0 ? { lateVote: { words: lateRule.words, lots: lateLots.map((l) => ({ id: l.id, lotNumber: l.lotNumber })) } } : {}),
   };
 }

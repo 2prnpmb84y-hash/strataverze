@@ -253,7 +253,8 @@ async function recordCountedOutcome(p: {
   // Decided on written votes, which are not recorded yet: refused before anything is read.
   const written = writtenVotesRefusal(p.ruleSet, p.item.resolutionCategory, p.requestedOutcome);
   if (written) return { error: written };
-  // Decided when its voting period closes (Western Australia): refused before anything is read.
+  // Decided when its voting period closes (Western Australia): refused before anything is read, unless the pack records
+  // the voting period (PR 8b-ii), when the votes at the meeting are counted and the item stays open.
   const later = laterDecisionRefusal(p.ruleSet, p.item.resolutionCategory, p.requestedOutcome);
   if (later) return { error: later };
   const { rules } = rulesForState(p.scheme.state);
@@ -396,11 +397,16 @@ async function recordCountedOutcome(p: {
 /**
  * Record a count that gives a resolution decided later (VIC, ACT and WA
  * stage 2, PR 8b-i, 29 Oct 2026): Victoria's interim special resolution and
- * interim resolution without a quorum, the ACT's reduced quorum decision.
- * The chair must have asked for Resolved: a count that makes the motion one
- * of these is not lost. The pending row, the agenda item stored as INTERIM
- * and the event (with the dates) are written in one transaction, and the
- * chair is told the dates.
+ * interim resolution without a quorum, the ACT's reduced quorum decision,
+ * and (PR 8b-ii) Western Australia's special, without dissent and unanimous
+ * resolutions, whose voting period stays open after the meeting (the
+ * conduct screen's "Record the votes" sends Resolved). The chair must have
+ * asked for Resolved: a count that makes the motion one of these is not
+ * lost. The pending row, the agenda item stored as INTERIM (OPEN for a
+ * voting period) and the event (with the dates) are written in one
+ * transaction, and the chair is told the dates. The votes at the meeting,
+ * those counted and those not counted for money owed, are kept with the row
+ * for the count at the close.
  */
 async function recordPendingOutcome(
   p: Parameters<typeof recordCountedOutcome>[0],
@@ -441,6 +447,7 @@ async function recordPendingOutcome(
     rule: { pending: rule, resolution: p.ruleSet.resolutionCategories[category as keyof MeetingRuleSet["resolutionCategories"]] ?? null },
     rulePack: c.rulesLabel,
     actorId: p.actorId,
+    ...(c.later.stored === "OPEN" ? { stored: "OPEN" as const } : {}),
     eventPayload: {
       itemId: p.item.id,
       outcome: c.later.stored,
