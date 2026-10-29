@@ -112,6 +112,8 @@ type StepRequirement = {
   forum?: { options: { key: string; words: string }[]; notes: string[] };
   /** The charge step (PR 9b): the charge's name, who may declare it, where it is lodged, the building's day, the meetings to choose from. */
   charge?: { words: string; declaredWords: string; lodgedWith: string; today: string; meetings: { id: string; label: string; motions: { id: string; label: string }[] }[] };
+  /** The final notice given outside StrataVerze (PR 9c): its name and the building's day (the latest day given). */
+  finalNotice?: { words: string; today: string };
   recorded?: string[];
 };
 
@@ -751,6 +753,7 @@ function WizardStepContent({
   const [authorityItemId, setAuthorityItemId] = useState("");
   const [forum, setForum] = useState("");
   const [charge, setCharge] = useState<ChargeForm>(NO_CHARGE_CHOICE);
+  const [finalNoticeGivenOn, setFinalNoticeGivenOn] = useState("");
   const feeConfirmation = useFeeConfirmation(fee);
 
   const isCompleted = step.status === "COMPLETED";
@@ -779,6 +782,7 @@ function WizardStepContent({
         formData.set("chargeLodgedOn", charge.lodgedOn);
       }
     }
+    if (requirement?.finalNotice) formData.set("finalNoticeGivenOn", finalNoticeGivenOn);
 
     startTransition(async () => {
       const result = await completeDebtRecoveryStepAction(
@@ -1010,6 +1014,8 @@ function WizardStepContent({
                 onForum={setForum}
                 charge={charge}
                 onCharge={(patch) => setCharge((c) => ({ ...c, ...patch, ...(patch.meetingId !== undefined ? { itemId: "" } : {}) }))}
+                finalNoticeGivenOn={finalNoticeGivenOn}
+                onFinalNoticeGivenOn={setFinalNoticeGivenOn}
               />
             )}
             <FeeDisclosure
@@ -1066,6 +1072,8 @@ function RequirementFields({
   onForum,
   charge,
   onCharge,
+  finalNoticeGivenOn,
+  onFinalNoticeGivenOn,
 }: {
   requirement: StepRequirement;
   stepId: string;
@@ -1077,6 +1085,8 @@ function RequirementFields({
   onForum: (key: string) => void;
   charge: ChargeForm;
   onCharge: (patch: Partial<ChargeForm>) => void;
+  finalNoticeGivenOn: string;
+  onFinalNoticeGivenOn: (day: string) => void;
 }) {
   const select =
     "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-turquoise focus:outline-none focus:ring-1 focus:ring-turquoise";
@@ -1152,6 +1162,21 @@ function RequirementFields({
         </div>
       )}
       {requirement.charge && <ChargeFields charge={requirement.charge} stepId={stepId} value={charge} onChange={onCharge} select={select} />}
+      {requirement.finalNotice && (
+        <div>
+          <label htmlFor={`final-notice-given-${stepId}`} className="mb-1 block text-sm font-medium text-gray-700">
+            Day {requirement.finalNotice.words} was given (outside StrataVerze)
+          </label>
+          <input
+            id={`final-notice-given-${stepId}`}
+            type="date"
+            max={requirement.finalNotice.today}
+            value={finalNoticeGivenOn}
+            onChange={(e) => onFinalNoticeGivenOn(e.target.value)}
+            className={select}
+          />
+        </div>
+      )}
     </div>
   );
 }

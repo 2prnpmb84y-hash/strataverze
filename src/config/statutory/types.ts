@@ -913,17 +913,41 @@ export interface DebtRecoveryRules {
   forum?: DebtForumRule;
   /** Who in the owners corporation may decide to start proceedings, recorded when its step is completed. */
   authorityToSue?: AuthorityToSueRule;
-  /** Steps that may be completed only some days after an earlier event (Victoria, PR 9c). Not applied in PR 9a: refused. */
+  /**
+   * Steps that may be completed only some days after an earlier event (Victoria ss 32(1), 163(2)), applied since
+   * PR 9c: a step is refused before its earliest day, and once a dated rule that would pause it may have started.
+   */
   stepTiming?: readonly DebtStepTimingRule[];
-  /** A final notice the law prescribes (Victoria s 32, PR 9c). Not applied in PR 9a: refused. */
+  /**
+   * A final notice the law prescribes (Victoria s 32), applied since PR 9c: StrataVerze never produces it yet, and
+   * one given outside StrataVerze is recorded only where the pack says it may be.
+   */
   finalNotice?: StatutoryFinalNoticeRule;
   /**
    * A statutory charge over the lot (the ACT), applied since PR 9b: recorded when its step is completed,
    * revoked by a later record, and a case with a charge not revoked cannot be closed.
    */
   statutoryCharge?: StatutoryChargeRule;
-  /** The buildings a case may be opened for (Victoria tiers 1 to 4, PR 9c). Not applied in PR 9a: refused. */
-  appliesWhen?: SelectorCondition;
+  /**
+   * The buildings a case may be opened for (Victoria tiers 1 to 4), applied since PR 9c: opening a case is refused
+   * where the condition does not hold or cannot be worked out.
+   */
+  appliesWhen?: DebtRecoveryAppliesWhen;
+}
+
+/**
+ * The buildings debt recovery under the pack's rules applies to (stage 2, PR 9c). `when` is read with
+ * conditionHolds (src/lib/jurisdiction/building-selectors.ts) when a case is opened: false refuses with
+ * `refusal`, and unknown refuses with `unknown`.
+ */
+export interface DebtRecoveryAppliesWhen {
+  when: SelectorCondition;
+  /** Why a case cannot be opened for a building the condition does not hold for. */
+  refusal: string;
+  /** Why a case cannot be opened where the condition cannot be worked out. */
+  unknown: string;
+  source: string;
+  status: RuleStatus;
 }
 
 /** A place a debt claim may be brought (stage 2, PR 9a). */
@@ -978,8 +1002,12 @@ export interface DebtAuthorityResolution {
  * `recordedAtStep` is completed, and the legal referral needs it. `accepted`
  * with no value refuses every referral. `managerMayDecide` false: the
  * adviser (strata manager) can never decide alone; the engine always needs a
- * recorded resolution. `amountThreshold` (Victoria s 18(2), PR 9c) is refused
- * in PR 9a.
+ * recorded resolution. `amountThreshold` (Victoria s 18(2), applied since
+ * PR 9c): a claim of no more than `multiple` times the comparator's amount
+ * may be decided by `upTo` (or `above`), a larger one only by `above`. With
+ * no comparator value, or no amount for it, only `above` is accepted; and
+ * where the amount owing when proceedings are started is more than the amount
+ * recorded with the decision, the step is refused.
  */
 export interface AuthorityToSueRule {
   recordedAtStep: string;
@@ -987,6 +1015,8 @@ export interface AuthorityToSueRule {
   amountThreshold?: {
     multiple: number;
     comparator: CheckedValue<"SCHEME_CURRENT_ANNUAL_FEES" | "LOT_CURRENT_ANNUAL_FEES">;
+    /** How the screens say the threshold: "twice the total amount of the current annual fees". */
+    words: string;
     upTo: DebtAuthorityResolution;
     above: DebtAuthorityResolution;
     source: string;
@@ -996,24 +1026,41 @@ export interface AuthorityToSueRule {
   status: RuleStatus;
 }
 
-/** A step that may be completed only `days` after an earlier event (Victoria ss 32(1), 163(2), PR 9c). */
+/**
+ * A step that may be completed only `days` after an earlier event (Victoria ss 32(1), 163(2), applied since PR 9c).
+ * EACH_OVERDUE_NOTICE_ISSUED: after the day each of the lot's overdue notices was issued (so the latest), only notices
+ * issued under the building's pack counting (takeover notices and others refuse). STEP_NOTICE_SENT: after the day the
+ * pack's final notice was recorded as given on the case (`stepType` must be the final notice's step).
+ */
 export interface DebtStepTimingRule {
   stepType: string;
   after: { kind: "EACH_OVERDUE_NOTICE_ISSUED" } | { kind: "STEP_NOTICE_SENT"; stepType: string };
   days: CheckedValue<number>;
   /** DAY_AFTER_PERIOD: the step may be completed from day N + 1 after the recorded day. */
   earliest: CheckedValue<"DAY_AFTER_PERIOD">;
-  /** The forums the timing applies to; all where left out. */
+  /** The forums the timing applies to (only on the step that records the forum); all where left out. */
   forums?: readonly string[];
-  /** A DATED_RULES key whose commencement pauses the step. */
+  /**
+   * A DATED_RULES key whose start would pause the step. Once any of its values is recorded as in force or commenced
+   * on or before the building's day, or its fixed or latest start date is on or before it, the step is refused: the
+   * pause is not supported yet. A key the pack does not hold refuses too.
+   */
   pausedBy?: string;
+  /** How the screens say the period: "after the fees are unpaid 28 days after the fee notice". */
+  words: string;
   source: string;
   status: RuleStatus;
 }
 
-/** A final notice the law prescribes (Victoria s 32, PR 9c). */
+/**
+ * A final notice the law prescribes (Victoria s 32, applied since PR 9c). StrataVerze never produces it yet (it has
+ * no renderer for an approved form), so completing its step is refused unless `givenOutsideMayBeRecorded` has the
+ * value true, when the day a notice given outside StrataVerze was given is recorded (FINAL_NOTICE_GIVEN).
+ */
 export interface StatutoryFinalNoticeRule {
   stepType: string;
+  /** How the screens name it ("the final fee notice"). */
+  words: string;
   noticeType: "FINAL_FEE_NOTICE";
   contents: readonly { key: "PAY_IMMEDIATELY" | "INTEREST_TO_DATE_AND_DAILY" | "PART_11_ACTION"; words: string; status: RuleStatus; source: string }[];
   form: NoticeFormRule;

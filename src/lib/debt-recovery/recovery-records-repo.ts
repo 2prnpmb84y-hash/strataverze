@@ -1,12 +1,14 @@
 /**
  * Reading and writing debt_recovery_records (VIC, ACT and WA stage 2, PR 9a,
- * migration 20261125; the ACT statutory charge and its revocation, PR 9b). Only called for a pack with the recovery gates
+ * migration 20261125; the ACT statutory charge and its revocation, PR 9b; the
+ * Victorian final notice given, PR 9c). Only called for a pack with the recovery gates
  * (recoveryGatesApply), so an NSW or Queensland case never reads or writes
  * the table.
  */
 import type { Numeric } from "@prisma/orm-postgres/target/codec-types";
+import type { StatutoryRules } from "@/config/statutory";
 import { db } from "@/prisma/db";
-import type { RecordedRecoveryFacts, RecoveryRecordToWrite } from "./recovery-gates";
+import type { RecordedRecoveryFacts, RecoveryRecordToWrite, TimingNotice } from "./recovery-gates";
 
 type Orm = typeof db.orm;
 
@@ -40,6 +42,26 @@ export function recordedFacts(rows: readonly Pick<RecoveryRecordRow, "kind" | "f
 }
 
 /**
+ * What the case records, for the gates under the building's pack (PR 9c):
+ * recordedFacts, and for a pack with a final notice the day it was last
+ * recorded as given, and for a pack with an amount threshold the amount owing
+ * last recorded with the decision to start proceedings. Each only where the
+ * pack has the rule, so the facts for any other pack are recordedFacts's.
+ */
+export function recordedFactsFor(
+  rules: Pick<StatutoryRules, "DEBT_RECOVERY">,
+  rows: readonly Pick<RecoveryRecordRow, "kind" | "forum" | "decidedOn" | "amount">[],
+): RecordedRecoveryFacts {
+  const r = rules.DEBT_RECOVERY;
+  const last = (kind: string) => [...rows].reverse().find((x) => x.kind === kind);
+  return {
+    ...recordedFacts(rows),
+    ...(r?.finalNotice ? { finalNoticeGivenOn: last("FINAL_NOTICE_GIVEN")?.decidedOn ?? null } : {}),
+    ...(r?.authorityToSue?.amountThreshold ? { authorisedAmount: last("AUTHORITY_TO_SUE")?.amount ?? null } : {}),
+  };
+}
+
+/**
  * The lot's amount owing now, as opening a case works it out (the overdue
  * notices' balances plus their late charge), to two decimals. Throws when
  * the notices cannot be read, so a failed read is never "nothing owing".
@@ -53,6 +75,28 @@ export async function currentAmountOwing(schemeId: string, lotId: string, orm: O
     .all();
   const total = notices.reduce((sum, n) => sum + Number(n.balanceOutstanding) + Number(n.interestCharged || 0), 0);
   return total.toFixed(2);
+}
+
+/**
+ * The lot's overdue notices as a step counted from their issue days reads
+ * them (PR 9c): the number, the day issued in the building's zone `tz`, the
+ * pack it was issued under and whether it was brought across at takeover.
+ * Throws when they cannot be read, so a failed read is never "none overdue".
+ */
+export async function overdueNoticesForTiming(schemeId: string, lotId: string, tz: string, orm: Orm = db.orm): Promise<TimingNotice[]> {
+  const { storedDayIn } = await import("@/lib/jurisdiction/time-zone");
+  const notices = await orm.public.LevyNotice
+    .where((n) => n.schemeId.eq(schemeId))
+    .where((n) => n.lotId.eq(lotId))
+    .where((n) => n.status.eq("OVERDUE"))
+    .limit(5000)
+    .all();
+  return notices.map((n) => ({
+    number: String(n.noticeNumber ?? n.id),
+    issuedOn: n.issuedAt ? storedDayIn(tz, n.issuedAt) || null : null,
+    rulePack: n.rulePack == null ? null : String(n.rulePack),
+    takeover: n.migrationBatchId != null,
+  }));
 }
 
 /** Write the step's records, in the step's transaction (`orm` is the transaction's). */

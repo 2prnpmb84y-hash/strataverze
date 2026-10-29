@@ -50,8 +50,16 @@ import {
   type AuthorityFact,
   type ChargeChoice,
   type RecoveryRecordToWrite,
+  type TimingNotice,
 } from "@/lib/debt-recovery/recovery-gates";
-import { createRecoveryRecords, currentAmountOwing, readRecoveryRecords, recordedFacts } from "@/lib/debt-recovery/recovery-records-repo";
+import {
+  createRecoveryRecords,
+  currentAmountOwing,
+  overdueNoticesForTiming,
+  readRecoveryRecords,
+  recordedFacts,
+  recordedFactsFor,
+} from "@/lib/debt-recovery/recovery-records-repo";
 import { auDate } from "@/lib/onboarding/property-onboarding";
 
 type ActionResult = { error?: string; success?: boolean; id?: string };
@@ -138,7 +146,11 @@ export async function initiateDebtRecoveryAction(
     const steps = needRule(rules, "DEBT_RECOVERY_STEPS");
     // The draft packs' recovery rules, before anything is written: refused where
     // StrataVerze cannot apply them. Null at once for NSW and Queensland.
-    const gate = recoveryGateProblem(rules, { action: "INITIATE" });
+    // Where the pack says which buildings they apply to (Victoria's tiers 1 to
+    // 4, PR 9c), the building is read and the condition worked out; nothing is
+    // read for any other pack.
+    const appliesWhen = rules.DEBT_RECOVERY?.appliesWhen;
+    const gate = recoveryGateProblem(rules, { action: "INITIATE", ...(appliesWhen ? { applies: await recoveryAppliesTo(rules, schemeId) } : {}) });
     if (gate) return { error: gate };
     const caseNumber = await generateCaseNumber(schemeId);
 
@@ -347,7 +359,7 @@ export async function completeDebtRecoveryStepAction(
     // Queensland, which have none.
     let records: RecoveryRecordToWrite[] = [];
     if (recoveryGatesApply(rules)) {
-      const checked = await checkRecoveryStep(rules, { schemeId, caseId, lotId: caseRow.lotId, openedAt: caseRow.createdAt, stepType: step.stepType, formData });
+      const checked = await checkRecoveryStep(rules, { schemeId, caseId, lotId: caseRow.lotId, openedAt: caseRow.createdAt, stepType: step.stepType, formData, packCode: pack.code });
       if ("error" in checked) return { error: checked.error };
       records = checked.records;
     }
@@ -577,14 +589,35 @@ async function rulesForCaseLabel(label: string | null | undefined, schemeId: str
 }
 
 /**
+ * Whether the pack's appliesWhen holds for the building (PR 9c): true or
+ * false, or null where it cannot be worked out (no building, a fact missing,
+ * or a read that failed), which the gate refuses.
+ */
+async function recoveryAppliesTo(rules: StatutoryRules, schemeId: string): Promise<boolean | null> {
+  const appliesWhen = rules.DEBT_RECOVERY?.appliesWhen;
+  if (!appliesWhen || typeof appliesWhen.when !== "object" || appliesWhen.when == null) return null;
+  try {
+    const { selectorBuildingFor } = await import("@/lib/queries/building-selectors");
+    const { conditionHolds } = await import("@/lib/jurisdiction/building-selectors");
+    const building = await selectorBuildingFor(schemeId);
+    return building ? conditionHolds(rules, appliesWhen.when, building).holds : null;
+  } catch (err) {
+    logError("Failed to work out whether the recovery rules apply to the building:", err);
+    return null;
+  }
+}
+
+/**
  * What completing a step under a draft pack's recovery rules records, or why
  * it is refused (nothing written): the chosen resolution (authorityResolution)
  * and forum from the form, against the case's records and steps and the
- * building's day.
+ * building's day. Since PR 9c also: the day a final notice given outside
+ * StrataVerze was given, the lot's overdue notices for a step counted from
+ * their issue days, and the amount owing for a pack with an amount threshold.
  */
 async function checkRecoveryStep(
   rules: StatutoryRules,
-  input: { schemeId: string; caseId: string; lotId: string; openedAt: unknown; stepType: string; formData: FormData },
+  input: { schemeId: string; caseId: string; lotId: string; openedAt: unknown; stepType: string; formData: FormData; packCode: string },
 ): Promise<{ error: string } | { records: RecoveryRecordToWrite[] }> {
   const needs = recoveryStepNeeds(rules, input.stepType);
   if (needs && "problem" in needs) return { error: needs.problem };
@@ -623,8 +656,12 @@ async function checkRecoveryStep(
   // The day the case was opened, in the building's zone: a decision relied on must be on or after it (review L4).
   const caseOpenedOn = input.openedAt ? storedDayIn(tz, input.openedAt) || null : null;
   // The amount owing now, worked out as opening a case does (the lot's overdue notices, with their late charge; review L3).
+  // With an amount threshold (PR 9c) it is also needed where proceedings are recorded, to compare with the decision's.
+  const recovery = rules.DEBT_RECOVERY;
+  const threshold = !!recovery?.authorityToSue?.amountThreshold;
+  const proceedingsStep = threshold && input.stepType === (recovery?.forum?.recordedAtStep ?? "PROCEEDINGS");
   let amountOwing: string | null = null;
-  if (needs?.authority && authority?.problem === null) {
+  if ((needs?.authority && authority?.problem === null) || proceedingsStep) {
     try {
       amountOwing = await currentAmountOwing(input.schemeId, input.lotId);
     } catch (err) {
@@ -632,7 +669,21 @@ async function checkRecoveryStep(
       return { error: "Could not work out the amount owing. Nothing was saved." };
     }
   }
-  const recorded = recordedFacts(rows);
+  // A step counted from the lot's overdue notices' issue days (PR 9c): the notices, read only for such a step.
+  const countsFromNotices = (recovery?.stepTiming ?? []).some((t) => t.stepType === input.stepType && t.after.kind === "EACH_OVERDUE_NOTICE_ISSUED");
+  let notices: TimingNotice[] | undefined;
+  if (countsFromNotices) {
+    try {
+      notices = await overdueNoticesForTiming(input.schemeId, input.lotId, tz);
+    } catch (err) {
+      logError("Failed to read the lot's overdue notices:", err);
+      return { error: "Could not check the lot's notices. Nothing was saved." };
+    }
+  }
+  // The day a final notice given outside StrataVerze was given (PR 9c), where the pack lets one be recorded.
+  const finalNoticeGivenOn = needs?.finalNotice ? text("finalNoticeGivenOn") : null;
+  // The facts recorded: for a pack with a final notice or an amount threshold, also the day given and the amount decided for.
+  const recorded = recordedFactsFor(rules, rows);
   const gate = recoveryGateProblem(rules, {
     action: "COMPLETE_STEP",
     stepType: input.stepType,
@@ -646,9 +697,24 @@ async function checkRecoveryStep(
     caseOpenedOn,
     labels: rules.DEBT_RECOVERY_STEP_LABELS,
     ...(needs?.charge ? { charge } : {}),
+    // PR 9c, each only where the pack has the rule: the final notice's day, the notices and the amounts.
+    ...(needs?.finalNotice ? { finalNoticeGivenOn } : {}),
+    ...(countsFromNotices ? { notices, packCode: input.packCode } : {}),
+    // StrataVerze does not work out the comparator's amount (the current annual fees) yet, so none is passed.
+    ...(threshold ? { amountOwing, comparatorCents: null } : {}),
   });
   if (gate) return { error: gate };
-  return { records: recoveryRecordsToWrite(rules, { stepType: input.stepType, authority, forum, today, amountOwing: amountOwing ?? "0.00", ...(needs?.charge ? { charge } : {}) }) };
+  return {
+    records: recoveryRecordsToWrite(rules, {
+      stepType: input.stepType,
+      authority,
+      forum,
+      today,
+      amountOwing: amountOwing ?? "0.00",
+      ...(needs?.charge ? { charge } : {}),
+      ...(needs?.finalNotice ? { finalNoticeGivenOn } : {}),
+    }),
+  };
 }
 
 // ─── Record Instalment Payment ──────────────────────────────────
