@@ -253,9 +253,15 @@ describe("1 or 2 members (ss 3.15(2), 3.16(3), 3.18(2); Matthew Wrigley's decisi
     expect(decideSmall("ORDINARY", small("ORDINARY", votes([2], [1])), "MOTION_LOST").refused).toBeUndefined();
   });
 
-  it("still needs the quorum answer (everyone entitled to vote present, s 3.12), and refuses a no", () => {
+  it("still needs the quorum answer (everyone entitled to vote present, s 3.12), and refuses a no in the pack's words: the meeting is adjourned, not decided later", () => {
     expect(decideSmall("ORDINARY", small("ORDINARY", votes([1, 2]), { quorumPresent: null })).refused).toMatch(/quorum for this item is not recorded/);
-    expect(decideSmall("ORDINARY", small("ORDINARY", votes([1, 2]), { quorumPresent: false })).refused).toMatch(/so it is decided later/);
+    for (const c of ["ORDINARY", "SPECIAL", "UNANIMOUS"]) {
+      const r = decideSmall(c, small(c, votes([1, 2]), { quorumPresent: false, unitsPresent: 2 }));
+      expect(r.refused, c).toMatch(/^The votes recorded cannot decide this motion\. With 1 or 2 members the meeting has a quorum only when everyone entitled to vote is present, and without it the meeting is adjourned \(.+ sch 3 s 3\.12\), so the votes cannot decide this motion\. Nothing was saved\. The item can be deferred\.$/);
+      expect(r.refused, c).not.toMatch(/decided later/);
+    }
+    // With 3 or more members a no is still a reduced quorum, decided later.
+    expect(decideSmall("ORDINARY", tallyOf(count("ORDINARY", votes([1, 2]), { quorumPresent: false }))).refused).toMatch(/so it is decided later/);
   });
 
   it("asks the units present on a special resolution too, though the test does not use them", () => {

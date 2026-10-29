@@ -11,9 +11,12 @@ import {
   buildingFacts,
   buildingRulesView,
   buildingSelectorProblems,
+  conditionHolds,
   deriveSelector,
   dollarsToCents,
   factsRead,
+  knownRecorded,
+  missingWords,
   parseDollars,
   readBuildingRulesForm,
   selectorValue,
@@ -372,5 +375,30 @@ describe("NSW and Queensland are unchanged", () => {
     expect(selectorValue(NSW, "regulationModule", records)).toBeNull();
     expect(selectorValue(WA, "schemeType", { ...waBuilding(3), recorded: { schemeType: "STRATA" } })).toEqual({ holding: "RECORDED", value: "STRATA" });
     expect(selectorValue(WA, "schemeSize", { ...waBuilding(3), recorded: {} })).toMatchObject({ holding: "DERIVED", value: "THREE_TO_FIVE_LOT" });
+  });
+});
+
+describe("a recorded value that is not one of the selector's options (PR 8a-ii review, 29 Oct 2026)", () => {
+  const lots8 = Array.from({ length: 8 }, (_, i) => ({ id: `l${i + 1}`, lotNumber: String(i + 1), lotType: "RESIDENTIAL", occupiable: true }));
+  const vicBuilding = (recorded: RecordedValues) => ({ scheme: { totalLots: 8, servicesOnly: false }, lots: lots8, recorded });
+  const actBuilding = (recorded: RecordedValues) => ({ scheme: { totalLots: 8 }, lots: lots8, recorded });
+
+  it("is read as not recorded, so a test on it cannot be decided", () => {
+    expect(knownRecorded(ACT, { memberBand: "TWELVE", other: "kept" })).toEqual({ memberBand: null, other: "kept" });
+    expect(knownRecorded(ACT, { memberBand: " THREE " })).toEqual({ memberBand: " THREE " });
+    expect(selectorValue(ACT, "memberBand", actBuilding({ memberBand: "TWELVE" }))).toEqual({ holding: "RECORDED", value: null });
+    expect(conditionHolds(ACT, { selector: "memberBand", in: ["THREE", "FOUR_OR_MORE"] }, actBuilding({ memberBand: "TWELVE" }))).toEqual({ holds: null, missing: ["selector:memberBand"] });
+    expect(conditionHolds(ACT, { selector: "memberBand", in: ["THREE", "FOUR_OR_MORE"] }, actBuilding({ memberBand: "ONE_OR_TWO" })).holds).toBe(false);
+  });
+
+  it("never lets a derived selector be worked out past it (the tier with an owners corporation answer not known)", () => {
+    expect(selectorValue(VIC, "tier", vicBuilding({ severalOwnersCorporations: "NO" }))?.value).toBe("TIER_4");
+    const unknown = selectorValue(VIC, "tier", vicBuilding({ severalOwnersCorporations: "MAYBE" }));
+    expect(unknown?.value).toBeNull();
+    expect(unknown?.derived).toEqual({ ok: false, kind: "MISSING", missing: ["selector:severalOwnersCorporations"] });
+    expect(missingWords(VIC, "selector:severalOwnersCorporations", vicBuilding({ severalOwnersCorporations: "MAYBE" }))).toBe(
+      "the owners corporations on the plan recorded is not one StrataVerze knows",
+    );
+    expect(missingWords(VIC, "selector:severalOwnersCorporations", vicBuilding({}))).toBe("no answer is recorded for owners corporations on the plan");
   });
 });

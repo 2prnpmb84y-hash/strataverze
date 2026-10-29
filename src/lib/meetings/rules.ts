@@ -181,6 +181,13 @@ export interface ResolutionRule {
    */
   withoutQuorum?: "INTERIM" | "DECIDED_LATER";
   /**
+   * Why the count is refused where the meeting had no quorum, as the pack
+   * words it, in place of what `withoutQuorum` gives (the ACT with 1 or 2
+   * members: everyone entitled to vote must be present, and without them the
+   * meeting is adjourned, not decided later; PR 8a-ii review, 29 Oct 2026).
+   */
+  noQuorumRefusal?: string;
+  /**
    * The days the vote stays open after the meeting (Western Australia). It is
    * decided when they close, so the count at the meeting cannot decide it: the
    * evaluation is UNDETERMINED whatever the votes.
@@ -252,7 +259,8 @@ export interface CountingRefusalRule {
  * PR 8a-ii, 29 Oct 2026: Western Australia's 2-lot scheme). With
  * `lotsAtMost` lots or fewer, the count is refused unless every lot has a
  * vote or an abstention counted at the item (`refusal`, plain words ready to
- * follow with a full stop).
+ * follow with a full stop). Fewer than `lotsAtMost` lots entered is refused
+ * too, as no quorum of every lot can be met then.
  */
 export interface EveryLotQuorumRule {
   lotsAtMost: number;
@@ -667,6 +675,7 @@ const DRAFT_KEYS: readonly (keyof ResolutionRule)[] = [
   "noVariantFitsRefusal",
   "tieRefusedBecause",
   "withoutQuorum",
+  "noQuorumRefusal",
   "votingPeriodDays",
   "interimCategory",
 ];
@@ -760,6 +769,7 @@ function evaluateDraftRule(
     if (tally.quorumPresent == null) {
       return undetermined("Whether the meeting had a quorum for this item is not recorded, so the votes cannot decide it");
     }
+    if (!tally.quorumPresent && rule.noQuorumRefusal) return undetermined(rule.noQuorumRefusal);
     if (!tally.quorumPresent && rule.withoutQuorum === "DECIDED_LATER") {
       return undetermined("The meeting had no quorum for this item, so it is decided later, which StrataVerze does not track yet");
     }

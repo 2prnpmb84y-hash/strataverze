@@ -461,8 +461,10 @@ export const PENDING_RULE_PACKS = {
     // three variants lose their refusal and MEMBER_BAND marks the band supported. The 3-member special test and an
     // unopposed resolution stay refused.
     // MEETING_RULES_STATUS and FOR_REVIEW (member band, votes present, refusals, debtor rule, quorum, LATE_CHARGE) are
-    // rewritten, and DECISIONS gains the quorum answer and 1 or 2 members. No legal value or status already recorded changed;
-    // still a draft.
+    // rewritten, and DECISIONS gains the quorum answer and 1 or 2 members. MEETING_RULES_STATUS.debtorsMayVoteOn moves
+    // from STRATAVERZE to CONFIRMED, as the rule is now applied; the 1 or 2 member tests carry their own refusal without a
+    // quorum (s 3.12: the meeting is adjourned). FOR_REVIEW gains a point on ballots for the draft packs. No legal value
+    // already recorded changed, and no other status; still a draft.
     version: "2026.10.9",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",
@@ -561,7 +563,7 @@ export const PENDING_RULE_PACKS = {
     // be worked out (a StrataVerze choice, it fails closed), which tightens 8a-i. debtorRuleAppliesWhen: the arrears rule
     // (s 89B) applies to tiers 1 to 4 only (s 7A), and where the tier cannot be worked out it applies. MEETING_RULES_STATUS
     // gains quorumAttestation and countingRefusedWhen and its arrears note is rewritten; FOR_REVIEW gains
-    // MEETING_RULES_QUORUM, and MEETING_RULES_ORDINARY, MEETING_RULES_TIER_5 and MEETING_RULES_ARREARS are rewritten (a
+    // MEETING_RULES_QUORUM and MEETING_RULES_BALLOTS, and MEETING_RULES_ORDINARY, MEETING_RULES_TIER_5 and MEETING_RULES_ARREARS are rewritten (a
     // carried ordinary resolution can now authorise LATE_CHARGE interest); the lot entitlement GO-LIVE note is
     // rewritten. No legal value or status already recorded changed; still a draft.
     version: "2026.10.9",
@@ -618,8 +620,9 @@ export const PENDING_RULE_PACKS = {
     // scheme's quorum needs both lots with no fallback (s 130(2), (4), CONFIRMED), so at a general meeting its count is
     // refused unless both lots have a vote or an abstention counted at the item, and nothing is written (Matthew
     // Wrigley's decision of 29 Oct 2026, recorded in DECISIONS). A lot whose vote is not counted for money owed does not
-    // make up the quorum (a StrataVerze reading that fails closed). MEETING_RULES_STATUS's quorum note is rewritten and
-    // FOR_REVIEW gains the point. No legal value or status already recorded changed; still a draft.
+    // make up the quorum (a StrataVerze reading that fails closed, stricter than the decision's words, for him to confirm),
+    // and fewer than 2 lots entered is refused. MEETING_RULES_STATUS's quorum note is rewritten and FOR_REVIEW gains the
+    // point, and one on ballots for the draft packs. No legal value or status already recorded changed; still a draft.
     version: "2026.10.7",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",

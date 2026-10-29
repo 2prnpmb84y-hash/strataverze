@@ -263,6 +263,9 @@ describe("a tier 5 owners corporation, or one whose tier cannot be worked out (s
     expect(refusal(building({ lots: lotsOf(8, null) }))).toBe(`${start}8 lots have no answer for occupiable (lots 1, 2, 3, 4, 5, 6, 7 and 8).${end}`.replace("occupiable (", `${VIC_RULES.BUILDING_FACTS!.LOT_OCCUPIABLE!.label.toLowerCase()} (`));
     expect(refusal(building({ totalLots: 9 }))).toBe(`${start}8 lots are recorded but the building's total is 9.${end}`);
     expect(refusal(building({ lots: [] }))).toMatch(/because no lots are recorded\./);
+    // An answer not among the options is not an answer: the tier is not worked out (PR 8a-ii review).
+    expect(refusal(building({ several: "MAYBE" }))).toBe(`${start}the owners corporations on the plan recorded is not one StrataVerze knows.${end}`);
+    expect(refusal(building({ several: "MAYBE", servicesOnly: true }))).toBe(`${start}the owners corporations on the plan recorded is not one StrataVerze knows.${end}`);
     // A tier refused for a reason other than a missing fact says why.
     expect(refusal(building({ several: "YES" }))).toBe(
       `${start}the tier cannot be worked out. This owners corporation is one of several on its plan. How the tier is assessed then is not confirmed, so StrataVerze does not work it out.${end}`,
@@ -282,6 +285,7 @@ describe("a tier 5 owners corporation, or one whose tier cannot be worked out (s
     expect(applies(building({ servicesOnly: true }))).toBe(false);
     expect(applies(building({ lots: lotsOf(2) }))).toBe(false);
     expect(applies(building({ several: null }))).toBe(true);
+    expect(applies(building({ several: "MAYBE", servicesOnly: true }))).toBe(true);
     // At the count: a lot in arrears is counted on an ordinary resolution where the rule does not apply.
     const r = count("ORDINARY", votes([1, 2]), { owingLotIds: new Set(["lot-2"]), debtorRuleApplies: false });
     expect(r.ok && r.value.notCounted).toEqual([]);

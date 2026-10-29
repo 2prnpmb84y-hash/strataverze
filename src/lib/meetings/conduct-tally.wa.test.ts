@@ -138,6 +138,17 @@ describe("a 2-lot scheme's quorum (s 130(2), (4)): both lots must be counted at 
     expect(two(votes([1, 2]), { recordedLotCount: null }).ok).toBe(false);
   });
 
+  it("refuses fewer than 2 lots entered, even where every one is counted (PR 8a-ii review)", () => {
+    expect(two(votes([1]), { lots: [TWO[0], TWO[2]], recordedLotCount: 1 })).toEqual({
+      ok: false,
+      error: "Only 1 lot is entered, and a scheme needs at least 2, so this resolution cannot be counted. Enter every lot, or correct the number of lots, first.",
+    });
+    expect(two([], { lots: [TWO[2]], recordedLotCount: 0 })).toEqual({
+      ok: false,
+      error: "Only 0 lots are entered, and a scheme needs at least 2, so this resolution cannot be counted. Enter every lot, or correct the number of lots, first.",
+    });
+  });
+
   it("is not checked with 3 or more lots, or for an item with no category", () => {
     expect(count("ORDINARY", votes([1])).ok).toBe(true);
     expect(count("ORDINARY", votes([1]), { recordedLotCount: null }).ok).toBe(true);

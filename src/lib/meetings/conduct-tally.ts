@@ -455,6 +455,14 @@ export function buildConductTally(input: {
         error: `The building records ${params.recordedLotCount} lots but ${params.lots.length} are entered, so this resolution cannot be counted. Enter every lot, or correct the number of lots, first.`,
       };
     }
+    // Fewer lots than the smallest scheme the rule names (2 in Western Australia) is not a scheme whose quorum can be met (PR 8a-ii review).
+    if (params.lots.length < everyLot.lotsAtMost) {
+      const entered = params.lots.length === 1 ? "Only 1 lot is" : `Only ${params.lots.length} lots are`;
+      return {
+        ok: false,
+        error: `${entered} entered, and a scheme needs at least ${everyLot.lotsAtMost}, so this resolution cannot be counted. Enter every lot, or correct the number of lots, first.`,
+      };
+    }
     if (counted.length < params.lots.length) return { ok: false, error: `${everyLot.refusal}. Nothing was saved. The item can be deferred.` };
   }
 

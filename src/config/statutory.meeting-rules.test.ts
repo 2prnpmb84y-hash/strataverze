@@ -12,9 +12,9 @@
  * new keys offers no pre-meeting ballot, which applies none of them.
  */
 import { describe, expect, it } from "vitest";
-import { MEETING_RULES as NSW_RULE_SET, PENDING_RULE_PACKS, QLD_RULE_PACK } from "./statutory";
+import { MEETING_RULES as NSW_RULE_SET, PENDING_RULE_PACKS, QLD_RULE_PACK, RULE_PACKS } from "./statutory";
 import { usesDraftKeys, type MeetingRuleSet, type ResolutionCategory, type ResolutionRule } from "@/lib/meetings/rules";
-import { countNeedsQuorum, countNeedsVotesPresent } from "@/lib/meetings/conduct-tally";
+import { conductVotingView, countNeedsQuorum, countNeedsVotesPresent } from "@/lib/meetings/conduct-tally";
 import type { BuildingSelector, RecordedBuildingSelector, RuleStatus, SelectorCondition } from "./statutory/types";
 
 const STATUSES: RuleStatus[] = ["CONFIRMED", "GUIDANCE", "STRATAVERZE", "NOT_CONFIRMED"];
@@ -73,7 +73,7 @@ describe.each(DRAFTS)("%s meeting rules", (state, rs) => {
   it("gives its refusals in plain words, ready to follow with a full stop", () => {
     for (const [, rule] of rulesOf(rs)) {
       for (const r of [rule, ...(rule.variants ?? []).map((v) => v.rule)]) {
-        for (const text of [r.refusedBecause, r.tieRefusedBecause, r.noVariantFitsRefusal]) {
+        for (const text of [r.refusedBecause, r.tieRefusedBecause, r.noVariantFitsRefusal, r.noQuorumRefusal]) {
           if (text == null) continue;
           expect(text).toMatch(/^[A-Z]/);
           expect(text).not.toMatch(/[.;–—]$|[;–—]/);
@@ -138,6 +138,34 @@ describe.each(DRAFTS)("%s quorum attestation, counting refusal and debtor condit
   });
 });
 
+describe("every rule set, live and draft: the conduct screen asks whatever the action requires (PR 8a-ii review)", () => {
+  const ALL = [
+    ...Object.values(RULE_PACKS).map((p) => [p.state, p.rules.MEETING_RULES] as const),
+    ...Object.values(PENDING_RULE_PACKS).map((p) => [p.state, p.rules.MEETING_RULES] as const),
+  ];
+
+  it.each(ALL)("%s words the quorum question for every category that can need it, and the units present for every one that measures them", (state, rs) => {
+    const items = Object.keys(rs.resolutionCategories).map((c) => ({ id: c, resolutionCategory: c }));
+    const view = conductVotingView(rs, PACK_RULES[state as keyof typeof PACK_RULES] ?? RULE_PACKS[state as keyof typeof RULE_PACKS].rules, [], items, "AGM");
+    for (const c of Object.keys(rs.resolutionCategories)) {
+      if (countNeedsQuorum(rs, c)) {
+        expect(rs.quorumAttestation, `${state} ${c}`).toBeDefined();
+        expect(view?.items[c]?.quorumAsked, `${state} ${c}`).toBe(true);
+      } else if (view) expect(view.items[c], `${state} ${c}`).not.toHaveProperty("quorumAsked");
+      if (countNeedsVotesPresent(rs, c)) {
+        expect(rs.votesPresentAttestation, `${state} ${c}`).toBeDefined();
+        expect(view?.items[c]?.unitsPresentAsked, `${state} ${c}`).toBe(true);
+      } else if (view) expect(view.items[c], `${state} ${c}`).not.toHaveProperty("unitsPresentAsked");
+    }
+  });
+
+  it("asks the ACT's special resolution for the units present", () => {
+    const act = PENDING_RULE_PACKS.ACT.rules.MEETING_RULES;
+    expect(countNeedsVotesPresent(act, "SPECIAL")).toBe(true);
+    expect(act.votesPresentAttestation?.label).toBe("Units present or represented for this motion");
+  });
+});
+
 describe("Victoria", () => {
   const vic = PENDING_RULE_PACKS.VIC.rules;
   it("defers no shared shape any more", () => {
@@ -180,7 +208,7 @@ describe("the ACT", () => {
     for (const [c, rule] of rulesOf(act.MEETING_RULES)) {
       const small = rule.variants?.find((v) => v.when.memberBands?.includes("ONE_OR_TWO"));
       if (!small) continue;
-      expect(small.rule, c).toEqual({ basis: "NONE_AGAINST_AT_LEAST_ONE_FOR" });
+      expect(small.rule, c).toEqual({ basis: "NONE_AGAINST_AT_LEAST_ONE_FOR", noQuorumRefusal: expect.stringMatching(/s 3\.12\)/) });
       expect(small.status, c).toBe("CONFIRMED");
     }
   });

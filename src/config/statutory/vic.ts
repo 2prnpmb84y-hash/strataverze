@@ -2992,7 +2992,7 @@ export const FOR_REVIEW = [
   {
     key: "MEETING_RULES_ORDINARY",
     point:
-      "An ordinary resolution counted at a meeting (since stage 2, PR 8a-ii, 29 Oct 2026) needs the chair's answer whether the meeting had a quorum for the item (MEETING_RULES_QUORUM). With \"yes\" it is recorded as carried or lost by the votes cast (by lot entitlement on a poll). With \"no\" a count that carries is an interim resolution (s 78), refused until interim resolutions are recorded (stage 2, PR 8b), and one that fails is recorded as lost. Not answered, it is refused. Equal votes are refused too: a chair who is a lot owner or a proxy has a casting vote and without it the resolution is not passed (s 89A), and StrataVerze does not record who chaired or a casting vote. A carried ordinary resolution can now authorise interest (LATE_CHARGE: any resolution carried at a general meeting, s 29(1)). Confirm.",
+      "An ordinary resolution counted at a meeting (since stage 2, PR 8a-ii, 29 Oct 2026) needs the chair's answer whether the meeting had a quorum for the item (MEETING_RULES_QUORUM). With \"yes\" it is recorded as carried or lost by the votes cast (by lot entitlement on a poll). With \"no\" a count that carries is an interim resolution (s 78), refused until interim resolutions are recorded (stage 2, PR 8b), and one that fails is recorded as lost. Not answered, it is refused. Equal votes are refused too: a chair who is a lot owner or a proxy has a casting vote and without it the resolution is not passed (s 89A), and StrataVerze does not record who chaired or a casting vote. A carried ordinary resolution can now authorise interest (LATE_CHARGE: any resolution carried at a general meeting, s 29(1)). A resolution recorded as carried from the count can also be relied on wherever a carried general meeting motion is asked for: budget adoption, capital works plan approval and statutory pack adoption, as for any carried motion. Confirm.",
     before: "Victorian meetings are run",
     kind: "STRATAVERZE",
   },
@@ -3016,6 +3016,12 @@ export const FOR_REVIEW = [
       "Whether the meeting had a quorum (s 77: at least 50% of the lots, or if that is not available 50% of the total lot entitlement) is the chair's answer for each item, kept with the outcome in the meeting record with who recorded it (Matthew Wrigley's decision of 29 Oct 2026, DECISIONS). It is never filled in for the chair, and an item not answered is refused. StrataVerze does not record attendance yet, so it does not work the quorum out. It refuses a \"no quorum\" answer only where the lots whose votes are counted already make up half of all lots. Whether s 78 judges quorum once for the meeting or for each item is not in the notes (asked for each item, to confirm). When attendance is recorded (meeting management, Stage C) the quorum will be worked out from it instead. Confirm.",
     before: "Victorian meetings are run",
     kind: "LEGAL",
+  },
+  {
+    key: "MEETING_RULES_BALLOTS",
+    point: "Pre-meeting electronic voting is not offered for this draft (preMeetingEvoting is null). Before it is, closing a ballot must apply what the count at the meeting applies: the debtor condition (debtorRuleAppliesWhen), judged lot by lot as an owner's own vote is (debtorVoteCheck), the quorum answer, and any refusal of the whole count (Victoria's tier 5, Western Australia's 2-lot quorum). closeBallotAction applies none of these yet (stage 2, PR 8a-ii review). Confirm.",
+    before: "a Victorian ballot is offered",
+    kind: "STRATAVERZE",
   },
   {
     key: "MEETING_RULES_NOTICE_AND_MINUTES",

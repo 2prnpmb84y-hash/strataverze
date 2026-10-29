@@ -100,6 +100,13 @@ describe("an ACT owner's own vote on a motion (sch 3 s 3.20(3))", () => {
     expect(await check("SPECIAL")).toMatchObject({ checksDebts: true, mayVote: ["lot-1"] });
   });
 
+  it("is barred where the number of members recorded is not one of the selector's options (it fails closed)", async () => {
+    for (const memberBand of ["TWELVE", "one_or_two"]) {
+      building("ACT", { selectors: { memberBand } });
+      expect(await check("ORDINARY"), memberBand).toMatchObject({ checksDebts: true, mayVote: ["lot-1"] });
+    }
+  });
+
   it("reads no building selector on a category a debtor may vote on", async () => {
     building("ACT", { selectors: { memberBand: "FOUR_OR_MORE" } });
     expect(await check("UNANIMOUS")).toEqual({ checksDebts: true, mayVote: ["lot-1", "lot-2"], refusal: null });
@@ -125,6 +132,9 @@ describe("a Victorian owner's own vote on a motion (s 89B, s 7A)", () => {
     building("VIC");
     expect(await check("ORDINARY")).toMatchObject({ checksDebts: true, mayVote: ["lot-1"] });
     building("VIC", { occupiable: null, selectors: { severalOwnersCorporations: "NO" } });
+    expect(await check("ORDINARY")).toMatchObject({ checksDebts: true, mayVote: ["lot-1"] });
+    // An owners corporation answer not among the options never lets the tier, or tier 5, be worked out.
+    building("VIC", { servicesOnly: true, selectors: { severalOwnersCorporations: "MAYBE" } });
     expect(await check("ORDINARY")).toMatchObject({ checksDebts: true, mayVote: ["lot-1"] });
   });
 
