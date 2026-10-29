@@ -685,8 +685,14 @@ export const PENDING_RULE_PACKS = {
     // DEBT_RECOVERY_STEPS added. NOT_CONFIRMED gains the s 18(2) comparator and the daily interest rounding. After
     // review (30 Oct 2026, the version unchanged): the tier is checked again at COMMITTEE_REVIEW and PROCEEDINGS
     // (appliesWhen's unknown words and FOR_REVIEW TIER_5_RECOVERY rewritten), and FOR_REVIEW gains S18_BALLOT_RESOLUTION
-    // (a special resolution passed by ballot cannot be chosen). No legal value or status already recorded changed;
-    // still a draft.
+    // (a special resolution passed by ballot cannot be chosen). Matthew Wrigley's decision of 30 Oct 2026 (the version
+    // unchanged), "ceiling for ordinary only", recorded in DECISIONS and kept in FOR_REVIEW: at PROCEEDINGS a decision
+    // recorded as a special resolution covers a larger amount owing since, one recorded as an ordinary resolution is
+    // checked again against s 18(2) (refused while the comparator has no value), and the claim stays limited to the
+    // fee notices the final notice covered (refused while any overdue fee notice was not yet overdue, or was issued
+    // less than 29 days before, on the day the final notice was recorded as given). FOR_REVIEW gains
+    // PROCEEDINGS_CLAIM_LIMIT; S18_ANNUAL_FEES_COMPARATOR and the COMMITTEE_REVIEW and PROCEEDINGS guidance are
+    // rewritten. No migration. No legal value or status already recorded changed; still a draft.
     version: "2026.10.13",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",

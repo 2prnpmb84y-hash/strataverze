@@ -26,9 +26,18 @@
  *   steps that decide and start proceedings (review L4);
  * - amountThreshold (PR 9c): with no comparator value, or no amount for it,
  *   only the `above` resolution decides, and the decision step offers only
- *   `above` while StrataVerze does not work out the comparator's amount; where the amount owing when
- *   proceedings are started is more than the amount recorded with the
- *   decision, or either is not known, the step is refused;
+ *   `above` while StrataVerze does not work out the comparator's amount. When
+ *   proceedings are started (Matthew Wrigley's decision of 30 Oct 2026) the
+ *   resolution recorded with the decision is checked again against the amount
+ *   owing then: `above` covers any amount, so a larger amount since the
+ *   decision is not refused for it; `upTo` is refused unless it would still
+ *   decide that amount (never while the comparator or its amount is not
+ *   known); a resolution that cannot be told refuses;
+ * - finalNotice at proceedings (PR 9c, decision of 30 Oct 2026): the claim is
+ *   limited to the notices the final notice covered. StrataVerze does not
+ *   record what a claim includes, so the step that starts proceedings is
+ *   refused while any of the lot's overdue notices was not covered
+ *   (finalNoticeCoverageProblem), or where that cannot be told;
  * - stepTiming (PR 9c): a step is refused before day N + 1 after the day it is
  *   counted from (the latest overdue notice's issue day, only notices issued
  *   under the building's pack counting; or the day the final notice was
@@ -351,8 +360,12 @@ export interface RecordedRecoveryFacts {
   forum: string | null;
   /** The day the final notice was recorded as given (PR 9c), given only for a pack with a final notice; null where none is. */
   finalNoticeGivenOn?: string | null;
-  /** The amount owing recorded with the decision to start proceedings (PR 9c), given only for a pack with an amount threshold. */
-  authorisedAmount?: string | null;
+  /**
+   * How the resolution recorded with the decision to start proceedings is stored (ORDINARY, SPECIAL, GENERAL_MEETING
+   * or COMMITTEE; storedResolutionKind), given only for a pack with an amount threshold (PR 9c, decision of
+   * 30 Oct 2026); null where no decision is recorded.
+   */
+  authorisedResolutionKind?: string | null;
 }
 
 /** One of the lot's overdue notices, for a step counted from the notices' issue days (PR 9c). */
@@ -365,6 +378,16 @@ export interface TimingNotice {
   rulePack: string | null;
   /** Brought across at takeover (a migration batch). */
   takeover: boolean;
+}
+
+/**
+ * One of the lot's notices overdue on the building's day, as the step that
+ * starts proceedings reads them for a pack with a final notice (PR 9c,
+ * decision of 30 Oct 2026): a timing notice with the day it fell due.
+ */
+export interface ClaimNotice extends TimingNotice {
+  /** The day it fell due (the last day to pay: it is overdue from the next day), or null where none is recorded. */
+  dueOn: string | null;
 }
 
 /**
@@ -433,6 +456,11 @@ export type RecoveryGateInput =
       notices?: readonly TimingNotice[];
       /** The building's pack code ("AU-VIC"): only notices issued under it count (PR 9c). */
       packCode?: string;
+      /**
+       * The lot's notices overdue on the building's day (PR 9c, decision of 30 Oct 2026), for the step that starts
+       * proceedings under a pack with a final notice, which is refused without them.
+       */
+      claimNotices?: readonly ClaimNotice[];
       /** The lot's amount owing now, two decimals (PR 9c), for a pack with an amount threshold. */
       amountOwing?: string | null;
       /** The comparator's amount in cents (PR 9c), or null where StrataVerze does not work it out (it never does yet). */
@@ -453,6 +481,11 @@ export type RecoveryGateInput =
     };
 
 const sameResolution = (a: DebtAuthorityResolution, b: DebtAuthorityResolution) => a.meeting === b.meeting && a.kind === b.kind;
+
+/** The step that starts proceedings: the one that records where they were started (PROCEEDINGS where the pack has no forum). */
+export function proceedingsStepType(rules: Rules): string {
+  return rules.DEBT_RECOVERY?.forum?.recordedAtStep ?? "PROCEEDINGS";
+}
 
 /**
  * Why the action is refused under the pack's recovery rules, or null. Null
@@ -523,10 +556,12 @@ export function recoveryGateProblem(rules: Rules, input: RecoveryGateInput): str
     if (excluded) return `${capitalise(excluded.words)} cannot hear this claim: ${excluded.reason}.`;
     if (!needs.forum.options.some((o) => o.key === chosen)) return `Choose where proceedings were started: ${needs.forum.options.map((o) => o.words).join(" or ")}.`;
   }
-  // With an amount threshold (PR 9c), proceedings may not be started for more than the amount the decision was recorded for.
-  if (a?.amountThreshold && input.stepType === (r.forum?.recordedAtStep ?? "PROCEEDINGS")) {
-    const grown = authorisedAmountProblem(input.amountOwing ?? null, input.recorded.authorisedAmount ?? null);
-    if (grown) return grown;
+  // With an amount threshold (PR 9c, Matthew Wrigley's decision of 30 Oct 2026), the decision recorded is checked again
+  // when proceedings are started: `above` covers a larger amount since, `upTo` must still be within the threshold.
+  const startsProceedings = input.stepType === proceedingsStepType(rules);
+  if (a?.amountThreshold && startsProceedings) {
+    const ceiling = decisionCeilingProblem(a, input.recorded.authorisedResolutionKind ?? null, input.amountOwing ?? null, input.comparatorCents ?? null);
+    if (ceiling) return ceiling;
   }
   // The final notice given outside StrataVerze (PR 9c): the day it was given.
   if (needs?.finalNotice) {
@@ -537,6 +572,11 @@ export function recoveryGateProblem(rules: Rules, input: RecoveryGateInput): str
   // The days a step must wait, and a pending law that would pause it (PR 9c).
   const timing = timingProblem(rules, input);
   if (timing) return timing;
+  // The claim is limited to the notices the final notice covered (PR 9c, decision of 30 Oct 2026).
+  if (r.finalNotice && startsProceedings) {
+    const coverage = finalNoticeCoverageProblem(r, input);
+    if (coverage) return coverage;
+  }
   if (needs?.charge) return chargeStepProblem(needs.charge, input);
   // The Closed step says the case is closed: not while a lodged charge's revocation is not recorded (PR 9b).
   if (r.statutoryCharge && input.stepType === "CLOSED") return chargeCloseProblem(rules, { charge: input.chargeOnCase });
@@ -573,18 +613,79 @@ function authorityAmountProblem(a: AuthorityRule, chosen: DebtAuthorityResolutio
 }
 
 /**
- * Why proceedings cannot be recorded for the amount owing now (PR 9c), or
- * null: it must not be more than the amount owing recorded with the decision
- * to start proceedings. Either amount not known refuses.
+ * Why the decision recorded on the case does not cover starting proceedings
+ * for the amount owing now under the pack's amount threshold, or null (PR 9c,
+ * Matthew Wrigley's decision of 30 Oct 2026). The recorded resolution is
+ * matched to the one resolution the pack accepts that is stored the same way
+ * (none, or more than one, refuses), and authorityNeeded is run again for the
+ * amount owing now: `above` is always among them, so a larger amount since
+ * the decision is never refused for it; `upTo` passes only where the
+ * comparator has a value and both amounts are known and within the
+ * threshold. The amount recorded with the decision is not compared.
  */
-function authorisedAmountProblem(amountOwing: string | null, authorisedAmount: string | null): string | null {
-  const owing = amountCents(amountOwing);
-  const authorised = amountCents(authorisedAmount);
-  if (owing == null || authorised == null) {
-    return "Could not compare the amount owing with the amount recorded with the decision to start proceedings, so this step cannot be completed. Nothing was saved.";
+function decisionCeilingProblem(a: AuthorityRule, recordedKind: string | null, amountOwing: string | null, comparatorCents: number | null): string | null {
+  const t = a.amountThreshold!;
+  const decided = (a.accepted.value ?? []).filter((x) => storedResolutionKind(x) === recordedKind);
+  if (recordedKind == null || decided.length !== 1) {
+    return "Could not tell which resolution decided to start proceedings on this case, so this step cannot be completed. Nothing was saved.";
   }
-  if (owing <= authorised) return null;
-  return `The amount owing now (${money(owing)}) is more than the amount owing when the decision to start proceedings was recorded (${money(authorised)}), so that decision may not cover it. This step cannot be completed. Nothing was saved.`;
+  const resolution = decided[0];
+  const claim = amountCents(amountOwing);
+  const needed = authorityNeeded(a, claim, comparatorCents);
+  if ("problem" in needed) return `${sentence(needed.problem)} This step cannot be completed. Nothing was saved.`;
+  if (needed.some((x) => sameResolution(x, resolution))) return null;
+  const was = `The decision to start proceedings was recorded as ${resolution.words}, which may decide only a claim within ${t.words}`;
+  const end = `Only ${t.above.words} may decide it, so this step cannot be completed. Nothing was saved.`;
+  if (t.comparator.value == null) return `${was}, and whether the claim is within it cannot be told: ${lowerFirst(sentence(t.comparator.note))} ${end}`;
+  if (claim == null) return `${was}, and the amount owing could not be worked out. ${end}`;
+  if (comparatorCents == null) return `${was}, and StrataVerze does not work out ${t.words} yet, so whether the claim is within it cannot be told. ${end}`;
+  return `${was}, and the amount owing now (${money(claim)}) is more than ${t.words} (${money(t.multiple * comparatorCents)}). ${end}`;
+}
+
+/**
+ * Why proceedings cannot be started for the lot's overdue notices, or null
+ * (PR 9c, Matthew Wrigley's decision of 30 Oct 2026): the claim is limited to
+ * the notices the final notice covered. StrataVerze does not record what a
+ * claim includes, so every notice of the lot overdue on the building's day is
+ * taken to be claimed (fails closed), and each must have been covered.
+ *
+ * A notice is covered by the final notice recorded as given on day G where it
+ * was issued in StrataVerze under the building's pack (not brought across at
+ * takeover: the timing code's filter) and, on day G, it was already overdue
+ * (its due day before G) and past the final notice step's own wait from its
+ * issue day (for VIC, G on or after day 29 after it, s 32(1) as decision D4
+ * counts it). Those are the notices the final notice step could have been
+ * completed for on day G. Interest on a covered notice since G is covered.
+ * No final notice recorded as given, the notices not read, a notice whose
+ * issue or due day is not recorded, and a wait with no value refuse.
+ */
+function finalNoticeCoverageProblem(r: RecoveryRules, input: Extract<RecoveryGateInput, { action: "COMPLETE_STEP" }>): string | null {
+  const fn = r.finalNotice!;
+  const label = input.labels?.[input.stepType] ?? input.stepType;
+  const given = input.recorded.finalNoticeGivenOn ?? null;
+  if (!isDay(given)) return `${capitalise(fn.words)} is not recorded as given on this case, so ${label} cannot be completed. Nothing was saved.`;
+  const notices = input.claimNotices;
+  if (!notices) return `Could not check the lot's notices, so ${label} cannot be completed. Nothing was saved.`;
+  const cannotTell = `so whether ${fn.words} covered it cannot be told, and ${label} cannot be completed. Nothing was saved.`;
+  const pack = (input.packCode ?? "").trim();
+  const foreign = notices.filter((n) => n.takeover || !pack || !(n.rulePack ?? "").startsWith(`${pack} `));
+  if (foreign.length > 0) {
+    return `Notice ${foreign.map((n) => n.number).join(", ")} was not issued under this building's rules in StrataVerze (brought across at takeover, or issued under other rules), ${cannotTell}`;
+  }
+  const undated = notices.filter((n) => !isDay(n.issuedOn) || !isDay(n.dueOn));
+  if (undated.length > 0) return `The day notice ${undated.map((n) => n.number).join(", ")} was issued or fell due is not recorded, ${cannotTell}`;
+  // The final notice step's own wait from each notice's issue day, where the pack has one.
+  const wait = (r.stepTiming ?? []).find((t) => t.stepType === fn.stepType && t.after.kind === "EACH_OVERDUE_NOTICE_ISSUED");
+  if (wait && (wait.days.value == null || wait.earliest.value == null)) {
+    return `How long ${fn.words} must wait after a notice is not confirmed, so which notices it covered cannot be told, and ${label} cannot be completed. Nothing was saved.`;
+  }
+  const notCovered = (list: readonly ClaimNotice[], why: string) =>
+    `Notice ${list.map((n) => n.number).join(", ")} ${why} on the day ${fn.words} was recorded as given (${auDate(given)}), so ${fn.words} did not cover it. The claim must be limited to the notices ${fn.words} covered, or a new one is needed for the others. StrataVerze does not record which notices a claim includes, so ${label} cannot be completed while such a notice is overdue. Nothing was saved.`;
+  const notOverdue = notices.filter((n) => (n.dueOn as string) >= given);
+  if (notOverdue.length > 0) return notCovered(notOverdue, "was not yet overdue");
+  const tooRecent = wait ? notices.filter((n) => given < addDays(n.issuedOn as string, (wait.days.value as number) + 1)) : [];
+  if (tooRecent.length > 0) return notCovered(tooRecent, `was not yet past the wait before ${fn.words} may be given`);
+  return null;
 }
 
 /**

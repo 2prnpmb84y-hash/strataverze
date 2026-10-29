@@ -1005,9 +1005,10 @@ export interface DebtAuthorityResolution {
  * recorded resolution. `amountThreshold` (Victoria s 18(2), applied since
  * PR 9c): a claim of no more than `multiple` times the comparator's amount
  * may be decided by `upTo` (or `above`), a larger one only by `above`. With
- * no comparator value, or no amount for it, only `above` is accepted; and
- * where the amount owing when proceedings are started is more than the amount
- * recorded with the decision, the step is refused.
+ * no comparator value, or no amount for it, only `above` is accepted. When
+ * proceedings are started the recorded resolution is checked again for the
+ * amount owing then (Victoria, decision of 30 Oct 2026): `above` covers any
+ * amount, and `upTo` is refused unless it would still decide it.
  */
 export interface AuthorityToSueRule {
   recordedAtStep: string;

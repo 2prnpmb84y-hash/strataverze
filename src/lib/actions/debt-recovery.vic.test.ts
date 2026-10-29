@@ -5,9 +5,12 @@
  * cannot pass it; the Authority to Start Proceedings step records only a
  * special resolution at a general meeting, an interim special resolution only
  * once carried and taken effect (D2); the Proceedings step waits until day 29
- * after the final notice was recorded as given (D4, D5) and is refused for
- * more than the amount decided. Every record written passes the checks of
- * migration 20261125, and nothing is written on any refusal.
+ * after the final notice was recorded as given (D4, D5); there (Matthew
+ * Wrigley's decision of 30 Oct 2026) a special resolution covers a larger
+ * amount owing since the decision, an ordinary one is checked again (refused
+ * while the comparator has no value), and a notice the final notice did not
+ * cover refuses. Every record written passes the checks of migration
+ * 20261125, and nothing is written on any refusal.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -272,18 +275,70 @@ describe("the Proceedings step (D4, D5, D13)", () => {
     expectRecordsValid();
   });
 
-  it("is refused where the amount owing has grown beyond the amount decided, with nothing written", async () => {
-    seed({
-      currentOrder: order("PROCEEDINGS"),
-      records: [finalNoticeRecord("2026-10-01"), AUTHORITY_RECORD],
-      notices: [
-        { id: "n-1", schemeId: SCHEME, lotId: "lot-1", noticeNumber: "F-1", status: "OVERDUE", dueDate: "2026-07-01", issuedAt: "2026-06-01T00:00:00.000Z", balanceOutstanding: "1200.00", interestCharged: "0", rulePack: LABEL, migrationBatchId: null },
-        { id: "n-2", schemeId: SCHEME, lotId: "lot-1", noticeNumber: "F-2", status: "OVERDUE", dueDate: "2026-10-01", issuedAt: "2026-09-01T00:00:00.000Z", balanceOutstanding: "300.00", interestCharged: "0", rulePack: LABEL, migrationBatchId: null },
-      ],
-    });
+  const overdue = (id: string, dueDate: string, issuedAt: string, over: Record<string, unknown> = {}) => ({
+    id,
+    schemeId: SCHEME,
+    lotId: "lot-1",
+    noticeNumber: id.toUpperCase(),
+    status: "OVERDUE",
+    dueDate,
+    issuedAt,
+    balanceOutstanding: "300.00",
+    interestCharged: "0",
+    rulePack: LABEL,
+    migrationBatchId: null,
+    ...over,
+  });
+  const F1 = overdue("f-1", "2026-07-01", "2026-06-01T00:00:00.000Z", { balanceOutstanding: "1200.00" });
+
+  it("a special resolution: a larger amount owing since the decision (interest on the notice the final notice covered) is no longer refused", async () => {
+    // 1,235.00 owing now; 1,200.00 was recorded with the decision.
+    seed({ currentOrder: order("PROCEEDINGS"), records: [finalNoticeRecord("2026-10-01"), AUTHORITY_RECORD], notices: [{ ...F1, interestCharged: "35.00" }] });
+    expect(await complete("PROCEEDINGS", { forum: "VCAT" })).toEqual({ success: true });
+    expect(records().map((r) => [r.kind, r.forum, r.amount])).toEqual([
+      ["FINAL_NOTICE_GIVEN", null, null],
+      ["AUTHORITY_TO_SUE", null, "1200.00"],
+      ["PROCEEDINGS_STARTED", "VCAT", null],
+    ]);
+    expectRecordsValid();
+  });
+
+  it("an ordinary resolution recorded with the decision is refused (the comparator has no value), with nothing written", async () => {
+    const ordinary = { ...AUTHORITY_RECORD, resolutionItemId: "g-ordinary", resolutionKind: "ORDINARY" };
+    seed({ currentOrder: order("PROCEEDINGS"), records: [finalNoticeRecord("2026-10-01"), ordinary] });
     expect(await complete("PROCEEDINGS", { forum: "VCAT" })).toEqual({
-      error: "The amount owing now ($1,500.00) is more than the amount owing when the decision to start proceedings was recorded ($1,200.00), so that decision may not cover it. This step cannot be completed. Nothing was saved.",
+      error: expect.stringMatching(/^The decision to start proceedings was recorded as an ordinary resolution at a general meeting, .+ Only a special resolution at a general meeting may decide it, so this step cannot be completed\. Nothing was saved\.$/),
     });
+    expectNothingWritten("PROCEEDINGS", 2);
+  });
+
+  it("is refused where a notice became overdue after the final notice was given, with nothing written", async () => {
+    // F-2 fell due on 1 Oct 2026, the day the final notice was recorded as given, so it was overdue only from 2 Oct.
+    seed({ currentOrder: order("PROCEEDINGS"), records: [finalNoticeRecord("2026-10-01"), AUTHORITY_RECORD], notices: [F1, overdue("f-2", "2026-10-01", "2026-09-01T00:00:00.000Z")] });
+    expect(await complete("PROCEEDINGS", { forum: "VCAT" })).toEqual({
+      error:
+        "Notice F-2 was not yet overdue on the day the final fee notice was recorded as given (01/10/2026), so the final fee notice did not cover it. The claim must be limited to the notices the final fee notice covered, or a new one is needed for the others. StrataVerze does not record which notices a claim includes, so Proceedings cannot be completed while such a notice is overdue. Nothing was saved.",
+    });
+    expectNothingWritten("PROCEEDINGS", 2);
+  });
+
+  it("reads as overdue an issued notice past its due day with a balance, not one paid, not yet due or of another lot", async () => {
+    const notices = [
+      F1,
+      overdue("f-3", "2026-10-15", "2026-09-10T00:00:00.000Z", { status: "ISSUED" }),
+      overdue("f-4", "2026-10-16", "2026-09-11T00:00:00.000Z", { status: "PARTIALLY_PAID", balanceOutstanding: "0.00" }),
+      overdue("f-5", "2026-11-30", "2026-10-26T00:00:00.000Z", { status: "ISSUED" }),
+      overdue("f-6", "2026-10-15", "2026-09-10T00:00:00.000Z", { status: "PAID", balanceOutstanding: "0.00" }),
+      overdue("f-7", "2026-10-15", "2026-09-10T00:00:00.000Z", { lotId: "lot-2" }),
+    ];
+    seed({ currentOrder: order("PROCEEDINGS"), records: [finalNoticeRecord("2026-10-01"), AUTHORITY_RECORD], notices });
+    expect(await complete("PROCEEDINGS", { forum: "VCAT" })).toEqual({ error: expect.stringMatching(/^Notice F-3 was not yet overdue on the day the final fee notice was recorded as given \(01\/10\/2026\)/) });
+    expectNothingWritten("PROCEEDINGS", 2);
+  });
+
+  it("is refused for a notice brought across at takeover, with nothing written", async () => {
+    seed({ currentOrder: order("PROCEEDINGS"), records: [finalNoticeRecord("2026-10-01"), AUTHORITY_RECORD], notices: [F1, overdue("t-1", "2026-06-01", "2026-05-01T00:00:00.000Z", { rulePack: null, migrationBatchId: "batch-1" })] });
+    expect(await complete("PROCEEDINGS", { forum: "VCAT" })).toEqual({ error: expect.stringMatching(/^Notice T-1 was not issued under this building's rules in StrataVerze/) });
     expectNothingWritten("PROCEEDINGS", 2);
   });
 

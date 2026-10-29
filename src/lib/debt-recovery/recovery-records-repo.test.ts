@@ -12,7 +12,7 @@ vi.mock("@prisma/orm-postgres/orm-client", async () => (await import("@/test/fak
 vi.mock("@/prisma/db", async () => ({ db: (await import("@/test/fake-orm")).sharedFake.db }));
 
 const { sharedFake } = await import("@/test/fake-orm");
-const { overdueNoticesForTiming } = await import("./recovery-records-repo");
+const { overdueNoticesForClaim, overdueNoticesForTiming } = await import("./recovery-records-repo");
 const { recoveryGateProblem } = await import("./recovery-gates");
 const { PENDING_RULE_PACKS } = await import("@/config/statutory");
 
@@ -96,5 +96,28 @@ describe("overdueNoticesForTiming", () => {
     expect(finalNoticeGate([n4], "2027-05-02")).toMatch(/cannot have been given before 03\/05\/2027/);
     // The takeover notice and the one with no pack refuse.
     expect(finalNoticeGate(rows, "2027-06-01")).toMatch(/^Notice T-1, X-1 was not issued under this building's rules in StrataVerze/);
+  });
+});
+
+describe("overdueNoticesForClaim (decision of 30 Oct 2026)", () => {
+  it("reads the lot's notices overdue on the building's day: stored as overdue, or issued with a balance and past the due day", async () => {
+    sharedFake.reset({
+      LevyNotice: [
+        notice("n-1", "2026-10-03T13:59:59.000Z", { dueDate: "2026-11-01" }),
+        notice("i-1", "2026-10-03T14:00:00.000Z", { status: "ISSUED", dueDate: "2026-11-01" }),
+        notice("i-2", "2026-10-03T14:00:00.000Z", { status: "ISSUED", dueDate: "2026-11-02" }),
+        notice("q-1", "2026-10-03T14:00:00.000Z", { status: "PARTIALLY_PAID", dueDate: "2026-10-01", balanceOutstanding: "0.00" }),
+        notice("q-2", "2026-10-03T14:00:00.000Z", { status: "PARTIALLY_PAID", dueDate: "2026-10-01", balanceOutstanding: "0.01" }),
+        notice("t-1", "2026-09-01T00:00:00.000Z", { rulePack: null, migrationBatchId: "batch-1", dueDate: null }),
+        notice("p-1", "2026-09-03T00:00:00.000Z", { status: "PAID", dueDate: "2026-10-01" }),
+        notice("o-1", "2026-09-04T00:00:00.000Z", { lotId: "lot-2", dueDate: "2026-10-01" }),
+      ],
+    });
+    expect(await overdueNoticesForClaim("s1", "lot-1", "Australia/Melbourne", "2026-11-02")).toEqual([
+      { number: "N-1", issuedOn: "2026-10-03", dueOn: "2026-11-01", rulePack: LABEL, takeover: false },
+      { number: "I-1", issuedOn: "2026-10-04", dueOn: "2026-11-01", rulePack: LABEL, takeover: false },
+      { number: "Q-2", issuedOn: "2026-10-04", dueOn: "2026-10-01", rulePack: LABEL, takeover: false },
+      { number: "T-1", issuedOn: "2026-09-01", dueOn: null, rulePack: null, takeover: true },
+    ]);
   });
 });

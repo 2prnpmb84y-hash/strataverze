@@ -41,6 +41,7 @@ import {
   chargeCloseProblem,
   chargeFacts,
   chargeRevocationProblem,
+  proceedingsStepType,
   recoveryGateProblem,
   recoveryGatesApply,
   recoveryRecordsToWrite,
@@ -49,12 +50,14 @@ import {
   statutoryChargeApplies,
   type AuthorityFact,
   type ChargeChoice,
+  type ClaimNotice,
   type RecoveryRecordToWrite,
   type TimingNotice,
 } from "@/lib/debt-recovery/recovery-gates";
 import {
   createRecoveryRecords,
   currentAmountOwing,
+  overdueNoticesForClaim,
   overdueNoticesForTiming,
   readRecoveryRecords,
   recordedFacts,
@@ -614,6 +617,9 @@ async function recoveryAppliesTo(rules: StatutoryRules, schemeId: string): Promi
  * building's day. Since PR 9c also: the day a final notice given outside
  * StrataVerze was given, the lot's overdue notices for a step counted from
  * their issue days, and the amount owing for a pack with an amount threshold.
+ * Since Matthew Wrigley's decision of 30 Oct 2026, where proceedings are
+ * started under a pack with a final notice, the lot's notices overdue on the
+ * building's day too (the claim is limited to those the final notice covered).
  */
 async function checkRecoveryStep(
   rules: StatutoryRules,
@@ -656,12 +662,13 @@ async function checkRecoveryStep(
   // The day the case was opened, in the building's zone: a decision relied on must be on or after it (review L4).
   const caseOpenedOn = input.openedAt ? storedDayIn(tz, input.openedAt) || null : null;
   // The amount owing now, worked out as opening a case does (the lot's overdue notices, with their late charge; review L3).
-  // With an amount threshold (PR 9c) it is also needed where proceedings are recorded, to compare with the decision's.
+  // With an amount threshold (PR 9c) it is also needed where proceedings are started, to check the decision again
+  // (decision of 30 Oct 2026).
   const recovery = rules.DEBT_RECOVERY;
   const threshold = !!recovery?.authorityToSue?.amountThreshold;
-  const proceedingsStep = threshold && input.stepType === (recovery?.forum?.recordedAtStep ?? "PROCEEDINGS");
+  const startsProceedings = input.stepType === proceedingsStepType(rules);
   let amountOwing: string | null = null;
-  if ((needs?.authority && authority?.problem === null) || proceedingsStep) {
+  if ((needs?.authority && authority?.problem === null) || (threshold && startsProceedings)) {
     try {
       amountOwing = await currentAmountOwing(input.schemeId, input.lotId);
     } catch (err) {
@@ -680,13 +687,25 @@ async function checkRecoveryStep(
       return { error: "Could not check the lot's notices. Nothing was saved." };
     }
   }
+  // Where proceedings are started under a pack with a final notice (VIC, decision of 30 Oct 2026): the lot's notices
+  // overdue today, as the claim is limited to those the final notice covered. Nothing is read for any other step or pack.
+  const claimStep = !!recovery?.finalNotice && startsProceedings;
+  let claimNotices: ClaimNotice[] | undefined;
+  if (claimStep) {
+    try {
+      claimNotices = await overdueNoticesForClaim(input.schemeId, input.lotId, tz, today);
+    } catch (err) {
+      logError("Failed to read the lot's overdue notices:", err);
+      return { error: "Could not check the lot's notices. Nothing was saved." };
+    }
+  }
   // Where the pack says which buildings its rules apply to (Victoria's tiers 1 to 4), the steps that decide and start
   // proceedings check the building again (review L4); nothing is read for any other step or pack.
   const appliesStep = !!recovery?.appliesWhen && (input.stepType === recovery.authorityToSue?.recordedAtStep || input.stepType === recovery.forum?.recordedAtStep);
   const applies = appliesStep ? await recoveryAppliesTo(rules, input.schemeId) : undefined;
   // The day a final notice given outside StrataVerze was given (PR 9c), where the pack lets one be recorded.
   const finalNoticeGivenOn = needs?.finalNotice ? text("finalNoticeGivenOn") : null;
-  // The facts recorded: for a pack with a final notice or an amount threshold, also the day given and the amount decided for.
+  // The facts recorded: for a pack with a final notice or an amount threshold, also the day given and the resolution decided by.
   const recorded = recordedFactsFor(rules, rows);
   const gate = recoveryGateProblem(rules, {
     action: "COMPLETE_STEP",
@@ -704,6 +723,7 @@ async function checkRecoveryStep(
     // PR 9c, each only where the pack has the rule: the final notice's day, the notices and the amounts.
     ...(needs?.finalNotice ? { finalNoticeGivenOn } : {}),
     ...(countsFromNotices ? { notices, packCode: input.packCode } : {}),
+    ...(claimStep ? { claimNotices, packCode: input.packCode } : {}),
     // StrataVerze does not work out the comparator's amount (the current annual fees) yet, so none is passed.
     ...(threshold ? { amountOwing, comparatorCents: null } : {}),
     ...(appliesStep ? { applies } : {}),

@@ -2,8 +2,10 @@
  * The debt recovery gates applied for Victoria (stage 2, PR 9c), with the VIC
  * draft pack and fixtures: the s 18 amount threshold (D2), the final fee notice
  * (D3), the s 32(1) and s 163(2) waits counted from day 29 (D4, D5, D15), the
- * payment plan pause guard (D14) and tier 5 (D6). Every value missing fails
- * closed. NSW and Queensland stay null (recovery-gates.test.ts).
+ * payment plan pause guard (D14) and tier 5 (D6); and, at the Proceedings step,
+ * the decision checked again and the claim limited to the notices the final
+ * notice covered (Matthew Wrigley's decision of 30 Oct 2026). Every value
+ * missing fails closed. NSW and Queensland stay null (recovery-gates.test.ts).
  */
 import { describe, expect, it } from "vitest";
 import { PENDING_RULE_PACKS, type StatutoryRules } from "@/config/statutory";
@@ -15,6 +17,7 @@ import {
   recoveryRecordsToWrite,
   recoveryStepNeeds,
   type AuthorityFact,
+  type ClaimNotice,
   type DebtAuthorityResolution,
   type RecoveryGateInput,
   type TimingNotice,
@@ -32,8 +35,12 @@ const SPECIAL: DebtAuthorityResolution = { meeting: "GENERAL", kind: "SPECIAL", 
 const COMMITTEE: DebtAuthorityResolution = { meeting: "COMMITTEE", kind: "ANY", words: "a committee motion" };
 const carried = (resolution: DebtAuthorityResolution, decidedOn = "2026-10-20"): AuthorityFact => ({ problem: null, resolution, decidedOn, meetingId: "m-1", itemId: "i-1" });
 const NOTHING = { authorityToSue: false, forum: null };
-const AUTHORISED = { authorityToSue: true, forum: null, authorisedAmount: "1235.50", finalNoticeGivenOn: "2026-10-01" };
+const AUTHORISED = { authorityToSue: true, forum: null, authorisedResolutionKind: "SPECIAL", finalNoticeGivenOn: "2026-10-01" };
 const notice = (over: Partial<TimingNotice> = {}): TimingNotice => ({ number: "F-1", issuedOn: "2026-10-01", rulePack: `AU-VIC ${VIC_PACK.version}`, takeover: false, ...over });
+/** A notice overdue when proceedings are started; by default one the final notice given on 1 Oct 2026 covered (due 1 Sep, issued 1 Aug). */
+const claimNotice = (over: Partial<ClaimNotice> = {}): ClaimNotice => ({ ...notice({ issuedOn: "2026-08-01" }), dueOn: "2026-09-01", ...over });
+/** The lot's overdue notices at the Proceedings step, each covered by the final notice (decision of 30 Oct 2026). */
+const CLAIM = { claimNotices: [claimNotice()], packCode: "AU-VIC" };
 
 const complete = (stepType: string, over: Partial<Extract<RecoveryGateInput, { action: "COMPLETE_STEP" }>> = {}, rules: Rules = VIC): string | null =>
   recoveryGateProblem(rules, {
@@ -88,7 +95,7 @@ describe("tier 5 and an unknown tier are refused at opening (D6)", () => {
 
   it("is checked again at the Authority to Start Proceedings and Proceedings steps, and not at the others (review L4)", () => {
     const decision = { authority: carried(SPECIAL), amountOwing: "1.00" };
-    const proceedings = { recorded: AUTHORISED, forum: "VCAT", amountOwing: "1235.50" };
+    const proceedings = { recorded: AUTHORISED, forum: "VCAT", amountOwing: "1235.50", ...CLAIM };
     for (const [stepType, over] of [["COMMITTEE_REVIEW", decision], ["PROCEEDINGS", proceedings]] as const) {
       expect(complete(stepType, over), stepType).toBeNull();
       expect(complete(stepType, { ...over, applies: false }), stepType).toMatch(/^This is a tier 5 owners corporation .+ This step cannot be completed\. Nothing was saved\.$/);
@@ -167,23 +174,109 @@ describe("the s 18 amount threshold (D2)", () => {
   });
 });
 
-describe("proceedings for more than the amount decided are refused", () => {
-  const at = (amountOwing: string | null, authorisedAmount: string | null) =>
-    complete("PROCEEDINGS", { recorded: { ...AUTHORISED, authorisedAmount }, forum: "VCAT", amountOwing, today: "2026-11-02" });
+describe("the decision checked again when proceedings are started (decision of 30 Oct 2026)", () => {
+  const at = (authorisedResolutionKind: string | null, amountOwing: string | null, over: Partial<Extract<RecoveryGateInput, { action: "COMPLETE_STEP" }>> = {}, rules: Rules = VIC) =>
+    complete("PROCEEDINGS", { recorded: { ...AUTHORISED, authorisedResolutionKind }, forum: "VCAT", amountOwing, ...CLAIM, ...over }, rules);
+  const comparatorNote =
+    'whether "the total amount of the current annual fees" in s 18(2) means the owners corporation\'s total annual fees or the lot\'s is not stated in the notes, and the Victorian financial year is not confirmed, so the current annual fees cannot be worked out either. Until both are confirmed every proceeding needs a special resolution at a general meeting (decision D2).';
+  const ordinaryWas = "The decision to start proceedings was recorded as an ordinary resolution at a general meeting, which may decide only a claim within twice the total amount of the current annual fees";
+  const onlySpecial = "Only a special resolution at a general meeting may decide it, so this step cannot be completed. Nothing was saved.";
 
-  it("the same or a smaller amount passes, one cent more is refused, and an amount not known refuses", () => {
-    expect(at("1235.50", "1235.50")).toBeNull();
-    expect(at("1000.00", "1235.50")).toBeNull();
-    expect(at("1235.51", "1235.50")).toBe(
-      "The amount owing now ($1,235.51) is more than the amount owing when the decision to start proceedings was recorded ($1,235.50), so that decision may not cover it. This step cannot be completed. Nothing was saved.",
+  it("a special resolution covers a larger amount owing since the decision: the growth alone is no longer refused", () => {
+    // The amount recorded with the decision was 1,235.50 (the old check refused 1,235.51); it is no longer compared.
+    expect(at("SPECIAL", "1235.51")).toBeNull();
+    expect(at("SPECIAL", "999999.99")).toBeNull();
+    expect(at("SPECIAL", "999999.99", { comparatorCents: 50_000 }, WITH_COMPARATOR)).toBeNull();
+    // A special resolution needs no amount at all.
+    expect(at("SPECIAL", null)).toBeNull();
+  });
+
+  it("an ordinary resolution is refused while the comparator has no value (the VIC pack), whatever the amount", () => {
+    for (const amount of ["0.01", "1235.50", "999999.99"]) {
+      expect(at("ORDINARY", amount), amount).toBe(`${ordinaryWas}, and whether the claim is within it cannot be told: ${comparatorNote} ${onlySpecial}`);
+    }
+  });
+
+  it("an ordinary resolution with a fixture comparator: within the ceiling allowed, grown past it refused", () => {
+    expect(at("ORDINARY", "1000.00", { comparatorCents: 50_000 }, WITH_COMPARATOR)).toBeNull();
+    expect(at("ORDINARY", "1000.01", { comparatorCents: 50_000 }, WITH_COMPARATOR)).toBe(
+      `${ordinaryWas}, and the amount owing now ($1,000.01) is more than twice the total amount of the current annual fees ($1,000.00). ${onlySpecial}`,
     );
-    const unknown = "Could not compare the amount owing with the amount recorded with the decision to start proceedings, so this step cannot be completed. Nothing was saved.";
-    expect(at(null, "1235.50")).toBe(unknown);
-    expect(at("1235.50", null)).toBe(unknown);
+    expect(at("ORDINARY", null, { comparatorCents: 50_000 }, WITH_COMPARATOR)).toBe(`${ordinaryWas}, and the amount owing could not be worked out. ${onlySpecial}`);
+  });
+
+  it("an ordinary resolution with no comparator amount (as the server passes it) is refused, even with a comparator value", () => {
+    expect(at("ORDINARY", "1.00", { comparatorCents: null }, WITH_COMPARATOR)).toBe(
+      `${ordinaryWas}, and StrataVerze does not work out twice the total amount of the current annual fees yet, so whether the claim is within it cannot be told. ${onlySpecial}`,
+    );
+    expect(at("ORDINARY", "1.00", {}, WITH_COMPARATOR)).toMatch(/^The decision to start proceedings was recorded as an ordinary resolution/);
+  });
+
+  it("a recorded resolution that matches none the pack accepts, or none recorded, refuses", () => {
+    const unknown = "Could not tell which resolution decided to start proceedings on this case, so this step cannot be completed. Nothing was saved.";
+    for (const kind of [null, "COMMITTEE", "GENERAL_MEETING", "special", ""]) expect(at(kind, "1.00"), String(kind)).toBe(unknown);
+    expect(complete("PROCEEDINGS", { recorded: { authorityToSue: true, forum: null, finalNoticeGivenOn: "2026-10-01" }, forum: "VCAT", amountOwing: "1.00", ...CLAIM })).toBe(unknown);
   });
 
   it("reads amounts to the cent", () => {
     expect([amountCents("1235.5"), amountCents("0.01"), amountCents("12"), amountCents("1.234"), amountCents(""), amountCents(null)]).toEqual([123_550, 1, 1_200, null, null, null]);
+  });
+});
+
+describe("the claim is limited to the notices the final notice covered (decision of 30 Oct 2026)", () => {
+  // The final notice was recorded as given on 1 Oct 2026; the building's day is 2 Nov 2026.
+  const at = (claimNotices: readonly ClaimNotice[] | undefined, over: Partial<Extract<RecoveryGateInput, { action: "COMPLETE_STEP" }>> = {}) =>
+    complete("PROCEEDINGS", { recorded: AUTHORISED, forum: "VCAT", amountOwing: "5000.00", packCode: "AU-VIC", ...(claimNotices ? { claimNotices } : {}), ...over });
+  const refusal = (numbers: string, why: string) =>
+    `Notice ${numbers} ${why} on the day the final fee notice was recorded as given (01/10/2026), so the final fee notice did not cover it. The claim must be limited to the notices the final fee notice covered, or a new one is needed for the others. StrataVerze does not record which notices a claim includes, so Proceedings cannot be completed while such a notice is overdue. Nothing was saved.`;
+
+  it("allows notices overdue and past the s 32(1) wait on the day the final notice was given, however the amount has grown", () => {
+    expect(at([claimNotice(), claimNotice({ number: "F-0", issuedOn: "2026-07-01", dueOn: "2026-08-01" })])).toBeNull();
+    // Due the day before, and issued on day 29 before: covered.
+    expect(at([claimNotice({ dueOn: "2026-09-30", issuedOn: "2026-09-02" })])).toBeNull();
+    // Nothing overdue now: nothing claimed that was not covered.
+    expect(at([])).toBeNull();
+  });
+
+  it("refuses a notice that became overdue after the final notice was given (the next quarter's)", () => {
+    expect(at([claimNotice(), claimNotice({ number: "F-2", issuedOn: "2026-09-01", dueOn: "2026-10-01" })])).toBe(refusal("F-2", "was not yet overdue"));
+    expect(at([claimNotice({ number: "F-3", issuedOn: "2026-09-20", dueOn: "2026-10-20" }), claimNotice({ number: "F-4", issuedOn: "2026-10-01", dueOn: "2026-10-31" })])).toBe(
+      refusal("F-3, F-4", "was not yet overdue"),
+    );
+  });
+
+  it("refuses a notice overdue on that day but issued less than 29 days before it (s 32(1) as D4 counts it)", () => {
+    expect(at([claimNotice({ number: "F-5", issuedOn: "2026-09-03", dueOn: "2026-09-30" })])).toBe(refusal("F-5", "was not yet past the wait before the final fee notice may be given"));
+  });
+
+  it("refuses a takeover notice, one issued under other rules or none, one with no issue or due day, and notices not read", () => {
+    const tail = "so whether the final fee notice covered it cannot be told, and Proceedings cannot be completed. Nothing was saved.";
+    expect(at([claimNotice({ number: "T-9", takeover: true, rulePack: null })])).toBe(
+      `Notice T-9 was not issued under this building's rules in StrataVerze (brought across at takeover, or issued under other rules), ${tail}`,
+    );
+    expect(at([claimNotice({ number: "N-1", rulePack: "AU-NSW 2026.10.16" })])).toMatch(/^Notice N-1 was not issued under this building's rules/);
+    expect(at([claimNotice({ number: "N-2", rulePack: null })])).toMatch(/^Notice N-2 was not issued/);
+    expect(at([claimNotice()], { packCode: undefined })).toMatch(/^Notice F-1 was not issued/);
+    expect(at([claimNotice({ issuedOn: null })])).toBe(`The day notice F-1 was issued or fell due is not recorded, ${tail}`);
+    expect(at([claimNotice({ dueOn: null })])).toBe(`The day notice F-1 was issued or fell due is not recorded, ${tail}`);
+    expect(at(undefined)).toBe("Could not check the lot's notices, so Proceedings cannot be completed. Nothing was saved.");
+  });
+
+  it("refuses with no final notice recorded as given", () => {
+    expect(at([claimNotice()], { recorded: { ...AUTHORISED, finalNoticeGivenOn: null } })).toBe(
+      "The final fee notice is not recorded as given on this case, so Proceedings cannot be completed. Nothing was saved.",
+    );
+  });
+
+  it("refuses where the final notice's own wait has no value", () => {
+    const rules = withVic({ stepTiming: RECOVERY.stepTiming.map((t) => (t.stepType === "FINAL_NOTICE" ? { ...t, days: { value: null, status: "NOT_CONFIRMED", source: "x", note: "Days not read." } } : t)) });
+    expect(complete("PROCEEDINGS", { recorded: AUTHORISED, forum: "VCAT", amountOwing: "1.00", ...CLAIM }, rules)).toBe(
+      "How long the final fee notice must wait after a notice is not confirmed, so which notices it covered cannot be told, and Proceedings cannot be completed. Nothing was saved.",
+    );
+  });
+
+  it("is checked only at the Proceedings step", () => {
+    expect(complete("LEGAL_REFERRAL", { recorded: AUTHORISED, claimNotices: [claimNotice({ dueOn: "2026-10-30" })] })).toBeNull();
   });
 });
 
@@ -263,7 +356,7 @@ describe("the s 32(1) wait: from day 29 after the latest fee notice was issued (
 
 describe("the s 163(2) wait: from day 29 after the final notice was recorded as given, for VCAT and a court (D4, D5)", () => {
   const at = (forum: string, today: string, finalNoticeGivenOn: string | null = "2026-10-01") =>
-    complete("PROCEEDINGS", { recorded: { ...AUTHORISED, finalNoticeGivenOn }, forum, amountOwing: "1235.50", today });
+    complete("PROCEEDINGS", { recorded: { ...AUTHORISED, finalNoticeGivenOn }, forum, amountOwing: "1235.50", ...CLAIM, today });
 
   it.each(["VCAT", "COURT"])("%s: day 28 refused, day 29 allowed", (forum) => {
     expect(at(forum, "2026-10-29")).toBe(
@@ -294,13 +387,13 @@ describe("the payment plan pause guard (D14)", () => {
     },
   });
   const proceedings = (dated: unknown, today: string) =>
-    complete("PROCEEDINGS", { recorded: AUTHORISED, forum: "VCAT", amountOwing: "1235.50", today }, withVic({}, dated as Rules["DATED_RULES"]));
+    complete("PROCEEDINGS", { recorded: AUTHORISED, forum: "VCAT", amountOwing: "1235.50", ...CLAIM, today }, withVic({}, dated as Rules["DATED_RULES"]));
   const paused = (today: string) =>
     `Proceedings cannot be completed: the law on payment plans may have started by today (${today}), and the payment plan pause is not supported yet. Nothing was saved.`;
 
   it("the VIC pack: refused from the latest start date (1 Dec 2027), allowed the day before", () => {
-    expect(complete("PROCEEDINGS", { recorded: AUTHORISED, forum: "VCAT", amountOwing: "1235.50", today: "2027-11-30" })).toBeNull();
-    expect(complete("PROCEEDINGS", { recorded: AUTHORISED, forum: "COURT", amountOwing: "1235.50", today: "2027-12-01" })).toBe(paused("01/12/2027"));
+    expect(complete("PROCEEDINGS", { recorded: AUTHORISED, forum: "VCAT", amountOwing: "1235.50", ...CLAIM, today: "2027-11-30" })).toBeNull();
+    expect(complete("PROCEEDINGS", { recorded: AUTHORISED, forum: "COURT", amountOwing: "1235.50", ...CLAIM, today: "2027-12-01" })).toBe(paused("01/12/2027"));
     const finalNotice = complete("FINAL_NOTICE", { notices: [notice()], packCode: "AU-VIC", today: "2027-12-01", finalNoticeGivenOn: "2027-12-01" }, OUTSIDE_ALLOWED);
     expect(finalNotice).toBe("Final Notice cannot be completed: the law on payment plans may have started by today (01/12/2027), and the payment plan pause is not supported yet. Nothing was saved.");
   });
@@ -327,7 +420,7 @@ describe("the payment plan pause guard (D14)", () => {
   it("a dated rule the pack does not hold refuses", () => {
     expect(proceedings({}, "2026-11-02")).toBe("Proceedings cannot be checked against the law that would pause it, which is not in this building's rules. Nothing was saved.");
     const noDated = { DEBT_RECOVERY: RECOVERY as unknown as Rules["DEBT_RECOVERY"] };
-    expect(complete("PROCEEDINGS", { recorded: AUTHORISED, forum: "VCAT", amountOwing: "1235.50" }, noDated as Rules)).toMatch(/not in this building's rules/);
+    expect(complete("PROCEEDINGS", { recorded: AUTHORISED, forum: "VCAT", amountOwing: "1235.50", ...CLAIM }, noDated as Rules)).toMatch(/not in this building's rules/);
   });
 });
 

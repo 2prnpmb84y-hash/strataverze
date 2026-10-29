@@ -358,9 +358,13 @@ describe("Victorian pack (pending)", () => {
     expect(packs.map(([code]) => code)).toContain("AU-VIC");
   });
 
-  it("has proposed decisions, none decided but the payment order and the notice timing (Matthew Wrigley, 28 Oct 2026), the quorum answer, interim resolutions, the committee notice not checked, proxy caps and debt recovery (29 Oct 2026)", () => {
+  it("has proposed decisions, none decided but the payment order and the notice timing (Matthew Wrigley, 28 Oct 2026), the quorum answer, interim resolutions, the committee notice not checked, proxy caps and debt recovery (29 Oct 2026), and the amount when proceedings are started (30 Oct 2026)", () => {
     expect(vic.DECISIONS.length).toBeGreaterThan(1);
     for (const d of vic.DECISIONS) {
+      if (d.decision.includes("PROCEEDINGS_CLAIM_LIMIT")) {
+        expect(d).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-30", proposedOn: "2026-10-30" });
+        continue;
+      }
       if (d.decision.includes("PAYMENT_ALLOCATION_ORDER") || d.decision.includes("NOTICE_RULES")) {
         expect(d).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-28" });
         continue;
@@ -378,7 +382,7 @@ describe("Victorian pack (pending)", () => {
       expect(d.decidedBy).toBeNull();
       expect(d.decidedOn).toBeNull();
     }
-    expect(vic.DECISIONS.filter((d) => d.decidedBy != null)).toHaveLength(8);
+    expect(vic.DECISIONS.filter((d) => d.decidedBy != null)).toHaveLength(9);
     // Stage 2, PR 9c: debt recovery (D2 to D6, D10 to D15), each kept in FOR_REVIEW for legal confirmation.
     const debt = vic.DECISIONS.find((d) => d.decision.includes("DEBT_RECOVERY_STEPS"))!;
     const ids = ["D2", "D3", "D4", "D5", "D6", "D10", "D11", "D12", "D13", "D14", "D15"];
@@ -407,6 +411,14 @@ describe("Victorian pack (pending)", () => {
     // Review (30 Oct 2026): the tier checked again, and a ballot resolution cannot be chosen.
     expect(review("TIER_5_RECOVERY")).toContain("checked again");
     expect(review("S18_BALLOT_RESOLUTION")).toContain("cannot be chosen");
+    // Matthew Wrigley's decision of 30 Oct 2026 (review M1): ceiling for ordinary only, and the claim limited to the
+    // notices the final notice covered, kept in FOR_REVIEW.
+    const claimLimit = review("PROCEEDINGS_CLAIM_LIMIT");
+    for (const words of ["decision of 30 Oct 2026", "ceiling for ordinary only", "special resolution covers a larger amount", "checked again against s 18(2)", "the final fee notice covered"]) {
+      expect(claimLimit, words).toContain(words);
+    }
+    expect(review("S18_ANNUAL_FEES_COMPARATOR")).toContain("PROCEEDINGS_CLAIM_LIMIT");
+    expect(review("S18_ANNUAL_FEES_COMPARATOR")).not.toContain("a larger amount is refused");
     expect(vic.NOT_CONFIRMED.some((p) => p.startsWith("What \"the total amount of the current annual fees\" in s 18(2) is"))).toBe(true);
     // Stage 2, PR 8b-iv: proxy caps (D15 to D17) and the minutes (D18), kept in FOR_REVIEW PROXY_CAPS and MINUTES_CONTENTS.
     const proxies = vic.DECISIONS.find((d) => d.decision.includes("PROXY_RULES"))!;

@@ -8,7 +8,7 @@
 import type { Numeric } from "@prisma/orm-postgres/target/codec-types";
 import type { StatutoryRules } from "@/config/statutory";
 import { db } from "@/prisma/db";
-import type { RecordedRecoveryFacts, RecoveryRecordToWrite, TimingNotice } from "./recovery-gates";
+import type { ClaimNotice, RecordedRecoveryFacts, RecoveryRecordToWrite, TimingNotice } from "./recovery-gates";
 
 type Orm = typeof db.orm;
 
@@ -44,20 +44,22 @@ export function recordedFacts(rows: readonly Pick<RecoveryRecordRow, "kind" | "f
 /**
  * What the case records, for the gates under the building's pack (PR 9c):
  * recordedFacts, and for a pack with a final notice the day it was last
- * recorded as given, and for a pack with an amount threshold the amount owing
- * last recorded with the decision to start proceedings. Each only where the
- * pack has the rule, so the facts for any other pack are recordedFacts's.
+ * recorded as given, and for a pack with an amount threshold how the
+ * resolution last recorded with the decision to start proceedings is stored
+ * (since Matthew Wrigley's decision of 30 Oct 2026; the amount recorded with
+ * it is no longer compared). Each only where the pack has the rule, so the
+ * facts for any other pack are recordedFacts's.
  */
 export function recordedFactsFor(
   rules: Pick<StatutoryRules, "DEBT_RECOVERY">,
-  rows: readonly Pick<RecoveryRecordRow, "kind" | "forum" | "decidedOn" | "amount">[],
+  rows: readonly Pick<RecoveryRecordRow, "kind" | "forum" | "decidedOn" | "resolutionKind">[],
 ): RecordedRecoveryFacts {
   const r = rules.DEBT_RECOVERY;
   const last = (kind: string) => [...rows].reverse().find((x) => x.kind === kind);
   return {
     ...recordedFacts(rows),
     ...(r?.finalNotice ? { finalNoticeGivenOn: last("FINAL_NOTICE_GIVEN")?.decidedOn ?? null } : {}),
-    ...(r?.authorityToSue?.amountThreshold ? { authorisedAmount: last("AUTHORITY_TO_SUE")?.amount ?? null } : {}),
+    ...(r?.authorityToSue?.amountThreshold ? { authorisedResolutionKind: last("AUTHORITY_TO_SUE")?.resolutionKind ?? null } : {}),
   };
 }
 
@@ -97,6 +99,35 @@ export async function overdueNoticesForTiming(schemeId: string, lotId: string, t
     rulePack: n.rulePack == null ? null : String(n.rulePack),
     takeover: n.migrationBatchId != null,
   }));
+}
+
+/**
+ * The lot's notices overdue on the building's day `today`, as the step that
+ * starts proceedings reads them for a pack with a final notice (PR 9c,
+ * Matthew Wrigley's decision of 30 Oct 2026): every notice stored as OVERDUE,
+ * and every issued or part-paid notice with a balance whose due day is before
+ * `today` (shown as overdue, effectiveStatus), each with its number, the day
+ * issued in the building's zone `tz`, the day it fell due, the pack it was
+ * issued under and whether it was brought across at takeover. Throws when they
+ * cannot be read, so a failed read is never "none overdue".
+ */
+export async function overdueNoticesForClaim(schemeId: string, lotId: string, tz: string, today: string, orm: Orm = db.orm): Promise<ClaimNotice[]> {
+  const { storedDayIn } = await import("@/lib/jurisdiction/time-zone");
+  const notices = await orm.public.LevyNotice
+    .where((n) => n.schemeId.eq(schemeId))
+    .where((n) => n.lotId.eq(lotId))
+    .where((n) => n.status.in(["ISSUED", "PARTIALLY_PAID", "OVERDUE"]))
+    .limit(5000)
+    .all();
+  return notices
+    .filter((n) => String(n.status) === "OVERDUE" || (Number(n.balanceOutstanding) > 0 && n.dueDate != null && isoDay(n.dueDate) < today))
+    .map((n) => ({
+      number: String(n.noticeNumber ?? n.id),
+      issuedOn: n.issuedAt ? storedDayIn(tz, n.issuedAt) || null : null,
+      dueOn: n.dueDate == null ? null : isoDay(n.dueDate) || null,
+      rulePack: n.rulePack == null ? null : String(n.rulePack),
+      takeover: n.migrationBatchId != null,
+    }));
 }
 
 /** Write the step's records, in the step's transaction (`orm` is the transaction's). */

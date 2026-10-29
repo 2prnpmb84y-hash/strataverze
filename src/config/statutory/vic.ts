@@ -8,7 +8,8 @@
  * Victoria is not in SUPPORTED_SCHEME_STATES or the database's state check.
  * DECISIONS lists proposed choices, and two decided: the payment order and
  * the notice timing (Matthew Wrigley, 28 Oct 2026), and later ones up to
- * debt recovery (29 Oct 2026). FOR_REVIEW lists the points to settle first.
+ * debt recovery (29 Oct 2026) and the amount when proceedings are started
+ * (30 Oct 2026). FOR_REVIEW lists the points to settle first.
  *
  * Every value comes from the research notes of 27 Oct 2026 prepared for
  * Matthew Wrigley ("Victoria: owners corporation law research notes"), which
@@ -58,7 +59,8 @@
  * since stage 2, PR 9c debt recovery is in the shared shape too
  * (DEBT_RECOVERY, DEBT_RECOVERY_STEPS, their labels and guidance, and
  * NEVER_RECOVERABLE_FEE_VARIANTS; Matthew Wrigley's decisions D2 to D6 and
- * D10 to D15 of 29 Oct 2026, kept in FOR_REVIEW).
+ * D10 to D15 of 29 Oct 2026, and his decision of 30 Oct 2026 on the amount
+ * when proceedings are started, kept in FOR_REVIEW).
  */
 
 import type { MeetingRuleSet } from "@/lib/meetings/rules";
@@ -1333,7 +1335,11 @@ const VIC_GENERAL_SPECIAL: DebtAuthorityResolution = { meeting: "GENERAL", kind:
  * financial year that makes it "current", are not confirmed, so the
  * comparator has no value and every proceeding needs a special resolution at
  * a general meeting. Never a committee: delegation under s 11(3), (5) is not
- * confirmed. The adviser can never decide alone.
+ * confirmed. The adviser can never decide alone. When proceedings are
+ * started (Matthew Wrigley's decision of 30 Oct 2026, FOR_REVIEW
+ * PROCEEDINGS_CLAIM_LIMIT) a special resolution covers a larger amount owing
+ * since the decision, and an ordinary one is checked again against the
+ * threshold (so refused while the comparator has no value).
  */
 const VIC_AUTHORITY_TO_SUE = {
   recordedAtStep: "COMMITTEE_REVIEW",
@@ -1640,11 +1646,11 @@ export const DEBT_RECOVERY_GUIDANCE: Readonly<Record<string, string>> = {
   HARDSHIP_REVIEW:
     "The owners corporation's rules may provide for payment of fees by instalments by owners in financial difficulty (OCA Sch 1 item 3.5). The owners corporation may waive interest in a particular case, and decisions to waive or not, with reasons, are reported to the AGM (s 29(3), (4)). Not confirmed: who decides a waiver, so none can be recorded in StrataVerze yet. Statutory payment plans (ss 32A to 32J) are enacted but not in force. This step is StrataVerze practice.",
   COMMITTEE_REVIEW:
-    "Record the special resolution carried at a general meeting that decided to start proceedings (OCA s 18). An ordinary resolution is enough for an order for payment of no more than twice the total amount of the current annual fees (s 18(2)), but whether that total is the owners corporation's or the lot's is not confirmed, and neither is the financial year, so StrataVerze asks for a special resolution for every claim (decision D2). A committee resolution is never accepted: whether a committee may give this authority by delegation (s 11(3), (5)) is not confirmed. An interim special resolution counts only once it has taken effect as a special resolution. The meeting must have been held, and the resolution must take effect on or after the day the case was opened. Its subject is not checked. The case records the amount owing then, and proceedings cannot be recorded for a larger amount. No case is opened for a tier 5 owners corporation, which is exempt from s 18 (s 7A(1)(a), decision D6), and the tier is checked again when this step and the Proceedings step are completed. If the owners corporation decides not to start proceedings, close the case instead of completing this step.",
+    "Record the special resolution carried at a general meeting that decided to start proceedings (OCA s 18). An ordinary resolution is enough for an order for payment of no more than twice the total amount of the current annual fees (s 18(2)), but whether that total is the owners corporation's or the lot's is not confirmed, and neither is the financial year, so StrataVerze asks for a special resolution for every claim (decision D2). A committee resolution is never accepted: whether a committee may give this authority by delegation (s 11(3), (5)) is not confirmed. An interim special resolution counts only once it has taken effect as a special resolution. The meeting must have been held, and the resolution must take effect on or after the day the case was opened. Its subject is not checked. The case records the amount owing then. When proceedings are started, a special resolution is taken to cover a larger amount owing since, and an ordinary resolution is checked again against s 18(2) (StrataVerze practice, decision of 30 Oct 2026). No case is opened for a tier 5 owners corporation, which is exempt from s 18 (s 7A(1)(a), decision D6), and the tier is checked again when this step and the Proceedings step are completed. If the owners corporation decides not to start proceedings, close the case instead of completing this step.",
   LEGAL_REFERRAL:
     "Refer the matter with the ledger, the fee notices, the final fee notice and the recorded resolution. The case cannot be marked as referred for legal recovery until this step is complete. VCAT may order the owner to pay the owners corporation's reasonable costs in recovering an unpaid amount, other than costs in the proceeding (OCA s 165(1)(ca), (4)). Not confirmed: costs in the proceeding (VCAT Act s 109, not read). StrataVerze's recovery step fees are charged to the owners corporation and never passed to the owner (decision D10).",
   PROCEEDINGS:
-    "Apply to VCAT for an order for payment (OCA ss 162, 163), or claim the unpaid fees as a debt in any court of competent jurisdiction (s 30), and record which when this step is completed (decision D13). The notes name no particular court. An application to VCAT for payment can only be made if the amount is not paid within 28 days after the final notice (s 163(2)). StrataVerze applies the same wait to a claim in a court (decision D5), from day 29 after the day the final notice was recorded as given (decision D4). The amount owing must not be more than the amount recorded with the resolution to start proceedings. No monetary cap appears in OCA ss 162 to 169. Not confirmed: any limit in the VCAT Act (not read). No limit is applied. When the payment plan law commences (1 Dec 2027 at the latest) a request will pause the 28 days and stop a VCAT application while it is pending (new s 163(3), (4)), which StrataVerze does not support yet, so from then this step is refused (decision D14).",
+    "Apply to VCAT for an order for payment (OCA ss 162, 163), or claim the unpaid fees as a debt in any court of competent jurisdiction (s 30), and record which when this step is completed (decision D13). The notes name no particular court. An application to VCAT for payment can only be made if the amount is not paid within 28 days after the final notice (s 163(2)). StrataVerze applies the same wait to a claim in a court (decision D5), from day 29 after the day the final notice was recorded as given (decision D4). A special resolution to start proceedings is taken to cover a larger amount owing since it was passed. An ordinary resolution is checked again against s 18(2) for the amount owing now, and refused while that cannot be worked out. The claim must be limited to the fee notices the final notice covered. StrataVerze does not record what a claim includes, so this step is refused while any of the lot's overdue fee notices was not yet overdue, or was issued less than 29 days before, on the day the final notice was recorded as given (StrataVerze practice, decision of 30 Oct 2026). No monetary cap appears in OCA ss 162 to 169. Not confirmed: any limit in the VCAT Act (not read). No limit is applied. When the payment plan law commences (1 Dec 2027 at the latest) a request will pause the 28 days and stop a VCAT application while it is pending (new s 163(3), (4)), which StrataVerze does not support yet, so from then this step is refused (decision D14).",
   ENFORCEMENT: "Enforcing an order or judgment is not covered by the research notes (not confirmed). Take legal advice.",
   CLOSED: "Close the case once the debt is paid, settled or written off, and reconcile the lot ledger. This step is StrataVerze practice.",
 };
@@ -3681,7 +3687,14 @@ export const FOR_REVIEW = [
   {
     key: "S18_ANNUAL_FEES_COMPARATOR",
     point:
-      "s 18(2): an ordinary resolution suffices for an order for payment of no more than twice \"the total amount of the current annual fees\". The notes do not say whether that is the owners corporation's total annual fees or the lot's, and the Victorian financial year is NOT_CONFIRMED, so \"current\" cannot be worked out. DEBT_RECOVERY.authorityToSue.amountThreshold's comparator has no value, so StrataVerze always requires a special resolution at a general meeting (Matthew Wrigley's StrataVerze decision D2 of 29 Oct 2026). With a comparator, a claim of exactly twice the amount may be decided by an ordinary resolution and one cent more needs a special resolution, the claim being the lot's amount owing when the step is completed (its overdue fee notices with their interest). When proceedings are recorded, the amount owing must not be more than the amount recorded with the decision: a larger amount is refused, and the case cannot then go on (a completed step is not reopened), so it must be closed and a new case opened with a new resolution. Confirm the comparator, the financial year, and whether a larger amount should be refused or allowed for a special resolution.",
+      "s 18(2): an ordinary resolution suffices for an order for payment of no more than twice \"the total amount of the current annual fees\". The notes do not say whether that is the owners corporation's total annual fees or the lot's, and the Victorian financial year is NOT_CONFIRMED, so \"current\" cannot be worked out. DEBT_RECOVERY.authorityToSue.amountThreshold's comparator has no value, so StrataVerze always requires a special resolution at a general meeting (Matthew Wrigley's StrataVerze decision D2 of 29 Oct 2026). With a comparator, a claim of exactly twice the amount may be decided by an ordinary resolution and one cent more needs a special resolution, the claim being the lot's amount owing when the step is completed (its overdue fee notices with their interest). When proceedings are started the recorded resolution is checked again (PROCEEDINGS_CLAIM_LIMIT, Matthew Wrigley's StrataVerze decision of 30 Oct 2026): a special resolution covers a larger amount owing since the decision, and an ordinary resolution must still be within the threshold for the amount owing then, so while the comparator has no value it is refused. Confirm the comparator and the financial year.",
+    before: "an ordinary resolution is accepted for Victorian proceedings",
+    kind: "LEGAL",
+  },
+  {
+    key: "PROCEEDINGS_CLAIM_LIMIT",
+    point:
+      "When the Proceedings step is completed (Matthew Wrigley's StrataVerze decision of 30 Oct 2026, \"ceiling for ordinary only\", replacing the refusal of any amount owing larger than the one recorded with the decision, which stranded a case once a later fee notice fell overdue): (1) a decision recorded as a special resolution covers a larger amount owing since the decision (s 18(1) states no amount limit), so the step is not refused for that; (2) a decision recorded as an ordinary resolution is checked again against s 18(2) for the lot's amount owing then (its fee notices stored as overdue, with their interest), and refused where it would no longer be enough or that cannot be told, which is always while the comparator has no value (S18_ANNUAL_FEES_COMPARATOR, decision D2), so in practice an ordinary resolution never passes yet; a recorded resolution that matches none the pack accepts refuses; (3) the claim stays limited to the fee notices the final fee notice covered. StrataVerze does not record what a claim includes (debt_recovery_records holds an amount only with the decision, and no database change is made), so every fee notice of the lot overdue on the building's day (stored as overdue, or issued with a balance and past its due day) is taken to be claimed, and each must have been covered: issued in StrataVerze under this pack, not brought across at takeover (decision D15), past its due day on the day the final fee notice was recorded as given, and issued at least 29 days before that day (s 32(1) as decision D4 counts it), which are the notices the Final Notice step could have been completed for that day. Otherwise the step is refused, saying the claim must be limited to the notices the final fee notice covered or a new one is needed, and a notice whose issue or due day is not recorded refuses too. Interest on a covered notice since the final fee notice is not refused. A completed step is not reopened, so a fee notice that falls overdue after the final fee notice (such as the next quarter's) keeps the case at this step until it is paid, or the case is closed and a new one opened. Confirm that a special resolution covers a larger amount, that \"covered\" is read correctly, and whether a claim limited to the covered notices should be recordable (which needs the claim's notices or amount recorded).",
     before: "an ordinary resolution is accepted for Victorian proceedings",
     kind: "LEGAL",
   },
@@ -3749,7 +3762,8 @@ export const FOR_REVIEW = [
  * payment order and the notice timing he decided on 28 Oct 2026, and the
  * quorum answer, interim resolutions, their grace before settling, the
  * committee notice not checked, proxy caps and debt recovery he decided on
- * 29 Oct 2026.
+ * 29 Oct 2026, and the amount when proceedings are started he decided on
+ * 30 Oct 2026.
  */
 export const DECISIONS: readonly { decision: string; proposedOn: string; decidedBy: string | null; decidedOn: string | null }[] = [
   { decision: "Support unlimited owners corporations first; limited owners corporations are listed but blocked (OWNERS_CORPORATION_TYPE).", proposedOn: "2026-10-27", decidedBy: null, decidedOn: null },
@@ -3813,6 +3827,13 @@ export const DECISIONS: readonly { decision: string; proposedOn: string; decided
     proposedOn: "2026-10-29",
     decidedBy: "Matthew Wrigley",
     decidedOn: "2026-10-29",
+  },
+  {
+    decision:
+      "The amount when proceedings are started (DEBT_RECOVERY.authorityToSue.amountThreshold and DEBT_RECOVERY.finalNotice at the Proceedings step, stage 2, PR 9c review M1), \"ceiling for ordinary only\": a decision recorded as a special resolution covers a larger amount owing since the decision and is not refused for it; a decision recorded as an ordinary resolution is checked again against the s 18(2) ceiling for the amount owing then, and refused where it would no longer be enough or that cannot be told (always, while the comparator has no value); and the claim stays limited to the fee notices the final fee notice covered, so the step is refused while any fee notice of the lot overdue then was not covered (issued under this pack and not at takeover, past its due day and issued at least 29 days before the day the final fee notice was recorded as given). No database change. Matthew Wrigley's StrataVerze decision of 30 Oct 2026, kept for legal confirmation (FOR_REVIEW PROCEEDINGS_CLAIM_LIMIT and S18_ANNUAL_FEES_COMPARATOR).",
+    proposedOn: "2026-10-30",
+    decidedBy: "Matthew Wrigley",
+    decidedOn: "2026-10-30",
   },
 ];
 
