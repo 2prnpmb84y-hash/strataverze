@@ -608,8 +608,8 @@ export function noticeCheck(
  * 2026), or null. Only where the rule set gives the category a longer notice
  * (`categoryNoticeDays`): the latest notice issued for the meeting must be
  * recorded as compliant with a period of at least its days. With no notice
- * issued, or one not checked, it is refused (it fails closed). Plain words,
- * with no dash or semicolon.
+ * issued, or one not checked, it is refused (it fails closed); with no
+ * notice issued the words say so. Plain words, with no dash or semicolon.
  */
 export function categoryNoticeRefusal(
   ruleSet: Pick<MeetingRuleSet, "categoryNoticeDays" | "resolutionLabels">,
@@ -621,6 +621,11 @@ export function categoryNoticeRefusal(
   if (latestIssued && latestIssued.compliant && latestIssued.noticePeriodDays != null && latestIssued.noticePeriodDays >= rule.days) return null;
   const name = (ruleSet.resolutionLabels[category as ResolutionCategory]?.full ?? String(category)).toLowerCase();
   const article = /^[aeiou]/.test(name) && !/^(?:unan|uni|use|usu)/.test(name) ? "An" : "A";
+  // No notice in force: a revised notice whose issue failed when the meeting changed meanwhile leaves the earlier ones
+  // superseded (PR 8b-iii review L2, FOR_REVIEW), so say why the days cannot be checked.
+  if (!latestIssued) {
+    return `${article} ${name} needs at least ${rule.days} days' notice of the meeting. No notice is recorded as issued for this meeting, so the ${rule.days} days cannot be checked and this item cannot be recorded as resolved. Issue the notice again. Nothing was saved. The item can be deferred.`;
+  }
   return `${article} ${name} needs at least ${rule.days} days' notice of the meeting, and the notice issued for this meeting is not recorded as giving it, so this item cannot be recorded as resolved. Nothing was saved. The item can be deferred.`;
 }
 

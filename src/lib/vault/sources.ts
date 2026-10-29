@@ -147,7 +147,20 @@ async function captureMeetingNoticeInner(noticeId: string, actorId: string | nul
     const body = canonicalJson({
       kind: "meeting_notice",
       meeting: { id: meeting.id, title: meeting.title, meetingType: meeting.meetingType, scheduledAt: String(meeting.scheduledAt) },
-      notice: { id: notice.id, version: notice.version, status: notice.status, issuedAt: String(notice.issuedAt), issuedById: notice.issuedById ?? null, noticePeriodDays: notice.noticePeriodDays ?? null, compliant: notice.compliant, content: notice.content },
+      notice: {
+        id: notice.id,
+        version: notice.version,
+        status: notice.status,
+        issuedAt: String(notice.issuedAt),
+        issuedById: notice.issuedById ?? null,
+        noticePeriodDays: notice.noticePeriodDays ?? null,
+        compliant: notice.compliant,
+        // Not compliant with no period: its notice period was not checked (decision D12; VIC, ACT and WA stage 2,
+        // PR 8b-iii, a Victorian committee or Western Australian council meeting). Never set for NSW or Queensland,
+        // whose notices with no period were always recorded as compliant, so their vault copies are unchanged.
+        ...(!notice.compliant && notice.noticePeriodDays == null ? { periodNotChecked: true } : {}),
+        content: notice.content,
+      },
     });
     return captureFile({
       schemeId: meeting.schemeId,

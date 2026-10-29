@@ -121,7 +121,9 @@ describe("categoryNoticeRefusal (conduct, decision D13)", () => {
 
   it("refuses an ACT unanimous or unopposed resolution unless the latest notice issued is compliant with 21 days or more", () => {
     for (const c of ["UNANIMOUS", "UNOPPOSED"]) {
-      for (const latest of [null, notice(true, 14), notice(false, 21), notice(false, null), notice(true, 20), notice(true, null)]) {
+      expect(categoryNoticeRefusal(ACT, c, null)).toMatch(/needs at least 21 days' notice of the meeting\. No notice is recorded as issued for this meeting, so the 21 days cannot be checked and this item cannot be recorded as resolved\. Issue the notice again\. Nothing was saved\. The item can be deferred\.$/);
+      expect(categoryNoticeRefusal(ACT, c, null)).not.toMatch(NO_DASH_OR_SEMICOLON);
+      for (const latest of [notice(true, 14), notice(false, 21), notice(false, null), notice(true, 20), notice(true, null)]) {
         const r = categoryNoticeRefusal(ACT, c, latest);
         expect(r, `${c} ${JSON.stringify(latest)}`).toMatch(/needs at least 21 days' notice of the meeting, and the notice issued for this meeting is not recorded as giving it, so this item cannot be recorded as resolved\. Nothing was saved\. The item can be deferred\.$/);
         expect(r).not.toMatch(NO_DASH_OR_SEMICOLON);

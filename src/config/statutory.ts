@@ -488,7 +488,9 @@ export const PENDING_RULE_PACKS = {
     // FOR_REVIEW for legal confirmation). An unopposed resolution stays refused and off the agenda. The file header, the
     // MEETING_RULES header and notes, the category comments and MEETING_RULES_STATUS.noticePeriods are rewritten,
     // MEETING_RULES_STATUS gains categoryNoticeDays, FOR_REVIEW's MEETING_RULES point is rewritten and it gains the
-    // notice by motion point. No legal value or status already recorded changed; still a draft.
+    // notice by motion point. After review (29 Oct 2026): FOR_REVIEW gains a point on a revised notice that fails
+    // (no notice left issued, so the unanimous resolution is refused saying so), and the pre-meeting voting point adds
+    // that a ballot must also apply categoryNoticeDays. No legal value or status already recorded changed; still a draft.
     version: "2026.10.11",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",

@@ -80,8 +80,6 @@ describe("an ACT unanimous resolution at conduct (D13)", () => {
 
   it("refuses Resolved on a short, unchecked or missing notice, before the votes are read, writing nothing", async () => {
     const cases = {
-      none: [],
-      supersededOnly: [notice(1, "SUPERSEDED", true, 21)],
       fourteenDays: [notice(1, "ISSUED", true, 14)],
       twentyDays: [notice(1, "ISSUED", true, 20)],
       shortOfTwentyOne: [notice(1, "ISSUED", false, 21)],
@@ -96,6 +94,19 @@ describe("an ACT unanimous resolution at conduct (D13)", () => {
       const r = await record("RESOLVED", "not votes", "not an answer");
       expect(r.error, name).toMatch(SHORT);
       expect(r.error).not.toMatch(/[;–—]/);
+      expect(updateAgendaItem).not.toHaveBeenCalled();
+      expect(recordMeetingEvent).not.toHaveBeenCalled();
+    }
+  });
+
+  it("says why when no notice is recorded as issued, as after a revised notice that failed (review L2)", async () => {
+    for (const notices of [[], [notice(1, "SUPERSEDED", true, 21), notice(2, "SUPERSEDED", true, 21)]]) {
+      vi.clearAllMocks();
+      at("UNANIMOUS", notices);
+      const r = await record("RESOLVED", "not votes", "not an answer");
+      expect(r.error).toBe(
+        "A unanimous resolution needs at least 21 days' notice of the meeting. No notice is recorded as issued for this meeting, so the 21 days cannot be checked and this item cannot be recorded as resolved. Issue the notice again. Nothing was saved. The item can be deferred.",
+      );
       expect(updateAgendaItem).not.toHaveBeenCalled();
       expect(recordMeetingEvent).not.toHaveBeenCalled();
     }

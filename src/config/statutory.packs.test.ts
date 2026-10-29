@@ -578,7 +578,7 @@ describe("Western Australia pack (pending)", () => {
   const pack = PENDING_RULE_PACKS.WA;
   const wa = pack.rules;
 
-  it("is a draft, not yet signed off, with only the payment order, the notice timing, the 2-lot quorum and the voting period decided", () => {
+  it("is a draft, not yet signed off, with only the payment order, the notice timing, the 2-lot quorum, the voting period and council notice not checked decided", () => {
     expect(pack.version).toBe("2026.10.9");
     expect(pack.status).toBe("DRAFT");
     expect(pack.reviewedOn).toBeNull();
