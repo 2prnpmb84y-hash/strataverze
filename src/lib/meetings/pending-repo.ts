@@ -245,7 +245,9 @@ async function votingPeriodFacts(orm: Orm, row: NonNullable<PendingRow>): Promis
     };
   }
   const lateVotes: LateVote[] = entries.map((e) => ({ lotId: e.lotId, vote: e.vote as LateVote["vote"], receivedOn: day(e.receivedOn)!, entitlement: weigh(e.lotId) }));
-  return { category: row.category, resolution, meetingTally: tally, enteredLotIds: [...counted, ...notCounted], lateVotes };
+  // The building's lots at the meeting (review M), kept with the row since PR 8b-ii's review; null where not kept.
+  const meetingLotIds = Array.isArray(votes.lotIds) && votes.lotIds.every((x) => typeof x === "string") ? (votes.lotIds as string[]) : null;
+  return { category: row.category, resolution, meetingTally: tally, enteredLotIds: [...counted, ...notCounted], meetingLotIds, lateVotes };
 }
 
 /** What the decision needs beyond the row, read with `orm`: the linked meeting (Victoria s 78), the votes at the close (Western Australia). */
@@ -476,14 +478,26 @@ export async function recordPendingNotice(p: { scheme: PendingScheme; meetingId:
   const problem = dayProblem(p.givenOn, view.madeOn, null, today, "the notice was given");
   if (problem) return { error: problem };
   const late = !!view.noticeDueOn && p.givenOn > view.noticeDueOn;
+  // Western Australia's outcome notice (PR 8b-ii review L1): given after the voting period closed is flagged, not refused.
+  const afterClose = view.kind === "VOTING_PERIOD" && p.givenOn > view.windowClosesOn;
   const saved = await recordFact(p.pendingId, (r) => r.noticeGivenOn == null, { noticeGivenOn: p.givenOn }, {
     actorId: p.actorId,
     eventType: "PENDING_NOTICE_RECORDED",
-    payload: { givenOn: p.givenOn, ...(late ? { late: true, dueOn: view.noticeDueOn } : {}) },
+    payload: {
+      givenOn: p.givenOn,
+      ...(late ? { late: true, dueOn: view.noticeDueOn } : {}),
+      ...(afterClose ? { late: true, closedOn: view.windowClosesOn } : {}),
+    },
   });
   if ("error" in saved) return saved;
   // Due already (its period and its grace ended while the notice was missing): decided now.
   await settleDuePendingResolutions({ meetingId: p.meetingId }, p.now);
+  if (afterClose) {
+    return {
+      ok: true,
+      notice: `Recorded. The notice was given after ${formatDay(view.windowClosesOn)}, the day its voting period closed. This is flagged, and the dates of the resolution do not move.`,
+    };
+  }
   return late
     ? { ok: true, notice: `Recorded. The notice was given after ${formatDay(view.noticeDueOn!)}, the day it was due. This is flagged, and the dates of the resolution do not move.` }
     : { ok: true };
@@ -587,12 +601,15 @@ export async function recordPendingPetition(p: {
 
 /**
  * Western Australia s 121(2) (PR 8b-ii, decision D8): record a written vote
- * received after the meeting, FOR or AGAINST, from a lot of the building with
- * nothing entered at the item and no written vote yet, received from the day
- * it was made to the day its period closes (also during the grace after it).
- * A lot owing money on the day it was received may not vote on the item's
- * category (s 120(2), `barredLotIds`, worked out by the caller): refused,
- * and nothing is stored. Written under the row lock, with its event.
+ * received after the meeting, FOR or AGAINST, from one of the building's lots
+ * at the meeting (review M) with nothing entered at the item and no written
+ * vote yet, received from the day it was made to the day its period closes
+ * (also during the grace after it). A lot owing money on the day it was
+ * received may not vote on the item's category (s 120(2)): judged by the
+ * debtor rule kept with the row from the meeting (review L2, `owingLotIds`),
+ * or, for a row kept without it, by the current pack (`barredLotIds`), both
+ * worked out by the caller. Refused, and nothing is stored. Written under the
+ * row lock, with its event.
  */
 export async function recordLateVote(p: {
   scheme: PendingScheme;
@@ -601,8 +618,10 @@ export async function recordLateVote(p: {
   lotId: string;
   vote: string;
   receivedOn: string;
-  /** The lots barred for money owed on `receivedOn` from voting on `category`, worked out by the caller. */
+  /** For a row kept without the meeting's debtor rule: the lots barred for money owed on `receivedOn` from voting on `category`, by the current pack. */
   barredLotIds: (receivedOn: string, category: string) => Promise<ReadonlySet<string>>;
+  /** The building's lots owing money on `receivedOn`, read only where the meeting's debtor rule bars the item's category. */
+  owingLotIds: (receivedOn: string) => Promise<ReadonlySet<string>>;
   actorId: string;
   now?: Date;
 }): Promise<RepoResult> {
@@ -622,10 +641,18 @@ export async function recordLateVote(p: {
     today: todayIn(p.scheme.timeZone, p.now),
     enteredLotIds: facts.enteredLotIds,
     lateLotIds: facts.lateVotes.map((v) => v.lotId),
+    meetingLotIds: facts.meetingLotIds,
   });
   if (problem) return { error: problem };
-  // D8: a debt is judged on the day the written vote was received (s 120(2)).
-  if ((await p.barredLotIds(p.receivedOn, found.row.category)).has(p.lotId)) {
+  // D8: a debt is judged on the day the written vote was received (s 120(2)), by the rule kept from the meeting (review L2).
+  const kept = isRecord(found.row.rule) ? (found.row.rule as Record<string, unknown>).debtorsMayVoteOn : undefined;
+  const category = found.row.category;
+  const barred = Array.isArray(kept)
+    ? !kept.includes(category) && (await p.owingLotIds(p.receivedOn)).has(p.lotId)
+    : kept === null
+      ? false
+      : (await p.barredLotIds(p.receivedOn, category)).has(p.lotId);
+  if (barred) {
     return {
       error: `Lot ${lotNumber} had an amount owing on ${formatDay(p.receivedOn)}, the day its written vote was received, so it cannot vote on this resolution. Nothing was saved.`,
     };

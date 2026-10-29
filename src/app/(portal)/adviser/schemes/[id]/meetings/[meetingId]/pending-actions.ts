@@ -153,7 +153,8 @@ export async function recordPendingConfirmationAction(
 /**
  * Western Australia s 121(2) (PR 8b-ii): a written vote received after the
  * meeting from a lot with nothing entered at the item, FOR or AGAINST, its
- * debt judged on the day it was received (decision D8).
+ * debt judged on the day it was received (decision D8), by the debtor rule
+ * kept from the meeting (review L2).
  */
 export async function recordLateVoteAction(
   schemeId: string,
@@ -171,7 +172,9 @@ export async function recordLateVoteAction(
       lotId: text(lotId),
       vote: text(vote),
       receivedOn: text(receivedOn),
+      // For a row kept without the meeting's debtor rule: the current pack's (review L2).
       barredLotIds: barredLots(c),
+      owingLotIds: (day: string) => lotsOwingMoney(c.scheme, c.building.lots.map((l) => l.id), day),
       actorId: c.actorId,
     }),
   );

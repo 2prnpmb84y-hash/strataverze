@@ -69,8 +69,9 @@ async function open() {
       counted: [vote(1, "FOR"), vote(2, "FOR"), vote(3, "FOR"), vote(4, "FOR"), vote(5, "AGAINST")],
       notCounted: [vote(6, "FOR")],
       tally: { forCount: 4, againstCount: 1, abstainCount: 0, totalLots: 12, forUE: 40, againstUE: 10, totalEntitlement: 120 },
+      lotIds: LOTS.filter((l) => l.lotType !== "COMMON").map((l) => l.id),
     },
-    rule: { pending: VP, resolution: WA.resolutionCategories.SPECIAL! },
+    rule: { pending: VP, resolution: WA.resolutionCategories.SPECIAL!, debtorsMayVoteOn: WA.debtorsMayVoteOn },
     rulePack: "AU-WA 2026.10.8",
     actorId: "chair",
     stored: "OPEN",
@@ -82,10 +83,12 @@ const pendingRow = () => sharedFake.table("PendingResolution")[0];
 const item = () => sharedFake.table("AgendaItem")[0];
 const events = (type: string) => sharedFake.table("MeetingEvent").filter((e) => e.eventType === type);
 type Barred = (day: string, category: string) => Promise<ReadonlySet<string>>;
+type Owing = (day: string) => Promise<ReadonlySet<string>>;
 const noneBarred: Barred = async () => new Set<string>();
+const noneOwing: Owing = async () => new Set<string>();
 
-function lateVote(lotId: string, v: string, receivedOn: string, now = "2026-11-25T02:00:00.000Z", barredLotIds: Barred = noneBarred) {
-  return repo.recordLateVote({ scheme: waScheme, meetingId: "m1", pendingId: String(pendingRow().id), lotId, vote: v, receivedOn, barredLotIds, actorId: "adviser", now: at(now) });
+function lateVote(lotId: string, v: string, receivedOn: string, now = "2026-11-25T02:00:00.000Z", owingLotIds: Owing = noneOwing, barredLotIds: Barred = noneBarred) {
+  return repo.recordLateVote({ scheme: waScheme, meetingId: "m1", pendingId: String(pendingRow().id), lotId, vote: v, receivedOn, barredLotIds, owingLotIds, actorId: "adviser", now: at(now) });
 }
 
 beforeEach(seed);
@@ -132,22 +135,56 @@ describe("written votes after the meeting (D8)", () => {
     expect(events("PENDING_LATE_VOTE_RECORDED")).toHaveLength(1);
   });
 
-  it("judges a debt on the day the vote was received (s 120(2)), refusing a lot owing money then", async () => {
-    const asked: [string, string][] = [];
-    const barred = async (day: string, category: string) => {
-      asked.push([day, category]);
+  it("judges a debt on the day the vote was received (s 120(2)), by the debtor rule kept from the meeting (review L2)", async () => {
+    const asked: string[] = [];
+    const owing: Owing = async (day) => {
+      asked.push(day);
       return new Set(day < "2026-11-15" ? ["lot-7"] : []);
     };
-    expect(await lateVote("lot-7", "FOR", "2026-11-10", undefined, barred)).toEqual({
+    const currentPack = vi.fn(noneBarred);
+    expect(await lateVote("lot-7", "FOR", "2026-11-10", undefined, owing, currentPack)).toEqual({
       error: "Lot 7 had an amount owing on 10 November 2026, the day its written vote was received, so it cannot vote on this resolution. Nothing was saved.",
     });
     expect(sharedFake.table("PendingResolutionLot")).toHaveLength(0);
     // Paid by a later day: a vote received then is recorded.
-    expect(await lateVote("lot-7", "FOR", "2026-11-16", undefined, barred)).toMatchObject({ ok: true });
-    expect(asked).toEqual([
-      ["2026-11-10", "SPECIAL"],
-      ["2026-11-16", "SPECIAL"],
-    ]);
+    expect(await lateVote("lot-7", "FOR", "2026-11-16", undefined, owing, currentPack)).toMatchObject({ ok: true });
+    expect(asked).toEqual(["2026-11-10", "2026-11-16"]);
+    // The current pack is never read for a row that kept the meeting's rule.
+    expect(currentPack).not.toHaveBeenCalled();
+  });
+
+  it("reads no debts where the meeting's rule let a lot owing money vote, or recorded no rule", async () => {
+    const owing = vi.fn(async () => new Set(["lot-7", "lot-8"]));
+    (pendingRow().rule as Record<string, unknown>).debtorsMayVoteOn = ["SPECIAL"];
+    expect(await lateVote("lot-7", "FOR", "2026-11-10", undefined, owing)).toMatchObject({ ok: true });
+    (pendingRow().rule as Record<string, unknown>).debtorsMayVoteOn = null;
+    expect(await lateVote("lot-8", "FOR", "2026-11-10", undefined, owing)).toMatchObject({ ok: true });
+    expect(owing).not.toHaveBeenCalled();
+  });
+
+  it("falls back to the current pack for a row kept without the meeting's debtor rule", async () => {
+    delete (pendingRow().rule as Record<string, unknown>).debtorsMayVoteOn;
+    const owing = vi.fn(noneOwing);
+    const currentPack = vi.fn(async () => new Set(["lot-7"]));
+    expect(await lateVote("lot-7", "FOR", "2026-11-10", undefined, owing, currentPack)).toEqual({ error: expect.stringMatching(/^Lot 7 had an amount owing on 10 November 2026/) });
+    expect(currentPack).toHaveBeenCalledWith("2026-11-10", "SPECIAL");
+    expect(owing).not.toHaveBeenCalled();
+  });
+
+  it("refuses a lot that was not one of the meeting's lots, and every lot where they were not kept (review M)", async () => {
+    // A lot added after the meeting.
+    const added = { id: "lot-13", schemeId: "w1", lotNumber: "13", entitlement: 10, lotType: "RESIDENTIAL" };
+    sharedFake.table("Lot").push({ ...added });
+    const scheme = { ...waScheme, totalLots: 13, lots: [...LOTS, added] };
+    const p = { scheme, meetingId: "m1", pendingId: String(pendingRow().id), vote: "FOR", receivedOn: "2026-11-20", barredLotIds: noneBarred, owingLotIds: noneOwing, actorId: "adviser", now: at("2026-11-25T02:00:00.000Z") };
+    expect(await repo.recordLateVote({ ...p, lotId: "lot-13" })).toEqual({
+      error: "Lot 13 was not one of the building's lots at the meeting, so it cannot vote in writing on this resolution. Nothing was saved.",
+    });
+    delete (pendingRow().meetingVotes as Record<string, unknown>).lotIds;
+    expect(await repo.recordLateVote({ ...p, lotId: "lot-7" })).toEqual({
+      error: "The lots of the meeting were not kept with this resolution, so a written vote cannot be recorded. Nothing was saved.",
+    });
+    expect(sharedFake.table("PendingResolutionLot")).toHaveLength(0);
   });
 
   it("refuses once the resolution is decided, and on a resolution that takes no written votes", async () => {
@@ -196,6 +233,18 @@ describe("the close (D9, D11 and the grace)", () => {
     // Done once: a second run does nothing.
     expect(await repo.settleDuePendingResolutions({}, at("2026-12-20T02:00:00.000Z"))).toMatchObject({ settled: 0 });
     expect(events("PENDING_RESOLUTION_SETTLED")).toHaveLength(1);
+  });
+
+  it("flags an outcome notice given after the voting period closed, in the event and the message (review L1)", async () => {
+    const r = await repo.recordPendingNotice({ scheme: waScheme, meetingId: "m1", pendingId: String(pendingRow().id), givenOn: "2026-12-02", actorId: "adviser", now: at("2026-12-03T02:00:00.000Z") });
+    expect(r).toEqual({ ok: true, notice: "Recorded. The notice was given after 30 November 2026, the day its voting period closed. This is flagged, and the dates of the resolution do not move." });
+    expect(events("PENDING_NOTICE_RECORDED")[0]).toMatchObject({ payload: { givenOn: "2026-12-02", late: true, closedOn: "2026-11-30" } });
+    expect(events("PENDING_NOTICE_RECORDED")[0].payload).not.toHaveProperty("dueOn");
+  });
+
+  it("does not flag an outcome notice given by the close", async () => {
+    expect(await repo.recordPendingNotice({ scheme: waScheme, meetingId: "m1", pendingId: String(pendingRow().id), givenOn: "2026-11-30", actorId: "adviser", now: at("2026-12-03T02:00:00.000Z") })).toEqual({ ok: true });
+    expect(events("PENDING_NOTICE_RECORDED")[0].payload).toEqual({ pendingId: pendingRow().id, itemId: "i1", givenOn: "2026-11-30" });
   });
 
   it("decides it lost on the votes at the close, with no day", async () => {

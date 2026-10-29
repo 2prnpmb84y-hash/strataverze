@@ -442,6 +442,14 @@ async function recordPendingOutcome(
   }
   // D2: made on the later of the meeting's day and the day it is recorded, in the building's time zone.
   const dates = pendingDates(rule, madeOnDay(c.meetingDay, todayIn(timeZoneOf(p.scheme))));
+  // Western Australia's voting period (PR 8b-ii review M, L2): the lots the count was made over, the only ones that may
+  // vote in writing, and the debtor rule as the pack held it at the meeting, kept with the row. Not kept for other kinds.
+  const voting = c.later.kind === "VOTING_PERIOD";
+  const meetingLotIds = p.scheme.lots
+    .filter((l) => !p.ruleSet.excludeCommonPropertyRows || String(l.lotType ?? "").toUpperCase() !== "COMMON")
+    .map((l) => l.id);
+  const entered = new Set([...c.counted, ...c.notCounted].map((v) => (v as { lotId?: unknown }).lotId));
+  const someLotAbsent = meetingLotIds.some((id) => !entered.has(id));
   const opened = await openPendingResolution({
     schemeId: p.schemeId,
     meetingId: p.meetingId,
@@ -451,8 +459,12 @@ async function recordPendingOutcome(
     category,
     takesEffectAs,
     dates,
-    meetingVotes: { counted: c.counted, notCounted: c.notCounted, tally: c.tally },
-    rule: { pending: rule, resolution: p.ruleSet.resolutionCategories[category as keyof MeetingRuleSet["resolutionCategories"]] ?? null },
+    meetingVotes: { counted: c.counted, notCounted: c.notCounted, tally: c.tally, ...(voting ? { lotIds: meetingLotIds } : {}) },
+    rule: {
+      pending: rule,
+      resolution: p.ruleSet.resolutionCategories[category as keyof MeetingRuleSet["resolutionCategories"]] ?? null,
+      ...(voting ? { debtorsMayVoteOn: p.ruleSet.debtorsMayVoteOn ?? null } : {}),
+    },
     rulePack: c.rulesLabel,
     actorId: p.actorId,
     ...(c.later.stored === "OPEN" ? { stored: "OPEN" as const } : {}),
@@ -470,7 +482,7 @@ async function recordPendingOutcome(
   if ("error" in opened) return { error: opened.error };
   revalidate(p.schemeId, p.meetingId);
   const notCounted = notCountedNotice(c.notCounted, c.ownersCorporation);
-  return { ok: true, notice: [pendingRecordedNotice(rule, dates), notCounted].filter(Boolean).join(" ") };
+  return { ok: true, notice: [pendingRecordedNotice(rule, dates, voting ? { someLotAbsent } : {}), notCounted].filter(Boolean).join(" ") };
 }
 
 export async function addConductNoteAction(
