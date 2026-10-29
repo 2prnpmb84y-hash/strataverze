@@ -193,20 +193,22 @@ describe("Australian Capital Territory pack (pending)", () => {
   const pack = PENDING_RULE_PACKS.ACT;
   const act = pack.rules;
 
-  it("is a draft for review, not signed off, with only the payment order, the notice timing and the quorum answer decided", () => {
+  it("is a draft for review, not signed off, with only the payment order, the notice timing, the quorum answer and 1 or 2 members decided", () => {
     expect(pack.code).toBe("AU-ACT");
     expect(pack.state).toBe("ACT");
     expect(pack.version).toBe("2026.10.9");
     expect(pack.status).toBe("DRAFT");
     expect(pack.reviewedOn).toBeNull();
     expect(pack.reviewer).toBe("Matthew Wrigley");
-    expect(act.DECISIONS).toHaveLength(3);
+    expect(act.DECISIONS).toHaveLength(4);
     for (const d of act.DECISIONS.slice(0, 2)) expect(d).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-28" });
     expect(act.DECISIONS[0].decision).toContain("PAYMENT_ALLOCATION_ORDER");
     expect(act.DECISIONS[1].decision).toContain("NOTICE_RULES");
     // Stage 2, PR 8a-ii: the chair's quorum answer (29 Oct 2026).
     expect(act.DECISIONS[2]).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-29" });
     expect(act.DECISIONS[2].decision).toContain("quorumAttestation");
+    expect(act.DECISIONS[3]).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-29" });
+    expect(act.DECISIONS[3].decision).toContain("ONE_OR_TWO");
   });
 
   it("holds exactly one entitlement schedule on each lot: unit entitlement", () => {

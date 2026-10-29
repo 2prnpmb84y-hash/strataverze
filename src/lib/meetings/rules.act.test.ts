@@ -36,13 +36,11 @@ describe("the number of members chooses the test", () => {
     expect(out.reason).toMatch(/^The building's number of members recorded is not one StrataVerze knows/);
   });
 
-  it("refuses 1 or 2 members for now, whatever the votes", () => {
+  it("counts 1 or 2 members by no vote against and at least 1 for (ss 3.15(2), 3.16(3), 3.18(2); stage 2, PR 8a-ii)", () => {
     for (const c of ["ORDINARY", "SPECIAL", "UNANIMOUS"] as const) {
-      expect(evaluateResolution(ACT, c, tally({ forCount: 1, memberBand: "ONE_OR_TWO" }))).toEqual({
-        passed: false,
-        result: "UNDETERMINED",
-        reason: "StrataVerze does not count the votes of an owners corporation with 1 or 2 members yet",
-      });
+      expect(evaluateResolution(ACT, c, tally({ forCount: 1, memberBand: "ONE_OR_TWO" }))).toEqual({ passed: true, reason: "No vote against, and at least 1 vote for" });
+      expect(evaluateResolution(ACT, c, tally({ forCount: 1, againstCount: 1, memberBand: "ONE_OR_TWO" }))).toEqual({ passed: false, reason: "1 vote(s) against" });
+      expect(evaluateResolution(ACT, c, tally({ forCount: 0, abstainCount: 2, memberBand: "ONE_OR_TWO" }))).toEqual({ passed: false, reason: "No vote cast for" });
     }
   });
 });

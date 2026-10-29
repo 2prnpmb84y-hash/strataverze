@@ -432,8 +432,8 @@ exports[`Australian Capital Territory pack (pending) > is the rules recorded for
       "options": [
         {
           "label": "1 or 2 members",
-          "note": "The resolution tests for 1 or 2 members are not applied yet, so the votes at its meetings are not counted.",
-          "supported": false,
+          "note": "A resolution passes with no vote against and at least 1 vote for, and everyone entitled to vote must be present for a quorum. A unit owing money is not barred from voting.",
+          "supported": true,
           "value": "ONE_OR_TWO",
         },
         {
@@ -692,6 +692,11 @@ exports[`Australian Capital Territory pack (pending) > is the rules recorded for
       "decidedOn": "2026-10-29",
       "decision": "Quorum (MEETING_RULES.quorumAttestation): the chair's answer for each motion, "standard quorum present: yes or no", is accepted until attendance is recorded. It is never filled in for the chair, a motion not answered is refused, and the answer is kept in the meeting record with who recorded it. When attendance is recorded the quorum is to be worked out from it instead. Matthew Wrigley's StrataVerze decision of 29 Oct 2026.",
     },
+    {
+      "decidedBy": "Matthew Wrigley",
+      "decidedOn": "2026-10-29",
+      "decision": "1 or 2 members (MEMBER_BAND ONE_OR_TWO): counted at a meeting by the tests of sch 3 ss 3.15(2), 3.16(3) and 3.18(2), no vote against and at least 1 vote for, with no debtor bar and no casting vote. Matthew Wrigley's StrataVerze decision of 29 Oct 2026.",
+    },
   ],
   "DISCOUNTS": {
     "by": "ORDINARY",
@@ -891,9 +896,9 @@ exports[`Australian Capital Territory pack (pending) > is the rules recorded for
     "Form 1 (AF2012-112) was not read, so whether ACT contribution notices must be in an approved form is not recorded (NOTICE_RULES.checked.form is null). Check it before any ACT notice is issued.",
     "A notice that goes out late states a later due date, 14 days after it goes out and within the 28 days: StrataVerze's reading of UTMA ss 80, 91 (the notes say only that a contribution is payable on the date stated in the notice), recorded as STRATAVERZE, not CONFIRMED. Confirm.",
     "MEETING_RULES (stage 2, PR 8a-i) is StrataVerze's mapping of MEETINGS and RESOLUTIONS to the shared shape. StrataVerze choices: the names (Ordinary, Special, Unopposed and Unanimous Resolution); a general meeting and the motions list offer ordinary and special resolutions, and an executive committee ordinary resolutions only; unopposed and unanimous resolutions are not offered on an agenda (their 21 days' notice, sch 3 s 3.6(2), is not checked); pre-meeting electronic voting (sch 3 s 3.31A) is not offered; common property rows are not counted as units; an item with no resolution category (such as an election) cannot be recorded as resolved at a general meeting, because every outcome there comes from the count and such an item has no test to count it by (it can be recorded as lost, or deferred). Confirm each.",
-    "The number of members (MEMBER_BAND: 1 or 2, 3, or 4 or more) is recorded by the adviser or StrataVerze in the Building rules section, because members are not units (s 10: each part-owner is a member). It can go out of date when the owners change, and nothing checks it against the roll. Only 4 or more members is marked supported. With none recorded, or a value not known, every count is refused. Since stage 2, PR 8a-ii (29 Oct 2026) it also decides whether the debtor rule applies (s 3.20(3): 3 or more members), so a stale band changes both the test chosen and whether a unit owing money votes; with none recorded the debtor rule applies. A 3-member building's ordinary resolution is counted from this PR too, as 3 and 4 or more members share the ordinary resolution test (s 3.15(1)); only its special resolution stays refused. Confirm who records it and when it is checked.",
+    "The number of members (MEMBER_BAND: 1 or 2, 3, or 4 or more) is recorded by the adviser or StrataVerze in the Building rules section, because members are not units (s 10: each part-owner is a member). It can go out of date when the owners change, and nothing checks it against the roll. 1 or 2 members and 4 or more members are marked supported (1 or 2 since stage 2, PR 8a-ii); 3 members is not, as its special resolution test is not confirmed. With none recorded, or a value not known, every count is refused. Since stage 2, PR 8a-ii (29 Oct 2026) it also decides whether the debtor rule applies (s 3.20(3): 3 or more members), so a stale band changes both the test chosen and whether a unit owing money votes; with none recorded the debtor rule applies. A 3-member building's ordinary resolution is counted from this PR too, as 3 and 4 or more members share the ordinary resolution test (s 3.15(1)); only its special resolution stays refused. Confirm who records it and when it is checked.",
     "Votes present (sch 3 s 3.16(1), "the total votes that can be cast by people present, including proxy votes"): since stage 2, PR 8a-ii (29 Oct 2026) the chair gives, for each special resolution, the units present or represented (in person, by proxy or by an absentee vote, s 3.31(4), including those that do not vote). The count is refused unless that number equals the units with a vote or an abstention entered, so a unit present that did not vote must be entered as abstaining and is never left out of the votes present. The votes present are then the units entered, less a unit barred for money owed, which is present but cannot cast a vote. The chair's count and the check are StrataVerze's, until attendance is recorded. With 1 or 2 members the number is asked too, though their test does not use it. Confirm.",
-    "Refused at a meeting until confirmed: the 3-member special resolution test (s 3.16(2): against less than 1/3, of what is NOT_CONFIRMED); an unopposed resolution (s 3.17: its member scope is NOT_CONFIRMED; confirming it would let it be counted); 1 or 2 members (ss 3.15(2), 3.16(3), 3.18(2), with the quorum of s 3.12). Equal votes on an ordinary or special resolution are refused, because whether the chair has a casting vote with more than 2 members is not in the notes (with 2 members there is none, s 3.30) and StrataVerze does not record one. A 3-member ordinary resolution is counted since stage 2, PR 8a-ii (29 Oct 2026), by the same test as 4 or more members (s 3.15(1)).",
+    "Refused at a meeting until confirmed: the 3-member special resolution test (s 3.16(2): against less than 1/3, of what is NOT_CONFIRMED); an unopposed resolution (s 3.17: its member scope is NOT_CONFIRMED; confirming it would let it be counted). With 1 or 2 members a resolution is counted since stage 2, PR 8a-ii (29 Oct 2026, Matthew Wrigley's decision, DECISIONS): no vote against and at least 1 vote for (ss 3.15(2), 3.16(3), 3.18(2)), the quorum of s 3.12 (everyone entitled to vote present) being the chair's answer, no debtor bar (s 3.20(3) applies from 3 members) and no casting vote (s 3.30). The units present are asked on a special resolution with 1 or 2 members too, though their test does not use them. Equal votes on an ordinary or special resolution are refused, because whether the chair has a casting vote with more than 2 members is not in the notes (with 2 members there is none, s 3.30) and StrataVerze does not record one. A 3-member ordinary resolution is counted since stage 2, PR 8a-ii (29 Oct 2026), by the same test as 4 or more members (s 3.15(1)).",
     "A unanimous resolution (s 3.18(1)) needs a vote or an abstention recorded for every unit: a unit with nothing recorded refuses the count, since StrataVerze cannot tell whether its voter was present. Confirm.",
     "FOR LEGAL REVIEW: the debtor rule (sch 3 s 3.20(3): with 3 or more members a unit cannot vote on an ordinary or special resolution while an amount is unpaid) is applied since stage 2, PR 8a-ii (29 Oct 2026), in the same change as the chair's quorum answer: a unit owing an amount is not counted at the meeting and cannot vote online on such a motion, and with 1 or 2 members it is not barred. An unpaid amount is read as a contribution notice issued, past its due date and not paid in full on the meeting's date, as for Queensland (a StrataVerze reading: s 3.20(3) says "all amounts payable", which may be wider). With no number of members recorded the rule applies. Confirm.",
     "Quorum (sch 3 ss 3.9 to 3.11) is counted for each motion, and a decision with a reduced quorum takes effect 28 days later unless disallowed. Since stage 2, PR 8a-ii (29 Oct 2026) whether there was a standard quorum (people entitled to vote for at least half of the units) is the chair's answer for each motion, kept with the outcome in the meeting record with who recorded it (Matthew Wrigley's decision of 29 Oct 2026, DECISIONS). It is never filled in for the chair, and a motion not answered is refused. StrataVerze does not record attendance yet, so it does not work the quorum out, and nothing checks the answer against the votes: absentee votes are entered like any other vote but do not count toward the quorum (s 3.31(4)), and a unit barred for money owed does not either. With 1 or 2 members everyone entitled to vote must be present (s 3.12): the chair's answer covers that too. "No" (a reduced quorum) is refused until those decisions and their later effect are tracked (stage 2, PR 8b). When attendance is recorded (meeting management, Stage C) the quorum will be worked out from it instead. Confirm.",
@@ -1437,7 +1442,6 @@ exports[`Australian Capital Territory pack (pending) > is the rules recorded for
           {
             "rule": {
               "basis": "NONE_AGAINST_AT_LEAST_ONE_FOR",
-              "refusedBecause": "StrataVerze does not count the votes of an owners corporation with 1 or 2 members yet",
             },
             "source": "Unit Titles (Management) Act 2011 (ACT) sch 3 s 3.15(2)",
             "status": "CONFIRMED",
@@ -1473,7 +1477,6 @@ exports[`Australian Capital Territory pack (pending) > is the rules recorded for
           {
             "rule": {
               "basis": "NONE_AGAINST_AT_LEAST_ONE_FOR",
-              "refusedBecause": "StrataVerze does not count the votes of an owners corporation with 1 or 2 members yet",
             },
             "source": "Unit Titles (Management) Act 2011 (ACT) sch 3 s 3.16(3)",
             "status": "CONFIRMED",
@@ -1522,7 +1525,6 @@ exports[`Australian Capital Territory pack (pending) > is the rules recorded for
           {
             "rule": {
               "basis": "NONE_AGAINST_AT_LEAST_ONE_FOR",
-              "refusedBecause": "StrataVerze does not count the votes of an owners corporation with 1 or 2 members yet",
             },
             "source": "Unit Titles (Management) Act 2011 (ACT) sch 3 s 3.18(2)",
             "status": "CONFIRMED",
@@ -1632,8 +1634,8 @@ exports[`Australian Capital Territory pack (pending) > is the rules recorded for
     "options": [
       {
         "label": "1 or 2 members",
-        "note": "The resolution tests for 1 or 2 members are not applied yet, so the votes at its meetings are not counted.",
-        "supported": false,
+        "note": "A resolution passes with no vote against and at least 1 vote for, and everyone entitled to vote must be present for a quorum. A unit owing money is not barred from voting.",
+        "supported": true,
         "value": "ONE_OR_TWO",
       },
       {

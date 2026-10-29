@@ -172,7 +172,17 @@ describe("the ACT", () => {
     expect(selector.key).toMatch(/^[a-z][A-Za-z0-9]{0,63}$/);
     expect(selector.options.map((o) => o.value)).toEqual(["ONE_OR_TWO", "THREE", "FOUR_OR_MORE"]);
     for (const o of selector.options) expect(o.value).toMatch(/^[A-Z0-9_]{1,64}$/);
-    expect(selector.options.filter((o) => o.supported).map((o) => o.value)).toEqual(["FOUR_OR_MORE"]);
+    // 1 or 2 members are counted since stage 2, PR 8a-ii (Matthew Wrigley's decision of 29 Oct 2026); 3 members is not supported.
+    expect(selector.options.filter((o) => o.supported).map((o) => o.value)).toEqual(["ONE_OR_TWO", "FOUR_OR_MORE"]);
+  });
+
+  it("counts 1 or 2 members by no vote against and at least 1 for, refusing none of their tests", () => {
+    for (const [c, rule] of rulesOf(act.MEETING_RULES)) {
+      const small = rule.variants?.find((v) => v.when.memberBands?.includes("ONE_OR_TWO"));
+      if (!small) continue;
+      expect(small.rule, c).toEqual({ basis: "NONE_AGAINST_AT_LEAST_ONE_FOR" });
+      expect(small.status, c).toBe("CONFIRMED");
+    }
   });
 
   it("covers every band in each test chosen by it, with no band unknown to the selector", () => {

@@ -10,7 +10,9 @@
  * (a reduced quorum); the units present for a special resolution are the
  * chair's count, which must match the units entered; and the debtor rule
  * (sch 3 s 3.20(3)) bars a unit owing money on an ordinary or special
- * resolution with 3 or more members.
+ * resolution with 3 or more members. With 1 or 2 members a resolution
+ * passes with no vote against and at least 1 vote for (ss 3.15(2), 3.16(3),
+ * 3.18(2)), and a unit owing money is not barred.
  */
 import { describe, expect, it } from "vitest";
 import { PENDING_RULE_PACKS, type StatutoryRules } from "@/config/statutory";
@@ -225,6 +227,45 @@ describe("what the count lets the chair record", () => {
 
   it("has no voting period refusal", () => {
     for (const c of ["ORDINARY", "SPECIAL", "UNANIMOUS", "UNOPPOSED"]) expect(laterDecisionRefusal(ACT, c, "MOTION_LOST")).toBeNull();
+  });
+});
+
+describe("1 or 2 members (ss 3.15(2), 3.16(3), 3.18(2); Matthew Wrigley's decision of 29 Oct 2026)", () => {
+  const two: TallyLot[] = [
+    { id: "u-1", lotNumber: "1", entitlement: 10, lotType: "RESIDENTIAL" },
+    { id: "u-2", lotNumber: "2", entitlement: 30, lotType: "RESIDENTIAL" },
+  ];
+  const small = (category: string, chairVotes: ChairVote[], extra: Partial<Parameters<typeof buildConductTally>[0]> = {}) =>
+    tallyOf(count(category, chairVotes, { lots: two, recordedLotCount: 2, memberBand: "ONE_OR_TWO", quorumPresent: true, ...extra }));
+  const decideSmall = (category: string, t: ReturnType<typeof tallyOf>, requestedOutcome: "RESOLVED" | "MOTION_LOST" = "RESOLVED") =>
+    resolveOutcome(ACT, { requestedOutcome, resolutionCategory: category, tally: t });
+
+  it("carries a resolution with no vote against and at least 1 for, whatever the entitlement", () => {
+    expect(decideSmall("ORDINARY", small("ORDINARY", votes([1], [], [2])))).toMatchObject({ outcome: "RESOLVED", status: "CARRIED", evaluation: { passed: true, reason: "No vote against, and at least 1 vote for" } });
+    expect(decideSmall("SPECIAL", small("SPECIAL", votes([1, 2]), { unitsPresent: 2 }))).toMatchObject({ outcome: "RESOLVED", status: "CARRIED" });
+    expect(decideSmall("UNANIMOUS", small("UNANIMOUS", votes([2])))).toMatchObject({ outcome: "RESOLVED", status: "CARRIED" });
+    expect(decideSmall("ORDINARY", small("ORDINARY", votes([1, 2]), { poll: true }))).toMatchObject({ outcome: "RESOLVED" });
+  });
+
+  it("loses a resolution with any vote against, or none for: no casting vote is needed (s 3.30)", () => {
+    expect(decideSmall("ORDINARY", small("ORDINARY", votes([1], [2])), "MOTION_LOST")).toMatchObject({ outcome: "MOTION_LOST", evaluation: { passed: false, reason: "1 vote(s) against" } });
+    expect(decideSmall("SPECIAL", small("SPECIAL", votes([], [], [1, 2]), { unitsPresent: 2 }), "MOTION_LOST")).toMatchObject({ outcome: "MOTION_LOST", evaluation: { reason: "No vote cast for" } });
+    expect(decideSmall("ORDINARY", small("ORDINARY", votes([2], [1])), "MOTION_LOST").refused).toBeUndefined();
+  });
+
+  it("still needs the quorum answer (everyone entitled to vote present, s 3.12), and refuses a no", () => {
+    expect(decideSmall("ORDINARY", small("ORDINARY", votes([1, 2]), { quorumPresent: null })).refused).toMatch(/quorum for this item is not recorded/);
+    expect(decideSmall("ORDINARY", small("ORDINARY", votes([1, 2]), { quorumPresent: false })).refused).toMatch(/so it is decided later/);
+  });
+
+  it("asks the units present on a special resolution too, though the test does not use them", () => {
+    expect(count("SPECIAL", votes([1, 2]), { lots: two, recordedLotCount: 2, memberBand: "ONE_OR_TWO", quorumPresent: true }).ok).toBe(false);
+  });
+
+  it("does not bar a unit owing money (s 3.20(3) applies from 3 members)", () => {
+    const r = count("ORDINARY", votes([1, 2]), { lots: two, recordedLotCount: 2, memberBand: "ONE_OR_TWO", quorumPresent: true, owingLotIds: new Set(["u-2"]), debtorRuleApplies: debtorRuleApplies(ACT, false) });
+    expect(r.ok && r.value.notCounted).toEqual([]);
+    expect(decideSmall("ORDINARY", tallyOf(r))).toMatchObject({ outcome: "RESOLVED" });
   });
 });
 

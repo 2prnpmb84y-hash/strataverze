@@ -325,6 +325,18 @@ describe("the ACT", () => {
     expect((payloadOf().payload.notCounted as { lotId: string }[]).map((x) => x.lotId)).toEqual(["lot-2"]);
   });
 
+  it("records a resolution with 1 or 2 members, with no debtor bar (Matthew Wrigley's decision of 29 Oct 2026)", async () => {
+    state.scheme = { ...scheme("ACT"), totalLots: 2, lots: [lots[0], lots[1], lots[8]] };
+    state.item = { id: "i1", meetingId: "m1", resolutionCategory: "ORDINARY" };
+    sharedFake.reset({ LevyNotice: [overdue], ElectronicBallot: [], ElectronicVote: [], ...band("ONE_OR_TWO") });
+    expect(await record("RESOLVED", [v(1, "FOR"), v(2, "FOR")], undefined, YES)).toEqual({ ok: true });
+    expect(payloadOf().payload.notCounted).toEqual([]);
+    expect(payloadOf().payload.evaluation).toEqual({ passed: true, reason: "No vote against, and at least 1 vote for" });
+    vi.clearAllMocks();
+    expect(await record("RESOLVED", [v(1, "FOR"), v(2, "AGAINST")], undefined, YES)).toMatchObject({ error: expect.stringMatching(/^The votes recorded show the motion is lost, not resolved\. 1 vote\(s\) against\./) });
+    nothingWritten();
+  });
+
   it("refuses for the band first: none recorded, or another building's", async () => {
     at("ACT", "ORDINARY", { SchemeSelectorValue: [{ id: "x", schemeId: "other", key: "memberBand", value: "FOUR_OR_MORE" }] });
     const r = await record("RESOLVED", [v(1, "FOR")], undefined, YES);

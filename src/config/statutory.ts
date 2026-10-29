@@ -456,9 +456,13 @@ export const PENDING_RULE_PACKS = {
     // debtorsMayVoteOn unanimous and unopposed only, with debtorRuleAppliesWhen 3 or more members (MEMBER_BAND); with
     // none recorded it applies. So an ordinary resolution (3 or more members, the same test) and a special resolution
     // (4 or more members) are now recorded from the count, and a carried special resolution can set the LATE_CHARGE
-    // rate (its GO-LIVE GAP is rewritten). The 3-member special test, 1 or 2 members and an unopposed resolution stay refused.
+    // rate (its GO-LIVE GAP is rewritten). With 1 or 2 members a resolution is counted (no vote against and at least 1 for,
+    // ss 3.15(2), 3.16(3), 3.18(2), CONFIRMED; Matthew Wrigley's decision of 29 Oct 2026, recorded in DECISIONS): the
+    // three variants lose their refusal and MEMBER_BAND marks the band supported. The 3-member special test and an
+    // unopposed resolution stay refused.
     // MEETING_RULES_STATUS and FOR_REVIEW (member band, votes present, refusals, debtor rule, quorum, LATE_CHARGE) are
-    // rewritten, and DECISIONS gains the quorum answer. No legal value or status already recorded changed; still a draft.
+    // rewritten, and DECISIONS gains the quorum answer and 1 or 2 members. No legal value or status already recorded changed;
+    // still a draft.
     version: "2026.10.9",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",
