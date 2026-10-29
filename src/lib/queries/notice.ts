@@ -1,4 +1,5 @@
 import { db } from "@/prisma/db";
+import { and } from "@prisma/orm-postgres/orm-client";
 
 export interface CreateNoticeData {
   meetingId: string;
@@ -37,6 +38,18 @@ export async function getLatestNoticeVersion(meetingId: string): Promise<number>
     .limit(1)
     .all();
   return rows[0]?.version ?? 0;
+}
+
+/**
+ * The latest notice issued for a meeting and still in force (status ISSUED,
+ * the highest version), or null. Read where a resolution needs a longer
+ * notice (the draft packs only; VIC, ACT and WA stage 2, PR 8b-iii).
+ */
+export async function getLatestIssuedNotice(meetingId: string) {
+  return db.orm.public.Notice
+    .where((n) => and(n.meetingId.eq(meetingId), n.status.eq("ISSUED")))
+    .orderBy((n) => n.version.desc())
+    .first();
 }
 
 /** Mark all existing notices for a meeting as superseded. */

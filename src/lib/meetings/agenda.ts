@@ -9,6 +9,7 @@
  * general meeting, Act s 36(3), so ordinary resolutions only).
  */
 import { normaliseMeetingType } from "./setup";
+import { isBeforeNotice } from "./lifecycle";
 import { isResolutionCategory, type MeetingRuleSet, type ResolutionCategory } from "./rules";
 
 /** The parts of a rule set the agenda rules read. */
@@ -68,4 +69,25 @@ export function validateAgendaItem(
   }
 
   return errors;
+}
+
+/**
+ * Why an item of this category cannot be added to the agenda now, or null
+ * (VIC, ACT and WA stage 2, PR 8b-iii, 29 Oct 2026). Only where the rule set
+ * gives the category a longer notice (`categoryNoticeDays`, the ACT's
+ * unanimous and unopposed resolutions): its notice is given with the meeting
+ * notice, so once the notice is issued (the meeting is no longer before
+ * notice) it cannot be added. NSW and Queensland have no such category, so
+ * this is always null for them. Plain words, with no dash or semicolon.
+ */
+export function categoryNoticeAgendaRefusal(
+  ruleSet: Pick<MeetingRuleSet, "categoryNoticeDays" | "resolutionLabels">,
+  category: string | null | undefined,
+  meetingStatus: string,
+): string | null {
+  const rule = category ? ruleSet.categoryNoticeDays?.[category as ResolutionCategory] : undefined;
+  if (!rule || isBeforeNotice(meetingStatus)) return null;
+  const name = (ruleSet.resolutionLabels[category as ResolutionCategory]?.full ?? String(category)).toLowerCase();
+  const article = /^[aeiou]/.test(name) && !/^(?:unan|uni|use|usu)/.test(name) ? "An" : "A";
+  return `${article} ${name} needs at least ${rule.days} days' notice, given with the notice of the meeting, so it cannot be added once the notice is issued. Nothing was saved.`;
 }

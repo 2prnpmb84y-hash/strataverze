@@ -20,7 +20,7 @@ import {
   createNoticeRecipient,
 } from "@/lib/queries/notice";
 import { getActiveRuleSet } from "@/lib/meetings/rule-set-repo";
-import { validateNoticePeriod, type MeetingType } from "@/lib/meetings/rules";
+import { noticeCheck, type MeetingType, type NoticeValidation } from "@/lib/meetings/rules";
 import { normaliseMeetingType } from "@/lib/meetings/setup";
 import { assembleNoticeContent } from "@/lib/meetings/notice";
 import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
@@ -84,8 +84,17 @@ export async function issueNoticeAction(
     }
     const startIso = String(meeting.startTime ?? meeting.scheduledAt);
     const ruleSet = await getActiveRuleSet(scheme.state);
-    const validation = type
-      ? validateNoticePeriod(ruleSet, type, new Date(), new Date(startIso), meetingZone(meeting, await schemeTimeZone(schemeId)))
+    // With the agenda's categories: some need a longer notice, and some meeting types' notice is not checked (the
+    // draft packs only, VIC, ACT and WA stage 2, PR 8b-iii). For NSW and Queensland this is exactly validateNoticePeriod.
+    const validation: NoticeValidation = type
+      ? noticeCheck(
+          ruleSet,
+          type,
+          items.map((a) => a.resolutionCategory),
+          new Date(),
+          new Date(startIso),
+          meetingZone(meeting, await schemeTimeZone(schemeId)),
+        )
       : { requiredDays: null, actualDays: 0, compliant: true };
 
     const content = assembleNoticeContent({
@@ -196,6 +205,9 @@ export async function issueNoticeAction(
         version,
         compliant: validation.compliant,
         recipientCount: recipients.length,
+        // The draft packs only (decision D12): why the period was not checked, and the categories whose longer notice is not met.
+        ...(validation.notChecked ? { notChecked: validation.notChecked } : {}),
+        ...(validation.shortFor ? { shortFor: validation.shortFor } : {}),
       },
     });
 

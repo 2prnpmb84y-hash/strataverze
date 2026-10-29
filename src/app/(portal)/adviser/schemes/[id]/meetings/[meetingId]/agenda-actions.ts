@@ -13,7 +13,7 @@ import {
   getAgendaItemsForMeeting,
   getAgendaItem,
 } from "@/lib/queries/agenda";
-import { validateAgendaItem } from "@/lib/meetings/agenda";
+import { categoryNoticeAgendaRefusal, validateAgendaItem } from "@/lib/meetings/agenda";
 import {
   resolveAgendaTemplate,
   getMotionLibrary,
@@ -62,6 +62,9 @@ export async function addAgendaItemAction(
     const ruleSet = await getActiveRuleSetForScheme(schemeId);
     const fieldErrors = validateAgendaItem(input, meeting.meetingType, ruleSet);
     if (Object.keys(fieldErrors).length > 0) return { fieldErrors };
+    // A category needing a longer notice, once the notice is issued (the draft packs only, PR 8b-iii). Never for NSW or Queensland.
+    const lateCategory = categoryNoticeAgendaRefusal(ruleSet, input.resolutionCategory, String(meeting.status));
+    if (lateCategory) return { fieldErrors: { resolutionCategory: lateCategory } };
 
     const position = await getNextAgendaPosition(meetingId);
     await createAgendaItem({ meetingId, position, ...input });
@@ -107,6 +110,15 @@ export async function loadAgendaTemplateAction(
     });
     if (items.length === 0)
       return { error: "No template is defined for this meeting type." };
+    // A category needing a longer notice, once the notice is issued (the draft packs only, PR 8b-iii): the pack's own
+    // rules, read only where it has such categories, so NSW and Queensland read nothing more.
+    const packRules = rulesForState(scheme.state).rules.MEETING_RULES;
+    if (packRules.categoryNoticeDays) {
+      for (const item of items) {
+        const lateCategory = categoryNoticeAgendaRefusal(packRules, item.resolutionCategory, String(meeting.status));
+        if (lateCategory) return { error: lateCategory };
+      }
+    }
 
     for (const item of items) {
       await createAgendaItem({
@@ -160,10 +172,11 @@ export async function addMotionFromLibraryAction(
       bodyCorporate: bodyCorporateName(rulesForState(scheme.state).rules.TERMINOLOGY, scheme),
     });
 
+    const ruleSet = await getActiveRuleSet(scheme.state);
     const fieldErrors = validateAgendaItem(
       { title: resolved.title, resolutionCategory: resolved.resolutionCategory },
       meeting.meetingType,
-      await getActiveRuleSet(scheme.state),
+      ruleSet,
     );
     if (Object.keys(fieldErrors).length > 0) {
       return {
@@ -171,6 +184,9 @@ export async function addMotionFromLibraryAction(
           "This motion cannot be added to this meeting type (resolution category not permitted).",
       };
     }
+    // A category needing a longer notice, once the notice is issued (the draft packs only, PR 8b-iii). Never for NSW or Queensland.
+    const lateCategory = categoryNoticeAgendaRefusal(ruleSet, resolved.resolutionCategory, String(meeting.status));
+    if (lateCategory) return { error: lateCategory };
 
     const position = await getNextAgendaPosition(meetingId);
     await createAgendaItem({
