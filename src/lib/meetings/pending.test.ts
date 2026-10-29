@@ -17,6 +17,7 @@ import {
   madeOnDay,
   pendingDates,
   pendingDecision,
+  pendingPanelItem,
   pendingRecordedNotice,
   petitionStops,
   type PendingRowView,
@@ -250,5 +251,96 @@ describe("the words", () => {
     expect(isPendingItem({ status: "OPEN" })).toBe(true);
     for (const s of ["PENDING", "CARRIED", "LOST", "DEFERRED", null, undefined]) expect(isPendingItem({ status: s })).toBe(false);
     expect(isPendingItem({})).toBe(false);
+  });
+});
+
+describe("the meeting page's panel (pendingPanelItem)", () => {
+  const panelRow = (r: PendingRowView, more: Partial<{ petitionReceivedOn: string; effectiveOn: string; endedBy: string }> = {}) => ({
+    ...r,
+    id: "p1",
+    agendaItemId: "i1",
+    petitionReceivedOn: null,
+    effectiveOn: null,
+    endedBy: null,
+    ...more,
+  });
+
+  it("a pending interim special resolution: its dates, the notice due, and what can be recorded", () => {
+    const view = pendingPanelItem(panelRow(row("INTERIM_SPECIAL", S97, "2026-11-02")), { itemLabel: "3. Repaint the foyer", today: "2026-11-10" });
+    expect(view).toMatchObject({
+      id: "p1",
+      itemId: "i1",
+      itemLabel: "3. Repaint the foyer",
+      kindLabel: "Interim special resolution",
+      status: "PENDING",
+      standing: "Pending. Unless it is stopped sooner, it takes effect on 2 December 2026 at the earliest.",
+      facts: ["Made on 2 November 2026.", "Its period ends on 1 December 2026.", "Notice to the owners due by 16 November 2026, not recorded yet."],
+      blocker: null,
+      canRecordNotice: true,
+      petitionWords: S97.petition!.words,
+      meetingNoticeWords: null,
+      canConfirm: false,
+      madeOn: "2026-11-02",
+      windowClosesOn: "2026-12-01",
+      today: "2026-11-10",
+    });
+  });
+
+  it("says what blocks it once its period has ended without the notice", () => {
+    const view = pendingPanelItem(panelRow(row("REDUCED_QUORUM", RQ, "2026-11-02")), { itemLabel: "1. A", today: "2026-12-05" });
+    expect(view.standing).toBe("Waiting for something to be recorded before it can take effect.");
+    expect(view.blocker).toMatch(/^Its notice to the owners is not recorded as given/);
+    expect(view.canConfirm).toBe(true);
+  });
+
+  it("Victoria s 78: offers the meeting notice, then the decision of that meeting once it is called", () => {
+    const before = pendingPanelItem(panelRow(row("INTERIM_NO_QUORUM", S78, "2026-11-02")), { itemLabel: "1. A", today: "2026-11-10" });
+    expect(before).toMatchObject({ meetingNoticeWords: S78.meetingNotice!.words, canConfirm: false, petitionWords: null });
+    const called = row("INTERIM_NO_QUORUM", S78, "2026-11-02", { noticeGivenOn: "2026-11-20", meetingNoticeGivenOn: "2026-11-20", meetingHeldBy: "2026-12-18", meetingNoticeMeetingId: "sgm" });
+    const after = pendingPanelItem(panelRow(called), { itemLabel: "1. A", today: "2026-11-25", facts: { linkedMeeting: { openedOn: null } }, calledMeeting: "Special meeting (10 Dec 2026)" });
+    expect(after).toMatchObject({ meetingNoticeWords: null, canConfirm: true, standing: "Waiting for the special general meeting, which must be held by 18 December 2026." });
+    expect(after.facts).toContain("Special general meeting called on 20 November 2026 (Special meeting (10 Dec 2026)), to be held by 18 December 2026.");
+    expect(after.facts).toContain("Notice to the owners given on 20 November 2026, after it was due on 16 November 2026.");
+  });
+
+  it("a decided row: how it ended, and nothing more to record", () => {
+    const carried = pendingPanelItem(panelRow({ ...row("INTERIM_SPECIAL", S97, "2026-11-02", { noticeGivenOn: "2026-11-05" }), status: "CARRIED" }, { effectiveOn: "2026-12-02", endedBy: "PERIOD_ENDED" }), {
+      itemLabel: "1. A",
+      today: "2026-12-05",
+    });
+    expect(carried).toMatchObject({
+      status: "CARRIED",
+      standing: "Took effect as a special resolution on 2 December 2026, after its period ended.",
+      canRecordNotice: false,
+      petitionWords: null,
+      meetingNoticeWords: null,
+      canConfirm: false,
+      blocker: null,
+    });
+    const lost = pendingPanelItem(panelRow({ ...row("INTERIM_SPECIAL", S97, "2026-11-02"), status: "LOST" }, { petitionReceivedOn: "2026-11-20", endedBy: "PETITION" }), {
+      itemLabel: "1. A",
+      today: "2026-12-05",
+      petitionLots: ["1", "2", "3"],
+    });
+    expect(lost.standing).toBe("Stopped by a petition, so it is recorded as lost.");
+    expect(lost.facts).toContain("Petition received on 20 November 2026, signed for lots 1, 2 and 3.");
+    const confirmed = pendingPanelItem(panelRow({ ...row("REDUCED_QUORUM", RQ, "2026-11-02"), status: "CARRIED" }, { effectiveOn: "2026-11-20", endedBy: "CONFIRMED" }), {
+      itemLabel: "1. A",
+      today: "2026-12-05",
+      confirmedBy: "EGM (20 Nov 2026), motion 2",
+    });
+    expect(confirmed.standing).toBe("Took effect on 20 November 2026, when a later meeting confirmed it.");
+    expect(confirmed.facts).toContain("Confirmed at EGM (20 Nov 2026), motion 2.");
+    const notConfirmed = pendingPanelItem(panelRow({ ...row("INTERIM_NO_QUORUM", S78, "2026-11-02"), status: "LOST" }, { endedBy: "NOT_CONFIRMED" }), { itemLabel: "1. A", today: "2026-12-05" });
+    expect(notConfirmed.standing).toBe("Not confirmed at the special general meeting, so it is recorded as lost.");
+  });
+
+  it("uses plain words with no dashes or semicolons", () => {
+    const views = [
+      pendingPanelItem(panelRow(row("INTERIM_SPECIAL", S97, "2026-11-02")), { itemLabel: "1. A", today: "2026-12-05" }),
+      pendingPanelItem(panelRow(row("INTERIM_NO_QUORUM", S78, "2026-11-02")), { itemLabel: "1. A", today: "2026-11-05" }),
+      pendingPanelItem(panelRow(row("REDUCED_QUORUM", RQ, "2026-11-02")), { itemLabel: "1. A", today: "2026-11-05" }),
+    ];
+    for (const v of views) expect([v.standing, ...v.facts, v.blocker ?? "", v.help, v.petitionWords ?? "", v.meetingNoticeWords ?? ""].join(" ")).not.toMatch(/[;–—]/);
   });
 });

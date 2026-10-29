@@ -280,7 +280,7 @@ describe("a petition (D4, D5)", () => {
   it("the ACT: more than half of the units entitled to vote on the day, units barred for money owed left out", async () => {
     await open("x1", "REDUCED_QUORUM");
     const id = String(pendingRow("x1").id);
-    const barredOn: string[] = [];
+    const barredOn: string[][] = [];
     const p = {
       scheme: actScheme,
       meetingId: "a1",
@@ -288,13 +288,13 @@ describe("a petition (D4, D5)", () => {
       actorId: "adviser",
       receivedOn: "2026-11-20",
       now: at("2026-11-21T00:00:00.000Z"),
-      barredLotIds: async (d: string) => (barredOn.push(d), new Set(["lot-7", "lot-8"])),
+      barredLotIds: async (d: string, category: string) => (barredOn.push([d, category]), new Set(["lot-7", "lot-8"])),
     };
     // 6 entitled: 3 is exactly half; a barred unit's signature does not count.
     expect(await repo.recordPendingPetition({ ...p, lotIds: ["lot-1", "lot-2", "lot-3", "lot-7"] })).toEqual({
       error: "The petition has 3 of the 6 lots entitled to vote on that day, which is not more than 50%, so it does not stop the resolution. Nothing was saved.",
     });
-    expect(barredOn).toEqual(["2026-11-20"]);
+    expect(barredOn).toEqual([["2026-11-20", "ORDINARY"]]);
     expect(await repo.recordPendingPetition({ ...p, lotIds: ["lot-1", "lot-2", "lot-3", "lot-4"] })).toMatchObject({ ok: true });
     expect(pendingRow("x1")).toMatchObject({ status: "LOST", endedBy: "PETITION" });
   });
@@ -374,5 +374,55 @@ describe("a meeting's rows", () => {
       ["i2", 0],
     ]);
     expect(await repo.pendingResolutionsForMeeting("nothing")).toEqual([]);
+  });
+});
+
+describe("the meeting page's panel (pendingPanelData)", () => {
+  const titles = () => {
+    for (const m of sharedFake.table("Meeting")) m.title = `Meeting ${String(m.id)}`;
+    for (const a of sharedFake.table("AgendaItem")) Object.assign(a, { title: `Motion ${String(a.id)}`, position: a.position ?? 1 });
+  };
+
+  it("is null for a meeting with nothing decided later", async () => {
+    titles();
+    expect(await repo.pendingPanelData({ scheme: vicScheme, meetingId: "m1", itemLabels: new Map() })).toBeNull();
+  });
+
+  it("lists each row with the lots, the special general meetings, and the meeting it may be confirmed at", async () => {
+    titles();
+    await open("i1", "INTERIM_SPECIAL");
+    await open("i2", "INTERIM_NO_QUORUM");
+    Object.assign(pendingRow("i2"), { noticeGivenOn: "2026-11-03", meetingNoticeGivenOn: "2026-11-20", meetingHeldBy: "2026-12-18", meetingNoticeMeetingId: "sgm" });
+    const data = await repo.pendingPanelData({
+      scheme: vicScheme,
+      meetingId: "m1",
+      itemLabels: new Map([
+        ["i1", "1. Repaint"],
+        ["i2", "2. Garden"],
+      ]),
+      now: at("2026-11-25T00:00:00.000Z"),
+    });
+    expect(data!.lots.map((l) => l.lotNumber)).toEqual(["1", "2", "3", "4", "5", "6", "7", "8"]);
+    expect(data!.specialMeetings).toEqual([{ id: "sgm", label: "Meeting sgm (10 Dec 2026)" }]);
+    const [special, noQuorum] = data!.items;
+    expect(special).toMatchObject({ itemLabel: "1. Repaint", status: "PENDING", canConfirm: false, confirmChoices: [] });
+    expect(noQuorum).toMatchObject({ itemLabel: "2. Garden", canConfirm: true, meetingNoticeWords: null });
+    // Victoria: only the meeting the notice called, its motions carried or lost.
+    expect(noQuorum.confirmChoices).toEqual([
+      { meetingId: "sgm", label: "Meeting sgm (10 Dec 2026)", items: [
+        { id: "sgm-1", label: "1. Motion sgm-1 (carried)" },
+        { id: "sgm-2", label: "1. Motion sgm-2 (lost)" },
+      ] },
+    ]);
+    expect(noQuorum.facts).toContain("Special general meeting called on 20 November 2026 (Meeting sgm (10 Dec 2026)), to be held by 18 December 2026.");
+  });
+
+  it("the ACT: any later general meeting's carried motions", async () => {
+    titles();
+    await open("x1", "REDUCED_QUORUM");
+    const data = await repo.pendingPanelData({ scheme: actScheme, meetingId: "a1", itemLabels: new Map(), now: at("2026-11-25T00:00:00.000Z") });
+    expect(data!.items[0]).toMatchObject({ itemLabel: "An agenda item", canConfirm: true });
+    expect(data!.items[0].confirmChoices.map((c) => [c.meetingId, c.items.map((i) => i.id)])).toEqual([["a2", ["x2", "x3"]]]);
+    expect(data!.specialMeetings).toEqual([{ id: "a2", label: "Meeting a2 (20 Nov 2026)" }]);
   });
 });

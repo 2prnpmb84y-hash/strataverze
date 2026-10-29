@@ -234,3 +234,134 @@ export const PENDING_ITEM_REFUSAL =
 export function laterLostRefusal(rule: PendingResolutionRule, reason: string): string {
   return `The votes recorded make this motion ${article(rule.label.toLowerCase())}, decided later, not lost. ${reason}. Nothing was saved. Record it as resolved to start its period, or check the votes entered.`;
 }
+
+/** A pending row with what the meeting page shows of it beyond the decision's view. */
+export interface PendingPanelRow extends PendingRowView {
+  id: string;
+  agendaItemId: string;
+  petitionReceivedOn: string | null;
+  effectiveOn: string | null;
+  endedBy: string | null;
+}
+
+/**
+ * One resolution decided later as the meeting page shows it (VIC, ACT and WA
+ * stage 2, PR 8b-i): plain words and days only, worked out on the server, so
+ * the browser takes no pack value. What can be recorded is offered only
+ * while it is pending.
+ */
+export interface PendingPanelItem {
+  id: string;
+  itemId: string;
+  itemLabel: string;
+  kindLabel: string;
+  help: string;
+  status: "PENDING" | "CARRIED" | "LOST";
+  /** Where it stands, in one or two sentences. */
+  standing: string;
+  /** What is recorded, one sentence each. */
+  facts: string[];
+  /** What stops it taking effect, where something does. */
+  blocker: string | null;
+  canRecordNotice: boolean;
+  /** The petition's words, where one can be recorded. */
+  petitionWords: string | null;
+  /** The special general meeting notice's words, where one can be recorded (Victoria s 78). */
+  meetingNoticeWords: string | null;
+  canConfirm: boolean;
+  /** Bounds for the date fields (YYYY-MM-DD). */
+  madeOn: string;
+  windowClosesOn: string;
+  today: string;
+}
+
+const lotWords = (numbers: readonly string[]) =>
+  numbers.length > 1 ? `lots ${numbers.slice(0, -1).join(", ")} and ${numbers[numbers.length - 1]}` : `lot ${numbers[0] ?? ""}`;
+
+/** The panel's view of one pending row, on `today` in the building's time zone. */
+export function pendingPanelItem(
+  row: PendingPanelRow,
+  ctx: {
+    itemLabel: string;
+    today: string;
+    facts?: PendingFacts;
+    /** The lot numbers that signed a petition. */
+    petitionLots?: readonly string[];
+    /** The special general meeting called (Victoria s 78), as named on the page. */
+    calledMeeting?: string | null;
+    /** The meeting and motion that confirmed it or not, as named on the page. */
+    confirmedBy?: string | null;
+  },
+): PendingPanelItem {
+  const rule = row.rule;
+  const status = (["CARRIED", "LOST"].includes(row.status) ? row.status : "PENDING") as PendingPanelItem["status"];
+  const pending = status === "PENDING";
+  const facts: string[] = [`Made on ${formatDay(row.madeOn)}.`, `Its period ends on ${formatDay(row.windowClosesOn)}.`];
+  if (row.noticeDueOn) {
+    if (row.noticeGivenOn) {
+      const late = row.noticeGivenOn > row.noticeDueOn;
+      facts.push(`Notice to the owners given on ${formatDay(row.noticeGivenOn)}${late ? `, after it was due on ${formatDay(row.noticeDueOn)}` : ""}.`);
+    } else {
+      facts.push(`Notice to the owners due by ${formatDay(row.noticeDueOn)}, not recorded yet.`);
+    }
+  }
+  if (row.meetingNoticeGivenOn && row.meetingHeldBy) {
+    facts.push(`Special general meeting called on ${formatDay(row.meetingNoticeGivenOn)}${ctx.calledMeeting ? ` (${ctx.calledMeeting})` : ""}, to be held by ${formatDay(row.meetingHeldBy)}.`);
+  }
+  if (row.petitionReceivedOn) {
+    const lots = ctx.petitionLots ?? [];
+    facts.push(`Petition received on ${formatDay(row.petitionReceivedOn)}${lots.length ? `, signed for ${lotWords(lots)}` : ""}.`);
+  }
+  if (ctx.confirmedBy && (row.endedBy === "CONFIRMED" || row.endedBy === "NOT_CONFIRMED")) {
+    facts.push(`${row.endedBy === "CONFIRMED" ? "Confirmed" : "Not confirmed"} at ${ctx.confirmedBy}.`);
+  }
+
+  let standing: string;
+  let blocker: string | null = null;
+  if (status === "CARRIED") {
+    const how: Record<string, string> = {
+      PERIOD_ENDED: "after its period ended",
+      CONFIRMED: "when a later meeting confirmed it",
+      MEETING_NOT_HELD: "because the special general meeting was not held in time",
+    };
+    const as = rule.takesEffectAs !== "SAME" ? ` as a ${rule.takesEffectAs.toLowerCase()} resolution` : "";
+    standing = `Took effect${as} on ${row.effectiveOn ? formatDay(row.effectiveOn) : "a day not recorded"}, ${how[row.endedBy ?? ""] ?? "as recorded"}.`;
+  } else if (status === "LOST") {
+    standing =
+      row.endedBy === "PETITION"
+        ? "Stopped by a petition, so it is recorded as lost."
+        : row.endedBy === "NOT_CONFIRMED"
+          ? "Not confirmed at the special general meeting, so it is recorded as lost."
+          : "Recorded as lost.";
+  } else {
+    const decision = pendingDecision(row, ctx.today, ctx.facts ?? {});
+    if (!decision.settle && decision.blocker) {
+      standing = "Waiting for something to be recorded before it can take effect.";
+      blocker = decision.blocker;
+    } else if (row.kind === "INTERIM_NO_QUORUM" && row.meetingHeldBy) {
+      standing = `Waiting for the special general meeting, which must be held by ${formatDay(row.meetingHeldBy)}.`;
+    } else {
+      standing = `Pending. Unless it is stopped sooner, it takes effect on ${formatDay(addDays(row.windowClosesOn, 1))} at the earliest.`;
+    }
+  }
+
+  return {
+    id: row.id,
+    itemId: row.agendaItemId,
+    itemLabel: ctx.itemLabel,
+    kindLabel: rule.label,
+    help: rule.help,
+    status,
+    standing,
+    facts,
+    blocker,
+    canRecordNotice: pending && rule.noticeWithinDays != null && !row.noticeGivenOn,
+    petitionWords: pending && rule.petition ? rule.petition.words : null,
+    meetingNoticeWords: pending && row.kind === "INTERIM_NO_QUORUM" && rule.meetingNotice && !row.meetingNoticeGivenOn ? rule.meetingNotice.words : null,
+    canConfirm:
+      pending && ((row.kind === "INTERIM_NO_QUORUM" && !!row.meetingNoticeGivenOn) || (row.kind === "REDUCED_QUORUM" && rule.confirmedSoonerBy === "STANDARD_QUORUM_MEETING")),
+    madeOn: row.madeOn,
+    windowClosesOn: row.windowClosesOn,
+    today: ctx.today,
+  };
+}

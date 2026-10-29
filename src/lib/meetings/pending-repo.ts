@@ -18,7 +18,7 @@ import { db } from "@/prisma/db";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { recordMeetingEvent } from "./events";
 import { schemeTimeZones } from "@/lib/jurisdiction/scheme-time";
-import { dayIn, todayIn } from "@/lib/jurisdiction/time-zone";
+import { dayIn, formatDateIn, todayIn } from "@/lib/jurisdiction/time-zone";
 import { logError } from "@/lib/log";
 import { addDays } from "@/lib/levies/notice-plan";
 import {
@@ -26,9 +26,11 @@ import {
   dayProblem,
   formatDay,
   pendingDecision,
+  pendingPanelItem,
   petitionStops,
   type PendingDates,
   type PendingFacts,
+  type PendingPanelItem,
   type PendingRowView,
   type PendingRuleSnapshot,
 } from "./pending";
@@ -379,8 +381,8 @@ export async function recordPendingPetition(p: {
   pendingId: string;
   receivedOn: string;
   lotIds: readonly string[];
-  /** The lots barred for money owed on `receivedOn`, worked out by the caller (the ACT only). */
-  barredLotIds?: (receivedOn: string) => Promise<ReadonlySet<string>>;
+  /** The lots barred for money owed on `receivedOn` from voting on `category`, worked out by the caller (the ACT only). */
+  barredLotIds?: (receivedOn: string, category: string) => Promise<ReadonlySet<string>>;
   actorId: string;
   now?: Date;
 }): Promise<RepoResult> {
@@ -402,7 +404,7 @@ export async function recordPendingPetition(p: {
       return { error: `The lots entered (${lots.length}) do not match the building's number of lots (${p.scheme.totalLots ?? "not recorded"}), so the petition cannot be counted. Check the lots first.` };
     }
   } else {
-    const barred = p.barredLotIds ? await p.barredLotIds(p.receivedOn) : new Set<string>();
+    const barred = p.barredLotIds ? await p.barredLotIds(p.receivedOn, found.row.category) : new Set<string>();
     outOf = lots.filter((l) => !barred.has(l.id)).length;
     counted = ids.filter((id) => !barred.has(id));
   }
@@ -485,5 +487,99 @@ export async function recordPendingConfirmation(p: {
   return {
     ok: true,
     notice: result.status === "CARRIED" ? `Recorded. It took effect on ${formatDay(result.effectiveOn)}.` : "Recorded. It was not confirmed, so it is recorded as lost.",
+  };
+}
+
+// ─── The meeting page's "Decided later" panel ──────────────────────────────
+
+/** A meeting and the motions offered to confirm a resolution with. */
+export interface ConfirmChoice {
+  meetingId: string;
+  label: string;
+  items: { id: string; label: string }[];
+}
+
+/** One panel item with the meetings it may be confirmed at. */
+export type PendingPanelEntry = PendingPanelItem & { confirmChoices: ConfirmChoice[] };
+
+export interface PendingPanelData {
+  items: PendingPanelEntry[];
+  /** The building's lots (common property left out), for a petition. */
+  lots: { id: string; lotNumber: string }[];
+  /** The building's special general meetings other than this one (Victoria s 78). */
+  specialMeetings: { id: string; label: string }[];
+}
+
+/**
+ * What the meeting page shows of the meeting's resolutions decided later, or
+ * null where it has none. Read only for a building whose pack records them.
+ */
+export async function pendingPanelData(p: {
+  scheme: PendingScheme;
+  meetingId: string;
+  /** Each agenda item of the meeting, as named on the page ("3. Repaint the foyer"). */
+  itemLabels: ReadonlyMap<string, string>;
+  now?: Date;
+}): Promise<PendingPanelData | null> {
+  const found = await pendingResolutionsForMeeting(p.meetingId);
+  if (found.length === 0) return null;
+  const tz = p.scheme.timeZone;
+  const today = todayIn(tz, p.now);
+  const meetings = (await db.orm.public.Meeting.where((m) => m.schemeId.eq(p.scheme.id)).limit(200).all()).filter((m) => !m.deletedAt);
+  const label = (m: (typeof meetings)[number]) => `${m.title} (${formatDateIn(tz, String(m.startTime ?? m.scheduledAt))})`;
+  const others = meetings.filter((m) => m.id !== p.meetingId && GENERAL_MEETINGS.includes(String(m.meetingType)));
+  const decided = others.length
+    ? await db.orm.public.AgendaItem.where((a) => and(a.meetingId.in(others.map((m) => m.id)), a.status.in(["CARRIED", "LOST"]))).limit(5000).all()
+    : [];
+  const lotNumber = new Map(p.scheme.lots.map((l) => [l.id, String(l.lotNumber)]));
+  const choicesFor = (ids: readonly string[], statuses: readonly string[]): ConfirmChoice[] =>
+    others
+      .filter((m) => ids.includes(m.id))
+      .map((m) => ({
+        meetingId: m.id,
+        label: label(m),
+        items: decided
+          .filter((a) => a.meetingId === m.id && statuses.includes(String(a.status)))
+          .sort((a, b) => a.position - b.position)
+          .map((a) => ({ id: a.id, label: `${a.position}. ${a.title} (${a.status === "CARRIED" ? "carried" : "lost"})` })),
+      }))
+      .filter((c) => c.items.length > 0);
+
+  const items = found.map(({ row, lots }) => {
+    const view = pendingView(row);
+    const called = row.meetingNoticeMeetingId ? meetings.find((m) => m.id === row.meetingNoticeMeetingId) : undefined;
+    const facts: PendingFacts = row.meetingNoticeMeetingId
+      ? { linkedMeeting: called ? { openedOn: called.openedAt ? dayIn(tz, String(called.openedAt)) : null } : null }
+      : {};
+    const confirmed = row.confirmedMeetingId ? meetings.find((m) => m.id === row.confirmedMeetingId) : undefined;
+    const confirmedItem = row.confirmedItemId ? decided.find((a) => a.id === row.confirmedItemId) : undefined;
+    const panel = pendingPanelItem(
+      { ...view, id: row.id, agendaItemId: row.agendaItemId, petitionReceivedOn: day(row.petitionReceivedOn), effectiveOn: day(row.effectiveOn), endedBy: row.endedBy ?? null },
+      {
+        itemLabel: p.itemLabels.get(row.agendaItemId) ?? "An agenda item",
+        today,
+        facts,
+        petitionLots: lots.map((l) => lotNumber.get(l.lotId) ?? "?"),
+        calledMeeting: called ? label(called) : null,
+        confirmedBy: confirmed ? `${label(confirmed)}${confirmedItem ? `, motion ${confirmedItem.position}` : ""}` : null,
+      },
+    );
+    // Victoria s 78: the meeting called only, its motions carried or lost. The ACT: any later general meeting's carried motions.
+    const confirmChoices = !panel.canConfirm
+      ? []
+      : row.kind === "INTERIM_NO_QUORUM"
+        ? choicesFor(row.meetingNoticeMeetingId ? [row.meetingNoticeMeetingId] : [], ["CARRIED", "LOST"])
+        : choicesFor(others.map((m) => m.id), ["CARRIED"]);
+    return { ...panel, confirmChoices };
+  });
+  return {
+    items,
+    lots: p.scheme.lots
+      .filter((l) => String(l.lotType ?? "").toUpperCase() !== "COMMON")
+      .map((l) => ({ id: l.id, lotNumber: String(l.lotNumber) }))
+      .sort((a, b) => a.lotNumber.localeCompare(b.lotNumber, undefined, { numeric: true })),
+    specialMeetings: meetings
+      .filter((m) => m.id !== p.meetingId && SPECIAL_GENERAL_MEETINGS.includes(String(m.meetingType)))
+      .map((m) => ({ id: m.id, label: label(m) })),
   };
 }

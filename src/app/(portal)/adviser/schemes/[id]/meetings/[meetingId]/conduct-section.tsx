@@ -47,16 +47,29 @@ export interface AttestationWords {
  */
 export interface ConductVotingProps {
   lots: { id: string; lotNumber: string }[];
-  items: Record<string, { pollAllowed: boolean; proxiesAllowed: boolean; quorumAsked?: AttestationWords; unitsPresentAsked?: AttestationWords }>;
+  items: Record<
+    string,
+    {
+      pollAllowed: boolean;
+      proxiesAllowed: boolean;
+      quorumAsked?: AttestationWords;
+      unitsPresentAsked?: AttestationWords;
+      /** After No to the quorum, whether a reduced quorum was present (the ACT; VIC, ACT and WA stage 2, PR 8b-i). */
+      reducedQuorumAsked?: AttestationWords;
+    }
+  >;
   pollLabel: string;
 }
+
+/** Outcomes of an item decided later (VIC, ACT and WA stage 2, PR 8b-i): its outcome buttons are not offered. */
+const DECIDED_LATER = ["INTERIM", "OPEN"];
 
 type LotVote = { vote: string; byProxy: boolean };
 
 type ItemChoices = ConductVotingProps["items"][string];
 
 /** What the chair answered for an item, as sent to the server: an unanswered question is left out, never false. */
-type AttestationAnswers = { quorumPresent?: boolean; unitsPresent?: number };
+type AttestationAnswers = { quorumPresent?: boolean; unitsPresent?: number; reducedQuorumPresent?: boolean };
 
 /**
  * The units present as the chair typed them: a whole number from 0 to the
@@ -87,6 +100,7 @@ export function ConductSection({
   items,
   timeZone,
   voting,
+  outcomeLabels,
 }: {
   schemeId: string;
   meetingId: string;
@@ -98,6 +112,8 @@ export function ConductSection({
   timeZone: string;
   /** Where votes are counted at conduct: the lots and each item's choices. */
   voting?: ConductVotingProps | null;
+  /** Labels for outcomes beyond the three recorded here, as the server page passes them (an item decided later). */
+  outcomeLabels?: Record<string, string>;
 }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -107,6 +123,8 @@ export function ConductSection({
   const [polls, setPolls] = useState<Record<string, boolean>>({});
   // The chair's answers, by item: whether there was a quorum (unanswered until chosen), and the units present as typed.
   const [quorum, setQuorum] = useState<Record<string, boolean>>({});
+  // After No: whether a reduced quorum was present (the ACT), by item, unanswered until chosen.
+  const [reduced, setReduced] = useState<Record<string, boolean>>({});
   const [present, setPresent] = useState<Record<string, string>>({});
   // The screen's own refusal of the units present typed, by item, shown beside the field.
   const [unitsError, setUnitsError] = useState<Record<string, string>>({});
@@ -148,6 +166,8 @@ export function ConductSection({
     const answers: AttestationAnswers = {};
     let unitsUnreadable = false;
     if (choices.quorumAsked && typeof quorum[itemId] === "boolean") answers.quorumPresent = quorum[itemId];
+    // Sent only after No, and only where it is asked.
+    if (choices.reducedQuorumAsked && quorum[itemId] === false && typeof reduced[itemId] === "boolean") answers.reducedQuorumPresent = reduced[itemId];
     if (choices.unitsPresentAsked) {
       const units = parseUnitsPresent(present[itemId] ?? "", lotCount);
       if (units === null) unitsUnreadable = true;
@@ -276,14 +296,14 @@ export function ConductSection({
                       <span
                         className={`text-[10px] font-medium uppercase tracking-wide px-2 py-0.5 rounded-full ${OUTCOME_STYLE[item.outcome] ?? "bg-gray-100 text-gray-600"}`}
                       >
-                        {OUTCOME_LABELS[item.outcome] ?? item.outcome}
+                        {outcomeLabels?.[item.outcome] ?? OUTCOME_LABELS[item.outcome] ?? item.outcome}
                       </span>
                     ) : (
                       <span className="text-[10px] text-ink-muted uppercase">
                         No outcome
                       </span>
                     )}
-                    {running && (
+                    {running && !DECIDED_LATER.includes(item.outcome ?? "") && (
                       <div className="flex gap-1">
                         {(["RESOLVED", "MOTION_LOST", "DEFERRED"] as const).map(
                           (o) => (
@@ -302,10 +322,12 @@ export function ConductSection({
                     )}
                   </div>
                 </div>
-                {running && voting && asks(choicesFor(item.id)) && (
+                {running && voting && asks(choicesFor(item.id)) && !DECIDED_LATER.includes(item.outcome ?? "") && (
                   <ChairAnswers
                     choices={choicesFor(item.id)}
                     quorum={quorum[item.id]}
+                    reduced={reduced[item.id]}
+                    onReduced={(yes) => setReduced((all) => ({ ...all, [item.id]: yes }))}
                     present={present[item.id] ?? ""}
                     unitsError={unitsError[item.id] ?? null}
                     disabled={pending}
@@ -316,7 +338,7 @@ export function ConductSection({
                     }}
                   />
                 )}
-                {running && voting && (
+                {running && voting && !DECIDED_LATER.includes(item.outcome ?? "") && (
                   <VoteRecorder
                     lots={voting.lots}
                     choices={choicesFor(item.id)}
@@ -359,23 +381,30 @@ export function ConductSection({
 function ChairAnswers({
   choices,
   quorum,
+  reduced,
   present,
   unitsError,
   disabled,
   onQuorum,
+  onReduced,
   onPresent,
 }: {
   choices: ItemChoices;
   quorum: boolean | undefined;
+  /** After No: whether a reduced quorum was present (the ACT). */
+  reduced?: boolean;
   present: string;
   unitsError: string | null;
   disabled: boolean;
   onQuorum: (yes: boolean) => void;
+  onReduced?: (yes: boolean) => void;
   onPresent: (text: string) => void;
 }) {
   const id = useId();
   const quorumWords = choices.quorumAsked;
   const unitsWords = choices.unitsPresentAsked;
+  // Asked only after No to the quorum (VIC, ACT and WA stage 2, PR 8b-i; Matthew Wrigley's decision D6).
+  const reducedWords = quorum === false ? choices.reducedQuorumAsked : undefined;
   const unanswered = quorum === undefined;
   return (
     <div className="mt-3 space-y-3 rounded-[var(--radius-card)] border border-amber-200 bg-amber-50 px-3 py-2">
@@ -405,6 +434,37 @@ function ChairAnswers({
           </div>
           {unanswered && (
             <p id={`${id}-quorum-unanswered`} className="mt-1 text-xs text-amber-800">
+              Not answered yet. Answer it before recording Resolved or Motion lost.
+            </p>
+          )}
+        </fieldset>
+      )}
+      {reducedWords && (
+        <fieldset aria-describedby={reduced === undefined ? `${id}-reduced-help ${id}-reduced-unanswered` : `${id}-reduced-help`}>
+          <legend className="text-xs font-medium text-ink">{reducedWords.label}</legend>
+          <p id={`${id}-reduced-help`} className="mt-1 text-xs text-ink-muted">
+            {reducedWords.help}
+          </p>
+          <div className="mt-2 flex items-center gap-4 text-xs text-ink">
+            {([
+              [true, "Yes"],
+              [false, "No"],
+            ] as const).map(([value, label]) => (
+              <label key={label} className="flex items-center gap-1">
+                <input
+                  type="radio"
+                  name={`${id}-reduced`}
+                  value={value ? "yes" : "no"}
+                  checked={reduced === value}
+                  disabled={disabled}
+                  onChange={() => onReduced?.(value)}
+                />
+                {label}
+              </label>
+            ))}
+          </div>
+          {reduced === undefined && (
+            <p id={`${id}-reduced-unanswered`} className="mt-1 text-xs text-amber-800">
               Not answered yet. Answer it before recording Resolved or Motion lost.
             </p>
           )}

@@ -17,6 +17,7 @@ import { NoticeSection } from "./notice-section";
 import { ConductSection } from "./conduct-section";
 import { MinutesSection } from "./minutes-section";
 import { EvotingSection } from "./evoting-section";
+import { PendingSection } from "./pending-section";
 import { getAgendaItemsForMeeting } from "@/lib/queries/agenda";
 import { getNoticesForMeeting } from "@/lib/queries/notice";
 import { getMinutesForMeeting } from "@/lib/queries/minutes";
@@ -37,6 +38,8 @@ import { hasFeeEvent, previewUsageFee } from "@/lib/billing/capture";
 import { feeWordingFor } from "@/lib/billing/disclosure";
 import { isChargeableMeetingType } from "@/lib/billing/hook-codes";
 import { needRule } from "@/config/statutory";
+import { pendingPanelData, settleDuePendingResolutions, type PendingPanelData } from "@/lib/meetings/pending-repo";
+import { logError } from "@/lib/log";
 
 export default async function MeetingDetailPage({
   params,
@@ -59,7 +62,7 @@ export default async function MeetingDetailPage({
   const meeting = await getMeetingById(meetingId);
   if (!meeting || meeting.schemeId !== id) notFound();
 
-  const agendaItems = await getAgendaItemsForMeeting(meetingId);
+  let agendaItems = await getAgendaItemsForMeeting(meetingId);
   const normalisedType = normaliseMeetingType(meeting.meetingType);
 
   // The StrataVerze fee for issuing the notice: each adjourned general
@@ -81,6 +84,27 @@ export default async function MeetingDetailPage({
   }));
   // The building's meeting rules: its resolution categories, labels and deadlines.
   const ruleSet = await getActiveRuleSet(scheme.state);
+  // Resolutions decided later (the draft packs only; VIC, ACT and WA stage 2, PR 8b-i): this meeting's are decided
+  // if due, then shown. NSW and Queensland packs record none, so nothing more is read for them.
+  let pendingPanel: PendingPanelData | null = null;
+  if (ruleSet.pendingResolutions) {
+    try {
+      await settleDuePendingResolutions({ meetingId });
+    } catch (err) {
+      logError("[meeting page] pending resolutions could not be decided:", err);
+    }
+    agendaItems = await getAgendaItemsForMeeting(meetingId);
+    pendingPanel = await pendingPanelData({
+      scheme: {
+        id: scheme.id,
+        timeZone: timeZoneOf(scheme),
+        totalLots: scheme.totalLots ?? null,
+        lots: scheme.lots.map((l) => ({ id: l.id, lotNumber: l.lotNumber, lotType: l.lotType })),
+      },
+      meetingId,
+      itemLabels: new Map(agendaItems.map((a) => [a.id, `${a.position}. ${a.title}`])),
+    });
+  }
   const allowedCategories = allowedCategoriesForMeetingType(
     ruleSet,
     meeting.meetingType,
@@ -333,7 +357,19 @@ export default async function MeetingDetailPage({
           outcome: a.outcome,
         }))}
         voting={conductVoting}
+        {...(ruleSet.pendingResolutions ? { outcomeLabels: { INTERIM: "Decided later" } } : {})}
       />
+
+      {/* Resolutions decided later, where the building's rules record them */}
+      {pendingPanel && (
+        <PendingSection
+          schemeId={id}
+          meetingId={meetingId}
+          items={pendingPanel.items}
+          lots={pendingPanel.lots}
+          specialMeetings={pendingPanel.specialMeetings}
+        />
+      )}
 
       {/* Minutes */}
       <MinutesSection
