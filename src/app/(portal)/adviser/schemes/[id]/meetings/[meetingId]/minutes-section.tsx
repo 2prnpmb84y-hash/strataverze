@@ -14,7 +14,35 @@ const OUTCOME_LABELS: Record<string, string> = {
   RESOLVED: "Resolved",
   MOTION_LOST: "Motion lost",
   DEFERRED: "Deferred",
+  // Stored only under the draft packs (VIC, ACT and WA stage 2, PR 8b-iv): an item decided later. NSW and Queensland
+  // never store these, so their minutes read as before.
+  INTERIM: "Decided later",
+  OPEN: "Voting open",
 };
+
+/** The votes counted at an item, in plain words (the draft packs only, PR 8b-iv). */
+function votingWords(v: NonNullable<MinutesItem["voting"]>): string {
+  const counted = `Votes counted: ${v.for} for, ${v.against} against${v.abstain ? `, ${v.abstain} abstaining` : ""}.`;
+  const poll =
+    v.poll && v.forEntitlement != null && v.againstEntitlement != null
+      ? ` On a poll, lot entitlement ${v.forEntitlement} for and ${v.againstEntitlement} against.`
+      : v.poll
+        ? " On a poll."
+        : "";
+  const notCounted = v.notCounted ? ` ${v.notCounted} ${v.notCounted === 1 ? "vote" : "votes"} not counted for money owed.` : "";
+  return `${counted}${poll}${notCounted}`;
+}
+
+interface MinutesItem {
+  position: number;
+  title: string;
+  resolutionText: string | null;
+  outcome: string | null;
+  /* The draft packs only (PR 8b-iv): left out of every other building's minutes. */
+  kind?: string;
+  voting?: { for: number; against: number; abstain: number; poll: boolean; forEntitlement?: number; againstEntitlement?: number; notCounted: number };
+  laterEffect?: { words: string };
+}
 
 interface MinutesContent {
   heading?: string;
@@ -23,12 +51,7 @@ interface MinutesContent {
     openedAt?: string | null;
     closedAt?: string | null;
   };
-  items?: {
-    position: number;
-    title: string;
-    resolutionText: string | null;
-    outcome: string | null;
-  }[];
+  items?: MinutesItem[];
 }
 
 export interface MinutesView {
@@ -172,6 +195,9 @@ export function MinutesSection({
                       {item.resolutionText}
                     </p>
                   )}
+                  {item.kind && <p className="mt-1 text-xs text-ink-muted">{item.kind}</p>}
+                  {item.voting && <p className="mt-1 text-xs text-ink-muted">{votingWords(item.voting)}</p>}
+                  {item.laterEffect?.words && <p className="mt-1 text-xs text-ink-muted">{item.laterEffect.words}</p>}
                 </li>
               ))}
             </ol>

@@ -730,3 +730,79 @@ export function pendingPanelItem(
     ...(lateRule && lateLots.length > 0 ? { lateVote: { words: lateRule.words, lots: lateLots.map((l) => ({ id: l.id, lotNumber: l.lotNumber })) } } : {}),
   };
 }
+
+/**
+ * What the minutes say of an item decided later (VIC, ACT and WA stage 2,
+ * PR 8b-iv, 29 Oct 2026): its kind, the day its period ends, the day it took
+ * or may take effect, where it stands and one or two plain sentences, as at
+ * the day the minutes are assembled. No dashes or semicolons.
+ */
+export interface MinutesLaterEffect {
+  kind: string;
+  label: string;
+  status: "PENDING" | "CARRIED" | "LOST";
+  windowClosesOn: string;
+  /**
+   * The day it took effect (CARRIED); while pending, the day it takes effect
+   * if nothing recorded stops or decides it sooner (for a voting period, the
+   * day it is decided as at), or null where that depends on a special general
+   * meeting called for it; null once lost.
+   */
+  effectiveOn: string | null;
+  words: string;
+}
+
+/** The later effect of one pending row, for the minutes. */
+export function minutesLaterEffect(row: PendingPanelRow): MinutesLaterEffect {
+  const rule = row.rule;
+  const status = (["CARRIED", "LOST"].includes(row.status) ? row.status : "PENDING") as MinutesLaterEffect["status"];
+  const closes = formatDay(row.windowClosesOn);
+  const next = addDays(row.windowClosesOn, 1);
+  const base = { kind: row.kind, label: rule.label, status, windowClosesOn: row.windowClosesOn };
+  if (row.kind === "VOTING_PERIOD") {
+    if (status === "CARRIED") {
+      return { ...base, effectiveOn: row.effectiveOn, words: `${rule.label}. Voting closed on ${closes}. Carried on the votes at the close, as at ${row.effectiveOn ? formatDay(row.effectiveOn) : "a day not recorded"}.` };
+    }
+    if (status === "LOST") return { ...base, effectiveOn: null, words: `${rule.label}. Voting closed on ${closes}. Lost on the votes at the close.` };
+    return {
+      ...base,
+      effectiveOn: next,
+      words: `${rule.label}. Voting is open until ${closes}. It is decided as at ${formatDay(next)} on the votes at the meeting and the written votes received by then.`,
+    };
+  }
+  const head = `${rule.label}, decided later. Its period ends on ${closes}.`;
+  if (status === "CARRIED") {
+    const as = rule.takesEffectAs !== "SAME" ? ` as a ${rule.takesEffectAs.toLowerCase()} resolution` : "";
+    return { ...base, effectiveOn: row.effectiveOn, words: `${head} Took effect${as} on ${row.effectiveOn ? formatDay(row.effectiveOn) : "a day not recorded"}.` };
+  }
+  if (status === "LOST") {
+    const why =
+      row.endedBy === "PETITION"
+        ? "Stopped by a petition, so it is recorded as lost."
+        : row.endedBy === "NOT_CONFIRMED"
+          ? "Not confirmed at the special general meeting, so it is recorded as lost."
+          : "Recorded as lost.";
+    return { ...base, effectiveOn: null, words: `${head} ${why}` };
+  }
+  if (row.meetingNoticeGivenOn && row.meetingHeldBy) {
+    return {
+      ...base,
+      effectiveOn: null,
+      words: `${head} Pending. A special general meeting was called for it on ${formatDay(row.meetingNoticeGivenOn)}, to be held by ${formatDay(row.meetingHeldBy)}.`,
+    };
+  }
+  const effectiveOn = effectiveFrom(row, next);
+  const awaitsNotice = rule.noticeRequiredBeforeEffect && !row.noticeGivenOn;
+  const sooner = [
+    rule.petition ? "stopped by a petition" : null,
+    rule.meetingNotice ? "stopped by notice of a special general meeting" : null,
+    rule.confirmedSoonerBy ? "confirmed at a later meeting" : null,
+  ].filter((x): x is string => !!x);
+  const unless = sooner.length ? `Unless it is ${sooner.join(" or ")} first, it` : "It";
+  const as = rule.takesEffectAs !== "SAME" ? ` as a ${rule.takesEffectAs.toLowerCase()} resolution` : "";
+  return {
+    ...base,
+    effectiveOn,
+    words: `${head} Pending. ${unless} takes effect${as} on ${formatDay(effectiveOn)}${awaitsNotice ? " at the earliest, once its notice to the owners is recorded as given" : ""}.`,
+  };
+}

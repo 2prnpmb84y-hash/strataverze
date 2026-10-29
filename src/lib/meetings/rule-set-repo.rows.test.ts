@@ -165,6 +165,20 @@ describe("stored rule set rows", () => {
     }
   });
 
+  it("copy what the minutes give from the seed only where it has it (stage 2, PR 8b-iv)", async () => {
+    for (const state of ["VIC", "ACT", "WA"] as const) {
+      const seed = PENDING_RULE_PACKS[state].rules.MEETING_RULES;
+      first.mockResolvedValue(olderRow(state, seed));
+      const rs = await getActiveRuleSet(state);
+      expect(seed.minutesContents, state).toBeDefined();
+      expect(rs.minutesContents, state).toBe(seed.minutesContents);
+    }
+    for (const state of ["NSW", "QLD"] as const) {
+      first.mockResolvedValue(olderRow(state, state === "NSW" ? NSW_RULE_SET : QLD));
+      expect("minutesContents" in (await getActiveRuleSet(state)), state).toBe(false);
+    }
+  });
+
   it("give a stored Queensland row the seed's common property key, however old the row (2026.10.20), and never NSW", async () => {
     first.mockResolvedValue(olderRow("QLD", QLD));
     expect((await getActiveRuleSet("QLD")).excludeCommonPropertyRows).toBe(true);

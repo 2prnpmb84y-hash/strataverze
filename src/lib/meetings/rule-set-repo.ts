@@ -93,6 +93,9 @@ function rowToRuleSet(row: RuleSetRow, seed: MeetingRuleSet): MeetingRuleSet {
   // 29 Oct 2026): the longer notice of some categories and the meeting types whose notice is not checked.
   if (seed.categoryNoticeDays) ruleSet.categoryNoticeDays = seed.categoryNoticeDays;
   if (seed.noticeNotCheckedFor) ruleSet.noticeNotCheckedFor = seed.noticeNotCheckedFor;
+  // No column either, and only where the seed has it (the draft packs, VIC, ACT and WA stage 2, PR 8b-iv,
+  // 29 Oct 2026): what the minutes give for each item. NSW and Queensland never have it.
+  if (seed.minutesContents) ruleSet.minutesContents = seed.minutesContents;
   return ruleSet;
 }
 

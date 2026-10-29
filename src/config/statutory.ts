@@ -43,6 +43,7 @@ import type {
   NoticeRules,
   PackFeatures,
   PaymentAllocationPart,
+  ProxyRules,
   SchemeSelector,
   SharedTerminology,
 } from "./statutory/types";
@@ -143,6 +144,12 @@ export interface SharedRules {
    * without the key has none (NSW, Queensland).
    */
   DATED_RULES?: DatedRules;
+  /**
+   * How many proxies one person may hold for a meeting (VIC, ACT and WA
+   * stage 2, PR 8b-iv, 29 Oct 2026), warned only, never refused. A pack
+   * without the key checks no cap (NSW, Queensland, Western Australia).
+   */
+  PROXY_RULES?: ProxyRules;
 }
 
 /**
@@ -491,7 +498,16 @@ export const PENDING_RULE_PACKS = {
     // notice by motion point. After review (29 Oct 2026): FOR_REVIEW gains a point on a revised notice that fails
     // (no notice left issued, so the unanimous resolution is refused saying so), and the pre-meeting voting point adds
     // that a ballot must also apply categoryNoticeDays. No legal value or status already recorded changed; still a draft.
-    version: "2026.10.11",
+    // 2026.10.12 (29 Oct 2026): proxy caps and minutes content (stage 2, PR 8b-iv). PROXY_RULES added: 1 proxy with
+    // 20 units or fewer, otherwise no more than 5% of the units (sch 3 s 3.26(3), from PROXY_LIMIT_BAND and PROXIES,
+    // values unchanged), the chair exempt (s 3.26(4)), warned only (how it is applied STRATAVERZE, Matthew Wrigley's
+    // decision D15 of 29 Oct 2026: warn only, rounding not confirmed so "may be over" above the share rounded down and
+    // over above it rounded up). MEETING_RULES gains minutesContents: the kind of each special, unopposed and unanimous
+    // resolution (sch 2 s 2.1(1)(c), CONFIRMED) and a reduced quorum decision's later effect; the members present and the
+    // proxy and absentee details wait for Stage C. Recorded in DECISIONS and kept in FOR_REVIEW. The MEETING_RULES header
+    // and notes and FOR_REVIEW's reduced quorum point are rewritten, MEETING_RULES_STATUS gains minutesContents, and
+    // FOR_REVIEW gains the minutes and proxy caps points. No legal value or status already recorded changed; still a draft.
+    version: "2026.10.12",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",
     reviewedOn: null,
@@ -614,7 +630,19 @@ export const PENDING_RULE_PACKS = {
     // comment and notes are rewritten, MEETING_RULES_STATUS gains noticeNotCheckedFor, and FOR_REVIEW
     // MEETING_RULES_NOTICE_AND_MINUTES and MEETING_RULES_ARREARS are rewritten. No legal value or status already
     // recorded changed; still a draft.
-    version: "2026.10.11",
+    // 2026.10.12 (29 Oct 2026): proxy caps and minutes content (stage 2, PR 8b-iv). PROXY_RULES added: the s 89D limit
+    // read on the meeting's day from DATED_RULES.PROXY_LIMIT (1 lot owner with 20 or fewer occupiable lots, otherwise
+    // 5% of the lot owners, and 1 lot owner always once CLAA 2026 Part 6 Div 2 is recorded as commenced; values
+    // unchanged), the reg 8A exceptions and the s 89C(10) bar on an owner in arrears acting as a proxy, each warned only
+    // (how they are applied STRATAVERZE, Matthew Wrigley's decisions D15 to D17 of 29 Oct 2026: warn only, rounding
+    // not confirmed so "may be over" above the share rounded down and over above it rounded up, 5% of the distinct
+    // owners recorded or the lots where any lot has none, the holder in arrears matched by email). MEETING_RULES gains
+    // minutesContents: the votes counted for each item (s 81, decision D18) and an interim resolution's later effect;
+    // the attendance parts wait for Stage C. All recorded in DECISIONS and kept in FOR_REVIEW (PROXY_CAPS,
+    // MINUTES_CONTENTS). The MEETING_RULES header and notes, the DATED_RULES note and FOR_REVIEW MEETING_RULES_PENDING
+    // are rewritten, and MEETING_RULES_STATUS gains minutesContents. No legal value or status already recorded changed;
+    // still a draft.
+    version: "2026.10.12",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",
     reviewedOn: null,
@@ -694,7 +722,14 @@ export const PENDING_RULE_PACKS = {
     // MEETING_RULES_STATUS gains noticeNotCheckedFor and its noticePeriods note cites by-law 8(2)(a) (the notice) in
     // place of 8(1) (the decisions), as COUNCIL.meetings and the notes give it, and FOR_REVIEW gains the council notice
     // point. No legal value or status already recorded changed; still a draft.
-    version: "2026.10.9",
+    // 2026.10.10 (29 Oct 2026): minutes content (stage 2, PR 8b-iv). MEETING_RULES gains minutesContents laterEffect: an
+    // item whose voting period is open (s 121) is named "Voting open" in the minutes in place of its stored outcome, and
+    // its later effect is given as at the day the minutes are assembled (the day voting closes, the day it is decided as at,
+    // and once decided whether it was carried or lost), a StrataVerze choice, as the STA and STGR read prescribe no
+    // minutes content. No proxy cap is in force, so PROXY_RULES is not added. The MEETING_RULES header and notes are
+    // rewritten, MEETING_RULES_STATUS gains minutesContents and FOR_REVIEW's voting period point is rewritten. No legal
+    // value or status already recorded changed; still a draft.
+    version: "2026.10.10",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",
     reviewedOn: null,
