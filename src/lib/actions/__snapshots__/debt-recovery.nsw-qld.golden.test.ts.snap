@@ -1277,202 +1277,36 @@ exports[`completeDebtRecoveryStepAction, refusals and plans > QLD: a payment pla
 exports[`completeDebtRecoveryStepAction, refusals and plans > deliberate: NSW closed case, its CLOSED step completed after the case was closed 1`] = `
 {
   "result": {
-    "success": true,
+    "error": "This case is closed, so its steps cannot be completed.",
   },
-  "writes": [
-    {
-      "updateDebtRecoveryStep": [
-        "step-10",
-        {
-          "completedAt": "<timestamp>",
-          "completedBy": "adviser",
-          "evidenceNotes": "Evidence for CLOSED",
-          "noticeMethod": null,
-          "noticeSentAt": null,
-          "outcome": "CLOSED done",
-          "status": "COMPLETED",
-        },
-      ],
-    },
-    {
-      "logDebtRecoveryActivity": [
-        {
-          "activityType": "STEP_ADVANCED",
-          "caseId": "case-1",
-          "description": "Step completed: CLOSED done",
-          "performedBy": "adviser",
-        },
-      ],
-    },
-    {
-      "revalidatePath": "/adviser/schemes/scheme-1",
-    },
-  ],
+  "writes": [],
 }
 `;
 
 exports[`completeDebtRecoveryStepAction, refusals and plans > deliberate: NSW out of order, FINAL_NOTICE while LEDGER_VERIFICATION is current 1`] = `
 {
   "result": {
-    "success": true,
+    "error": "Steps are completed in order. Complete Ledger Verification first.",
   },
-  "writes": [
-    {
-      "updateDebtRecoveryStep": [
-        "step-04",
-        {
-          "completedAt": "<timestamp>",
-          "completedBy": "adviser",
-          "evidenceNotes": "Evidence for FINAL_NOTICE",
-          "noticeMethod": "REGISTERED_POST",
-          "noticeSentAt": "<timestamp>",
-          "outcome": "FINAL_NOTICE done",
-          "status": "COMPLETED",
-        },
-      ],
-    },
-    {
-      "captureUsageFee": [
-        {
-          "actorId": "adviser",
-          "code": "RECOVERY_STEP",
-          "confirmedCents": 1100,
-          "payerProfileId": "debtor",
-          "schemeId": "scheme-1",
-          "sourceId": "step-04",
-          "sourceType": "DebtRecoveryStep",
-          "state": "NSW",
-          "variant": "FINAL_NOTICE",
-        },
-      ],
-    },
-    {
-      "updateDebtRecoveryCase": [
-        "case-1",
-        {
-          "currentStep": "HARDSHIP_REVIEW",
-        },
-      ],
-    },
-    {
-      "logDebtRecoveryActivity": [
-        {
-          "activityType": "STEP_ADVANCED",
-          "caseId": "case-1",
-          "description": "Step completed: FINAL_NOTICE done",
-          "performedBy": "adviser",
-        },
-      ],
-    },
-    {
-      "revalidatePath": "/adviser/schemes/scheme-1",
-    },
-  ],
+  "writes": [],
 }
 `;
 
 exports[`completeDebtRecoveryStepAction, refusals and plans > deliberate: NSW out of order, HARDSHIP_REVIEW passed over (COMMITTEE_REVIEW while HARDSHIP_REVIEW is current) 1`] = `
 {
   "result": {
-    "success": true,
+    "error": "Steps are completed in order. Complete Hardship Review first.",
   },
-  "writes": [
-    {
-      "updateDebtRecoveryStep": [
-        "step-06",
-        {
-          "completedAt": "<timestamp>",
-          "completedBy": "adviser",
-          "evidenceNotes": "Evidence for COMMITTEE_REVIEW",
-          "noticeMethod": null,
-          "noticeSentAt": null,
-          "outcome": "COMMITTEE_REVIEW done",
-          "status": "COMPLETED",
-        },
-      ],
-    },
-    {
-      "updateDebtRecoveryCase": [
-        "case-1",
-        {
-          "currentStep": "LEGAL_REFERRAL",
-        },
-      ],
-    },
-    {
-      "logDebtRecoveryActivity": [
-        {
-          "activityType": "STEP_ADVANCED",
-          "caseId": "case-1",
-          "description": "Step completed: COMMITTEE_REVIEW done",
-          "performedBy": "adviser",
-        },
-      ],
-    },
-    {
-      "revalidatePath": "/adviser/schemes/scheme-1",
-    },
-  ],
+  "writes": [],
 }
 `;
 
 exports[`completeDebtRecoveryStepAction, refusals and plans > deliberate: QLD out of order, LEGAL_REFERRAL while REMINDER_NOTICE is current 1`] = `
 {
   "result": {
-    "success": true,
+    "error": "Steps are completed in order. Complete Reminder Notice first.",
   },
-  "writes": [
-    {
-      "updateDebtRecoveryStep": [
-        "step-07",
-        {
-          "completedAt": "<timestamp>",
-          "completedBy": "adviser",
-          "evidenceNotes": "Evidence for LEGAL_REFERRAL",
-          "noticeMethod": null,
-          "noticeSentAt": null,
-          "outcome": "LEGAL_REFERRAL done",
-          "status": "COMPLETED",
-        },
-      ],
-    },
-    {
-      "captureUsageFee": [
-        {
-          "actorId": "adviser",
-          "code": "RECOVERY_STEP",
-          "confirmedCents": 2200,
-          "payerProfileId": "debtor",
-          "schemeId": "scheme-1",
-          "sourceId": "step-07",
-          "sourceType": "DebtRecoveryStep",
-          "state": "QLD",
-          "variant": "REFERRAL",
-        },
-      ],
-    },
-    {
-      "updateDebtRecoveryCase": [
-        "case-1",
-        {
-          "currentStep": "PROCEEDINGS",
-        },
-      ],
-    },
-    {
-      "logDebtRecoveryActivity": [
-        {
-          "activityType": "STEP_ADVANCED",
-          "caseId": "case-1",
-          "description": "Step completed: LEGAL_REFERRAL done",
-          "performedBy": "adviser",
-        },
-      ],
-    },
-    {
-      "revalidatePath": "/adviser/schemes/scheme-1",
-    },
-  ],
+  "writes": [],
 }
 `;
 
@@ -2314,75 +2148,17 @@ exports[`updateDebtRecoveryCaseAction > QLD a case already REFERRED_LEGAL saved 
 exports[`updateDebtRecoveryCaseAction > deliberate: NSW REFERRED_LEGAL before the referral step, no plan 1`] = `
 {
   "result": {
-    "success": true,
+    "error": "Complete the Legal Referral step before referring this case for legal recovery.",
   },
-  "writes": [
-    {
-      "updateDebtRecoveryCase": [
-        "case-1",
-        {
-          "excludeFromRecovery": false,
-          "notes": "Referred",
-          "solicitorName": "Smith Lawyers",
-          "solicitorRef": "SL-77",
-          "status": "REFERRED_LEGAL",
-        },
-      ],
-    },
-    {
-      "logDebtRecoveryActivity": [
-        {
-          "activityType": "STATUS_CHANGED",
-          "caseId": "case-1",
-          "description": "Case updated — status changed to REFERRED_LEGAL",
-          "performedBy": "adviser",
-        },
-      ],
-    },
-    {
-      "revalidatePath": "/adviser/schemes/scheme-1",
-    },
-    {
-      "revalidatePath": "/owner/levies",
-    },
-  ],
+  "writes": [],
 }
 `;
 
 exports[`updateDebtRecoveryCaseAction > deliberate: QLD REFERRED_LEGAL before the referral step, no plan 1`] = `
 {
   "result": {
-    "success": true,
+    "error": "Complete the Legal Referral step before referring this case for legal recovery.",
   },
-  "writes": [
-    {
-      "updateDebtRecoveryCase": [
-        "case-1",
-        {
-          "excludeFromRecovery": false,
-          "notes": "Referred",
-          "solicitorName": "Smith Lawyers",
-          "solicitorRef": "SL-77",
-          "status": "REFERRED_LEGAL",
-        },
-      ],
-    },
-    {
-      "logDebtRecoveryActivity": [
-        {
-          "activityType": "STATUS_CHANGED",
-          "caseId": "case-1",
-          "description": "Case updated — status changed to REFERRED_LEGAL",
-          "performedBy": "adviser",
-        },
-      ],
-    },
-    {
-      "revalidatePath": "/adviser/schemes/scheme-1",
-    },
-    {
-      "revalidatePath": "/owner/levies",
-    },
-  ],
+  "writes": [],
 }
 `;

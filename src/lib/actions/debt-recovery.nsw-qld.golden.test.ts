@@ -23,6 +23,14 @@
  * for a step completed out of order, a step completed on a closed case and a
  * legal referral status set before the legal referral step was complete. They
  * are the entries the step order fix is meant to change.
+ *
+ * One deliberate change (29 Oct 2026, approved by Matthew Wrigley): the server
+ * now allows only what the case screens offer. A step is completed only when
+ * it is the case's current step and the case is open, and a case is marked
+ * REFERRED_LEGAL only once its legal referral step is complete. Only the six
+ * "deliberate:" entries were updated, by a targeted run of their tests: each
+ * now shows the refusal and no writes (before, each succeeded and wrote). Every
+ * other entry, 43 of 49, is byte-identical to the recording on origin/main.
  */
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 

@@ -151,6 +151,8 @@ export async function updateDebtRecoveryCase(
     costsOwed?: number;
     totalOwed?: number;
   },
+  /** Pass a transaction's `tx.orm` to write in that transaction. */
+  orm: typeof db.orm = db.orm,
 ) {
   const mapped: Record<string, unknown> = { ...data };
   if (data.principalOwed !== undefined) mapped.principalOwed = toNumeric(data.principalOwed);
@@ -161,7 +163,7 @@ export async function updateDebtRecoveryCase(
   if (data.solicitorName !== undefined) mapped.solicitorName = data.solicitorName ? toVarchar<200>(data.solicitorName) : null;
   if (data.courtFileNumber !== undefined) mapped.courtFileNumber = data.courtFileNumber ? toVarchar<50>(data.courtFileNumber) : null;
 
-  return db.orm.public.DebtRecoveryCase
+  return orm.public.DebtRecoveryCase
     .where({ id: caseId })
     .update(mapped);
 }

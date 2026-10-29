@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   caseAccessProblem,
+  currentRecoveryStep,
   initiatingRole,
   isCasePriority,
   isCaseStatus,
   isClosedStatus,
   isValidAmount,
+  legalReferralComplete,
+  stepCompletionProblem,
 } from "./debt-recovery-access";
 
 const SCHEME_A = "aaaaaaaa-0000-0000-0000-000000000001";
@@ -59,5 +62,49 @@ describe("value checks", () => {
     expect(isValidAmount(Number.NaN)).toBe(false);
     expect(isValidAmount(Number.POSITIVE_INFINITY)).toBe(false);
     expect(isValidAmount(10.001)).toBe(false);
+  });
+});
+
+describe("the order of the recovery steps", () => {
+  // Out of order on purpose: the order is the steps' stepOrder.
+  const steps = [
+    { id: "s3", stepType: "REMINDER_NOTICE", stepOrder: 3, status: "PENDING" },
+    { id: "s1", stepType: "LEDGER_VERIFICATION", stepOrder: 1, status: "COMPLETED" },
+    { id: "s2", stepType: "INITIAL_CONTACT", stepOrder: 2, status: "PENDING" },
+  ];
+  const open = { status: "OPEN", currentStep: "INITIAL_CONTACT" };
+  const labels = { INITIAL_CONTACT: "Initial Contact" };
+
+  it("the current step is the first step not complete, when the case records it as current", () => {
+    expect(currentRecoveryStep(open, steps)?.id).toBe("s2");
+    expect(currentRecoveryStep({ currentStep: "REMINDER_NOTICE" }, steps)).toBeNull();
+    expect(currentRecoveryStep({ currentStep: "CLOSED" }, steps.map((s) => ({ ...s, status: "COMPLETED" })))).toBeNull();
+  });
+
+  it("allows only the current step of an open case", () => {
+    expect(stepCompletionProblem(open, steps, "s2", labels)).toBeNull();
+    expect(stepCompletionProblem(open, steps, "s3", labels)).toBe("Steps are completed in order. Complete Initial Contact first.");
+    expect(stepCompletionProblem(open, steps, "s3")).toBe("Steps are completed in order. Complete INITIAL_CONTACT first.");
+    expect(stepCompletionProblem(open, steps, "s1", labels)).toBe("This step is already complete");
+    expect(stepCompletionProblem(open, steps, "other", labels)).toBe("Step not found");
+    expect(stepCompletionProblem({ status: "CLOSED_SETTLED", currentStep: "INITIAL_CONTACT" }, steps, "s2", labels)).toBe(
+      "This case is closed, so its steps cannot be completed.",
+    );
+    expect(stepCompletionProblem({ status: "OPEN", currentStep: "REMINDER_NOTICE" }, steps, "s3", labels)).toBe(
+      "Steps are completed in order, and this step is not the current step.",
+    );
+  });
+
+  it("allows the other open statuses, as the screens do", () => {
+    for (const status of ["IN_PROGRESS", "PAYMENT_PLAN", "ON_HOLD", "REFERRED_LEGAL"]) {
+      expect(stepCompletionProblem({ status, currentStep: "INITIAL_CONTACT" }, steps, "s2", labels)).toBeNull();
+    }
+  });
+
+  it("the legal referral is complete only when its step is", () => {
+    expect(legalReferralComplete([])).toBe(false);
+    expect(legalReferralComplete([{ stepType: "LEGAL_REFERRAL", status: "PENDING" }])).toBe(false);
+    expect(legalReferralComplete([{ stepType: "PROCEEDINGS", status: "COMPLETED" }])).toBe(false);
+    expect(legalReferralComplete([{ stepType: "LEGAL_REFERRAL", status: "COMPLETED" }])).toBe(true);
   });
 });

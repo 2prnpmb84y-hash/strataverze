@@ -328,13 +328,21 @@ describe("completeDebtRecoveryStepAction for a Queensland building (stage 2, ste
   it("captures the step fee with the building's state, so its pack decides what the owner can be charged", async () => {
     const { QLD_RULE_PACK } = await vi.importActual<typeof import("@/config/statutory")>("@/config/statutory");
     const { db } = await import("@/prisma/db");
-    vi.mocked(db.transaction).mockImplementationOnce((async (fn: (tx: { orm: unknown }) => Promise<unknown>) => fn({ orm: {} })) as never);
+    // The transaction locks the case and reads its steps: FINAL_NOTICE is the current step.
+    const finalNotice = { id: "step-4", caseId: "case-1", stepType: "FINAL_NOTICE", stepOrder: 4, status: "PENDING" };
+    const txOrm = {
+      public: {
+        DebtRecoveryCase: { where: () => ({ forNoKeyUpdate: () => ({ first: async () => ({ ...caseInA, status: "OPEN", currentStep: "FINAL_NOTICE" }) }) }) },
+        DebtRecoveryStep: { where: () => ({ orderBy: () => ({ all: async () => [finalNotice] }) }) },
+      },
+    };
+    vi.mocked(db.transaction).mockImplementationOnce((async (fn: (tx: { orm: unknown }) => Promise<unknown>) => fn({ orm: txOrm })) as never);
     feeVariant.mockReturnValueOnce("FINAL_NOTICE");
     schemeRules.mockResolvedValueOnce({ rules: QLD_RULE_PACK.rules, pack: { state: "QLD" }, label: "AU-QLD test" });
     stepFirst.mockResolvedValue({ id: "step-4", caseId: "case-1", stepType: "FINAL_NOTICE", stepOrder: 4, status: "PENDING" });
     const r = await actions.completeDebtRecoveryStepAction("step-4", "case-1", SCHEME_A, new FormData());
     expect(r).toEqual({ success: true });
-    expect(captureUsageFee).toHaveBeenCalledWith({}, expect.objectContaining({ code: "RECOVERY_STEP", variant: "FINAL_NOTICE", state: "QLD", payerProfileId: "debtor" }));
+    expect(captureUsageFee).toHaveBeenCalledWith(txOrm, expect.objectContaining({ code: "RECOVERY_STEP", variant: "FINAL_NOTICE", state: "QLD", payerProfileId: "debtor" }));
   });
 });
 
@@ -354,8 +362,11 @@ describe("updateDebtRecoveryCaseAction referral while a payment plan is followed
 
   it("allows it for a pack without the payment plan workflow", async () => {
     const { QLD_RULE_PACK } = await vi.importActual<typeof import("@/config/statutory")>("@/config/statutory");
+    const { getDebtRecoverySteps } = await import("@/lib/queries/debt-recovery");
     schemeRules.mockResolvedValueOnce({ rules: QLD_RULE_PACK.rules, pack: { state: "QLD" }, label: "AU-QLD test" });
     lotPlansAll.mockResolvedValue([{ status: "ACTIVE" }]);
+    // The case's legal referral step is complete.
+    vi.mocked(getDebtRecoverySteps).mockResolvedValueOnce([{ stepType: "LEGAL_REFERRAL", status: "COMPLETED" }] as never);
     const r = await actions.updateDebtRecoveryCaseAction("case-1", SCHEME_A, referral());
     expect(r).toEqual({ success: true });
     expect(queries.updateDebtRecoveryCase).toHaveBeenCalledWith("case-1", expect.objectContaining({ status: "REFERRED_LEGAL" }));
