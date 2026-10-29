@@ -473,9 +473,12 @@ export const PENDING_RULE_PACKS = {
     // days' notice to the members, a petition by more than half of the units entitled to vote, confirmation sooner by
     // a standard quorum meeting (values CONFIRMED; how they are applied STRATAVERZE, Matthew Wrigley's decisions D1 to
     // D3, D5, D6, D10, D11 and D19 of 29 Oct 2026, recorded in DECISIONS and kept in FOR_REVIEW for legal
-    // confirmation). The quorum help, notes, MEETING_RULES_STATUS and the FOR_REVIEW quorum and LATE_CHARGE points are
-    // rewritten, and FOR_REVIEW gains the reduced quorum point. No legal value or status already recorded changed;
-    // still a draft.
+    // confirmation). After review, Matthew Wrigley's decision of 29 Oct 2026 (review M1, a second DECISIONS entry):
+    // settleAfterGraceDays 7 (STRATAVERZE), the daily run records the end of the period only 7 days after the 28 days
+    // end, the day it takes effect unchanged, and a petition counted only where the units entered match the
+    // building's number of units. The quorum help, notes, MEETING_RULES_STATUS and the FOR_REVIEW quorum and
+    // LATE_CHARGE points are rewritten, and FOR_REVIEW gains the reduced quorum point. No legal value or status
+    // already recorded changed; still a draft.
     version: "2026.10.10",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",
@@ -583,10 +586,13 @@ export const PENDING_RULE_PACKS = {
     // meeting is given, which must then confirm it within 28 days of the notice, notice within 14 days). Each is
     // recorded at the meeting as pending (the item stored as INTERIM) instead of refused, and decided later (values
     // CONFIRMED; how they are applied STRATAVERZE, Matthew Wrigley's decisions D1 to D4, D7, D10, D11, D19 and D20 of
-    // 29 Oct 2026, recorded in DECISIONS and kept in FOR_REVIEW MEETING_RULES_PENDING for legal confirmation). The
-    // header, the quorum help, notes and MEETING_RULES_STATUS (minutesDeadlines note, pendingResolutions) are rewritten,
-    // and FOR_REVIEW MEETING_RULES_INTERIM and MEETING_RULES_ORDINARY are rewritten. No legal value or status already
-    // recorded changed; still a draft.
+    // 29 Oct 2026, recorded in DECISIONS and kept in FOR_REVIEW MEETING_RULES_PENDING for legal confirmation). After
+    // review, Matthew Wrigley's decision of 29 Oct 2026 (review M1, a further DECISIONS entry): settleAfterGraceDays 7
+    // (STRATAVERZE), the daily run records the end of the period (or of the days to hold the special general meeting)
+    // only 7 days after it ends, the day it takes effect unchanged. The header, the quorum help, notes and
+    // MEETING_RULES_STATUS (minutesDeadlines note, pendingResolutions) are rewritten, and FOR_REVIEW
+    // MEETING_RULES_INTERIM and MEETING_RULES_ORDINARY are rewritten. No legal value or status already recorded
+    // changed; still a draft.
     version: "2026.10.10",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",

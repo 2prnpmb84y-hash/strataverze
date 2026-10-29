@@ -3,7 +3,9 @@
  * 29 Oct 2026): the dates of each kind across month ends and daylight saving,
  * every transition and blocker of the daily decision, the petition
  * thresholds at their boundary, confirmations and the days an adviser
- * records. Matthew Wrigley's decisions D1 to D7 of 29 Oct 2026.
+ * records. Matthew Wrigley's decisions D1 to D7 of 29 Oct 2026, and his
+ * decision of 29 Oct 2026 on review M1: the end of a period is recorded only
+ * after 7 days of grace, the day it takes effect unchanged.
  */
 import { describe, expect, it } from "vitest";
 import { PENDING_RULE_PACKS } from "@/config/statutory";
@@ -12,6 +14,8 @@ import {
   confirmationResult,
   dayProblem,
   formatDay,
+  graceEndsOn,
+  heldInTime,
   isPendingItem,
   laterLostRefusal,
   madeOnDay,
@@ -20,6 +24,7 @@ import {
   pendingPanelItem,
   pendingRecordedNotice,
   petitionStops,
+  settleGraceDays,
   type PendingRowView,
 } from "./pending";
 
@@ -79,16 +84,40 @@ describe("the dates (D1, D2)", () => {
   });
 });
 
+describe("the grace before a period's end is recorded (review M1)", () => {
+  it("is 7 days in each pack's rule, and none in a snapshot without it", () => {
+    for (const rule of [S97, S78, RQ]) expect(rule.settleAfterGraceDays).toBe(7);
+    expect(settleGraceDays(S97)).toBe(7);
+    const older: Partial<typeof S97> = { ...S97 };
+    delete older.settleAfterGraceDays;
+    expect(settleGraceDays(older as typeof S97)).toBe(0);
+    expect(settleGraceDays({ ...S97, settleAfterGraceDays: -1 })).toBe(0);
+    expect(graceEndsOn(S97, "2026-12-01")).toBe("2026-12-08");
+    expect(graceEndsOn(RQ, "2026-12-28")).toBe("2027-01-04");
+  });
+});
+
 describe("the daily decision", () => {
-  it("waits until the day after the window, then carries it once the notice is recorded (D1, D3)", () => {
+  it("waits until the grace after the window ends, then carries it from the day after the window once the notice is recorded (D1, D3, M1)", () => {
     const r = row("INTERIM_SPECIAL", S97, "2026-11-02", { noticeGivenOn: "2026-11-10" });
-    expect(pendingDecision(r, "2026-11-02")).toEqual({ settle: false, waitUntil: "2026-12-02", blocker: null });
-    expect(pendingDecision(r, "2026-12-01")).toEqual({ settle: false, waitUntil: "2026-12-02", blocker: null });
-    expect(pendingDecision(r, "2026-12-02")).toEqual({ settle: true, status: "CARRIED", endedBy: "PERIOD_ENDED", effectiveOn: "2026-12-02" });
+    expect(pendingDecision(r, "2026-11-02")).toEqual({ settle: false, waitUntil: "2026-12-09", blocker: null });
+    expect(pendingDecision(r, "2026-12-01")).toEqual({ settle: false, waitUntil: "2026-12-09", blocker: null });
+    // The grace: 2 to 8 December. The window has closed, but it is not recorded yet.
+    expect(pendingDecision(r, "2026-12-02")).toEqual({ settle: false, waitUntil: "2026-12-09", blocker: null });
+    expect(pendingDecision(r, "2026-12-08")).toEqual({ settle: false, waitUntil: "2026-12-09", blocker: null });
+    // Then it is recorded as having taken effect on the day after the window, not the day it is recorded.
+    expect(pendingDecision(r, "2026-12-09")).toEqual({ settle: true, status: "CARRIED", endedBy: "PERIOD_ENDED", effectiveOn: "2026-12-02" });
     expect(pendingDecision(r, "2027-03-01")).toMatchObject({ settle: true, effectiveOn: "2026-12-02" });
     const act = row("REDUCED_QUORUM", RQ, "2026-11-02", { noticeGivenOn: "2026-11-02" });
-    expect(pendingDecision(act, "2026-11-30")).toMatchObject({ settle: false });
-    expect(pendingDecision(act, "2026-12-01")).toEqual({ settle: true, status: "CARRIED", endedBy: "PERIOD_ENDED", effectiveOn: "2026-12-01" });
+    expect(pendingDecision(act, "2026-11-30")).toMatchObject({ settle: false, waitUntil: "2026-12-08" });
+    expect(pendingDecision(act, "2026-12-07")).toMatchObject({ settle: false, waitUntil: "2026-12-08" });
+    expect(pendingDecision(act, "2026-12-08")).toEqual({ settle: true, status: "CARRIED", endedBy: "PERIOD_ENDED", effectiveOn: "2026-12-01" });
+  });
+
+  it("with no grace in a snapshot, decides on the day after the window as before", () => {
+    const r = row("INTERIM_SPECIAL", { ...S97, settleAfterGraceDays: 0 }, "2026-11-02", { noticeGivenOn: "2026-11-10" });
+    expect(pendingDecision(r, "2026-12-01")).toEqual({ settle: false, waitUntil: "2026-12-02", blocker: null });
+    expect(pendingDecision(r, "2026-12-02")).toMatchObject({ settle: true, effectiveOn: "2026-12-02" });
   });
 
   it("never takes effect without its notice recorded (D3), and a late notice does not move the date", () => {
@@ -98,9 +127,12 @@ describe("the daily decision", () => {
       waitUntil: null,
       blocker: "Its notice to the owners is not recorded as given, so it cannot take effect. Record the day the notice was given.",
     });
-    // Given late (after 16 Nov) but within the window: still 2 Dec.
-    expect(pendingDecision({ ...r, noticeGivenOn: "2026-11-25" }, "2026-12-05")).toMatchObject({ settle: true, effectiveOn: "2026-12-02" });
-    // Given after the window: takes effect on that day, never before it.
+    // Given late (after 16 Nov) but within the window: still 2 Dec, recorded after the grace.
+    expect(pendingDecision({ ...r, noticeGivenOn: "2026-11-25" }, "2026-12-05")).toEqual({ settle: false, waitUntil: "2026-12-09", blocker: null });
+    expect(pendingDecision({ ...r, noticeGivenOn: "2026-11-25" }, "2026-12-09")).toMatchObject({ settle: true, effectiveOn: "2026-12-02" });
+    // Given during the grace: takes effect on that day, never before it.
+    expect(pendingDecision({ ...r, noticeGivenOn: "2026-12-05" }, "2026-12-09")).toMatchObject({ settle: true, effectiveOn: "2026-12-05" });
+    // Given after the grace: takes effect on that day.
     expect(pendingDecision({ ...r, noticeGivenOn: "2026-12-10" }, "2026-12-10")).toMatchObject({ settle: true, effectiveOn: "2026-12-10" });
   });
 
@@ -116,15 +148,29 @@ describe("the daily decision", () => {
       meetingNoticeMeetingId: "sgm",
     });
 
-    it("waits for the meeting's last day, not the 29 days", () => {
-      expect(pendingDecision(called, "2026-12-02", { linkedMeeting: { openedOn: null } })).toEqual({ settle: false, waitUntil: "2026-12-19", blocker: null });
-      expect(pendingDecision(called, "2026-12-18", { linkedMeeting: { openedOn: null } })).toMatchObject({ settle: false, waitUntil: "2026-12-19" });
+    it("waits for the meeting's last day and the grace after it, not the 29 days", () => {
+      expect(pendingDecision(called, "2026-12-02", { linkedMeeting: { openedOn: null } })).toEqual({ settle: false, waitUntil: "2026-12-26", blocker: null });
+      expect(pendingDecision(called, "2026-12-18", { linkedMeeting: { openedOn: null } })).toMatchObject({ settle: false, waitUntil: "2026-12-26" });
+      // The grace: 19 to 25 December.
+      expect(pendingDecision(called, "2026-12-19", { linkedMeeting: { openedOn: null } })).toEqual({ settle: false, waitUntil: "2026-12-26", blocker: null });
+      expect(pendingDecision(called, "2026-12-25", { linkedMeeting: { openedOn: null } })).toEqual({ settle: false, waitUntil: "2026-12-26", blocker: null });
     });
 
-    it("takes effect the day after when the meeting was not opened in time", () => {
-      expect(pendingDecision(called, "2026-12-19", { linkedMeeting: { openedOn: null } })).toEqual({ settle: true, status: "CARRIED", endedBy: "MEETING_NOT_HELD", effectiveOn: "2026-12-19" });
-      expect(pendingDecision(called, "2026-12-19", { linkedMeeting: { openedOn: "2026-12-20" } })).toMatchObject({ settle: true, endedBy: "MEETING_NOT_HELD" });
-      expect(pendingDecision(called, "2026-12-19", { linkedMeeting: null })).toMatchObject({ settle: true, endedBy: "MEETING_NOT_HELD" });
+    it("takes effect the day after the meeting's last day when it was not opened in time, recorded after the grace", () => {
+      expect(pendingDecision(called, "2026-12-26", { linkedMeeting: { openedOn: null } })).toEqual({ settle: true, status: "CARRIED", endedBy: "MEETING_NOT_HELD", effectiveOn: "2026-12-19" });
+      expect(pendingDecision(called, "2026-12-26", { linkedMeeting: { openedOn: "2026-12-20" } })).toMatchObject({ settle: true, endedBy: "MEETING_NOT_HELD" });
+      expect(pendingDecision(called, "2026-12-26", { linkedMeeting: null })).toMatchObject({ settle: true, endedBy: "MEETING_NOT_HELD" });
+      // Opened before the day its notice was given: not the meeting the notice called (the same test as a confirmation).
+      expect(pendingDecision(called, "2026-12-26", { linkedMeeting: { openedOn: "2026-11-10" } })).toMatchObject({ settle: true, endedBy: "MEETING_NOT_HELD" });
+    });
+
+    it("is held, for D7 and a confirmation alike, only when opened from the notice day to the day it must be held by", () => {
+      expect(heldInTime(called, "2026-11-20")).toBe(true);
+      expect(heldInTime(called, "2026-12-18")).toBe(true);
+      expect(heldInTime(called, "2026-11-19")).toBe(false);
+      expect(heldInTime(called, "2026-12-19")).toBe(false);
+      expect(heldInTime(called, null)).toBe(false);
+      expect(heldInTime({ ...called, meetingNoticeGivenOn: null }, "2026-12-01")).toBe(false);
     });
 
     it("never takes effect on its own when the meeting was held but its decision is not recorded", () => {
@@ -146,7 +192,8 @@ describe("the daily decision", () => {
 
     it("without a meeting called, takes effect as s 97 does", () => {
       const plain = row("INTERIM_NO_QUORUM", S78, "2026-11-02", { noticeGivenOn: "2026-11-05" });
-      expect(pendingDecision(plain, "2026-12-02")).toEqual({ settle: true, status: "CARRIED", endedBy: "PERIOD_ENDED", effectiveOn: "2026-12-02" });
+      expect(pendingDecision(plain, "2026-12-02")).toEqual({ settle: false, waitUntil: "2026-12-09", blocker: null });
+      expect(pendingDecision(plain, "2026-12-09")).toEqual({ settle: true, status: "CARRIED", endedBy: "PERIOD_ENDED", effectiveOn: "2026-12-02" });
     });
   });
 });
@@ -178,7 +225,8 @@ describe("confirmation by a later meeting", () => {
     meetingHeldBy: "2026-12-18",
     meetingNoticeMeetingId: "sgm",
   });
-  const at = (meetingDay: string, itemStatus: string, more = {}) => ({ meetingDay, itemStatus, isLinkedMeeting: true, standardQuorum: null, ...more });
+  // Victoria s 78: held on the day it was opened (by default the meeting's day).
+  const at = (meetingDay: string, itemStatus: string, more = {}) => ({ meetingDay, openedOn: meetingDay, itemStatus, isLinkedMeeting: true, standardQuorum: null, ...more });
 
   it("Victoria: the meeting called confirms it (carried) or not (lost)", () => {
     expect(confirmationResult(s78, at("2026-12-10", "CARRIED"))).toEqual({ status: "CARRIED", endedBy: "CONFIRMED", effectiveOn: "2026-12-10" });
@@ -197,9 +245,25 @@ describe("confirmation by a later meeting", () => {
     expect(confirmationResult({ ...s78, noticeGivenOn: null }, at("2026-12-10", "LOST"))).toMatchObject({ status: "LOST" });
   });
 
+  it("Victoria: held on the day it was opened, from the day its notice was given (low (d)), the test D7 uses", () => {
+    // Scheduled for 10 December but opened on 12 December: it took effect on the day it was held.
+    expect(confirmationResult(s78, at("2026-12-10", "CARRIED", { openedOn: "2026-12-12" }))).toEqual({ status: "CARRIED", endedBy: "CONFIRMED", effectiveOn: "2026-12-12" });
+    // Scheduled in time but opened too late, or never opened.
+    expect(confirmationResult(s78, at("2026-12-10", "CARRIED", { openedOn: "2026-12-19" }))).toEqual({ error: "That meeting was not held by 18 December 2026, so it cannot confirm the resolution." });
+    expect(confirmationResult(s78, at("2026-12-10", "CARRIED", { openedOn: null }))).toEqual({
+      error: "That meeting is not recorded as opened, so it is not recorded as held and cannot confirm the resolution.",
+    });
+    // Opened after the resolution was made but before the notice called it.
+    expect(confirmationResult(s78, at("2026-11-10", "LOST"))).toEqual({
+      error: "That meeting was held before 20 November 2026, the day its notice was given, so it cannot confirm the resolution.",
+    });
+    expect(confirmationResult(s78, at("2026-11-20", "CARRIED"))).toMatchObject({ status: "CARRIED", effectiveOn: "2026-11-20" });
+  });
+
   it("the ACT: a carried motion with a standard quorum, held within the 28 days, confirms it sooner", () => {
     const act = row("REDUCED_QUORUM", RQ, "2026-11-02", { noticeGivenOn: "2026-11-03" });
-    const c = (meetingDay: string, itemStatus: string, standardQuorum: boolean | null) => ({ meetingDay, itemStatus, standardQuorum, isLinkedMeeting: false });
+    // The ACT reads the meeting's day, not the day it was opened.
+    const c = (meetingDay: string, itemStatus: string, standardQuorum: boolean | null) => ({ meetingDay, openedOn: null, itemStatus, standardQuorum, isLinkedMeeting: false });
     expect(confirmationResult(act, c("2026-11-20", "CARRIED", true))).toEqual({ status: "CARRIED", endedBy: "CONFIRMED", effectiveOn: "2026-11-20" });
     expect(confirmationResult(act, c("2026-11-20", "CARRIED", false))).toEqual({ error: "Choose a motion recorded with a standard quorum present." });
     expect(confirmationResult(act, c("2026-11-20", "CARRIED", null))).toEqual({ error: "Choose a motion recorded with a standard quorum present." });
@@ -273,7 +337,7 @@ describe("the meeting page's panel (pendingPanelItem)", () => {
       itemLabel: "3. Repaint the foyer",
       kindLabel: "Interim special resolution",
       status: "PENDING",
-      standing: "Pending. Unless it is stopped sooner, it takes effect on 2 December 2026 at the earliest.",
+      standing: "Pending. It takes effect on 2 December 2026 at the earliest unless a petition received by 1 December 2026 is recorded by 8 December 2026.",
       facts: ["Made on 2 November 2026.", "Its period ends on 1 December 2026.", "Notice to the owners due by 16 November 2026, not recorded yet."],
       blocker: null,
       canRecordNotice: true,
@@ -284,6 +348,29 @@ describe("the meeting page's panel (pendingPanelItem)", () => {
       windowClosesOn: "2026-12-01",
       today: "2026-11-10",
     });
+  });
+
+  it("says when it takes effect and until when a petition or notice received in time can be recorded (review M1)", () => {
+    const given = pendingPanelItem(panelRow(row("INTERIM_SPECIAL", S97, "2026-11-02", { noticeGivenOn: "2026-11-05" })), { itemLabel: "1. A", today: "2026-12-05" });
+    expect(given).toMatchObject({
+      status: "PENDING",
+      standing: "Pending. It takes effect on 2 December 2026 unless a petition received by 1 December 2026 is recorded by 8 December 2026.",
+      blocker: null,
+      petitionWords: S97.petition!.words,
+      windowClosesOn: "2026-12-01",
+    });
+    const act = pendingPanelItem(panelRow(row("REDUCED_QUORUM", RQ, "2026-11-02", { noticeGivenOn: "2026-11-05" })), { itemLabel: "1. A", today: "2026-12-03" });
+    expect(act.standing).toBe("Pending. It takes effect on 1 December 2026 unless a petition received by 30 November 2026 is recorded by 7 December 2026.");
+    const s78 = pendingPanelItem(panelRow(row("INTERIM_NO_QUORUM", S78, "2026-11-02", { noticeGivenOn: "2026-11-05" })), { itemLabel: "1. A", today: "2026-12-03" });
+    expect(s78.standing).toBe("Pending. It takes effect on 2 December 2026 unless notice of a special general meeting given by 1 December 2026 is recorded by 8 December 2026.");
+    expect(s78.meetingNoticeWords).toBe(S78.meetingNotice!.words);
+    // Victoria s 78: the meeting called was not opened by its last day, during the grace after it.
+    const called = row("INTERIM_NO_QUORUM", S78, "2026-11-02", { noticeGivenOn: "2026-11-05", meetingNoticeGivenOn: "2026-11-20", meetingHeldBy: "2026-12-18", meetingNoticeMeetingId: "sgm" });
+    const late = pendingPanelItem(panelRow(called), { itemLabel: "1. A", today: "2026-12-20", facts: { linkedMeeting: { openedOn: null } } });
+    expect(late.standing).toBe(
+      "It takes effect on 19 December 2026, as the special general meeting called for it is not recorded as held by 18 December 2026. StrataVerze records this on 26 December 2026.",
+    );
+    for (const v of [given, act, s78, late]) expect(v.standing).not.toMatch(/[;–—]/);
   });
 
   it("says what blocks it once its period has ended without the notice", () => {

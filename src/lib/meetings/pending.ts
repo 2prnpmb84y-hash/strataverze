@@ -18,6 +18,15 @@
  *   the lots entitled to vote on its day) decides it as lost;
  * - D7: Victoria s 78: where the special general meeting was held within its
  *   days but its decision is not recorded, it never takes effect on its own.
+ *   It is held when it was opened (its openedAt day) on or after the day its
+ *   notice was given and by the day it must be held by, the same test for a
+ *   confirmation;
+ * - review M1: the daily run records it as having taken effect at the end of
+ *   its period only after the rule's days of grace (settleAfterGraceDays, 7)
+ *   after the window closes, or after the day the special general meeting
+ *   must be held by. The day it takes effect does not move, and a petition or
+ *   notice received within the window can still be recorded during the
+ *   grace. A confirmation or a petition decides it at once.
  *
  * Every day is a calendar day (YYYY-MM-DD) in the building's time zone. The
  * row's own snapshot of the pack's rule is used, never the pack as it is now,
@@ -91,6 +100,27 @@ export type PendingDecision =
   | { settle: false; waitUntil: string | null; blocker: string | null };
 
 const wait = (until: string): PendingDecision => ({ settle: false, waitUntil: until, blocker: null });
+
+/** Review M1: the rule's days of grace before the end of a period is recorded (none in a snapshot without it). */
+export function settleGraceDays(rule: Pick<PendingResolutionRule, "settleAfterGraceDays">): number {
+  const days = (rule as { settleAfterGraceDays?: unknown }).settleAfterGraceDays;
+  return typeof days === "number" && Number.isInteger(days) && days > 0 ? days : 0;
+}
+
+/** Review M1: the last day of the grace after `lastDay` (the window's close, or the day a meeting must be held by). */
+export function graceEndsOn(rule: Pick<PendingResolutionRule, "settleAfterGraceDays">, lastDay: string): string {
+  return addDays(lastDay, settleGraceDays(rule));
+}
+
+/**
+ * D7 and its confirmation (Victoria s 78): whether the special general meeting
+ * called was held in time, by the day it was opened in the building's time
+ * zone: on or after the day its notice was given, and by the day it must be
+ * held by. One test for both.
+ */
+export function heldInTime(row: Pick<PendingRowView, "meetingNoticeGivenOn" | "meetingHeldBy">, openedOn: string | null): boolean {
+  return !!openedOn && !!row.meetingNoticeGivenOn && !!row.meetingHeldBy && openedOn >= row.meetingNoticeGivenOn && openedOn <= row.meetingHeldBy;
+}
 const blocked = (blocker: string): PendingDecision => ({ settle: false, waitUntil: null, blocker });
 
 /** D3: why it cannot take effect yet for want of its notice, or null. */
@@ -106,7 +136,10 @@ const effectiveFrom = (row: PendingRowView, from: string) => (row.noticeGivenOn 
  * What the daily run does with a pending row on `today`: decide it (CARRIED,
  * with the day it took effect), or leave it, with the day to look again or
  * what stops it. A petition, a special general meeting notice and a
- * confirmation are recorded by an adviser, not decided here.
+ * confirmation are recorded by an adviser, not decided here. Review M1: the
+ * end of a period is decided only after the rule's days of grace (`today`
+ * later than the window's close, or the day the meeting must be held by, plus
+ * the grace), while the day it takes effect stays the day after.
  */
 export function pendingDecision(row: PendingRowView, today: string, facts: PendingFacts = {}): PendingDecision {
   if (row.status !== "PENDING") return { settle: false, waitUntil: null, blocker: null };
@@ -114,22 +147,25 @@ export function pendingDecision(row: PendingRowView, today: string, facts: Pendi
   if (row.kind === "INTERIM_NO_QUORUM" && row.meetingNoticeGivenOn) {
     const heldBy = row.meetingHeldBy;
     if (!heldBy) return blocked("The day the special general meeting must be held by is not recorded.");
-    if (today <= heldBy) return wait(addDays(heldBy, 1));
+    const settleFrom = addDays(graceEndsOn(row.rule, heldBy), 1);
+    if (today <= heldBy) return wait(settleFrom);
     if (!row.meetingNoticeMeetingId || facts.linkedMeeting === undefined) {
       return blocked("The special general meeting called for it is not linked, so StrataVerze cannot tell whether it was held.");
     }
-    const opened = facts.linkedMeeting?.openedOn ?? null;
     // D7: held in time, but its decision is not recorded: never takes effect on its own.
-    if (opened && opened <= heldBy) {
+    if (heldInTime(row, facts.linkedMeeting?.openedOn ?? null)) {
       return blocked("The special general meeting called for it was held. Record whether it confirmed the resolution.");
     }
     const notice = noticeBlocker(row);
     if (notice) return blocked(notice);
+    if (today < settleFrom) return wait(settleFrom);
     return { settle: true, status: "CARRIED", endedBy: "MEETING_NOT_HELD", effectiveOn: effectiveFrom(row, addDays(heldBy, 1)) };
   }
-  if (today <= row.windowClosesOn) return wait(addDays(row.windowClosesOn, 1));
+  const settleFrom = addDays(graceEndsOn(row.rule, row.windowClosesOn), 1);
+  if (today <= row.windowClosesOn) return wait(settleFrom);
   const notice = noticeBlocker(row);
   if (notice) return blocked(notice);
+  if (today < settleFrom) return wait(settleFrom);
   return { settle: true, status: "CARRIED", endedBy: "PERIOD_ENDED", effectiveOn: effectiveFrom(row, addDays(row.windowClosesOn, 1)) };
 }
 
@@ -151,8 +187,13 @@ export function petitionStops(rule: PendingResolutionRule, signatures: number, o
 
 /** The facts of a confirmation an adviser records (Victoria s 78, the ACT s 3.11). */
 export interface ConfirmationFacts {
-  /** The confirming meeting's day, in the building's time zone. */
+  /** The confirming meeting's day (its start, or the day it was scheduled), in the building's time zone. */
   meetingDay: string;
+  /**
+   * The day the confirming meeting was opened, in the building's time zone,
+   * or null when it was not (Victoria s 78 reads this, the test D7 uses).
+   */
+  openedOn: string | null;
   /** Whether it is the special general meeting linked to the notice (Victoria). */
   isLinkedMeeting: boolean;
   /** The confirming item's status: CARRIED or LOST. */
@@ -166,10 +207,19 @@ export type ConfirmationResult =
   | { status: "LOST"; endedBy: "NOT_CONFIRMED"; effectiveOn: null }
   | { error: string };
 
-/** What a confirmation by a later meeting decides, or why it is refused. */
+/**
+ * What a confirmation by a later meeting decides, or why it is refused.
+ * Victoria s 78: the special general meeting called is held on the day it
+ * was opened, on or after the day its notice was given and by the day it must
+ * be held by (heldInTime, the test D7 uses).
+ */
 export function confirmationResult(row: PendingRowView, c: ConfirmationFacts): ConfirmationResult {
   if (row.status !== "PENDING") return { error: "This resolution is already decided." };
-  if (c.meetingDay <= row.madeOn) return { error: `The confirming meeting must be held after ${formatDay(row.madeOn)}, the day the resolution was made.` };
+  const heldOn = row.kind === "INTERIM_NO_QUORUM" ? c.openedOn : c.meetingDay;
+  if (row.kind === "INTERIM_NO_QUORUM" && !heldOn) {
+    return { error: "That meeting is not recorded as opened, so it is not recorded as held and cannot confirm the resolution." };
+  }
+  if (!heldOn || heldOn <= row.madeOn) return { error: `The confirming meeting must be held after ${formatDay(row.madeOn)}, the day the resolution was made.` };
   if (c.itemStatus !== "CARRIED" && c.itemStatus !== "LOST") {
     return { error: "Choose a motion recorded as carried or lost at that meeting." };
   }
@@ -177,21 +227,24 @@ export function confirmationResult(row: PendingRowView, c: ConfirmationFacts): C
   if (row.kind === "INTERIM_NO_QUORUM") {
     if (!row.meetingNoticeGivenOn || !row.meetingHeldBy) return { error: "Record the notice of the special general meeting first." };
     if (!c.isLinkedMeeting) return { error: "Choose the special general meeting the notice called." };
-    if (c.meetingDay > row.meetingHeldBy) {
+    if (heldOn < row.meetingNoticeGivenOn) {
+      return { error: `That meeting was held before ${formatDay(row.meetingNoticeGivenOn)}, the day its notice was given, so it cannot confirm the resolution.` };
+    }
+    if (!heldInTime(row, heldOn)) {
       return { error: `That meeting was not held by ${formatDay(row.meetingHeldBy)}, so it cannot confirm the resolution.` };
     }
     if (c.itemStatus === "LOST") return { status: "LOST", endedBy: "NOT_CONFIRMED", effectiveOn: null };
     if (notice) return { error: notice };
-    return { status: "CARRIED", endedBy: "CONFIRMED", effectiveOn: effectiveFrom(row, c.meetingDay) };
+    return { status: "CARRIED", endedBy: "CONFIRMED", effectiveOn: effectiveFrom(row, heldOn) };
   }
   if (row.kind === "REDUCED_QUORUM" && row.rule.confirmedSoonerBy === "STANDARD_QUORUM_MEETING") {
-    if (c.meetingDay > row.windowClosesOn) {
+    if (heldOn > row.windowClosesOn) {
       return { error: `A confirming meeting must be held by ${formatDay(row.windowClosesOn)}, the last day of its period.` };
     }
     if (c.standardQuorum !== true) return { error: "Choose a motion recorded with a standard quorum present." };
     if (c.itemStatus !== "CARRIED") return { error: "Only a motion recorded as carried can confirm it." };
     if (notice) return { error: notice };
-    return { status: "CARRIED", endedBy: "CONFIRMED", effectiveOn: effectiveFrom(row, c.meetingDay) };
+    return { status: "CARRIED", endedBy: "CONFIRMED", effectiveOn: effectiveFrom(row, heldOn) };
   }
   return { error: "This resolution is not confirmed by a later meeting." };
 }
@@ -229,6 +282,13 @@ export function isPendingItem(item: { status?: string | null }): boolean {
 /** D10: why a pending item cannot be recorded again, deferred or deleted. */
 export const PENDING_ITEM_REFUSAL =
   "This item is decided later, so it cannot be recorded again, deferred or removed. Nothing was saved. See Decided later on this page.";
+
+/**
+ * D10 (review M2): why an item whose resolution was decided later, and is now
+ * recorded as carried or lost, cannot be recorded again, deferred or deleted.
+ */
+export const DECIDED_LATER_ITEM_REFUSAL =
+  "This item's resolution was decided after the meeting, so it cannot be recorded again, deferred or removed. Nothing was saved. See Decided later on this page.";
 
 /** Why the chair cannot record as lost a count that makes the motion a resolution decided later. */
 export function laterLostRefusal(rule: PendingResolutionRule, reason: string): string {
@@ -273,6 +333,25 @@ export interface PendingPanelItem {
   madeOn: string;
   windowClosesOn: string;
   today: string;
+}
+
+/**
+ * Where a pending row stands before its period's end is recorded (review M1):
+ * the day it takes effect, unless what stops it, received within the window,
+ * is recorded by the last day of the grace. Plain words with no dashes or
+ * semicolons.
+ */
+function pendingStanding(row: PendingRowView): string {
+  const rule = row.rule;
+  const awaitsNotice = rule.noticeRequiredBeforeEffect && !row.noticeGivenOn;
+  const takesEffect = `It takes effect on ${formatDay(effectiveFrom(row, addDays(row.windowClosesOn, 1)))}${awaitsNotice ? " at the earliest" : ""}`;
+  const stoppers = [rule.petition ? "a petition received" : null, rule.meetingNotice ? "notice of a special general meeting given" : null].filter((x): x is string => !!x);
+  if (stoppers.length === 0) return `Pending. ${takesEffect}.`;
+  const by = `${stoppers.join(" or ")} by ${formatDay(row.windowClosesOn)}`;
+  const graceEnd = graceEndsOn(rule, row.windowClosesOn);
+  return graceEnd > row.windowClosesOn
+    ? `Pending. ${takesEffect} unless ${by} is recorded by ${formatDay(graceEnd)}.`
+    : `Pending. ${takesEffect} unless ${by} is recorded.`;
 }
 
 const lotWords = (numbers: readonly string[]) =>
@@ -339,9 +418,12 @@ export function pendingPanelItem(
       standing = "Waiting for something to be recorded before it can take effect.";
       blocker = decision.blocker;
     } else if (row.kind === "INTERIM_NO_QUORUM" && row.meetingHeldBy) {
-      standing = `Waiting for the special general meeting, which must be held by ${formatDay(row.meetingHeldBy)}.`;
+      standing =
+        ctx.today <= row.meetingHeldBy
+          ? `Waiting for the special general meeting, which must be held by ${formatDay(row.meetingHeldBy)}.`
+          : `It takes effect on ${formatDay(effectiveFrom(row, addDays(row.meetingHeldBy, 1)))}, as the special general meeting called for it is not recorded as held by ${formatDay(row.meetingHeldBy)}. StrataVerze records this on ${formatDay(addDays(graceEndsOn(rule, row.meetingHeldBy), 1))}.`;
     } else {
-      standing = `Pending. Unless it is stopped sooner, it takes effect on ${formatDay(addDays(row.windowClosesOn, 1))} at the earliest.`;
+      standing = pendingStanding(row);
     }
   }
 

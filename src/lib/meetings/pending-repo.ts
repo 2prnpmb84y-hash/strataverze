@@ -7,7 +7,9 @@
  * in one transaction: the row is locked and checked still PENDING, updated,
  * the agenda item set to CARRIED/RESOLVED or LOST/MOTION_LOST (only while it
  * is INTERIM or OPEN), and a PENDING_RESOLUTION_SETTLED event appended to the
- * original meeting. The first writer wins, and a repeat does nothing. A fact
+ * original meeting. The first writer wins, and a repeat does nothing. The
+ * daily run's decision at the end of a period is made again on the locked
+ * row, and written only if it still holds (review M3). A fact
  * an adviser records (the notice, a special general meeting notice) is
  * written the same way, with its own event. Meeting events are append-only.
  *
@@ -15,10 +17,10 @@
  * no pending resolutions, so no row is ever opened for them.
  */
 import { db } from "@/prisma/db";
-import { and } from "@prisma/orm-postgres/orm-client";
+import { and, or } from "@prisma/orm-postgres/orm-client";
 import { recordMeetingEvent } from "./events";
 import { schemeTimeZones } from "@/lib/jurisdiction/scheme-time";
-import { dayIn, formatDateIn, todayIn } from "@/lib/jurisdiction/time-zone";
+import { dayIn, formatDateIn, platformToday, todayIn } from "@/lib/jurisdiction/time-zone";
 import { logError } from "@/lib/log";
 import { addDays } from "@/lib/levies/notice-plan";
 import {
@@ -170,51 +172,84 @@ export async function settlePendingResolution(id: string, s: SettleInput, actorI
     await setLockTimeout(tx);
     const row = await tx.orm.public.PendingResolution.where((p) => p.id.eq(id)).forNoKeyUpdate().first();
     if (!row || row.status !== "PENDING") return false;
-    await tx.orm.public.PendingResolution.where((p) => and(p.id.eq(id), p.status.eq("PENDING"))).update({
-      ...(s.extra ?? {}),
-      status: s.status,
-      endedBy: s.endedBy,
-      effectiveOn: s.effectiveOn as never,
-      decidedAt: now.toISOString() as never,
-      decidedBy: actorId,
-    });
-    if (s.petitionLots?.lotIds.length) {
-      await tx.orm.public.PendingResolutionLot.createAll(
-        s.petitionLots.lotIds.map((lotId) => ({
-          pendingResolutionId: id,
-          lotId,
-          entry: "PETITION",
-          vote: null,
-          receivedOn: s.petitionLots!.receivedOn as never,
-          recordedBy: actorId!,
-        })),
-      );
-    }
-    const carried = s.status === "CARRIED";
-    const updated = await tx.orm.public.AgendaItem
-      .where((a) => and(a.id.eq(row.agendaItemId), a.meetingId.eq(row.meetingId), a.status.in(LIVE_ITEM_STATUSES)))
-      .updateAndCount({ outcome: carried ? "RESOLVED" : "MOTION_LOST", status: carried ? "CARRIED" : "LOST" });
-    // The item must still be pending: anything else is a fault, and nothing is written.
-    if (updated !== 1) throw new Error(`Pending resolution ${id}: its agenda item is no longer pending.`);
-    await recordMeetingEvent(
-      {
-        meetingId: row.meetingId,
-        actorId,
-        eventType: "PENDING_RESOLUTION_SETTLED",
-        payload: {
-          pendingId: id,
-          itemId: row.agendaItemId,
-          kind: row.kind,
-          status: s.status,
-          endedBy: s.endedBy,
-          effectiveOn: s.effectiveOn,
-          ...(s.eventDetail ?? {}),
-        },
-      },
-      tx.orm,
-    );
+    await writeSettlement(tx, row, s, actorId, now);
     return true;
   });
+}
+
+/** Victoria s 78: the special general meeting linked to a row, as the decision reads it (undefined where none is linked). */
+async function linkedMeetingFacts(orm: Orm, row: NonNullable<PendingRow>, tz: string): Promise<PendingFacts> {
+  if (!row.meetingNoticeMeetingId) return {};
+  const linkedId = row.meetingNoticeMeetingId;
+  const m = await orm.public.Meeting.where((x) => x.id.eq(linkedId)).first();
+  return { linkedMeeting: m && m.schemeId === row.schemeId ? { openedOn: m.openedAt ? dayIn(tz, String(m.openedAt)) : null } : null };
+}
+
+/**
+ * The daily run and the meeting page (review M3): decide a row at the end of
+ * its period only if, once it is locked, pendingDecision on the locked row
+ * and the linked meeting as read then still says to settle, with the same
+ * `endedBy`. Otherwise it is left as it is (a petition or notice recorded in
+ * the meantime). True when it was decided.
+ */
+async function settleIfStillDue(id: string, tz: string, endedBy: string, now: Date): Promise<boolean> {
+  return db.transaction(async (tx) => {
+    await setLockTimeout(tx);
+    const row = await tx.orm.public.PendingResolution.where((p) => p.id.eq(id)).forNoKeyUpdate().first();
+    if (!row || row.status !== "PENDING") return false;
+    const decision = pendingDecision(pendingView(row), todayIn(tz, now), await linkedMeetingFacts(tx.orm, row, tz));
+    if (!decision.settle || decision.endedBy !== endedBy) return false;
+    await writeSettlement(tx, row, { status: decision.status, endedBy: decision.endedBy, effectiveOn: decision.effectiveOn }, null, now);
+    return true;
+  });
+}
+
+/** Write a decision on a row locked and checked PENDING in `tx`: the row, the lots of a petition, the agenda item and the event. */
+async function writeSettlement(tx: Tx, row: NonNullable<PendingRow>, s: SettleInput, actorId: string | null, now: Date): Promise<void> {
+  const id = row.id;
+  await tx.orm.public.PendingResolution.where((p) => and(p.id.eq(id), p.status.eq("PENDING"))).update({
+    ...(s.extra ?? {}),
+    status: s.status,
+    endedBy: s.endedBy,
+    effectiveOn: s.effectiveOn as never,
+    decidedAt: now.toISOString() as never,
+    decidedBy: actorId,
+  });
+  if (s.petitionLots?.lotIds.length) {
+    await tx.orm.public.PendingResolutionLot.createAll(
+      s.petitionLots.lotIds.map((lotId) => ({
+        pendingResolutionId: id,
+        lotId,
+        entry: "PETITION",
+        vote: null,
+        receivedOn: s.petitionLots!.receivedOn as never,
+        recordedBy: actorId!,
+      })),
+    );
+  }
+  const carried = s.status === "CARRIED";
+  const updated = await tx.orm.public.AgendaItem
+    .where((a) => and(a.id.eq(row.agendaItemId), a.meetingId.eq(row.meetingId), a.status.in(LIVE_ITEM_STATUSES)))
+    .updateAndCount({ outcome: carried ? "RESOLVED" : "MOTION_LOST", status: carried ? "CARRIED" : "LOST" });
+  // The item must still be pending: anything else is a fault, and nothing is written.
+  if (updated !== 1) throw new Error(`Pending resolution ${id}: its agenda item is no longer pending.`);
+  await recordMeetingEvent(
+    {
+      meetingId: row.meetingId,
+      actorId,
+      eventType: "PENDING_RESOLUTION_SETTLED",
+      payload: {
+        pendingId: id,
+        itemId: row.agendaItemId,
+        kind: row.kind,
+        status: s.status,
+        endedBy: s.endedBy,
+        effectiveOn: s.effectiveOn,
+        ...(s.eventDetail ?? {}),
+      },
+    },
+    tx.orm,
+  );
 }
 
 /** Record a fact on a pending row (still PENDING and not yet recorded), with its event, in one transaction. */
@@ -244,18 +279,47 @@ export interface SettleRunResult {
   failed: number;
 }
 
+/** Rows read a page at a time by the daily run. */
+const SETTLE_PAGE = 500;
+
+/**
+ * The pending rows that could be due on `now` (review, low (c)), earliest
+ * window first, read a page at a time: those whose window closed before the
+ * latest today of any building (StrataVerze's own day plus one, since a
+ * building's today can be ahead of it), and those with a special general
+ * meeting notice (Victoria s 78), whatever their window. No grace is assumed
+ * here, so a row is never left out for want of one: each row's own grace is
+ * applied by pendingDecision.
+ */
+async function pendingRowsThatCouldBeDue(filter: { meetingId?: string }, now: Date) {
+  const before = addDays(platformToday(now), 1);
+  const out: NonNullable<PendingRow>[] = [];
+  for (let offset = 0; ; offset += SETTLE_PAGE) {
+    const page = await db.orm.public.PendingResolution
+      .where((p) => {
+        const due = and(p.status.eq("PENDING"), or(p.windowClosesOn.lt(before), p.meetingNoticeGivenOn.isNotNull()));
+        return filter.meetingId ? and(due, p.meetingId.eq(filter.meetingId)) : due;
+      })
+      .orderBy([(p) => p.windowClosesOn.asc(), (p) => p.id.asc()])
+      .offset(offset)
+      .limit(SETTLE_PAGE)
+      .all();
+    out.push(...page);
+    if (page.length < SETTLE_PAGE) break;
+  }
+  return out;
+}
+
 /**
  * Decide every pending row that is due, through pendingDecision: the daily
  * run (/api/cron/pending-resolutions, no filter) and the meeting page (one
  * meeting). Each row is judged on today in its building's time zone, and
- * decided in its own transaction; a failure is logged and counted, and never
- * stops the others.
+ * decided in its own transaction, where it is judged again once locked
+ * (review M3: a petition or notice recorded since it was read leaves it as it
+ * is); a failure is logged and counted, and never stops the others.
  */
 export async function settleDuePendingResolutions(filter: { meetingId?: string } = {}, now: Date = new Date()): Promise<SettleRunResult> {
-  const rows = await db.orm.public.PendingResolution
-    .where((p) => (filter.meetingId ? and(p.status.eq("PENDING"), p.meetingId.eq(filter.meetingId)) : p.status.eq("PENDING")))
-    .limit(2000)
-    .all();
+  const rows = await pendingRowsThatCouldBeDue(filter, now);
   const result: SettleRunResult = { settled: 0, waiting: 0, blocked: [], failed: 0 };
   if (rows.length === 0) return result;
   const zones = await schemeTimeZones(rows.map((r) => r.schemeId));
@@ -274,8 +338,8 @@ export async function settleDuePendingResolutions(filter: { meetingId?: string }
       }
       const decision = pendingDecision(pendingView(row), today, facts);
       if (decision.settle) {
-        const done = await settlePendingResolution(row.id, { status: decision.status, endedBy: decision.endedBy, effectiveOn: decision.effectiveOn }, null, now);
-        if (done) result.settled++;
+        // Judged again under the row lock: left as it is when it no longer says the same.
+        if (await settleIfStillDue(row.id, tz, decision.endedBy, now)) result.settled++;
       } else if (decision.blocker) {
         result.blocked.push({ id: row.id, blocker: decision.blocker });
       } else {
@@ -287,6 +351,12 @@ export async function settleDuePendingResolutions(filter: { meetingId?: string }
     }
   }
   return result;
+}
+
+/** The status of an agenda item's pending row (PENDING, CARRIED or LOST), or null where it has none (D10, review M2). Read only for a pack that records them. */
+export async function pendingStatusForItem(itemId: string): Promise<string | null> {
+  const row = await db.orm.public.PendingResolution.where((p) => p.agendaItemId.eq(itemId)).first();
+  return row ? String(row.status) : null;
 }
 
 /** A meeting's pending rows (every status), with the lots that signed a petition. */
@@ -315,7 +385,7 @@ async function rowOf(schemeId: string, meetingId: string, pendingId: string): Pr
   return { row };
 }
 
-/** D3: record the day the owners were given notice of it. A late notice is flagged, not moved. Then decide it if it is due. */
+/** D3: record the day the owners were given notice of it. A late notice is flagged, not moved. Then decide it if it is due (after its grace, review M1). */
 export async function recordPendingNotice(p: { scheme: PendingScheme; meetingId: string; pendingId: string; givenOn: string; actorId: string; now?: Date }): Promise<RepoResult> {
   const found = await rowOf(p.scheme.id, p.meetingId, p.pendingId);
   if ("error" in found) return { error: found.error };
@@ -330,14 +400,14 @@ export async function recordPendingNotice(p: { scheme: PendingScheme; meetingId:
     payload: { givenOn: p.givenOn, ...(late ? { late: true, dueOn: view.noticeDueOn } : {}) },
   });
   if ("error" in saved) return saved;
-  // Due already (its period ended while the notice was missing): decided now.
+  // Due already (its period and its grace ended while the notice was missing): decided now.
   await settleDuePendingResolutions({ meetingId: p.meetingId }, p.now);
   return late
     ? { ok: true, notice: `Recorded. The notice was given after ${formatDay(view.noticeDueOn!)}, the day it was due. This is flagged, and the dates of the resolution do not move.` }
     : { ok: true };
 }
 
-/** Victoria s 78: record notice of a special general meeting given within the period, with that meeting. */
+/** Victoria s 78: record notice of a special general meeting given within the period, with that meeting (also during the grace after it, review M1). */
 export async function recordSpecialMeetingNotice(p: {
   scheme: PendingScheme;
   meetingId: string;
@@ -371,7 +441,10 @@ export async function recordSpecialMeetingNotice(p: {
  * D4, D5: record a petition received within the period, with the lots that
  * signed it. Valid only with strictly more than the pack's share of all the
  * lots (Victoria) or of the lots entitled to vote on the day it was received
- * (the ACT, leaving out lots barred for money owed, `barredLotIds`). A
+ * (the ACT, leaving out lots barred for money owed, `barredLotIds`), and
+ * counted only where the lots entered match the building's number of lots
+ * (both, review low (b)). A petition received within the window can be
+ * recorded during the grace after it (review M1). A
  * petition that is not enough is refused and not stored. A valid one decides
  * the resolution as lost, with the lots, in one transaction.
  */
@@ -397,13 +470,13 @@ export async function recordPendingPetition(p: {
   const ids = [...new Set(p.lotIds)];
   if (ids.length === 0) return { error: "Choose the lots that signed the petition." };
   if (ids.some((id) => !lots.some((l) => l.id === id))) return { error: "Choose only lots of this building that signed the petition." };
+  // Victoria and the ACT alike: counted only where the lots entered match the building's number of lots.
+  if (p.scheme.totalLots == null || p.scheme.totalLots !== lots.length) {
+    return { error: `The lots entered (${lots.length}) do not match the building's number of lots (${p.scheme.totalLots ?? "not recorded"}), so the petition cannot be counted. Check the lots first.` };
+  }
   let outOf = lots.length;
   let counted = ids;
-  if (petition.of === "ALL_LOTS") {
-    if (p.scheme.totalLots == null || p.scheme.totalLots !== lots.length) {
-      return { error: `The lots entered (${lots.length}) do not match the building's number of lots (${p.scheme.totalLots ?? "not recorded"}), so the petition cannot be counted. Check the lots first.` };
-    }
-  } else {
+  if (petition.of !== "ALL_LOTS") {
     const barred = p.barredLotIds ? await p.barredLotIds(p.receivedOn, found.row.category) : new Set<string>();
     outOf = lots.filter((l) => !barred.has(l.id)).length;
     counted = ids.filter((id) => !barred.has(id));
@@ -466,6 +539,8 @@ export async function recordPendingConfirmation(p: {
   }
   const result = confirmationResult(view, {
     meetingDay: dayIn(p.scheme.timeZone, String(meeting.startTime ?? meeting.scheduledAt)),
+    // Victoria s 78: held on the day it was opened, the test D7 uses.
+    openedOn: meeting.openedAt ? dayIn(p.scheme.timeZone, String(meeting.openedAt)) : null,
     isLinkedMeeting: view.meetingNoticeMeetingId === meeting.id,
     itemStatus: String(item.status),
     standardQuorum,

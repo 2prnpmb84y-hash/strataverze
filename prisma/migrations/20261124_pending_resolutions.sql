@@ -27,10 +27,12 @@
 -- pending rule and the category's rule at the meeting, and meeting_votes the
 -- votes, the votes not counted and the tally, so a later pack change never
 -- moves its dates or tests. The meeting and agenda item keys use the default
--- NO ACTION (checked at the end of the statement): deleting a building, which
--- cascades to its meetings, items and these rows in the same statement, is not
--- blocked, while deleting only a meeting or item a row relies on still is, as
--- for late_charge_waivers (20261123).
+-- NO ACTION: deleting only a meeting or item a row relies on is blocked, as
+-- for late_charge_waivers (20261123). Deleting a building does not cascade
+-- cleanly in every case: it fails where petition lot rows exist
+-- (pending_resolution_lots.lot_id is a NO ACTION key to lots), as it does for
+-- the other NO ACTION references to lots. Such a building's petition lot rows
+-- must be dealt with before it can be deleted.
 --
 -- pending_resolution_lots: the lots that signed a petition (PETITION), and
 -- from PR 8b-ii the late written votes (LATE_VOTE, FOR or AGAINST), one row
@@ -38,8 +40,9 @@
 --
 -- A trigger refuses any change to a decided row, and any change to the facts
 -- of a row or to a date once recorded (the notice, the special general
--- meeting notice). The lot rows are never updated. No delete guard, so
--- deleting a building still cascades.
+-- meeting notice). The lot rows are never updated. Neither table has a delete
+-- guard (deleting a building still fails where petition lot rows exist, as
+-- above).
 --
 -- Every existing row passes, by construction (not by reading the data): both
 -- tables are new and start empty, and no existing table gains a column, a

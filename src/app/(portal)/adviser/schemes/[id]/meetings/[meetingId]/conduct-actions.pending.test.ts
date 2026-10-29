@@ -4,7 +4,8 @@
  * live: the pending row, the item stored as INTERIM (never CARRIED) and the
  * event with the dates are written in one transaction; a count that makes
  * the motion one of these cannot be recorded as lost; a pending item cannot
- * be recorded again, deferred or removed (D10); the ACT asks whether a
+ * be recorded again, deferred or removed (D10), nor can an item whose
+ * pending row is decided (review M2); the ACT asks whether a
  * reduced quorum was present after "no" (D6), refusing an unreadable answer
  * and writing nothing.
  */
@@ -244,13 +245,66 @@ describe("a pending item (D10)", () => {
     expect(deleteAgendaItem).toHaveBeenCalledWith("m1", "i1");
   });
 
-  it("is refused a second time by the transaction too, when the item read was not yet INTERIM", async () => {
+  it("is refused a second time by its pending row, when the item read was not yet INTERIM (review M2)", async () => {
     at("VIC", "SPECIAL");
     await record("RESOLVED", [v(1, "FOR"), v(2, "FOR"), v(3, "FOR"), v(4, "FOR"), v(5, "AGAINST")], { quorumPresent: true });
     // A second request that read the item before the first committed.
-    const r = await record("RESOLVED", [v(1, "FOR"), v(2, "FOR"), v(3, "FOR"), v(4, "FOR"), v(5, "AGAINST")], { quorumPresent: true });
-    expect(r).toEqual({ error: "This item is already decided later. Nothing was saved." });
+    for (const outcome of ["RESOLVED", "MOTION_LOST", "DEFERRED"]) {
+      const r = await record(outcome, [v(1, "FOR"), v(2, "FOR"), v(3, "FOR"), v(4, "FOR"), v(5, "AGAINST")], { quorumPresent: true });
+      expect(r, outcome).toEqual({ error: "This item is decided later, so it cannot be recorded again, deferred or removed. Nothing was saved. See Decided later on this page." });
+    }
     expect(rows()).toHaveLength(1);
     expect(events()).toHaveLength(1);
+    expect(updateAgendaItem).not.toHaveBeenCalled();
+  });
+});
+
+describe("an item whose resolution was decided later (review M2)", () => {
+  function decided(st: "VIC" | "ACT", status: "CARRIED" | "LOST") {
+    at(st, st === "VIC" ? "SPECIAL" : "ORDINARY", status);
+    sharedFake.table("AgendaItem")[0].outcome = status === "CARRIED" ? "RESOLVED" : "MOTION_LOST";
+    sharedFake.table("PendingResolution").push({ id: "p1", agendaItemId: "i1", meetingId: "m1", schemeId: "s1", status, endedBy: status === "CARRIED" ? "PERIOD_ENDED" : "PETITION" });
+  }
+  const refusal = "This item's resolution was decided after the meeting, so it cannot be recorded again, deferred or removed. Nothing was saved. See Decided later on this page.";
+
+  it("cannot be recorded again or deferred, whatever it is stored as now", async () => {
+    for (const st of ["VIC", "ACT"] as const) {
+      for (const status of ["CARRIED", "LOST"] as const) {
+        for (const outcome of ["RESOLVED", "MOTION_LOST", "DEFERRED"]) {
+          decided(st, status);
+          const r = await record(outcome, [v(1, "FOR"), v(2, "FOR"), v(3, "AGAINST")], { quorumPresent: true });
+          expect(r.error, `${st} ${status} ${outcome}`).toBe(refusal);
+          expect(sharedFake.table("AgendaItem")[0].status).toBe(status);
+        }
+      }
+    }
+    expect(updateAgendaItem).not.toHaveBeenCalled();
+    expect(events()).toHaveLength(0);
+  });
+
+  it("can still be recorded where it has no pending row", async () => {
+    at("VIC", "SPECIAL", "CARRIED");
+    expect(await record("DEFERRED")).toEqual({ ok: true });
+    expect(updateAgendaItem).toHaveBeenCalledWith("m1", "i1", { outcome: "DEFERRED", status: "DEFERRED" });
+  });
+
+  it("cannot be removed from the agenda: the database refuses it, and the refusal is told plainly", async () => {
+    decided("VIC", "CARRIED");
+    const fk = (constraint: string) =>
+      Object.assign(new Error(`update or delete on table "agenda_items" violates foreign key constraint "${constraint}" on table "pending_resolutions"`), { code: "23503" });
+    deleteAgendaItem.mockRejectedValueOnce(fk("pending_resolutions_agenda_item_id_fkey"));
+    expect(await deleteAgendaItemAction("s1", "m1", "i1")).toEqual({ error: refusal });
+    // Wrapped by the driver, with the code and the constraint in its cause.
+    deleteAgendaItem.mockRejectedValueOnce(Object.assign(new Error("Query failed"), { cause: { code: "23503", constraint: "pending_resolutions_agenda_item_id_fkey", table: "pending_resolutions" } }));
+    expect(await deleteAgendaItemAction("s1", "m1", "i1")).toEqual({ error: refusal });
+    // The motion that confirmed a resolution of another meeting.
+    deleteAgendaItem.mockRejectedValueOnce(fk("pending_resolutions_confirmed_item_id_fkey"));
+    expect(await deleteAgendaItemAction("s1", "m1", "i1")).toEqual({
+      error: "This motion is recorded as deciding a resolution of another meeting, so it cannot be removed. Nothing was saved.",
+    });
+    // Any other failure, as before.
+    deleteAgendaItem.mockRejectedValueOnce(new Error("connection reset"));
+    expect(await deleteAgendaItemAction("s1", "m1", "i1")).toEqual({ error: "Failed to remove the agenda item." });
+    expect(events()).toHaveLength(0);
   });
 });

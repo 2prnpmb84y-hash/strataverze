@@ -200,7 +200,7 @@ describe("Australian Capital Territory pack (pending)", () => {
     expect(pack.status).toBe("DRAFT");
     expect(pack.reviewedOn).toBeNull();
     expect(pack.reviewer).toBe("Matthew Wrigley");
-    expect(act.DECISIONS).toHaveLength(5);
+    expect(act.DECISIONS).toHaveLength(6);
     for (const d of act.DECISIONS.slice(0, 2)) expect(d).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-28" });
     expect(act.DECISIONS[0].decision).toContain("PAYMENT_ALLOCATION_ORDER");
     expect(act.DECISIONS[1].decision).toContain("NOTICE_RULES");
@@ -213,6 +213,11 @@ describe("Australian Capital Territory pack (pending)", () => {
     expect(act.DECISIONS[4]).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-29" });
     for (const d of ["D1", "D2", "D3", "D5", "D6", "D10", "D11", "D19"]) expect(act.DECISIONS[4].decision).toContain(`(${d})`);
     expect(act.FOR_REVIEW.some((p) => p.startsWith("Reduced quorum decisions") && p.includes("(D6)") && p.includes("(D5)"))).toBe(true);
+    // The grace before the end of a period is recorded (review M1, 29 Oct 2026), in the rule and kept in FOR_REVIEW.
+    expect(act.DECISIONS[5]).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-29" });
+    expect(act.DECISIONS[5].decision).toContain("settleAfterGraceDays");
+    expect(act.MEETING_RULES.pendingResolutions?.REDUCED_QUORUM?.settleAfterGraceDays).toBe(7);
+    expect(act.FOR_REVIEW.some((p) => p.startsWith("Reduced quorum decisions") && p.includes("(Review M1") && p.includes("settleAfterGraceDays"))).toBe(true);
   });
 
   it("holds exactly one entitlement schedule on each lot: unit entitlement", () => {
@@ -341,7 +346,12 @@ describe("Victorian pack (pending)", () => {
       expect(d.decidedBy).toBeNull();
       expect(d.decidedOn).toBeNull();
     }
-    expect(vic.DECISIONS.filter((d) => d.decidedBy != null)).toHaveLength(4);
+    expect(vic.DECISIONS.filter((d) => d.decidedBy != null)).toHaveLength(5);
+    // The grace before the end of a period is recorded (review M1, 29 Oct 2026), in the rules and kept in FOR_REVIEW.
+    expect(vic.DECISIONS.some((d) => d.decision.includes("settleAfterGraceDays") && d.decidedOn === "2026-10-29")).toBe(true);
+    expect(vic.MEETING_RULES.pendingResolutions?.INTERIM_SPECIAL?.settleAfterGraceDays).toBe(7);
+    expect(vic.MEETING_RULES.pendingResolutions?.INTERIM_NO_QUORUM?.settleAfterGraceDays).toBe(7);
+    expect(vic.FOR_REVIEW.find((p) => p.key === "MEETING_RULES_PENDING")?.point).toContain("(Review M1");
     // Stage 2, PR 8b-i: interim resolutions, kept in FOR_REVIEW MEETING_RULES_PENDING for legal confirmation.
     const pending = vic.DECISIONS.find((d) => d.decision.includes("pendingResolutions"))!;
     for (const id of ["D1", "D2", "D3", "D4", "D7", "D10", "D11", "D19", "D20"]) expect(pending.decision).toContain(`(${id})`);

@@ -5,7 +5,9 @@
  * still PENDING, the item set only while INTERIM, the event appended, the
  * first writer winning and a repeat doing nothing); the facts an adviser
  * records, each once and only while pending, with the window checks; the
- * petition thresholds; confirmations; and the daily run across time zones.
+ * petition thresholds; confirmations; and the daily run across time zones,
+ * after the grace (review M1), judged again under the row lock (review M3),
+ * and read a page at a time (review, low (c)).
  * The database's own guard trigger is not in the fake: what it refuses is
  * refused here first, under the row lock.
  */
@@ -157,24 +159,73 @@ describe("deciding", () => {
 });
 
 describe("the daily run", () => {
-  it("decides what is due on today in each building's zone, waits for the rest, and lists what is blocked", async () => {
+  it("decides what is due on today in each building's zone, after the grace, waits for the rest, and lists what is blocked", async () => {
     await open("i1", "INTERIM_SPECIAL"); // Victoria: closes 1 Dec, notice missing
     await open("i2", "INTERIM_NO_QUORUM");
     await open("x1", "REDUCED_QUORUM"); // the ACT: closes 30 Nov
     pendingRow("i2").noticeGivenOn = "2026-11-03";
     pendingRow("x1").noticeGivenOn = "2026-11-03";
-    // 30 Nov 13:30 UTC is 1 Dec 00:30 in Sydney and Melbourne: the ACT row is due; Victoria's are not.
-    const first = await repo.settleDuePendingResolutions({}, at("2026-11-30T13:30:00.000Z"));
-    expect(first).toEqual({ settled: 1, waiting: 2, blocked: [], failed: 0 });
+    // 1 Dec 00:30 in Sydney and Melbourne: the ACT's window has closed, but it is in its grace (review M1).
+    expect(await repo.settleDuePendingResolutions({}, at("2026-11-30T13:30:00.000Z"))).toEqual({ settled: 0, waiting: 3, blocked: [], failed: 0 });
+    expect(pendingRow("x1").status).toBe("PENDING");
+    // 7 Dec 23:30 in Sydney: the last day of the ACT's grace.
+    expect(await repo.settleDuePendingResolutions({}, at("2026-12-07T12:30:00.000Z"))).toMatchObject({ settled: 0 });
+    // 8 Dec 00:30 in Sydney and Melbourne: the ACT row is due, taking effect on 1 Dec; Victoria's are not.
+    const first = await repo.settleDuePendingResolutions({}, at("2026-12-07T13:30:00.000Z"));
+    expect(first).toEqual({ settled: 1, waiting: 1, blocked: [{ id: pendingRow("i1").id, blocker: expect.stringMatching(/^Its notice to the owners is not recorded/) }], failed: 0 });
     expect(pendingRow("x1")).toMatchObject({ status: "CARRIED", endedBy: "PERIOD_ENDED", effectiveOn: "2026-12-01" });
     expect(item("x1")).toMatchObject({ status: "CARRIED", outcome: "RESOLVED" });
-    const second = await repo.settleDuePendingResolutions({}, at("2026-12-01T13:30:00.000Z"));
+    const second = await repo.settleDuePendingResolutions({}, at("2026-12-08T13:30:00.000Z"));
     expect(second.settled).toBe(1);
     expect(second.blocked).toEqual([{ id: pendingRow("i1").id, blocker: expect.stringMatching(/^Its notice to the owners is not recorded/) }]);
     expect(pendingRow("i2")).toMatchObject({ status: "CARRIED", effectiveOn: "2026-12-02" });
     // Run again: nothing more to do, and nothing changes.
-    const third = await repo.settleDuePendingResolutions({}, at("2026-12-01T13:30:00.000Z"));
+    const third = await repo.settleDuePendingResolutions({}, at("2026-12-08T13:30:00.000Z"));
     expect(third).toMatchObject({ settled: 0, waiting: 0, failed: 0 });
+  });
+
+  it("reads only the rows that could be due: a window closed before the latest today, or a special general meeting called", async () => {
+    await open("i1", "INTERIM_SPECIAL");
+    await open("i2", "INTERIM_NO_QUORUM");
+    // 15 Nov: no window has closed, so nothing is read.
+    expect(await repo.settleDuePendingResolutions({}, at("2026-11-15T00:00:00.000Z"))).toEqual({ settled: 0, waiting: 0, blocked: [], failed: 0 });
+    // A special general meeting called: read whatever its window.
+    Object.assign(pendingRow("i2"), { noticeGivenOn: "2026-11-03", meetingNoticeGivenOn: "2026-11-10", meetingHeldBy: "2026-12-08", meetingNoticeMeetingId: "sgm" });
+    expect(await repo.settleDuePendingResolutions({}, at("2026-11-15T00:00:00.000Z"))).toEqual({ settled: 0, waiting: 1, blocked: [], failed: 0 });
+  });
+
+  it("reads every due row a page at a time, earliest window first, past the old cap of 2000", async () => {
+    const rows = [];
+    const items = [];
+    for (let n = 0; n < 2001; n++) {
+      const madeOn = n < 1000 ? "2026-10-01" : "2026-10-02";
+      const d = pendingDates(RQ, madeOn);
+      items.push({ id: `bulk-${n}`, meetingId: "a1", resolutionCategory: "ORDINARY", status: "INTERIM", outcome: "INTERIM" });
+      rows.push({
+        id: `p-${String(n).padStart(4, "0")}`,
+        schemeId: "s2",
+        meetingId: "a1",
+        agendaItemId: `bulk-${n}`,
+        state: "ACT",
+        kind: "REDUCED_QUORUM",
+        category: "ORDINARY",
+        takesEffectAs: "ORDINARY",
+        status: "PENDING",
+        madeOn,
+        windowClosesOn: d.windowClosesOn,
+        noticeDueOn: d.noticeDueOn,
+        noticeGivenOn: madeOn,
+        meetingNoticeGivenOn: null,
+        meetingNoticeMeetingId: null,
+        meetingHeldBy: null,
+        rule: { pending: RQ, resolution: null },
+        rulePack: "AU-ACT 2026.10.10",
+      });
+    }
+    sharedFake.table("AgendaItem").push(...items);
+    sharedFake.table("PendingResolution").push(...rows);
+    expect(await repo.settleDuePendingResolutions({}, at("2027-01-01T00:00:00.000Z"))).toEqual({ settled: 2001, waiting: 0, blocked: [], failed: 0 });
+    expect(sharedFake.table("PendingResolution").every((r) => r.status === "CARRIED")).toBe(true);
   });
 
   it("decides one meeting only when asked", async () => {
@@ -183,6 +234,7 @@ describe("the daily run", () => {
     pendingRow("i2").noticeGivenOn = "2026-11-03";
     pendingRow("x1").noticeGivenOn = "2026-11-03";
     expect(await repo.settleDuePendingResolutions({ meetingId: "a1" }, at("2027-01-01T00:00:00.000Z"))).toMatchObject({ settled: 1 });
+    expect(pendingRow("x1").status).toBe("CARRIED");
     expect(pendingRow("i2").status).toBe("PENDING");
   });
 
@@ -196,7 +248,7 @@ describe("the daily run", () => {
     expect(pendingRow("x1").status).toBe("CARRIED");
   });
 
-  it("Victoria s 78: waits for the special general meeting, then decides by whether it was opened in time", async () => {
+  it("Victoria s 78: waits for the special general meeting, then decides by whether it was opened in time, after the grace", async () => {
     await open("i2", "INTERIM_NO_QUORUM");
     Object.assign(pendingRow("i2"), { noticeGivenOn: "2026-11-03", meetingNoticeGivenOn: "2026-11-20", meetingHeldBy: "2026-12-18", meetingNoticeMeetingId: "sgm" });
     expect(await repo.settleDuePendingResolutions({}, at("2026-12-10T00:00:00.000Z"))).toMatchObject({ settled: 0, waiting: 1 });
@@ -204,8 +256,59 @@ describe("the daily run", () => {
     const held = await repo.settleDuePendingResolutions({}, at("2026-12-20T00:00:00.000Z"));
     expect(held.blocked[0].blocker).toMatch(/was held\. Record whether it confirmed/);
     sharedFake.table("Meeting").find((m) => m.id === "sgm")!.openedAt = null;
-    expect(await repo.settleDuePendingResolutions({}, at("2026-12-20T00:00:00.000Z"))).toMatchObject({ settled: 1 });
+    // Not opened by 18 Dec: in its grace until 25 Dec, then it takes effect on 19 Dec.
+    expect(await repo.settleDuePendingResolutions({}, at("2026-12-20T00:00:00.000Z"))).toMatchObject({ settled: 0, waiting: 1 });
+    expect(await repo.settleDuePendingResolutions({}, at("2026-12-26T00:00:00.000Z"))).toMatchObject({ settled: 1 });
     expect(pendingRow("i2")).toMatchObject({ status: "CARRIED", endedBy: "MEETING_NOT_HELD", effectiveOn: "2026-12-19" });
+  });
+});
+
+describe("the daily run judges a row again once it is locked (review M3)", () => {
+  /** Run `change` as if another request committed it after the run read the rows, before its first transaction. */
+  function beforeFirstTransaction(change: () => void) {
+    const original = sharedFake.db.transaction;
+    const spy = vi.spyOn(sharedFake.db, "transaction").mockImplementationOnce(async (fn) => {
+      change();
+      return original(fn as never);
+    });
+    return () => spy.mockRestore();
+  }
+
+  it("leaves a row whose special general meeting notice was recorded since it was read", async () => {
+    await open("i2", "INTERIM_NO_QUORUM");
+    pendingRow("i2").noticeGivenOn = "2026-11-03";
+    const restore = beforeFirstTransaction(() =>
+      Object.assign(pendingRow("i2"), { meetingNoticeGivenOn: "2026-12-01", meetingHeldBy: "2026-12-29", meetingNoticeMeetingId: "sgm" }),
+    );
+    // 10 Dec in Melbourne: read as due (PERIOD_ENDED), but under the lock it waits for the meeting.
+    expect(await repo.settleDuePendingResolutions({}, at("2026-12-10T00:00:00.000Z"))).toMatchObject({ settled: 0, failed: 0 });
+    restore();
+    expect(pendingRow("i2").status).toBe("PENDING");
+    expect(pendingRow("i2").endedBy ?? null).toBeNull();
+    expect(item("i2")).toMatchObject({ status: "INTERIM" });
+    expect(events("PENDING_RESOLUTION_SETTLED")).toHaveLength(0);
+  });
+
+  it("leaves a row whose special general meeting was opened in time since it was read", async () => {
+    await open("i2", "INTERIM_NO_QUORUM");
+    Object.assign(pendingRow("i2"), { noticeGivenOn: "2026-11-03", meetingNoticeGivenOn: "2026-11-20", meetingHeldBy: "2026-12-18", meetingNoticeMeetingId: "sgm" });
+    const restore = beforeFirstTransaction(() => {
+      sharedFake.table("Meeting").find((m) => m.id === "sgm")!.openedAt = "2026-12-10T08:00:00.000Z";
+    });
+    expect(await repo.settleDuePendingResolutions({}, at("2026-12-26T00:00:00.000Z"))).toMatchObject({ settled: 0, failed: 0 });
+    restore();
+    expect(pendingRow("i2").status).toBe("PENDING");
+    expect(events("PENDING_RESOLUTION_SETTLED")).toHaveLength(0);
+  });
+
+  it("decides a row that still says the same once locked", async () => {
+    await open("i2", "INTERIM_NO_QUORUM");
+    pendingRow("i2").noticeGivenOn = "2026-11-03";
+    const restore = beforeFirstTransaction(() => undefined);
+    expect(await repo.settleDuePendingResolutions({}, at("2026-12-10T00:00:00.000Z"))).toMatchObject({ settled: 1 });
+    restore();
+    expect(pendingRow("i2")).toMatchObject({ status: "CARRIED", endedBy: "PERIOD_ENDED", effectiveOn: "2026-12-02" });
+    expect(sharedFake.locks).toContainEqual({ table: "PendingResolution", ids: [pendingRow("i2").id], inTransaction: true });
   });
 });
 
@@ -221,9 +324,20 @@ describe("the notice to the owners (D3)", () => {
     const late = await repo.recordPendingNotice({ ...p, givenOn: "2026-12-03", now: at("2026-12-04T00:00:00.000Z") });
     expect(late).toEqual({ ok: true, notice: "Recorded. The notice was given after 16 November 2026, the day it was due. This is flagged, and the dates of the resolution do not move." });
     expect(events("PENDING_NOTICE_RECORDED")[0]).toMatchObject({ actorId: "adviser", payload: { pendingId: id, itemId: "i1", givenOn: "2026-12-03", late: true, dueOn: "2026-11-16" } });
-    // Its period ended on 1 Dec, and a notice given after it makes it take effect on the day it was given.
+    // Its period ended on 1 Dec, but its grace runs to 8 Dec (review M1): not decided yet.
+    expect(pendingRow("i1")).toMatchObject({ status: "PENDING" });
+    expect(await repo.recordPendingNotice({ ...p, givenOn: "2026-12-03", now: at("2026-12-04T00:00:00.000Z") })).toEqual({ error: "This is already recorded and cannot be changed. Nothing was saved." });
+    // After the grace, a notice given after the period makes it take effect on the day it was given.
+    expect(await repo.settleDuePendingResolutions({}, at("2026-12-09T00:00:00.000Z"))).toMatchObject({ settled: 1 });
     expect(pendingRow("i1")).toMatchObject({ status: "CARRIED", effectiveOn: "2026-12-03" });
-    expect(await repo.recordPendingNotice({ ...p, givenOn: "2026-12-03", now: at("2026-12-04T00:00:00.000Z") })).toEqual({ error: "This resolution is already decided. Nothing was saved." });
+    expect(await repo.recordPendingNotice({ ...p, givenOn: "2026-12-03", now: at("2026-12-10T00:00:00.000Z") })).toEqual({ error: "This resolution is already decided. Nothing was saved." });
+  });
+
+  it("decides it at once when recorded after the grace", async () => {
+    await open("i1", "INTERIM_SPECIAL");
+    const id = String(pendingRow("i1").id);
+    expect(await repo.recordPendingNotice({ scheme: vicScheme, meetingId: "m1", pendingId: id, actorId: "adviser", givenOn: "2026-11-10", now: at("2026-12-09T00:00:00.000Z") })).toEqual({ ok: true });
+    expect(pendingRow("i1")).toMatchObject({ status: "CARRIED", endedBy: "PERIOD_ENDED", effectiveOn: "2026-12-02" });
   });
 
   it("cannot be changed once recorded, and belongs to its own building and meeting", async () => {
@@ -277,6 +391,31 @@ describe("a petition (D4, D5)", () => {
     expect(r).toEqual({ error: "The lots entered (8) do not match the building's number of lots (9), so the petition cannot be counted. Check the lots first." });
   });
 
+  it("can be recorded during the grace after the period, dated within it (review M1)", async () => {
+    await open("i1", "INTERIM_SPECIAL");
+    pendingRow("i1").noticeGivenOn = "2026-11-03";
+    // 5 Dec: the period ended on 1 Dec, and the daily run leaves it in its grace.
+    expect(await repo.settleDuePendingResolutions({}, at("2026-12-05T00:00:00.000Z"))).toMatchObject({ settled: 0, waiting: 1 });
+    const p = { scheme: vicScheme, meetingId: "m1", pendingId: String(pendingRow("i1").id), actorId: "adviser", now: at("2026-12-05T00:00:00.000Z"), lotIds: ["lot-1", "lot-2", "lot-3"] };
+    // A petition received after the period is still refused.
+    expect(await repo.recordPendingPetition({ ...p, receivedOn: "2026-12-02" })).toMatchObject({ error: expect.stringMatching(/must be on or before 1 December 2026/) });
+    expect(await repo.recordPendingPetition({ ...p, receivedOn: "2026-12-01" })).toEqual({ ok: true, notice: "Recorded. The petition stops the resolution, so it is recorded as lost." });
+    expect(pendingRow("i1")).toMatchObject({ status: "LOST", endedBy: "PETITION", petitionReceivedOn: "2026-12-01" });
+  });
+
+  it("the ACT: refused where the units entered do not match the building's number of units (review, low (b))", async () => {
+    await open("x1", "REDUCED_QUORUM");
+    const base = { meetingId: "a1", pendingId: String(pendingRow("x1").id), actorId: "adviser", receivedOn: "2026-11-20", now: at("2026-11-21T00:00:00.000Z"), lotIds: ["lot-1", "lot-2", "lot-3", "lot-4", "lot-5"] };
+    for (const totalLots of [9, null]) {
+      const r = await repo.recordPendingPetition({ ...base, scheme: { ...actScheme, totalLots }, barredLotIds: async () => new Set<string>() });
+      expect(r, String(totalLots)).toEqual({
+        error: `The lots entered (8) do not match the building's number of lots (${totalLots ?? "not recorded"}), so the petition cannot be counted. Check the lots first.`,
+      });
+    }
+    expect(pendingRow("x1").status).toBe("PENDING");
+    expect(sharedFake.table("PendingResolutionLot")).toHaveLength(0);
+  });
+
   it("the ACT: more than half of the units entitled to vote on the day, units barred for money owed left out", async () => {
     await open("x1", "REDUCED_QUORUM");
     const id = String(pendingRow("x1").id);
@@ -328,11 +467,16 @@ describe("Victoria s 78: the special general meeting", () => {
     expect(await repo.recordSpecialMeetingNotice({ ...p, pendingId: String(pendingRow("i1").id), givenOn: "2026-11-20", now: at("2026-11-21T00:00:00.000Z") })).toEqual({ error: "A special general meeting is not called for this resolution." });
   });
 
-  it("confirmed by that meeting's carried motion: carried on its day; not confirmed by a lost one: lost", async () => {
+  it("confirmed by that meeting's carried motion: carried on the day it was opened; not confirmed by a lost one: lost", async () => {
     await open("i2", "INTERIM_NO_QUORUM");
     const id = String(pendingRow("i2").id);
     Object.assign(pendingRow("i2"), { noticeGivenOn: "2026-11-03", meetingNoticeGivenOn: "2026-11-20", meetingHeldBy: "2026-12-18", meetingNoticeMeetingId: "sgm" });
     const p = { scheme: vicScheme, meetingId: "m1", pendingId: id, actorId: "adviser", confirmingMeetingId: "sgm" };
+    // Not opened: not recorded as held (low (d), the test D7 uses).
+    expect(await repo.recordPendingConfirmation({ ...p, confirmingItemId: "sgm-1" })).toEqual({
+      error: "That meeting is not recorded as opened, so it is not recorded as held and cannot confirm the resolution.",
+    });
+    sharedFake.table("Meeting").find((m) => m.id === "sgm")!.openedAt = "2026-12-10T08:00:00.000Z";
     expect(await repo.recordPendingConfirmation({ ...p, confirmingItemId: "x2" })).toEqual({ error: "Choose a motion from that meeting." });
     expect(await repo.recordPendingConfirmation({ ...p, confirmingMeetingId: "agm2", confirmingItemId: "sgm-1" })).toEqual({ error: "Choose a motion from that meeting." });
     expect(await repo.recordPendingConfirmation({ ...p, confirmingItemId: "sgm-1" })).toEqual({ ok: true, notice: "Recorded. It took effect on 10 December 2026." });
@@ -340,9 +484,19 @@ describe("Victoria s 78: the special general meeting", () => {
     expect(item("i2")).toMatchObject({ status: "CARRIED", outcome: "RESOLVED" });
   });
 
+  it("refused where that meeting was opened before the day its notice was given (low (d))", async () => {
+    await open("i2", "INTERIM_NO_QUORUM");
+    Object.assign(pendingRow("i2"), { noticeGivenOn: "2026-11-03", meetingNoticeGivenOn: "2026-11-20", meetingHeldBy: "2026-12-18", meetingNoticeMeetingId: "sgm" });
+    sharedFake.table("Meeting").find((m) => m.id === "sgm")!.openedAt = "2026-11-10T08:00:00.000Z";
+    const r = await repo.recordPendingConfirmation({ scheme: vicScheme, meetingId: "m1", pendingId: String(pendingRow("i2").id), actorId: "a", confirmingMeetingId: "sgm", confirmingItemId: "sgm-2" });
+    expect(r).toEqual({ error: "That meeting was held before 20 November 2026, the day its notice was given, so it cannot confirm the resolution." });
+    expect(pendingRow("i2").status).toBe("PENDING");
+  });
+
   it("not confirmed: lost", async () => {
     await open("i2", "INTERIM_NO_QUORUM");
     Object.assign(pendingRow("i2"), { meetingNoticeGivenOn: "2026-11-20", meetingHeldBy: "2026-12-18", meetingNoticeMeetingId: "sgm" });
+    sharedFake.table("Meeting").find((m) => m.id === "sgm")!.openedAt = "2026-12-10T08:00:00.000Z";
     const r = await repo.recordPendingConfirmation({ scheme: vicScheme, meetingId: "m1", pendingId: String(pendingRow("i2").id), actorId: "a", confirmingMeetingId: "sgm", confirmingItemId: "sgm-2" });
     expect(r).toEqual({ ok: true, notice: "Recorded. It was not confirmed, so it is recorded as lost." });
     expect(pendingRow("i2")).toMatchObject({ status: "LOST", endedBy: "NOT_CONFIRMED", confirmedItemId: "sgm-2" });

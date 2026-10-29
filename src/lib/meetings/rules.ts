@@ -298,6 +298,16 @@ export interface PendingResolutionRule {
   /** Whether it takes effect only once that notice is recorded as given (decision D3). */
   noticeRequiredBeforeEffect: boolean;
   /**
+   * The days of grace after the window closes (and, for Victoria s 78, after
+   * the day the special general meeting must be held by) before the daily run
+   * records it as having taken effect at the end of its period. A petition or
+   * notice received within the window can still be recorded during the
+   * grace. The day it takes effect does not move. A StrataVerze value
+   * (Matthew Wrigley's decision of 29 Oct 2026, 7 days). A confirmation or
+   * a petition decides it at once, never delayed by this.
+   */
+  settleAfterGraceDays: number;
+  /**
    * A petition that stops it: signed for more than `moreThanFractionOf` of
    * the lots (ALL_LOTS, Victoria) or of the lots entitled to vote on the day
    * it is received (LOTS_ENTITLED_TO_VOTE, the ACT). `words` names the

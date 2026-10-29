@@ -8,8 +8,10 @@ import { logError } from "@/lib/log";
 /**
  * Pending resolutions (VIC, ACT and WA stage 2, PR 8b-i, 29 Oct 2026;
  * Matthew Wrigley's decision D11), every day: decide each resolution whose
- * period has ended (Victoria's interim resolutions, the ACT's reduced quorum
- * decisions), judged on today in its building's time zone. Called by Vercel
+ * period and the grace after it have ended (Victoria's interim resolutions,
+ * the ACT's reduced quorum decisions; the grace is his decision of
+ * 29 Oct 2026, review M1), judged on today in its building's time zone, and
+ * again once its row is locked. Called by Vercel
  * Cron (see vercel.json) at 16:30 UTC, after midnight in every Australian
  * time zone, with CRON_SECRET as a bearer token. A separate route, so the
  * levy notices run and its response are unchanged. A repeated call does no

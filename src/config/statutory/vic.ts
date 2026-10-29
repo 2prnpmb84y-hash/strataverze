@@ -2688,8 +2688,16 @@ export const DATED_RULES = {
  * recorded (confirmed: carried; not confirmed: lost); if it is not held by
  * then, the resolution takes effect the next day; if it was held and its
  * decision is not recorded, it never takes effect on its own. A pending item
- * cannot be recorded again, deferred or deleted.
+ * cannot be recorded again, deferred or deleted. Matthew Wrigley's decision
+ * of 29 Oct 2026 (review M1, DECISIONS): the daily run records it as having
+ * taken effect only 7 days after the period (or the day the special general
+ * meeting must be held by) ends (settleAfterGraceDays), so a petition or
+ * notice received in time can still be recorded; the day it takes effect does
+ * not move.
  */
+
+/** Days of grace before the daily run records a period's end (Matthew Wrigley's decision of 29 Oct 2026, review M1). */
+const PENDING_SETTLE_GRACE_DAYS = 7;
 
 const VIC_TIE =
   `The votes are equal. A chair who is a lot owner or a proxy has a casting vote, and without it the resolution is not passed (${OCA} s 89A). StrataVerze does not record who chaired or a casting vote yet, so the count cannot decide it`;
@@ -2822,12 +2830,13 @@ export const MEETING_RULES: MeetingRuleSet = {
       takesEffectAs: "SPECIAL",
       noticeWithinDays: RESOLUTIONS.INTERIM_SPECIAL.noticeWithinDays,
       noticeRequiredBeforeEffect: true,
+      settleAfterGraceDays: PENDING_SETTLE_GRACE_DAYS,
       petition: {
         moreThanFractionOf: RESOLUTIONS.INTERIM_SPECIAL.petitionStopsIfMoreThanFractionOfTotalVotes,
         of: "ALL_LOTS",
         words: `A petition to the secretary signed by owners holding more than ${RESOLUTIONS.INTERIM_SPECIAL.petitionStopsIfMoreThanFractionOfTotalVotes * 100}% of the total votes for all the lots`,
       },
-      help: `It becomes a special resolution ${RESOLUTIONS.INTERIM_SPECIAL.becomesSpecialAfterDays} days after it was passed, unless owners holding more than ${RESOLUTIONS.INTERIM_SPECIAL.petitionStopsIfMoreThanFractionOfTotalVotes * 100}% of the total votes for all the lots petition the secretary within that time. Notice of it must be given to the lot owners within ${RESOLUTIONS.INTERIM_SPECIAL.noticeWithinDays} days, with the minutes. StrataVerze takes it to have effect the day after the ${RESOLUTIONS.INTERIM_SPECIAL.becomesSpecialAfterDays} days end, once the notice is recorded as given.`,
+      help: `It becomes a special resolution ${RESOLUTIONS.INTERIM_SPECIAL.becomesSpecialAfterDays} days after it was passed, unless owners holding more than ${RESOLUTIONS.INTERIM_SPECIAL.petitionStopsIfMoreThanFractionOfTotalVotes * 100}% of the total votes for all the lots petition the secretary within that time. Notice of it must be given to the lot owners within ${RESOLUTIONS.INTERIM_SPECIAL.noticeWithinDays} days, with the minutes. StrataVerze takes it to have effect the day after the ${RESOLUTIONS.INTERIM_SPECIAL.becomesSpecialAfterDays} days end, once the notice is recorded as given, and records that ${PENDING_SETTLE_GRACE_DAYS} days later, so a petition received in time can still be recorded.`,
       source: `${OCA} s 97(2) to (5)`,
       status: "STRATAVERZE",
     },
@@ -2837,11 +2846,12 @@ export const MEETING_RULES: MeetingRuleSet = {
       takesEffectAs: "SAME",
       noticeWithinDays: MEETINGS.interimResolutions.noticeAndMinutesWithinDays,
       noticeRequiredBeforeEffect: true,
+      settleAfterGraceDays: PENDING_SETTLE_GRACE_DAYS,
       meetingNotice: {
         meetingHeldWithinDays: MEETINGS.interimResolutions.sgmHeldWithinDaysOfNotice,
         words: `Notice of a special general meeting given within the ${MEETINGS.interimResolutions.takesEffectDaysAfterMade} days`,
       },
-      help: `It takes effect ${MEETINGS.interimResolutions.takesEffectDaysAfterMade} days after it was made, unless notice of a special general meeting is given within that time. Then it must be confirmed at that meeting, held within ${MEETINGS.interimResolutions.sgmHeldWithinDaysOfNotice} days of the notice, and if that meeting is not held it takes effect at the end of the ${MEETINGS.interimResolutions.sgmHeldWithinDaysOfNotice} days. Notice of it must be given to the lot owners within ${MEETINGS.interimResolutions.noticeAndMinutesWithinDays} days, with the minutes. StrataVerze takes it to have effect the day after, once the notice is recorded as given.`,
+      help: `It takes effect ${MEETINGS.interimResolutions.takesEffectDaysAfterMade} days after it was made, unless notice of a special general meeting is given within that time. Then it must be confirmed at that meeting, held within ${MEETINGS.interimResolutions.sgmHeldWithinDaysOfNotice} days of the notice, and if that meeting is not held it takes effect at the end of the ${MEETINGS.interimResolutions.sgmHeldWithinDaysOfNotice} days. Notice of it must be given to the lot owners within ${MEETINGS.interimResolutions.noticeAndMinutesWithinDays} days, with the minutes. StrataVerze takes it to have effect the day after, once the notice is recorded as given, and records that ${PENDING_SETTLE_GRACE_DAYS} days later, so a notice or meeting in time can still be recorded.`,
       source: `${OCA} s 78(2) to (4)`,
       status: "STRATAVERZE",
     },
@@ -2865,7 +2875,7 @@ export const MEETING_RULES_STATUS = {
   pendingResolutions: {
     status: "STRATAVERZE" as RuleStatus,
     source: `${OCA} ss 78(2) to (4), 97(2) to (5)`,
-    note: "The periods (29 days, 14 days' notice, 28 days to hold the special general meeting) and the 25% petition are CONFIRMED. How they are applied is StrataVerze's reading, by Matthew Wrigley's decisions of 29 Oct 2026 (D1 to D4, D7 and D10, DECISIONS): the day counting, the day it is made, notice before effect, a petition recorded as lost, and a special general meeting held with no decision recorded never taking effect on its own (FOR_REVIEW MEETING_RULES_PENDING).",
+    note: "The periods (29 days, 14 days' notice, 28 days to hold the special general meeting) and the 25% petition are CONFIRMED. How they are applied is StrataVerze's reading, by Matthew Wrigley's decisions of 29 Oct 2026 (D1 to D4, D7 and D10, DECISIONS): the day counting, the day it is made, notice before effect, a petition recorded as lost, and a special general meeting held with no decision recorded never taking effect on its own (FOR_REVIEW MEETING_RULES_PENDING). The 7 days of grace before the daily run records its end (settleAfterGraceDays) are a StrataVerze value (Matthew Wrigley's decision of 29 Oct 2026, review M1).",
   },
   retention: {
     status: "CONFIRMED" as RuleStatus,
@@ -3081,7 +3091,7 @@ export const FOR_REVIEW = [
   {
     key: "MEETING_RULES_PENDING",
     point:
-      "Interim resolutions (stage 2, PR 8b-i, 29 Oct 2026), by Matthew Wrigley's StrataVerze decisions of 29 Oct 2026 (DECISIONS), each kept here for legal confirmation. (D1) A petition, notice or special general meeting notice may arrive up to and including the 29th day after the resolution was made, and it takes effect the next day: the Interpretation of Legislation Act 1984 was not read, so whether \"29 days after\" counts this way is NOT_CONFIRMED. (D2) It is made on the later of the meeting's day and the day the chair records it, in the building's time zone. (D3) It takes effect only once its 14-day notice (ss 78(2), 97(2)) is recorded as given; a notice given late is flagged, not moved, and a notice given after the period ends makes it take effect on that day, not before. (D4) A valid s 97(5) petition, signed for more than 25% of all lots (the lots entered, common property left out, refused where they do not match the building's number of lots), means the motion did not become a special resolution, recorded as lost; what follows a petition is not in the notes. (D7) Where notice of a special general meeting is given within the 29 days (s 78(4)), the meeting must be linked when the notice is recorded; it takes effect if that meeting was not opened within the 28 days, and never on its own if it was held but its decision is not recorded. A confirmation needs that meeting's item recorded as carried (confirmed) or lost (not confirmed), with the resolution's notice recorded. (D10) A pending item cannot be recorded again, deferred or deleted. Manager interim resolutions (s 78(1A) to (1C)) and committee interim resolutions (s 112(6), (7)) are not handled. The minutes do not state the later effect yet (stage 2, PR 8b-iv). Confirm each.",
+      "Interim resolutions (stage 2, PR 8b-i, 29 Oct 2026), by Matthew Wrigley's StrataVerze decisions of 29 Oct 2026 (DECISIONS), each kept here for legal confirmation. (D1) A petition, notice or special general meeting notice may arrive up to and including the 29th day after the resolution was made, and it takes effect the next day: the Interpretation of Legislation Act 1984 was not read, so whether \"29 days after\" counts this way is NOT_CONFIRMED. (D2) It is made on the later of the meeting's day and the day the chair records it, in the building's time zone. (D3) It takes effect only once its 14-day notice (ss 78(2), 97(2)) is recorded as given; a notice given late is flagged, not moved, and a notice given after the period ends makes it take effect on that day, not before. (D4) A valid s 97(5) petition, signed for more than 25% of all lots (the lots entered, common property left out, refused where they do not match the building's number of lots), means the motion did not become a special resolution, recorded as lost; what follows a petition is not in the notes. (D7) Where notice of a special general meeting is given within the 29 days (s 78(4)), the meeting must be linked when the notice is recorded; it takes effect if that meeting was not opened within the 28 days, and never on its own if it was held but its decision is not recorded. A confirmation needs that meeting's item recorded as carried (confirmed) or lost (not confirmed), with the resolution's notice recorded. For both, the meeting is held on the day it was opened in StrataVerze, on or after the day its notice was given and by the day it must be held by (since the review of 29 Oct 2026), and a confirmation takes effect on that day. (D10) A pending item cannot be recorded again, deferred or deleted. (Review M1, Matthew Wrigley's decision of 29 Oct 2026) The daily run records it as having taken effect at the end of its period only after 7 days of grace (settleAfterGraceDays), counted from the last day of the 29 days, or, after a special general meeting notice, from the day that meeting must be held by: during the grace a petition or special general meeting notice received within the 29 days can still be recorded, and the day it takes effect does not move. A confirmation or a petition decides it at once. Whether 7 days is long enough for the secretary to pass a petition on is NOT_CONFIRMED. Manager interim resolutions (s 78(1A) to (1C)) and committee interim resolutions (s 112(6), (7)) are not handled. The minutes do not state the later effect yet (stage 2, PR 8b-iv). Confirm each.",
     before: "Victorian meetings are run",
     kind: "LEGAL",
   },
@@ -3206,7 +3216,8 @@ export const FOR_REVIEW = [
  * StrataVerze choices this draft proposes. Matthew Wrigley has not reviewed
  * the draft, so `decidedBy` and `decidedOn` stay null on each, except the
  * payment order and the notice timing he decided on 28 Oct 2026, and the
- * quorum answer he decided on 29 Oct 2026.
+ * quorum answer, interim resolutions and their grace before settling he
+ * decided on 29 Oct 2026.
  */
 export const DECISIONS: readonly { decision: string; proposedOn: string; decidedBy: string | null; decidedOn: string | null }[] = [
   { decision: "Support unlimited owners corporations first; limited owners corporations are listed but blocked (OWNERS_CORPORATION_TYPE).", proposedOn: "2026-10-27", decidedBy: null, decidedOn: null },
@@ -3239,6 +3250,13 @@ export const DECISIONS: readonly { decision: string; proposedOn: string; decided
   {
     decision:
       "Interim resolutions (MEETING_RULES.pendingResolutions, stage 2, PR 8b-i): (D1) a petition or notice can arrive up to and including the day 29 days after the resolution is made, and it takes effect the next day; (D2) it is made on the later of the meeting's day and the day it is recorded, in the building's time zone; (D3) it does not take effect until its 14-day notice is recorded as given, and a late notice is flagged, not moved; (D4) a valid s 97 petition (more than 25% of all lots) means the motion did not become a special resolution, recorded as lost; (D7) where the special general meeting of s 78 was held but its decision is not recorded, the resolution never takes effect on its own; (D10) a pending item cannot be recorded again, deferred or deleted; (D11) a separate daily run decides them; (D19) migration 20261124_pending_resolutions is approved in principle, applied before the code deploys, after a rehearsal and a further approval; (D20) a late charge waiver relying on one is decided on the day it took effect. Matthew Wrigley's StrataVerze decisions of 29 Oct 2026, kept for legal confirmation (FOR_REVIEW MEETING_RULES_PENDING).",
+    proposedOn: "2026-10-29",
+    decidedBy: "Matthew Wrigley",
+    decidedOn: "2026-10-29",
+  },
+  {
+    decision:
+      "Interim resolutions settle after a grace (MEETING_RULES.pendingResolutions.settleAfterGraceDays, stage 2, PR 8b-i review M1): the daily run records an interim resolution as having taken effect at the end of its period (PERIOD_ENDED, or MEETING_NOT_HELD under s 78) only once 7 days have passed after the last day of the 29 days, or after the day the special general meeting must be held by. During those 7 days a petition or a special general meeting notice received within the 29 days can still be recorded (its day is still checked against the 29 days). The day it takes effect stays the day after the period ends. A confirmation or a petition is not delayed. Matthew Wrigley's StrataVerze decision of 29 Oct 2026, kept for legal confirmation (FOR_REVIEW MEETING_RULES_PENDING).",
     proposedOn: "2026-10-29",
     decidedBy: "Matthew Wrigley",
     decidedOn: "2026-10-29",

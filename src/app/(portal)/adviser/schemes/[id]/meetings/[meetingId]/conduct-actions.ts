@@ -37,6 +37,7 @@ import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
 import { dayIn, todayIn } from "@/lib/jurisdiction/time-zone";
 import type { MeetingRuleSet } from "@/lib/meetings/rules";
 import {
+  DECIDED_LATER_ITEM_REFUSAL,
   PENDING_ITEM_REFUSAL,
   isPendingItem,
   laterLostRefusal,
@@ -44,7 +45,7 @@ import {
   pendingDates,
   pendingRecordedNotice,
 } from "@/lib/meetings/pending";
-import { openPendingResolution } from "@/lib/meetings/pending-repo";
+import { openPendingResolution, pendingStatusForItem } from "@/lib/meetings/pending-repo";
 
 /** `notice`: what the chair is told after a save, such as votes not counted. */
 export type ConductActionState = { error?: string; ok?: boolean; notice?: string };
@@ -155,6 +156,11 @@ export async function recordAgendaOutcomeAction(
     if (uncategorised) return { error: uncategorised };
     // An item decided later (INTERIM, only ever under a draft pack) cannot be recorded again or deferred (decision D10).
     if (isPendingItem(item)) return { error: PENDING_ITEM_REFUSAL };
+    // Nor can any item with a pending row (review M2): one already decided later, whatever it is stored as now, or
+    // one opened since the item was read. Read only where the pack records resolutions decided later: NSW and
+    // Queensland read nothing more.
+    const pendingStatus = ruleSet.pendingResolutions ? await pendingStatusForItem(itemId) : null;
+    if (pendingStatus) return { error: pendingStatus === "PENDING" ? PENDING_ITEM_REFUSAL : DECIDED_LATER_ITEM_REFUSAL };
     // Queensland general meetings: the outcome is checked against the count
     // of the votes. A deferral needs no count, and a committee meeting is
     // decided by its members. NSW counts nothing here and goes on as before.

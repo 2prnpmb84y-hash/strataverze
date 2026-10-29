@@ -24,6 +24,7 @@ import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { resolveOutcome } from "@/lib/meetings/conduct";
 import { normaliseMeetingType } from "@/lib/meetings/setup";
 import { recordMeetingEvent } from "@/lib/meetings/events";
+import { isPendingItem } from "@/lib/meetings/pending";
 
 import { db } from "@/prisma/db";
 import { captureUsageFee } from "@/lib/billing/capture";
@@ -134,6 +135,9 @@ export async function closeBallotAction(
     // Determine the result per agenda item from the formal votes.
     const results: { itemId: string; outcome: string }[] = [];
     for (const item of items) {
+      // An item decided later (INTERIM, or OPEN from PR 8b-ii; only ever under a draft pack, by its stored status)
+      // is never written by a ballot (review, low (a)). NSW and Queensland items are never stored so.
+      if (isPendingItem(item)) continue;
       const itemVotes = votes
         .filter((v) => v.agendaItemId === item.id)
         .map((v) => ({
