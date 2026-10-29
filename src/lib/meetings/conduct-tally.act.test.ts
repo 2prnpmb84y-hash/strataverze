@@ -282,19 +282,16 @@ describe("the conduct screen's questions (stage 2, PR 8a-ii)", () => {
       { id: "s", resolutionCategory: "SPECIAL" },
       { id: "n", resolutionCategory: null },
     ], "AGM")!;
+    // Each question carries the pack's words (stage 2, PR 8a-ii-b), so it is never asked without them.
+    const quorum = { label: ACT.quorumAttestation!.label, help: ACT.quorumAttestation!.help };
+    const unitsPresent = { label: ACT.votesPresentAttestation!.label, help: ACT.votesPresentAttestation!.help };
     expect(view.items).toEqual({
-      o: { pollAllowed: true, proxiesAllowed: true, quorumAsked: true },
-      s: { pollAllowed: true, proxiesAllowed: true, quorumAsked: true, unitsPresentAsked: true },
+      o: { pollAllowed: true, proxiesAllowed: true, quorumAsked: quorum },
+      s: { pollAllowed: true, proxiesAllowed: true, quorumAsked: quorum, unitsPresentAsked: unitsPresent },
       n: { pollAllowed: false, proxiesAllowed: true },
     });
-    expect(view.attestation).toEqual({
-      quorum: { label: ACT.quorumAttestation!.label, help: ACT.quorumAttestation!.help },
-      unitsPresent: { label: ACT.votesPresentAttestation!.label, help: ACT.votesPresentAttestation!.help },
-    });
-    expect(view.attestation?.quorum?.label).toBe("Standard quorum present for this motion");
-    expect(view.attestation?.unitsPresent?.label).toBe("Units present or represented for this motion");
-    expect(conductVotingView(ACT, ACT_RULES, LOTS, [{ id: "o", resolutionCategory: "ORDINARY" }], "AGM")?.attestation).toEqual({
-      quorum: { label: ACT.quorumAttestation!.label, help: ACT.quorumAttestation!.help },
-    });
+    expect(quorum.label).toBe("Standard quorum present for this motion");
+    expect(unitsPresent.label).toBe("Units present or represented for this motion");
+    expect(view).not.toHaveProperty("attestation");
   });
 });

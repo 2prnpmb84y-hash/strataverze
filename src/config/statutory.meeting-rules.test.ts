@@ -150,11 +150,11 @@ describe("every rule set, live and draft: the conduct screen asks whatever the a
     for (const c of Object.keys(rs.resolutionCategories)) {
       if (countNeedsQuorum(rs, c)) {
         expect(rs.quorumAttestation, `${state} ${c}`).toBeDefined();
-        expect(view?.items[c]?.quorumAsked, `${state} ${c}`).toBe(true);
+        expect(view?.items[c]?.quorumAsked, `${state} ${c}`).toEqual({ label: rs.quorumAttestation?.label, help: rs.quorumAttestation?.help });
       } else if (view) expect(view.items[c], `${state} ${c}`).not.toHaveProperty("quorumAsked");
       if (countNeedsVotesPresent(rs, c)) {
         expect(rs.votesPresentAttestation, `${state} ${c}`).toBeDefined();
-        expect(view?.items[c]?.unitsPresentAsked, `${state} ${c}`).toBe(true);
+        expect(view?.items[c]?.unitsPresentAsked, `${state} ${c}`).toEqual({ label: rs.votesPresentAttestation?.label, help: rs.votesPresentAttestation?.help });
       } else if (view) expect(view.items[c], `${state} ${c}`).not.toHaveProperty("unitsPresentAsked");
     }
   });
