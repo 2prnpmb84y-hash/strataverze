@@ -4,6 +4,11 @@
 -- principle on 29 Oct 2026, decision D1: rehearse it and ask again before it
 -- is applied).
 --
+-- Status: APPLIED to production on 29 Oct 2026, approved by Matthew Wrigley.
+-- A rolled-back rehearsal ran first. Verified read-only afterwards: 11
+-- constraints, 3 indexes, 16 columns, row security on with no policies, no
+-- rows.
+--
 -- When to apply: NOT needed before the code deploys. Only a pack with
 -- DEBT_RECOVERY.forum, authorityToSue, statutoryCharge or finalNotice reads
 -- or writes this table, and those are the draft Victorian, ACT and Western
