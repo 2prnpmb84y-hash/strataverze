@@ -14,7 +14,7 @@
 import { describe, expect, it } from "vitest";
 import { MEETING_RULES as NSW_RULE_SET, PENDING_RULE_PACKS, QLD_RULE_PACK, RULE_PACKS } from "./statutory";
 import { usesDraftKeys, type MeetingRuleSet, type ResolutionCategory, type ResolutionRule } from "@/lib/meetings/rules";
-import { conductVotingView, countNeedsQuorum, countNeedsReducedQuorum, countNeedsVotesPresent } from "@/lib/meetings/conduct-tally";
+import { conductVotingView, countNeedsQuorum, countNeedsReducedQuorum, countNeedsVotesPresent, countOpensVotingPeriod } from "@/lib/meetings/conduct-tally";
 import type { BuildingSelector, RecordedBuildingSelector, RuleStatus, SelectorCondition } from "./statutory/types";
 
 const STATUSES: RuleStatus[] = ["CONFIRMED", "GUIDANCE", "STRATAVERZE", "NOT_CONFIRMED"];
@@ -274,6 +274,7 @@ describe("NSW and Queensland", () => {
         expect(countNeedsQuorum(rs, c), c).toBe(false);
         expect(countNeedsVotesPresent(rs, c), c).toBe(false);
         expect(countNeedsReducedQuorum(rs, c), c).toBe(false);
+        expect(countOpensVotingPeriod(rs, c), c).toBe(false);
       }
     }
     expect(NSW_RULE_SET).not.toHaveProperty("excludeCommonPropertyRows");
@@ -314,9 +315,30 @@ describe("pending resolutions are wired to the categories that give them (stage 
     });
   });
 
-  it("Western Australia records none yet (stage 2, PR 8b-ii)", () => {
-    expect(wa.pendingResolutions).toBeUndefined();
+  it("Western Australia: VOTING_PERIOD from every category with a voting period (stage 2, PR 8b-ii)", () => {
+    expect(Object.keys(wa.pendingResolutions ?? {})).toEqual(["VOTING_PERIOD"]);
+    const withPeriod = Object.entries(wa.resolutionCategories)
+      .filter(([, r]) => r?.votingPeriodDays != null)
+      .map(([c]) => c)
+      .sort();
+    expect(withPeriod).toEqual(["SPECIAL", "UNANIMOUS", "WITHOUT_DISSENT"]);
+    for (const c of withPeriod) expect(wa.resolutionCategories[c as ResolutionCategory]?.votingPeriodDays, c).toBe(wa.pendingResolutions?.VOTING_PERIOD?.windowDays);
+    expect(wa.pendingResolutions?.VOTING_PERIOD).toMatchObject({
+      windowDays: 28,
+      takesEffectAs: "SAME",
+      noticeWithinDays: null,
+      noticeRequiredBeforeEffect: false,
+      settleAfterGraceDays: 7,
+      lateVotes: { by: "LOTS_WITH_NOTHING_ENTERED", outcomeNoticeRequired: true },
+    });
+    expect(wa.pendingResolutions?.VOTING_PERIOD?.petition).toBeUndefined();
+    expect(wa.pendingResolutions?.VOTING_PERIOD?.meetingNotice).toBeUndefined();
+    expect(wa.pendingResolutions?.VOTING_PERIOD?.confirmedSoonerBy).toBeUndefined();
     expect(wa.reducedQuorumAttestation).toBeUndefined();
+    // The 2-lot quorum still applies at the meeting.
+    expect(wa.quorumNeedsEveryLot?.lotsAtMost).toBe(2);
+    // Only Western Australia has a voting period or written votes after the meeting.
+    for (const rs of [vic, act]) for (const r of Object.values(rs.pendingResolutions ?? {})) expect(r).not.toHaveProperty("lateVotes");
   });
 
   it.each(DRAFTS)("%s words each pending rule plainly, with its source and status", (_state, rs) => {
@@ -324,6 +346,14 @@ describe("pending resolutions are wired to the categories that give them (stage 
       expect(rule!.label).toMatch(/^[A-Z][a-z ]+[a-z]$/);
       expect(rule!.help).toMatch(/^[A-Z].*\.$/);
       expect(`${rule!.label} ${rule!.help} ${rule!.petition?.words ?? ""} ${rule!.meetingNotice?.words ?? ""}`).not.toMatch(NO_DASH_OR_SEMICOLON);
+      // Western Australia's words (PR 8b-ii): sentences, a phrase to follow "the", and a question.
+      if (rule!.conductHelp) expect(rule!.conductHelp).toMatch(/^[A-Z].*\.$/);
+      if (rule!.lateVotes) {
+        expect(rule!.lateVotes.words).toMatch(/^[A-Z].*\.$/);
+        expect(rule!.lateVotes.noticeWords).toMatch(/^[a-z][a-z -]+[a-z]$/);
+        expect(rule!.lateVotes.noticeLabel).toMatch(/^[A-Z][^.]*[a-z]$/);
+      }
+      expect(`${rule!.conductHelp ?? ""} ${rule!.lateVotes?.words ?? ""} ${rule!.lateVotes?.noticeWords ?? ""} ${rule!.lateVotes?.noticeLabel ?? ""}`).not.toMatch(NO_DASH_OR_SEMICOLON);
       expect(rule!.source.length).toBeGreaterThan(5);
       expect(STATUSES).toContain(rule!.status);
       expect(rule!.windowDays).toBeGreaterThan(0);
@@ -333,6 +363,23 @@ describe("pending resolutions are wired to the categories that give them (stage 
       expect(rs.reducedQuorumAttestation.help).toMatch(/^[A-Z].*\.$/);
       expect(`${rs.reducedQuorumAttestation.label} ${rs.reducedQuorumAttestation.help}`).not.toMatch(NO_DASH_OR_SEMICOLON);
     }
+  });
+
+  it("offers Record the votes on the conduct screen for an item with a voting period, and nowhere else (PR 8b-ii)", () => {
+    const all = [
+      ...Object.values(RULE_PACKS).map((p) => [p.state, p.rules.MEETING_RULES] as const),
+      ...Object.values(PENDING_RULE_PACKS).map((p) => [p.state, p.rules.MEETING_RULES] as const),
+    ];
+    for (const [state, rs] of all) {
+      const items = Object.keys(rs.resolutionCategories).map((c) => ({ id: c, resolutionCategory: c }));
+      const view = conductVotingView(rs, PACK_RULES[state as keyof typeof PACK_RULES] ?? RULE_PACKS[state as keyof typeof RULE_PACKS].rules, [], items, "AGM");
+      for (const c of Object.keys(rs.resolutionCategories)) {
+        if (countOpensVotingPeriod(rs, c)) expect(view?.items[c]?.votingPeriod, `${state} ${c}`).toEqual({ help: rs.pendingResolutions?.VOTING_PERIOD?.conductHelp });
+        else if (view) expect(view.items[c], `${state} ${c}`).not.toHaveProperty("votingPeriod");
+      }
+    }
+    expect(["SPECIAL", "WITHOUT_DISSENT", "UNANIMOUS"].every((c) => countOpensVotingPeriod(wa, c))).toBe(true);
+    expect(countOpensVotingPeriod(wa, "ORDINARY")).toBe(false);
   });
 
   it("asks the reduced quorum on the conduct screen wherever the action reads it, and nowhere else", () => {

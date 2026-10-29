@@ -357,7 +357,7 @@ export default async function MeetingDetailPage({
           outcome: a.outcome,
         }))}
         voting={conductVoting}
-        {...(ruleSet.pendingResolutions ? { outcomeLabels: { INTERIM: "Decided later" } } : {})}
+        {...(ruleSet.pendingResolutions ? { outcomeLabels: { INTERIM: "Decided later", ...(ruleSet.pendingResolutions.VOTING_PERIOD ? { OPEN: "Voting open" } : {}) } } : {})}
       />
 
       {/* Resolutions decided later, where the building's rules record them */}

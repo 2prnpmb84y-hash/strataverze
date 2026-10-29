@@ -1215,8 +1215,23 @@ export const RECORD_RETENTION = {
  *   (s 123(7));
  * - special, without dissent and unanimous resolutions stay open for 28 days
  *   after the meeting (s 121), so they are decided when that period closes.
- *   The meeting cannot record them as resolved or lost, and their count is
- *   undetermined whatever the votes (stage 2, PR 8b); the
+ *   Since stage 2, PR 8b-ii (29 Oct 2026, Matthew Wrigley's decisions D1, D2
+ *   and D8 to D11, DECISIONS) the meeting records the votes cast and the item
+ *   stays open (pendingResolutions VOTING_PERIOD, the item stored as OPEN):
+ *   the count at the meeting is still refused where a fact is missing, but
+ *   gives neither carried nor lost. Owners of the lots with nothing entered
+ *   at the item may vote for or against in writing until the period closes
+ *   (s 121(2)), a lot owing money judged on the day the vote is received
+ *   (s 120(2)), and the written notice of the outcome to them must be
+ *   recorded as given before it is decided. It is made on the later of the
+ *   meeting's day and the day it is recorded, in the building's time zone,
+ *   its period closes at the end of the 28th day after that, and it is
+ *   decided as at the next day, only then (even if every lot has voted), on
+ *   the votes at the meeting and the written votes, by the test below for the
+ *   building's size. The daily run records the decision 7 days later
+ *   (settleAfterGraceDays), so a written vote received in time can still be
+ *   recorded; the day it is decided does not move. A count that cannot be
+ *   made, or a missing outcome notice, leaves it open with what stops it. The
  *   tests are held: unanimous, every lot for (s 123(1)); without dissent, no
  *   vote against, and with 2 lots only if unanimous (s 123(2), (3)); special,
  *   with 6 or more lots at least 50% of all lots and of all unit entitlement
@@ -1234,6 +1249,9 @@ export const RECORD_RETENTION = {
  *   abstention recorded at the item (quorumNeedsEveryLot). A lot whose vote is
  *   not counted for money owed (s 120(2)) still makes up the quorum.
  */
+
+/** The days of grace after a voting period closes before the daily run records its decision (Matthew Wrigley's decision of 29 Oct 2026). */
+const PENDING_SETTLE_GRACE_DAYS = 7;
 
 const WA_GENERAL_QUORUM = {
   basis: "PERCENT_OF_LOTS_THEN_THOSE_PRESENT",
@@ -1332,8 +1350,31 @@ export const MEETING_RULES: MeetingRuleSet = {
   categoryRequiredAtGeneralMeetings: true,
   // A 2-lot scheme's quorum needs both lots (s 130(2), (4)): Matthew Wrigley's decision of 29 Oct 2026 (DECISIONS).
   quorumNeedsEveryLot: { lotsAtMost: 2, refusal: WA_TWO_LOT_QUORUM, source: `${STA} s 130(2), (4)`, status: "CONFIRMED" },
+  // The voting period (s 121), recorded since stage 2, PR 8b-ii: Matthew Wrigley's decisions of 29 Oct 2026 (DECISIONS).
+  pendingResolutions: {
+    VOTING_PERIOD: {
+      label: "Voting period",
+      windowDays: RESOLUTIONS.votingPeriodDays,
+      takesEffectAs: "SAME",
+      // No deadline for the outcome notice was found (s 121(2)): it is required before the close is decided (lateVotes).
+      noticeWithinDays: null,
+      noticeRequiredBeforeEffect: false,
+      settleAfterGraceDays: PENDING_SETTLE_GRACE_DAYS,
+      lateVotes: {
+        by: "LOTS_WITH_NOTHING_ENTERED",
+        outcomeNoticeRequired: RESOLUTIONS.outcomeNoticeToAbsentOwners,
+        words: "Owners with no-one present at the meeting may vote for or against by written notice until the voting period closes. StrataVerze takes a written vote from a lot with nothing entered at this item at the meeting. Record each one with the day it was received.",
+        noticeWords: "written notice of the outcome to the owners with no-one present at the meeting",
+        noticeLabel: "Day the owners with no-one present were given written notice of the outcome",
+      },
+      conductHelp: `Its vote stays open for ${RESOLUTIONS.votingPeriodDays} days after the meeting. Record the votes cast at the meeting. It is decided when the voting period closes, with the written votes received by then.`,
+      help: `Special, without dissent and unanimous resolutions stay open for ${RESOLUTIONS.votingPeriodDays} days after the meeting. The owners with no-one present at the meeting are given written notice of the outcome, and may vote by written notice until the period closes. StrataVerze takes the period to close at the end of the ${RESOLUTIONS.votingPeriodDays}th day after the meeting, or after the day the votes are recorded if that is later, counts the votes at the meeting and the written votes received by then by the test for the building's size, and decides it as at the next day, once the notice of the outcome is recorded as given. It records that ${PENDING_SETTLE_GRACE_DAYS} days later, so a written vote received in time can still be recorded.`,
+      source: `${STA} ss 120(2), 121, 123`,
+      status: "STRATAVERZE",
+    },
+  },
   notes:
-    "Draft, from the Western Australian pack (not signed off), VIC, ACT and WA stage 2, PR 8a-i and 8a-ii. Special, without dissent and unanimous resolutions are decided when their 28-day voting period closes, which is not tracked yet. A 2-lot scheme's count needs both lots recorded at the item.",
+    "Draft, from the Western Australian pack (not signed off), VIC, ACT and WA stage 2, PR 8a-i, 8a-ii and 8b-ii. Special, without dissent and unanimous resolutions stay open for their 28-day voting period: the meeting records the votes, written votes are recorded after it, and the resolution is decided when the period closes. A 2-lot scheme's count needs both lots recorded at the item.",
 };
 
 /** How far each part of MEETING_RULES not carrying its own status is checked. */
@@ -1606,7 +1647,7 @@ export const NOT_CONFIRMED = [
 /**
  * StrataVerze's decisions. The pack as a whole has not been reviewed; the
  * decisions so far are the payment order and the notice timing (28 Oct 2026),
- * and the 2-lot quorum (29 Oct 2026).
+ * the 2-lot quorum and the voting period (29 Oct 2026).
  */
 export const DECISIONS: readonly { decision: string; decidedBy: string; decidedOn: string }[] = [
   {
@@ -1623,6 +1664,12 @@ export const DECISIONS: readonly { decision: string; decidedBy: string; decidedO
   {
     decision:
       "2-lot quorum (MEETING_RULES.quorumNeedsEveryLot): at a general meeting of a 2-lot scheme, where the quorum needs both lots with no fallback (STA s 130(2), (4)), a count is refused unless both lots are recorded at the item, voting or abstaining, with a clear refusal and nothing written. A lot that owes money can make up the quorum: a lot whose vote is not counted for money owed (s 120(2)) still makes up the quorum if it is recorded at the item (s 130), and the ordinary resolution is then decided by the counted votes. Matthew Wrigley's StrataVerze decision of 29 Oct 2026 (the stricter reading first applied, that such a lot does not make up the quorum, was relaxed the same day). Fewer than 2 lots entered is refused too.",
+    decidedBy: "Matthew Wrigley",
+    decidedOn: "2026-10-29",
+  },
+  {
+    decision:
+      "Voting period (MEETING_RULES.pendingResolutions VOTING_PERIOD, STA s 121; stage 2, PR 8b-ii). Matthew Wrigley's StrataVerze decisions of 29 Oct 2026, kept in FOR_REVIEW for legal confirmation: a special, without dissent or unanimous resolution counted at a general meeting is recorded with the votes cast and stays open (the item stored as OPEN), and the 2-lot quorum (quorumNeedsEveryLot) still applies at the meeting. Day counting (D1): a written vote can be received up to and including the 28th day after the day it was made, and it is decided as at the next day. The day it is made (D2) is the later of the meeting's start day and the day it is recorded, in the building's time zone. Late voters (D8): the lots with nothing entered at the item at the meeting, for or against only, a debt (s 120(2)) judged on the day the written vote was received, one written vote per lot; the written notice of the outcome (s 121(2)) must be recorded as given before the close is decided whenever such a lot exists. No early decision (D9): decided only at the close, even if every lot has voted. Locked (D10): an item with a voting period cannot be recorded again, deferred or deleted. A daily run (D11) decides it, and only after 7 days of grace (settleAfterGraceDays), the day it is decided staying the day after the close. At the close the votes at the meeting and the written votes are counted by the s 123 test for the building's size, as it was at the meeting: carried or lost, ended by VOTES_AT_CLOSE. A count that cannot be made, or a missing outcome notice, leaves it open with what stops it.",
     decidedBy: "Matthew Wrigley",
     decidedOn: "2026-10-29",
   },
@@ -1649,9 +1696,9 @@ export const FOR_REVIEW = [
   "NOTICE_RULES: one notice for each instalment as it falls due is a StrataVerze choice (the STA and STGR set no notice rule). Scheme by-laws were not checked: one may set a notice form, content or period, or an early payment discount. Confirm.",
   "NOTICE_RULES, notices that cannot go out because their due date cannot move: the daily job logs them as held (LEVY_NOTICES_HELD) again on every run until the planned notices are stopped, and when the Adviser sends overdue notices they are held while the others go out. When a schedule is first planned, one such instalment refuses the whole schedule (nothing is planned). Decide whether to keep both.",
   "MEETING_RULES (stage 2, PR 8a-i) is StrataVerze's mapping of MEETINGS, RESOLUTIONS and SIZE_CLASSES to the shared shape. StrataVerze choices: the names (Ordinary, Special, Unanimous Resolution and Resolution without Dissent); a general meeting and the motions list offer all four, and a council meeting ordinary resolutions only; pre-meeting voting and voting outside a meeting (s 120(3)) are not offered; common property rows are not counted as lots; a poll means unit entitlement counting demanded on an ordinary resolution (s 122); an item with no resolution category (such as an election) cannot be recorded as resolved at a general meeting, because every outcome there comes from the count and such an item has no test to count it by (it can be recorded as lost, or deferred). Confirm each.",
-  "Special, without dissent and unanimous resolutions stay open for 28 days after the meeting (s 121), and owners with no-one present may still vote by written notice (s 121(2)), so the count at the meeting cannot decide them. Until the voting period is tracked (stage 2, PR 8b), the meeting cannot record them as resolved or lost: the chair is told, and may defer the item. The count itself gives no result for them either (it is undetermined, whatever the votes), so closing a ballot never records one.",
+  "Voting period (stage 2, PR 8b-ii, 29 Oct 2026, Matthew Wrigley's decisions D1, D2 and D8 to D11, DECISIONS): special, without dissent and unanimous resolutions stay open for 28 days after the meeting (s 121), and owners with no-one present may still vote by written notice (s 121(2)). The meeting records the votes cast and the item stays open: the chair's only choices are Record the votes and Deferred, a count missing a fact is still refused, and closing a ballot never records one. Points to confirm: day counting (D1: up to and including the 28th day after the day it is made, decided as at the next day; the Interpretation Act 1984 s 61 was not read); the day it is made (D2: the later of the meeting's day and the day it is recorded, in the building's time zone); who had no-one present (D8: attendance is not recorded, so the lots with nothing entered at the item, counted or not counted for money owed, are taken as those owners, and a lot with an abstention entered was present); written votes for or against only, one per lot, and a debt judged on the day the vote is received, a lot owing money on that day refused and nothing stored (it may be recorded again if the debt is shown paid by then); the outcome notice (D8: no deadline was found, so it is required before the close is decided whenever such a lot exists, and one given after the close is flagged, not refused); no early decision (D9: even if every lot has voted, it is decided only at the close); the 7 days of grace before the daily run records the decision (the day it is decided stays the day after the close); and the count at the close by the test for the building's size as it was at the meeting, the number of lots and total unit entitlement as at the meeting and each written vote weighed by its lot's unit entitlement when it is counted. After review (29 Oct 2026): only the building's lots at the meeting, kept with the resolution, may vote in writing (a lot added or entered again since may not, and the close is refused if a written vote is from any other lot or the lots voting are more than the lots then); the debtor rule a written vote is judged by is the one the pack held at the meeting, kept with the resolution; an outcome notice given after the voting period closed is flagged in its record and to the adviser. Not yet done: the minutes show an open item's stored outcome as it is (OPEN, and INTERIM for Victoria and the ACT) until the minutes content is done (stage 2, PR 8b-iv). Confirm each.",
   "A 2-lot special resolution and resolution without dissent are counted as unanimous: every lot for (s 123(3), (5)). Below 2 lots no test fits and the count is refused. The 3 to 5-lot special resolution is read as at least 50% of the total unit entitlement for (s 123(6) says \"unit entitlement\"). Confirm.",
-  "A resolution without dissent with no vote cast at all passes the test (no vote against, s 123(2)). Confirm that reading, once these resolutions are recorded.",
+  "A resolution without dissent with no vote cast at all passes the test (no vote against, s 123(2)). Since stage 2, PR 8b-ii these resolutions are recorded, so one with no vote at the meeting and no written vote is carried at the close. Confirm that reading.",
   "An unfinancial owner (s 120(2)) is read as a lot with a levy notice issued, past its due date and not paid in full on the meeting's date, as for Queensland. A special resolution is measured against all lots, so a lot whose vote is not counted for money owed still counts in the total. Confirm.",
   "The meeting record is kept 20 years (retention), the period for special, unanimous and without dissent resolutions; minutes alone are kept 7 (reg 83). Confirm.",
   "Not applied: the scheme developer's exclusion from defect resolutions for 10 years (s 80(2), (3)); council meeting notice (a default by-law); a deadline for minutes (none found).",

@@ -318,6 +318,19 @@ export interface PendingResolutionRule {
   meetingNotice?: { meetingHeldWithinDays: number; words: string };
   /** The ACT: a later meeting with a standard quorum may confirm it sooner. */
   confirmedSoonerBy?: "STANDARD_QUORUM_MEETING";
+  /**
+   * Western Australia s 121(2) (VIC, ACT and WA stage 2, PR 8b-ii, 29 Oct
+   * 2026): written votes received after the meeting until the period closes,
+   * from the lots with nothing entered at the item (LOTS_WITH_NOTHING_ENTERED,
+   * decision D8), FOR or AGAINST only. Where `outcomeNoticeRequired`, the
+   * written notice of the outcome to those lots must be recorded as given
+   * before the close is decided, whenever such a lot exists. `words` says
+   * who may vote in writing and until when, `noticeWords` names the notice
+   * after "the" or "Give the", and `noticeLabel` asks the day it was given.
+   */
+  lateVotes?: { by: "LOTS_WITH_NOTHING_ENTERED"; outcomeNoticeRequired: boolean; words: string; noticeWords: string; noticeLabel: string };
+  /** What the chair is told on the conduct screen about an item that gives this kind (Western Australia's voting period). */
+  conductHelp?: string;
   /** What happens, in plain words for the meeting page. */
   help: string;
   source: string;
@@ -568,17 +581,18 @@ export interface ResolutionOutcome {
   reason: string;
   /**
    * Where the count does not give carried or lost (the draft packs only):
-   * INTERIM, passed only as an interim resolution, or UNDETERMINED, which the
-   * count cannot decide (the reason says why). `passed` is false with either.
-   * Left out, never undefined, otherwise.
+   * INTERIM, passed only as an interim resolution, OPEN, a vote still open
+   * after the meeting (Western Australia's voting period, PR 8b-ii), or
+   * UNDETERMINED, which the count cannot decide (the reason says why).
+   * `passed` is false with each. Left out, never undefined, otherwise.
    */
-  result?: "INTERIM" | "UNDETERMINED";
+  result?: "INTERIM" | "OPEN" | "UNDETERMINED";
   /** With INTERIM: the category it passed as, where it has one (Victoria's interim special resolution). */
   interimCategory?: ResolutionCategory;
   /**
-   * With INTERIM (VIC, ACT and WA stage 2, PR 8b-i): the kind of pending
-   * resolution it is, which the building's pack may record later
-   * (`pendingResolutions`). Left out otherwise.
+   * With INTERIM or OPEN (VIC, ACT and WA stage 2, PR 8b-i and 8b-ii): the
+   * kind of pending resolution it is, which the building's pack may record
+   * later (`pendingResolutions`). Left out otherwise.
    */
   laterKind?: PendingKind;
 }
@@ -591,17 +605,32 @@ export function isResolutionCategory(
   return !!category && Object.prototype.hasOwnProperty.call(ruleSet.resolutionCategories, category);
 }
 
+/** The rule set as the evaluator reads it: the categories, and the kinds decided later it records. */
+export type EvaluatedRuleSet = Pick<MeetingRuleSet, "resolutionCategories" | "pendingResolutions">;
+
+/** How the evaluator counts (VIC, ACT and WA stage 2, PR 8b-ii). */
+export interface EvaluateOptions {
+  /**
+   * The count when a voting period closes (Western Australia s 121): the
+   * category's test is applied to the votes then, instead of the voting
+   * period keeping the vote open.
+   */
+  atClose?: true;
+}
+
 /**
  * Evaluate whether a resolution passes, per the rule for its category.
  * `pollEntitlement` names the entitlement a poll is counted by in the reason,
  * as the building's pack names it ("contribution schedule lot entitlement");
- * without it the reason says unit entitlement, as it always has.
+ * without it the reason says unit entitlement, as it always has. `options`
+ * (PR 8b-ii) is read only for a rule with a voting period.
  */
 export function evaluateResolution(
-  ruleSet: MeetingRuleSet,
+  ruleSet: EvaluatedRuleSet,
   category: ResolutionCategory,
   tally: ResolutionTally,
   pollEntitlement: string = "unit entitlement",
+  options: EvaluateOptions = {},
 ): ResolutionOutcome {
   const rule = ruleSet.resolutionCategories[category];
   if (!rule) {
@@ -611,7 +640,7 @@ export function evaluateResolution(
   // their test is the basis alone, exactly as before.
   if (!usesDraftKeys(rule)) return evaluateBasis(rule, tally, pollEntitlement);
 
-  const outcome = evaluateDraftRule(ruleSet, rule, tally, pollEntitlement);
+  const outcome = evaluateDraftRule(ruleSet, rule, tally, pollEntitlement, true, options);
   // A category another one passes as instead (Victoria's interim special
   // resolution) is itself only ever interim.
   if (outcome.passed && isInterimCategory(ruleSet, category)) {
@@ -778,7 +807,7 @@ export function usesDraftKeys(rule: ResolutionRule): boolean {
 }
 
 /** Whether another category of the rule set passes as this one instead (Victoria's interim special resolution). */
-function isInterimCategory(ruleSet: MeetingRuleSet, category: ResolutionCategory): boolean {
+function isInterimCategory(ruleSet: EvaluatedRuleSet, category: ResolutionCategory): boolean {
   return Object.values(ruleSet.resolutionCategories).some(
     (r) => r?.interimCategory === category || !!r?.variants?.some((v) => v.rule.interimCategory === category),
   );
@@ -827,12 +856,13 @@ function isTie(tally: ResolutionTally): boolean {
  * and where the test fails the interim category it may pass as.
  */
 function evaluateDraftRule(
-  ruleSet: MeetingRuleSet,
+  ruleSet: EvaluatedRuleSet,
   given: ResolutionRule,
   tally: ResolutionTally,
   pollEntitlement: string,
   /** False while evaluating the interim category itself, so a rule set can never loop. */
   allowInterim: boolean = true,
+  options: EvaluateOptions = {},
 ): ResolutionOutcome {
   if (given.refusedBecause) return undetermined(given.refusedBecause);
   let rule = given;
@@ -843,10 +873,23 @@ function evaluateDraftRule(
     if (rule.refusedBecause) return undetermined(rule.refusedBecause);
   }
   // Decided when its voting period closes (Western Australia), whatever the count at the meeting gives.
-  if (rule.votingPeriodDays != null) {
-    return undetermined(
-      `This resolution is decided when its ${rule.votingPeriodDays}-day voting period closes, which StrataVerze does not track yet, so the count at the meeting cannot decide it`,
-    );
+  if (rule.votingPeriodDays != null && !options.atClose) {
+    if (!ruleSet.pendingResolutions?.VOTING_PERIOD) {
+      return undetermined(
+        `This resolution is decided when its ${rule.votingPeriodDays}-day voting period closes, which StrataVerze does not track yet, so the count at the meeting cannot decide it`,
+      );
+    }
+    // Where the pack records the voting period (PR 8b-ii): the test is applied to the votes at the meeting first, so a
+    // count that cannot be made (a fact missing, no test for the building's size) is still refused. Otherwise the vote
+    // stays open, carried or lost on the votes so far alike (decision D9: decided only when the period closes).
+    const sofar = evaluateDraftRule(ruleSet, given, tally, pollEntitlement, allowInterim, { atClose: true });
+    if (sofar.result === "UNDETERMINED") return sofar;
+    return {
+      passed: false,
+      reason: `Its ${rule.votingPeriodDays}-day voting period is open, so it is decided when the period closes. On the votes at the meeting: ${lowerFirst(sofar.reason)}`,
+      result: "OPEN",
+      laterKind: "VOTING_PERIOD",
+    };
   }
   /** Counted at a reduced quorum (the ACT): a test that passes is a decision taking effect later. */
   let reducedQuorum = false;
@@ -905,6 +948,9 @@ function evaluateDraftRule(
     laterKind: "INTERIM_SPECIAL",
   };
 }
+
+/** A reason as it reads after a colon: its first letter in lower case. */
+const lowerFirst = (text: string) => text.charAt(0).toLowerCase() + text.slice(1);
 
 const shareOf = (fraction: number, whole: string) => (fraction >= 1 ? `all of ${whole}` : `at least ${percent(fraction)} of ${whole}`);
 

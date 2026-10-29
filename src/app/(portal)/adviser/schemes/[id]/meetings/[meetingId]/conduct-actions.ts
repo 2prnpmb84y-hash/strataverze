@@ -253,7 +253,8 @@ async function recordCountedOutcome(p: {
   // Decided on written votes, which are not recorded yet: refused before anything is read.
   const written = writtenVotesRefusal(p.ruleSet, p.item.resolutionCategory, p.requestedOutcome);
   if (written) return { error: written };
-  // Decided when its voting period closes (Western Australia): refused before anything is read.
+  // Decided when its voting period closes (Western Australia): refused before anything is read, unless the pack records
+  // the voting period (PR 8b-ii), when the votes at the meeting are counted and the item stays open.
   const later = laterDecisionRefusal(p.ruleSet, p.item.resolutionCategory, p.requestedOutcome);
   if (later) return { error: later };
   const { rules } = rulesForState(p.scheme.state);
@@ -396,11 +397,16 @@ async function recordCountedOutcome(p: {
 /**
  * Record a count that gives a resolution decided later (VIC, ACT and WA
  * stage 2, PR 8b-i, 29 Oct 2026): Victoria's interim special resolution and
- * interim resolution without a quorum, the ACT's reduced quorum decision.
- * The chair must have asked for Resolved: a count that makes the motion one
- * of these is not lost. The pending row, the agenda item stored as INTERIM
- * and the event (with the dates) are written in one transaction, and the
- * chair is told the dates.
+ * interim resolution without a quorum, the ACT's reduced quorum decision,
+ * and (PR 8b-ii) Western Australia's special, without dissent and unanimous
+ * resolutions, whose voting period stays open after the meeting (the
+ * conduct screen's "Record the votes" sends Resolved). The chair must have
+ * asked for Resolved: a count that makes the motion one of these is not
+ * lost. The pending row, the agenda item stored as INTERIM (OPEN for a
+ * voting period) and the event (with the dates) are written in one
+ * transaction, and the chair is told the dates. The votes at the meeting,
+ * those counted and those not counted for money owed, are kept with the row
+ * for the count at the close.
  */
 async function recordPendingOutcome(
   p: Parameters<typeof recordCountedOutcome>[0],
@@ -428,6 +434,14 @@ async function recordPendingOutcome(
   }
   // D2: made on the later of the meeting's day and the day it is recorded, in the building's time zone.
   const dates = pendingDates(rule, madeOnDay(c.meetingDay, todayIn(timeZoneOf(p.scheme))));
+  // Western Australia's voting period (PR 8b-ii review M, L2): the lots the count was made over, the only ones that may
+  // vote in writing, and the debtor rule as the pack held it at the meeting, kept with the row. Not kept for other kinds.
+  const voting = c.later.kind === "VOTING_PERIOD";
+  const meetingLotIds = p.scheme.lots
+    .filter((l) => !p.ruleSet.excludeCommonPropertyRows || String(l.lotType ?? "").toUpperCase() !== "COMMON")
+    .map((l) => l.id);
+  const entered = new Set([...c.counted, ...c.notCounted].map((v) => (v as { lotId?: unknown }).lotId));
+  const someLotAbsent = meetingLotIds.some((id) => !entered.has(id));
   const opened = await openPendingResolution({
     schemeId: p.schemeId,
     meetingId: p.meetingId,
@@ -437,10 +451,15 @@ async function recordPendingOutcome(
     category,
     takesEffectAs,
     dates,
-    meetingVotes: { counted: c.counted, notCounted: c.notCounted, tally: c.tally },
-    rule: { pending: rule, resolution: p.ruleSet.resolutionCategories[category as keyof MeetingRuleSet["resolutionCategories"]] ?? null },
+    meetingVotes: { counted: c.counted, notCounted: c.notCounted, tally: c.tally, ...(voting ? { lotIds: meetingLotIds } : {}) },
+    rule: {
+      pending: rule,
+      resolution: p.ruleSet.resolutionCategories[category as keyof MeetingRuleSet["resolutionCategories"]] ?? null,
+      ...(voting ? { debtorsMayVoteOn: p.ruleSet.debtorsMayVoteOn ?? null } : {}),
+    },
     rulePack: c.rulesLabel,
     actorId: p.actorId,
+    ...(c.later.stored === "OPEN" ? { stored: "OPEN" as const } : {}),
     eventPayload: {
       itemId: p.item.id,
       outcome: c.later.stored,
@@ -455,7 +474,7 @@ async function recordPendingOutcome(
   if ("error" in opened) return { error: opened.error };
   revalidate(p.schemeId, p.meetingId);
   const notCounted = notCountedNotice(c.notCounted, c.ownersCorporation);
-  return { ok: true, notice: [pendingRecordedNotice(rule, dates), notCounted].filter(Boolean).join(" ") };
+  return { ok: true, notice: [pendingRecordedNotice(rule, dates, voting ? { someLotAbsent } : {}), notCounted].filter(Boolean).join(" ") };
 }
 
 export async function addConductNoteAction(

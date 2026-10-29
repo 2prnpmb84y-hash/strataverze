@@ -5,9 +5,10 @@
  * entitlement; the resolution without dissent and the unanimous resolution;
  * and the ordinary resolution, whose tie fails. A special, without dissent
  * or unanimous resolution is decided when its 28-day voting period closes
- * (s 121), so with the pack as it is the count of those is UNDETERMINED
- * whatever the votes; the s 123 tests are held for when the voting period is
- * tracked, and are tested here on the pack without it (AT_CLOSE).
+ * (s 121): since PR 8b-ii (29 Oct 2026) the count at the meeting is OPEN
+ * whatever the votes (decision D9), still UNDETERMINED where it cannot be
+ * made, and the s 123 tests are applied at the close (atClose), as on the
+ * pack without the voting period (AT_CLOSE).
  */
 import { describe, expect, it } from "vitest";
 import { PENDING_RULE_PACKS } from "@/config/statutory";
@@ -115,25 +116,69 @@ describe("the voting period (s 121): the count at the meeting decides nothing", 
   // Totals that pass (or fail) every s 123 test, so only the voting period stops the count.
   const passing = { forCount: 12, againstCount: 0, forUE: 120, againstUE: 0, totalLots: 12, totalEntitlement: 120 };
   const failing = { forCount: 0, againstCount: 12, forUE: 0, againstUE: 120, totalLots: 12, totalEntitlement: 120 };
+  /** The pack before it recorded the voting period (2026.10.7). */
+  const UNTRACKED: MeetingRuleSet = { ...WA, pendingResolutions: undefined };
 
-  it("is UNDETERMINED for a special, without dissent or unanimous resolution, carried or lost on the votes", () => {
+  it("is OPEN for a special, without dissent or unanimous resolution, carried or lost on the votes so far (PR 8b-ii, D9)", () => {
     for (const c of ["SPECIAL", "WITHOUT_DISSENT", "UNANIMOUS"] as const) {
       expect(evaluateResolution(AT_CLOSE, c, passing).passed, c).toBe(true);
       expect(evaluateResolution(AT_CLOSE, c, failing), c).toMatchObject({ passed: false });
-      expect(evaluateResolution(AT_CLOSE, c, failing).result, c).toBeUndefined();
-      for (const t of [passing, failing]) expect(evaluateResolution(WA, c, t), c).toEqual({ passed: false, result: "UNDETERMINED", reason: REASON });
+      for (const t of [passing, failing]) {
+        const out = evaluateResolution(WA, c, t);
+        expect(out, c).toMatchObject({ passed: false, result: "OPEN", laterKind: "VOTING_PERIOD" });
+        expect(out.reason, c).toBe(
+          `Its 28-day voting period is open, so it is decided when the period closes. On the votes at the meeting: ${evaluateResolution(AT_CLOSE, c, t).reason.replace(/^./, (x) => x.toLowerCase())}`,
+        );
+        expect(out.reason).not.toMatch(/[;–—]/);
+      }
     }
-    // Every size class: the variant is chosen, and its test never reached.
+    // Every size class: the variant is chosen and its test applied, and the vote stays open whatever it gives.
     for (const lots of [2, 3, 5, 6]) {
       const t = { ...passing, forCount: lots, forUE: lots * 10, totalLots: lots, totalEntitlement: lots * 10 };
-      expect(evaluateResolution(WA, "SPECIAL", t), String(lots)).toEqual({ passed: false, result: "UNDETERMINED", reason: REASON });
+      expect(evaluateResolution(WA, "SPECIAL", t), String(lots)).toMatchObject({ passed: false, result: "OPEN", laterKind: "VOTING_PERIOD" });
     }
   });
 
-  it("is refused by resolveOutcome, so nothing is written", () => {
+  it("is still UNDETERMINED where the count cannot be made at the meeting: a fact missing, or no test for the building's size", () => {
+    expect(evaluateResolution(WA, "SPECIAL", { forCount: 6, againstCount: 0, totalLots: 12 })).toEqual({
+      passed: false,
+      result: "UNDETERMINED",
+      reason: "The total entitlement and the entitlement of the lots for and against are needed to count this resolution",
+    });
+    expect(evaluateResolution(WA, "SPECIAL", { ...passing, forCount: 1, totalLots: 1 })).toEqual({
+      passed: false,
+      result: "UNDETERMINED",
+      reason: "This resolution needs a scheme of at least 2 lots, and fewer are recorded",
+    });
+    expect(evaluateResolution(WA, "WITHOUT_DISSENT", { forCount: 8, againstCount: 0 }).result).toBe("UNDETERMINED");
+  });
+
+  it("counts by the s 123 test with atClose, carried or lost, as the pack without the voting period does", () => {
+    for (const c of ["SPECIAL", "WITHOUT_DISSENT", "UNANIMOUS"] as const) {
+      for (const t of [passing, failing, { ...passing, forCount: 5, forUE: 50 }, { forCount: 1, againstCount: 0, totalLots: 2, forUE: 10, againstUE: 0, totalEntitlement: 20 }]) {
+        expect(evaluateResolution(WA, c, t, "unit entitlement", { atClose: true }), c).toEqual(evaluateResolution(AT_CLOSE, c, t));
+      }
+    }
+    expect(evaluateResolution(WA, "SPECIAL", passing, "unit entitlement", { atClose: true })).toMatchObject({ passed: true });
+    expect(evaluateResolution(WA, "SPECIAL", failing, "unit entitlement", { atClose: true })).toEqual({ passed: false, reason: "Votes for are less than 50% of all lots in the scheme" });
+    // The option changes nothing for a rule with no voting period.
+    expect(evaluateResolution(WA, "ORDINARY", { forCount: 3, againstCount: 2 }, "unit entitlement", { atClose: true })).toEqual({ passed: true, reason: "Majority of votes cast" });
+  });
+
+  it("is recorded as pending by resolveOutcome, stored as OPEN, never carried", () => {
     const r = resolveOutcome(WA, { requestedOutcome: "RESOLVED", resolutionCategory: "UNANIMOUS", tally: passing });
+    expect(r).toMatchObject({ outcome: "RESOLVED", later: { kind: "VOTING_PERIOD", stored: "OPEN" } });
+    expect(r.refused).toBeUndefined();
+  });
+
+  it("is UNDETERMINED and refused where the pack does not record the voting period, so nothing is written", () => {
+    for (const c of ["SPECIAL", "WITHOUT_DISSENT", "UNANIMOUS"] as const) {
+      for (const t of [passing, failing]) expect(evaluateResolution(UNTRACKED, c, t), c).toEqual({ passed: false, result: "UNDETERMINED", reason: REASON });
+    }
+    const r = resolveOutcome(UNTRACKED, { requestedOutcome: "RESOLVED", resolutionCategory: "UNANIMOUS", tally: passing });
     expect(r.refused).toBe(`The votes recorded cannot decide this motion. ${REASON}. Nothing was saved. The item can be deferred.`);
     expect(r.refused).not.toMatch(/[;–—]|\(s \d/);
+    expect(r.later).toBeUndefined();
   });
 
   it("leaves an ordinary resolution counted at the meeting", () => {

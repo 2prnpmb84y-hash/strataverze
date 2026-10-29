@@ -13,6 +13,12 @@
  * an adviser records (the notice, a special general meeting notice) is
  * written the same way, with its own event. Meeting events are append-only.
  *
+ * Western Australia's voting period (PR 8b-ii) is opened the same way, with
+ * the item stored as OPEN. A written vote received after the meeting is a
+ * LATE_VOTE lot row, written under the row lock with its event, so the count
+ * at the close, made again under the same lock, always sees every vote
+ * written before it.
+ *
  * Nothing here is read for an NSW or Queensland building: their packs record
  * no pending resolutions, so no row is ever opened for them.
  */
@@ -23,20 +29,27 @@ import { schemeTimeZones } from "@/lib/jurisdiction/scheme-time";
 import { dayIn, formatDateIn, platformToday, todayIn } from "@/lib/jurisdiction/time-zone";
 import { logError } from "@/lib/log";
 import { addDays } from "@/lib/levies/notice-plan";
+import { lotEntitlementFor } from "@/lib/jurisdiction/building-data";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { countEntitlementUse } from "./conduct-tally";
 import {
   confirmationResult,
   dayProblem,
   formatDay,
+  lateVoteProblem,
   pendingDecision,
   pendingPanelItem,
   petitionStops,
+  type LateVote,
   type PendingDates,
+  type PendingDecision,
   type PendingFacts,
   type PendingPanelItem,
   type PendingRowView,
   type PendingRuleSnapshot,
+  type VotingPeriodFacts,
 } from "./pending";
-import type { PendingKind } from "./rules";
+import type { PendingKind, ResolutionTally } from "./rules";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type Orm = typeof db.orm;
@@ -96,11 +109,13 @@ export interface OpenPendingInput {
   actorId: string;
   /** The AGENDA_OUTCOME_RECORDED payload, written with the row. */
   eventPayload: Record<string, unknown>;
+  /** What the agenda item's status and outcome are stored as until it is decided: INTERIM, or OPEN for a voting period (PR 8b-ii). */
+  stored?: "INTERIM" | "OPEN";
 }
 
 /**
- * Open a pending row at conduct, store the agenda item as INTERIM and write
- * its event, in one transaction. Refused when the item is already pending
+ * Open a pending row at conduct, store the agenda item as INTERIM (OPEN for a
+ * voting period) and write its event, in one transaction. Refused when the item is already pending
  * (a second insert for the same item fails on its unique key too).
  */
 export async function openPendingResolution(input: OpenPendingInput): Promise<RepoResult> {
@@ -133,7 +148,7 @@ export async function openPendingResolution(input: OpenPendingInput): Promise<Re
     });
     await tx.orm.public.AgendaItem
       .where((a) => and(a.id.eq(input.itemId), a.meetingId.eq(input.meetingId)))
-      .update({ outcome: "INTERIM", status: "INTERIM" });
+      .update({ outcome: input.stored ?? "INTERIM", status: input.stored ?? "INTERIM" });
     await recordMeetingEvent(
       {
         meetingId: input.meetingId,
@@ -185,21 +200,88 @@ async function linkedMeetingFacts(orm: Orm, row: NonNullable<PendingRow>, tz: st
   return { linkedMeeting: m && m.schemeId === row.schemeId ? { openedOn: m.openedAt ? dayIn(tz, String(m.openedAt)) : null } : null };
 }
 
+const isRecord = (v: unknown): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v);
+
+/**
+ * Western Australia's voting period (PR 8b-ii): what the close counts, from
+ * the row (the meeting's votes and tally, and the category's rule, as kept
+ * when it was opened) and its written votes, each weighed by its lot's
+ * entitlement where the meeting's votes were (the schedule the category's
+ * test reads). Null where the meeting's votes cannot be read; an entitlement
+ * that cannot be read is null, and the count then refuses.
+ */
+async function votingPeriodFacts(orm: Orm, row: NonNullable<PendingRow>): Promise<VotingPeriodFacts | null> {
+  const snapshot = isRecord(row.rule) ? (row.rule as unknown as Partial<PendingRuleSnapshot>) : {};
+  const votes = isRecord(row.meetingVotes) ? row.meetingVotes : {};
+  const lotIds = (list: unknown): string[] | null =>
+    Array.isArray(list) && list.every((v) => isRecord(v) && typeof v.lotId === "string") ? list.map((v) => String((v as { lotId: string }).lotId)) : null;
+  const counted = lotIds(votes.counted);
+  const notCounted = lotIds(votes.notCounted);
+  const tally = isRecord(votes.tally) && typeof votes.tally.forCount === "number" && typeof votes.tally.againstCount === "number" ? (votes.tally as unknown as ResolutionTally) : null;
+  if (!counted || !notCounted || !tally) return null;
+  const resolution = isRecord(snapshot.resolution) ? snapshot.resolution : null;
+  const entries = (
+    await orm.public.PendingResolutionLot.where((l) => and(l.pendingResolutionId.eq(row.id), l.entry.eq("LATE_VOTE"))).all()
+  ).filter((e) => e.vote === "FOR" || e.vote === "AGAINST");
+  // Weighed only where the meeting's votes were, by the schedule the category's test reads.
+  const use = resolution && (tally.forUE != null || tally.againstUE != null) ? countEntitlementUse(resolution) : null;
+  let weigh: (lotId: string) => number | null = () => null;
+  if (use && entries.length > 0) {
+    const lots = await orm.public.Lot.where((l) => l.id.in(entries.map((e) => e.lotId))).all();
+    let rules: ReturnType<typeof rulesForState>["rules"] | null = null;
+    try {
+      rules = rulesForState(row.state).rules;
+    } catch {
+      rules = null;
+    }
+    weigh = (lotId) => {
+      const lot = lots.find((l) => l.id === lotId && l.schemeId === row.schemeId);
+      if (!lot || !rules) return null;
+      try {
+        return lotEntitlementFor(rules, lot, use);
+      } catch {
+        return null;
+      }
+    };
+  }
+  const lateVotes: LateVote[] = entries.map((e) => ({ lotId: e.lotId, vote: e.vote as LateVote["vote"], receivedOn: day(e.receivedOn)!, entitlement: weigh(e.lotId) }));
+  // The building's lots at the meeting (review M), kept with the row since PR 8b-ii's review; null where not kept.
+  const meetingLotIds = Array.isArray(votes.lotIds) && votes.lotIds.every((x) => typeof x === "string") ? (votes.lotIds as string[]) : null;
+  return { category: row.category, resolution, meetingTally: tally, enteredLotIds: [...counted, ...notCounted], meetingLotIds, lateVotes };
+}
+
+/** What the decision needs beyond the row, read with `orm`: the linked meeting (Victoria s 78), the votes at the close (Western Australia). */
+async function factsFor(orm: Orm, row: NonNullable<PendingRow>, tz: string): Promise<PendingFacts> {
+  const facts = await linkedMeetingFacts(orm, row, tz);
+  return row.kind === "VOTING_PERIOD" ? { ...facts, votingPeriod: await votingPeriodFacts(orm, row) } : facts;
+}
+
+/** The settlement a decision to settle writes, with the count at the close for a voting period. */
+function settlementOf(decision: Extract<PendingDecision, { settle: true }>): SettleInput {
+  return {
+    status: decision.status,
+    endedBy: decision.endedBy,
+    effectiveOn: decision.effectiveOn,
+    ...(decision.endedBy === "VOTES_AT_CLOSE" ? { eventDetail: { close: { tally: decision.tally, evaluation: decision.evaluation } } } : {}),
+  };
+}
+
 /**
  * The daily run and the meeting page (review M3): decide a row at the end of
  * its period only if, once it is locked, pendingDecision on the locked row
- * and the linked meeting as read then still says to settle, with the same
- * `endedBy`. Otherwise it is left as it is (a petition or notice recorded in
- * the meantime). True when it was decided.
+ * and the facts as read then (the linked meeting, the written votes) still
+ * says to settle, with the same `endedBy` and status. Otherwise it is left as
+ * it is (a petition, notice or written vote recorded in the meantime). True
+ * when it was decided.
  */
-async function settleIfStillDue(id: string, tz: string, endedBy: string, now: Date): Promise<boolean> {
+async function settleIfStillDue(id: string, tz: string, expected: { endedBy: string; status: string }, now: Date): Promise<boolean> {
   return db.transaction(async (tx) => {
     await setLockTimeout(tx);
     const row = await tx.orm.public.PendingResolution.where((p) => p.id.eq(id)).forNoKeyUpdate().first();
     if (!row || row.status !== "PENDING") return false;
-    const decision = pendingDecision(pendingView(row), todayIn(tz, now), await linkedMeetingFacts(tx.orm, row, tz));
-    if (!decision.settle || decision.endedBy !== endedBy) return false;
-    await writeSettlement(tx, row, { status: decision.status, endedBy: decision.endedBy, effectiveOn: decision.effectiveOn }, null, now);
+    const decision = pendingDecision(pendingView(row), todayIn(tz, now), await factsFor(tx.orm, row, tz));
+    if (!decision.settle || decision.endedBy !== expected.endedBy || decision.status !== expected.status) return false;
+    await writeSettlement(tx, row, settlementOf(decision), null, now);
     return true;
   });
 }
@@ -336,10 +418,12 @@ export async function settleDuePendingResolutions(filter: { meetingId?: string }
         const m = linked.find((x) => x.id === row.meetingNoticeMeetingId && x.schemeId === row.schemeId);
         facts.linkedMeeting = m ? { openedOn: m.openedAt ? dayIn(tz, String(m.openedAt)) : null } : null;
       }
+      // Western Australia's voting period (PR 8b-ii): the votes, read only once its period has closed.
+      if (row.kind === "VOTING_PERIOD" && today > day(row.windowClosesOn)!) facts.votingPeriod = await votingPeriodFacts(db.orm, row);
       const decision = pendingDecision(pendingView(row), today, facts);
       if (decision.settle) {
         // Judged again under the row lock: left as it is when it no longer says the same.
-        if (await settleIfStillDue(row.id, tz, decision.endedBy, now)) result.settled++;
+        if (await settleIfStillDue(row.id, tz, { endedBy: decision.endedBy, status: decision.status }, now)) result.settled++;
       } else if (decision.blocker) {
         result.blocked.push({ id: row.id, blocker: decision.blocker });
       } else {
@@ -364,7 +448,7 @@ export async function pendingResolutionsForMeeting(meetingId: string) {
   const rows = await db.orm.public.PendingResolution.where((p) => p.meetingId.eq(meetingId)).limit(500).all();
   if (rows.length === 0) return [];
   const lots = await db.orm.public.PendingResolutionLot.where((l) => l.pendingResolutionId.in(rows.map((r) => r.id))).all();
-  return rows.map((r) => ({ row: r, lots: lots.filter((l) => l.pendingResolutionId === r.id) }));
+  return rows.map((r) => ({ row: r, lots: lots.filter((l) => l.pendingResolutionId === r.id && l.entry === "PETITION") }));
 }
 
 // ─── What an adviser records ───────────────────────────────────────────────
@@ -394,14 +478,26 @@ export async function recordPendingNotice(p: { scheme: PendingScheme; meetingId:
   const problem = dayProblem(p.givenOn, view.madeOn, null, today, "the notice was given");
   if (problem) return { error: problem };
   const late = !!view.noticeDueOn && p.givenOn > view.noticeDueOn;
+  // Western Australia's outcome notice (PR 8b-ii review L1): given after the voting period closed is flagged, not refused.
+  const afterClose = view.kind === "VOTING_PERIOD" && p.givenOn > view.windowClosesOn;
   const saved = await recordFact(p.pendingId, (r) => r.noticeGivenOn == null, { noticeGivenOn: p.givenOn }, {
     actorId: p.actorId,
     eventType: "PENDING_NOTICE_RECORDED",
-    payload: { givenOn: p.givenOn, ...(late ? { late: true, dueOn: view.noticeDueOn } : {}) },
+    payload: {
+      givenOn: p.givenOn,
+      ...(late ? { late: true, dueOn: view.noticeDueOn } : {}),
+      ...(afterClose ? { late: true, closedOn: view.windowClosesOn } : {}),
+    },
   });
   if ("error" in saved) return saved;
   // Due already (its period and its grace ended while the notice was missing): decided now.
   await settleDuePendingResolutions({ meetingId: p.meetingId }, p.now);
+  if (afterClose) {
+    return {
+      ok: true,
+      notice: `Recorded. The notice was given after ${formatDay(view.windowClosesOn)}, the day its voting period closed. This is flagged, and the dates of the resolution do not move.`,
+    };
+  }
   return late
     ? { ok: true, notice: `Recorded. The notice was given after ${formatDay(view.noticeDueOn!)}, the day it was due. This is flagged, and the dates of the resolution do not move.` }
     : { ok: true };
@@ -501,6 +597,93 @@ export async function recordPendingPetition(p: {
     p.now,
   );
   return done ? { ok: true, notice: "Recorded. The petition stops the resolution, so it is recorded as lost." } : { error: "This resolution is already decided. Nothing was saved." };
+}
+
+/**
+ * Western Australia s 121(2) (PR 8b-ii, decision D8): record a written vote
+ * received after the meeting, FOR or AGAINST, from one of the building's lots
+ * at the meeting (review M) with nothing entered at the item and no written
+ * vote yet, received from the day it was made to the day its period closes
+ * (also during the grace after it). A lot owing money on the day it was
+ * received may not vote on the item's category (s 120(2)): judged by the
+ * debtor rule kept with the row from the meeting (review L2, `owingLotIds`),
+ * or, for a row kept without it, by the current pack (`barredLotIds`), both
+ * worked out by the caller. Refused, and nothing is stored. Written under the
+ * row lock, with its event.
+ */
+export async function recordLateVote(p: {
+  scheme: PendingScheme;
+  meetingId: string;
+  pendingId: string;
+  lotId: string;
+  vote: string;
+  receivedOn: string;
+  /** For a row kept without the meeting's debtor rule: the lots barred for money owed on `receivedOn` from voting on `category`, by the current pack. */
+  barredLotIds: (receivedOn: string, category: string) => Promise<ReadonlySet<string>>;
+  /** The building's lots owing money on `receivedOn`, read only where the meeting's debtor rule bars the item's category. */
+  owingLotIds: (receivedOn: string) => Promise<ReadonlySet<string>>;
+  actorId: string;
+  now?: Date;
+}): Promise<RepoResult> {
+  const found = await rowOf(p.scheme.id, p.meetingId, p.pendingId);
+  if ("error" in found) return { error: found.error };
+  const view = pendingView(found.row);
+  if (view.kind !== "VOTING_PERIOD" || !view.rule.lateVotes) return { error: "Written votes after the meeting are not taken on this resolution. Nothing was saved." };
+  const facts = await votingPeriodFacts(db.orm, found.row);
+  if (!facts) return { error: "The votes recorded at the meeting cannot be read, so a written vote cannot be added. Nothing was saved." };
+  const lot = p.scheme.lots.find((l) => l.id === p.lotId && String(l.lotType ?? "").toUpperCase() !== "COMMON");
+  const lotNumber = lot ? String(lot.lotNumber) : null;
+  const problem = lateVoteProblem(view, {
+    lotId: p.lotId,
+    lotNumber,
+    vote: p.vote,
+    receivedOn: p.receivedOn,
+    today: todayIn(p.scheme.timeZone, p.now),
+    enteredLotIds: facts.enteredLotIds,
+    lateLotIds: facts.lateVotes.map((v) => v.lotId),
+    meetingLotIds: facts.meetingLotIds,
+  });
+  if (problem) return { error: problem };
+  // D8: a debt is judged on the day the written vote was received (s 120(2)), by the rule kept from the meeting (review L2).
+  const kept = isRecord(found.row.rule) ? (found.row.rule as Record<string, unknown>).debtorsMayVoteOn : undefined;
+  const category = found.row.category;
+  const barred = Array.isArray(kept)
+    ? !kept.includes(category) && (await p.owingLotIds(p.receivedOn)).has(p.lotId)
+    : kept === null
+      ? false
+      : (await p.barredLotIds(p.receivedOn, category)).has(p.lotId);
+  if (barred) {
+    return {
+      error: `Lot ${lotNumber} had an amount owing on ${formatDay(p.receivedOn)}, the day its written vote was received, so it cannot vote on this resolution. Nothing was saved.`,
+    };
+  }
+  return db.transaction(async (tx) => {
+    await setLockTimeout(tx);
+    const row = await tx.orm.public.PendingResolution.where((r) => r.id.eq(p.pendingId)).forNoKeyUpdate().first();
+    if (!row || row.status !== "PENDING") return { error: "This resolution is already decided. Nothing was saved." };
+    const existing = await tx.orm.public.PendingResolutionLot
+      .where((l) => and(l.pendingResolutionId.eq(row.id), l.lotId.eq(p.lotId), l.entry.eq("LATE_VOTE")))
+      .first();
+    if (existing) return { error: `A written vote for lot ${lotNumber} is already recorded. Each lot votes once. Nothing was saved.` };
+    await tx.orm.public.PendingResolutionLot.create({
+      pendingResolutionId: row.id,
+      lotId: p.lotId,
+      entry: "LATE_VOTE",
+      vote: p.vote,
+      receivedOn: p.receivedOn as never,
+      recordedBy: p.actorId,
+    });
+    await recordMeetingEvent(
+      {
+        meetingId: row.meetingId,
+        actorId: p.actorId,
+        eventType: "PENDING_LATE_VOTE_RECORDED",
+        payload: { pendingId: row.id, itemId: row.agendaItemId, lotId: p.lotId, vote: p.vote, receivedOn: p.receivedOn },
+      },
+      tx.orm,
+    );
+    return { ok: true as const, notice: `Recorded. Lot ${lotNumber} voted ${p.vote === "FOR" ? "for" : "against"} in writing.` };
+  });
 }
 
 /**
@@ -620,12 +803,20 @@ export async function pendingPanelData(p: {
       }))
       .filter((c) => c.items.length > 0);
 
+  const buildingLots = p.scheme.lots
+    .filter((l) => String(l.lotType ?? "").toUpperCase() !== "COMMON")
+    .map((l) => ({ id: l.id, lotNumber: String(l.lotNumber) }))
+    .sort((a, b) => a.lotNumber.localeCompare(b.lotNumber, undefined, { numeric: true }));
+  // Western Australia's voting period (PR 8b-ii): the votes at the meeting and the written votes, read only for its rows.
+  const voting = new Map<string, VotingPeriodFacts | null>();
+  for (const { row } of found) if (row.kind === "VOTING_PERIOD") voting.set(row.id, await votingPeriodFacts(db.orm, row));
   const items = found.map(({ row, lots }) => {
     const view = pendingView(row);
     const called = row.meetingNoticeMeetingId ? meetings.find((m) => m.id === row.meetingNoticeMeetingId) : undefined;
-    const facts: PendingFacts = row.meetingNoticeMeetingId
-      ? { linkedMeeting: called ? { openedOn: called.openedAt ? dayIn(tz, String(called.openedAt)) : null } : null }
-      : {};
+    const facts: PendingFacts = {
+      ...(row.meetingNoticeMeetingId ? { linkedMeeting: called ? { openedOn: called.openedAt ? dayIn(tz, String(called.openedAt)) : null } : null } : {}),
+      ...(voting.has(row.id) ? { votingPeriod: voting.get(row.id) } : {}),
+    };
     const confirmed = row.confirmedMeetingId ? meetings.find((m) => m.id === row.confirmedMeetingId) : undefined;
     const confirmedItem = row.confirmedItemId ? decided.find((a) => a.id === row.confirmedItemId) : undefined;
     const panel = pendingPanelItem(
@@ -637,6 +828,7 @@ export async function pendingPanelData(p: {
         petitionLots: lots.map((l) => lotNumber.get(l.lotId) ?? "?"),
         calledMeeting: called ? label(called) : null,
         confirmedBy: confirmed ? `${label(confirmed)}${confirmedItem ? `, motion ${confirmedItem.position}` : ""}` : null,
+        ...(row.kind === "VOTING_PERIOD" ? { lots: buildingLots } : {}),
       },
     );
     // Victoria s 78: the meeting called only, its motions carried or lost. The ACT: any later general meeting's carried motions.
@@ -649,10 +841,7 @@ export async function pendingPanelData(p: {
   });
   return {
     items,
-    lots: p.scheme.lots
-      .filter((l) => String(l.lotType ?? "").toUpperCase() !== "COMMON")
-      .map((l) => ({ id: l.id, lotNumber: String(l.lotNumber) }))
-      .sort((a, b) => a.lotNumber.localeCompare(b.lotNumber, undefined, { numeric: true })),
+    lots: buildingLots,
     specialMeetings: meetings
       .filter((m) => m.id !== p.meetingId && SPECIAL_GENERAL_MEETINGS.includes(String(m.meetingType)))
       .map((m) => ({ id: m.id, label: label(m) })),

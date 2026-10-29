@@ -56,6 +56,11 @@ export interface ConductVotingProps {
       unitsPresentAsked?: AttestationWords;
       /** After No to the quorum, whether a reduced quorum was present (the ACT; VIC, ACT and WA stage 2, PR 8b-i). */
       reducedQuorumAsked?: AttestationWords;
+      /**
+       * The item's vote stays open for its voting period (Western Australia; VIC, ACT and WA stage 2, PR 8b-ii): what the
+       * chair is told, from the server. Record the votes then takes the place of Resolved and Motion lost.
+       */
+      votingPeriod?: { help: string };
     }
   >;
   pollLabel: string;
@@ -63,6 +68,16 @@ export interface ConductVotingProps {
 
 /** Outcomes of an item decided later (VIC, ACT and WA stage 2, PR 8b-i): its outcome buttons are not offered. */
 const DECIDED_LATER = ["INTERIM", "OPEN"];
+
+/**
+ * The buttons for an item whose vote stays open for its voting period (PR
+ * 8b-ii): the votes at the meeting are recorded, which the server takes as
+ * Resolved and keeps open until the period closes, or the item is deferred.
+ */
+const VOTING_PERIOD_BUTTONS = [
+  { outcome: "RESOLVED", label: "Record the votes" },
+  { outcome: "DEFERRED", label: "Deferred" },
+] as const;
 
 type LotVote = { vote: string; byProxy: boolean };
 
@@ -303,7 +318,22 @@ export function ConductSection({
                         No outcome
                       </span>
                     )}
-                    {running && !DECIDED_LATER.includes(item.outcome ?? "") && (
+                    {running && !DECIDED_LATER.includes(item.outcome ?? "") && choicesFor(item.id).votingPeriod && (
+                      <div className="flex gap-1">
+                        {VOTING_PERIOD_BUTTONS.map((b) => (
+                          <button
+                            key={b.outcome}
+                            type="button"
+                            disabled={pending}
+                            onClick={() => recordOutcome(item.id, b.outcome)}
+                            className="text-[11px] px-2 py-1 rounded-full border border-line hover:bg-paper-2 text-ink-muted"
+                          >
+                            {b.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {running && !DECIDED_LATER.includes(item.outcome ?? "") && !choicesFor(item.id).votingPeriod && (
                       <div className="flex gap-1">
                         {(["RESOLVED", "MOTION_LOST", "DEFERRED"] as const).map(
                           (o) => (
@@ -322,6 +352,9 @@ export function ConductSection({
                     )}
                   </div>
                 </div>
+                {running && !DECIDED_LATER.includes(item.outcome ?? "") && choicesFor(item.id).votingPeriod && (
+                  <p className="mt-2 text-xs text-ink-muted">{choicesFor(item.id).votingPeriod?.help}</p>
+                )}
                 {running && voting && asks(choicesFor(item.id)) && !DECIDED_LATER.includes(item.outcome ?? "") && (
                   <ChairAnswers
                     choices={choicesFor(item.id)}
