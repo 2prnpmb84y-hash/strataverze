@@ -7,7 +7,9 @@
  * owner votes on unanimous and without dissent resolutions only (s 120(2)).
  * In a 2-lot scheme the quorum needs both lots (s 130(2), (4)): since stage 2,
  * PR 8a-ii (29 Oct 2026, Matthew Wrigley's decision) a count is refused unless
- * both lots are counted at the item. No quorum answer is asked.
+ * both lots are recorded at the item. A lot whose vote is not counted for
+ * money owed still makes up the quorum (his decision of the same day,
+ * relaxing the stricter reading first applied). No quorum answer is asked.
  */
 import { describe, expect, it } from "vitest";
 import { MEETING_RULES as NSW_RULE_SET, PENDING_RULE_PACKS, QLD_RULE_PACK, type StatutoryRules } from "@/config/statutory";
@@ -99,7 +101,7 @@ describe("an unfinancial owner (s 120(2))", () => {
   });
 });
 
-describe("a 2-lot scheme's quorum (s 130(2), (4)): both lots must be counted at the item", () => {
+describe("a 2-lot scheme's quorum (s 130(2), (4)): both lots must be recorded at the item", () => {
   const TWO: TallyLot[] = [
     { id: "lot-1", lotNumber: "1", entitlement: 10 },
     { id: "lot-2", lotNumber: "2", entitlement: 10 },
@@ -108,9 +110,10 @@ describe("a 2-lot scheme's quorum (s 130(2), (4)): both lots must be counted at 
   const two = (chairVotes: ChairVote[], extra: Partial<Parameters<typeof buildConductTally>[0]> = {}) => count("ORDINARY", chairVotes, { lots: TWO, recordedLotCount: 2, ...extra });
   const refusal = `${WA.quorumNeedsEveryLot!.refusal}. Nothing was saved. The item can be deferred.`;
 
-  it("refuses the count with one lot, or none, counted", () => {
+  it("refuses the count with one lot, or none, recorded", () => {
     expect(two(votes([1]))).toEqual({ ok: false, error: refusal });
     expect(two([])).toEqual({ ok: false, error: refusal });
+    expect(refusal).toContain("a lot whose vote is not counted for money owed still makes up the quorum");
     expect(refusal).toMatch(/^In a 2-lot scheme the meeting has a quorum only with both lots present or represented, and there is no fallback \(.+ s 130\(2\), \(4\)\)\./);
     expect(refusal).not.toMatch(/[;–—]/);
   });
@@ -122,8 +125,27 @@ describe("a 2-lot scheme's quorum (s 130(2), (4)): both lots must be counted at 
     expect(valueOf(two(votes([1], [2]))).tally).toMatchObject({ forCount: 1, againstCount: 1 });
   });
 
-  it("does not let a lot whose vote is not counted for money owed make up the quorum", () => {
-    expect(two(votes([1, 2]), { owingLotIds: new Set(["lot-2"]) })).toEqual({ ok: false, error: refusal });
+  it("lets a lot whose vote is not counted for money owed make up the quorum, deciding by the counted votes (Matthew Wrigley's decision of 29 Oct 2026)", () => {
+    const owing = { owingLotIds: new Set(["lot-2"]) };
+    // Both recorded, lot 2 not counted for money owed: counted, by lot 1's vote alone.
+    const carried = valueOf(two(votes([1, 2]), owing));
+    expect(carried.tally).toEqual({ forCount: 1, againstCount: 0, abstainCount: 0, totalLots: 2 });
+    expect(carried.notCounted.map((v) => v.lotId)).toEqual(["lot-2"]);
+    expect(resolveOutcome(WA, { requestedOutcome: "RESOLVED", resolutionCategory: "ORDINARY", tally: carried.tally! })).toMatchObject({ outcome: "RESOLVED", status: "CARRIED" });
+    // Lot 2 against, not counted: lot 1's vote still carries it.
+    expect(valueOf(two(votes([1], [2]), owing)).tally).toEqual({ forCount: 1, againstCount: 0, abstainCount: 0, totalLots: 2 });
+    // Lot 1 against, lot 2 for but not counted: lost.
+    const lost = valueOf(two(votes([2], [1]), owing)).tally!;
+    expect(lost).toEqual({ forCount: 0, againstCount: 1, abstainCount: 0, totalLots: 2 });
+    expect(resolveOutcome(WA, { requestedOutcome: "MOTION_LOST", resolutionCategory: "ORDINARY", tally: lost })).toMatchObject({ outcome: "MOTION_LOST" });
+    // Both lots owing and both recorded: the quorum is made, nothing is counted.
+    expect(valueOf(two(votes([1, 2]), { owingLotIds: new Set(["lot-1", "lot-2"]) })).tally).toEqual({ forCount: 0, againstCount: 0, abstainCount: 0, totalLots: 2 });
+  });
+
+  it("still refuses where a lot is not recorded at the item at all, owing or not", () => {
+    expect(two(votes([2]), { owingLotIds: new Set(["lot-2"]) })).toEqual({ ok: false, error: refusal });
+    expect(two(votes([1]), { owingLotIds: new Set(["lot-2"]) })).toEqual({ ok: false, error: refusal });
+    expect(two([], { owingLotIds: new Set(["lot-1", "lot-2"]) })).toEqual({ ok: false, error: refusal });
   });
 
   it("refuses where the lots entered and the number recorded do not agree, or no number is recorded", () => {

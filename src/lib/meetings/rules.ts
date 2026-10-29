@@ -258,7 +258,8 @@ export interface CountingRefusalRule {
  * A quorum that needs every lot of a small scheme (VIC, ACT and WA stage 2,
  * PR 8a-ii, 29 Oct 2026: Western Australia's 2-lot scheme). With
  * `lotsAtMost` lots or fewer, the count is refused unless every lot has a
- * vote or an abstention counted at the item (`refusal`, plain words ready to
+ * vote or an abstention recorded at the item, counted or not counted for
+ * money owed (`refusal`, plain words ready to
  * follow with a full stop). Fewer than `lotsAtMost` lots entered is refused
  * too, as no quorum of every lot can be met then.
  */

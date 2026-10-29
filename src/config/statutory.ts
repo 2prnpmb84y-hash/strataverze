@@ -618,10 +618,10 @@ export const PENDING_RULE_PACKS = {
     // are StrataVerze choices. FOR_REVIEW gains the points. No legal value or status already recorded changed; still a draft.
     // 2026.10.7 (29 Oct 2026): the 2-lot quorum (stage 2, PR 8a-ii). MEETING_RULES gains quorumNeedsEveryLot: a 2-lot
     // scheme's quorum needs both lots with no fallback (s 130(2), (4), CONFIRMED), so at a general meeting its count is
-    // refused unless both lots have a vote or an abstention counted at the item, and nothing is written (Matthew
-    // Wrigley's decision of 29 Oct 2026, recorded in DECISIONS). A lot whose vote is not counted for money owed does not
-    // make up the quorum (a StrataVerze reading that fails closed, stricter than the decision's words, for him to confirm),
-    // and fewer than 2 lots entered is refused. MEETING_RULES_STATUS's quorum note is rewritten and FOR_REVIEW gains the
+    // refused unless both lots have a vote or an abstention recorded at the item, and nothing is written (Matthew
+    // Wrigley's decision of 29 Oct 2026, recorded in DECISIONS). A lot whose vote is not counted for money owed (s 120(2))
+    // still makes up the quorum if it is recorded at the item (s 130), as he decided the same day, relaxing the stricter
+    // reading first applied; the resolution is then decided by the counted votes. Fewer than 2 lots entered is refused. MEETING_RULES_STATUS's quorum note is rewritten and FOR_REVIEW gains the
     // point, and one on ballots for the draft packs. No legal value or status already recorded changed; still a draft.
     version: "2026.10.7",
     status: "DRAFT",
