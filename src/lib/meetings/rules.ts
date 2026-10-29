@@ -13,6 +13,7 @@
  * flagged for the rules review; see the strategy document section 4.
  */
 import { dayIn } from "@/lib/jurisdiction/time-zone";
+import type { SelectorCondition } from "@/config/statutory";
 
 
 export type MeetingType = "AGM" | "EGM" | "COMMITTEE" | "FIRST_AGM";
@@ -218,6 +219,48 @@ export interface ResolutionLabel {
   choice?: string;
 }
 
+/**
+ * A question the chair answers for each item at conduct, as the pack words it
+ * (VIC, ACT and WA stage 2, PR 8a-ii, 29 Oct 2026): `label` is the question
+ * and `help` says how to answer it.
+ */
+export interface AttestationWords {
+  label: string;
+  help: string;
+  source: string;
+  status: ResolutionRuleStatus;
+}
+
+/**
+ * Buildings whose votes are not counted at all yet (VIC, ACT and WA stage 2,
+ * PR 8a-ii, 29 Oct 2026: Victoria's tier 5). Where `when` holds for the
+ * building, every outcome at a general meeting other than a deferral is
+ * refused with `refusal`; where it cannot be worked out, with `undecided` and
+ * what is missing (it fails closed). Both are plain words ready to follow
+ * with a full stop.
+ */
+export interface CountingRefusalRule {
+  when: SelectorCondition;
+  refusal: string;
+  undecided: string;
+  source: string;
+  status: ResolutionRuleStatus;
+}
+
+/**
+ * A quorum that needs every lot of a small scheme (VIC, ACT and WA stage 2,
+ * PR 8a-ii, 29 Oct 2026: Western Australia's 2-lot scheme). With
+ * `lotsAtMost` lots or fewer, the count is refused unless every lot has a
+ * vote or an abstention counted at the item (`refusal`, plain words ready to
+ * follow with a full stop).
+ */
+export interface EveryLotQuorumRule {
+  lotsAtMost: number;
+  refusal: string;
+  source: string;
+  status: ResolutionRuleStatus;
+}
+
 export interface MeetingRuleSet {
   state: string;
   version: string;
@@ -296,6 +339,34 @@ export interface MeetingRuleSet {
    * the chair's outcome for such an item as before.
    */
   categoryRequiredAtGeneralMeetings?: true;
+  /*
+   * The keys below are the draft packs' (VIC, ACT and WA stage 2, PR 8a-ii,
+   * 29 Oct 2026). Each is optional and seed-only (rowToRuleSet copies it only
+   * where the seed has it), and NSW and Queensland have none of them.
+   */
+  /** Where the pack records it: buildings whose votes are not counted at all yet (Victoria's tier 5). */
+  countingRefusedWhen?: readonly CountingRefusalRule[];
+  /**
+   * Where the pack records it: the buildings `debtorsMayVoteOn` applies to
+   * (the ACT: 3 or more members; Victoria: tiers 1 to 4). Where it does not
+   * hold, no vote is barred for money owed. Where it cannot be worked out, the
+   * bar applies (it fails closed).
+   */
+  debtorRuleAppliesWhen?: SelectorCondition;
+  /**
+   * Where the pack records it: the chair's answer, for each item whose test
+   * depends on it, whether the meeting had a quorum. It is never worked out
+   * (attendance is not recorded yet) and never assumed.
+   */
+  quorumAttestation?: AttestationWords;
+  /**
+   * Where the pack records it: the chair's count, for each item whose test
+   * measures the votes against those present (the ACT's special resolution),
+   * of the lots present or represented. It must match the lots entered.
+   */
+  votesPresentAttestation?: AttestationWords;
+  /** Where the pack records it: a quorum that needs every lot of a small scheme (Western Australia's 2-lot scheme). */
+  quorumNeedsEveryLot?: EveryLotQuorumRule;
   notes?: string;
 }
 

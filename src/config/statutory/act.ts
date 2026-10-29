@@ -45,10 +45,11 @@
  * PENDING_REFORMS entry has `legalStatus: "NOT_LAW"` and `textStatus:
  * "READ_IN_BILL_TEXT"` instead of a `status`.
  *
- * MEETING_RULES is given from MEETINGS and RESOLUTIONS (stage 2, PR 8a-i):
- * every count at a meeting is still refused until whether the meeting had a
- * quorum is recorded for each motion (stage 2, PR 8a-ii), and the debtor
- * rule (sch 3 s 3.20(3)) is not applied yet (see MEETING_RULES).
+ * MEETING_RULES is given from MEETINGS and RESOLUTIONS (stage 2, PR 8a-i).
+ * Since stage 2, PR 8a-ii (29 Oct 2026) whether the meeting had a standard
+ * quorum is the chair's answer for each motion, the units present for a
+ * special resolution are the chair's count, and the debtor rule (sch 3
+ * s 3.20(3)) is applied with 3 or more members (see MEETING_RULES).
  * LATE_CHARGE is given from INTEREST (stage 2, PR 5).
  * PAYMENT_ALLOCATION_ORDER is a StrataVerze choice Matthew Wrigley made on
  * 28 Oct 2026 (contribution first, as NSW): the notes record no order.
@@ -342,9 +343,10 @@ export const AUDIT_BY_UNITS: DerivedBuildingSelector = {
  * ss 3.15, 3.16, 3.18), and members are not units, since each part-owner is
  * a member (s 10), so it cannot be worked out from the units. Which bands are
  * `supported` is a StrataVerze proposal: only 4 or more members is counted
- * at a meeting (FOR_REVIEW). The member threshold of sch 3 s 3.20(3) (3 or
- * more members: no vote on an ordinary or special resolution while an amount
- * is unpaid) is not applied yet.
+ * at a meeting (FOR_REVIEW). Since stage 2, PR 8a-ii (29 Oct 2026) it also
+ * decides the member threshold of sch 3 s 3.20(3) (3 or more members: no
+ * vote on an ordinary or special resolution while an amount is unpaid,
+ * MEETING_RULES.debtorRuleAppliesWhen).
  */
 export const MEMBER_BAND: RecordedBuildingSelector = {
   key: "memberBand",
@@ -801,12 +803,14 @@ export const LATE_CHARGE: LateChargeRules = {
   annual: {
     statutoryRatePercent: { value: INTEREST.defaultAnnualRatePercent, status: "CONFIRMED", source: `${UTMA} s 94(1)(a)` },
     resolvedRate: {
-      // GO-LIVE GAP: the setting checks the motion is recorded as SPECIAL and CARRIED. Since stage 2, PR 8a-i the
-      // meeting engine holds the sch 3 s 3.16(1) test (MEETING_RULES.SPECIAL: votes against not more than 1/4 of the
-      // votes that could be cast by those present) and an ACT general meeting records CARRIED only from the count. It
-      // refuses the 3-member test (s 3.16(2), NOT_CONFIRMED) and 1 or 2 members, and every count until whether the
-      // meeting had a quorum is recorded for the motion (stage 2, PR 8a-ii), so no ACT special resolution can be
-      // recorded as CARRIED at a meeting yet (FOR_REVIEW).
+      // The setting checks the motion is recorded as SPECIAL and CARRIED. Since stage 2, PR 8a-i the meeting engine
+      // holds the sch 3 s 3.16(1) test (MEETING_RULES.SPECIAL: votes against not more than 1/4 of the votes that could
+      // be cast by those present) and an ACT general meeting records CARRIED only from the count. Since stage 2,
+      // PR 8a-ii (29 Oct 2026) a special resolution with 4 or more members is recorded as CARRIED where the chair
+      // answers that the meeting had a standard quorum for the motion and gives the units present, which must match
+      // the units entered; debtors are barred (s 3.20(3)). So a carried ACT special resolution can now set this rate.
+      // The 3-member test (s 3.16(2), NOT_CONFIRMED) and a reduced quorum decision (stage 2, PR 8b) are still
+      // refused (FOR_REVIEW).
       resolution: {
         value: { kind: "SPECIAL", words: "special resolution" },
         status: "CONFIRMED",
@@ -1460,18 +1464,24 @@ export const RECORDS = {
  * 28 Oct 2026), from MEETINGS, RESOLUTIONS and RECORDS. Each resolution rule
  * carries its source and status; MEETING_RULES_STATUS gives those of the
  * other parts. What the count at a meeting records and refuses:
- * - every count, until whether the meeting had a quorum is recorded for the
- *   motion (sch 3 s 3.9: quorum is counted for each motion, and a reduced
- *   quorum decision takes effect later, ss 3.10, 3.11). In this version that
- *   refuses every count at a meeting (stage 2, PR 8a-ii);
+ * - whether the meeting had a standard quorum for the motion (sch 3 s 3.9:
+ *   quorum is counted for each motion) is the chair's answer
+ *   (quorumAttestation, since stage 2, PR 8a-ii, 29 Oct 2026), never worked
+ *   out or assumed: not answered, the count is refused; "no" (a reduced
+ *   quorum, whose decision takes effect later, ss 3.10, 3.11) is refused
+ *   until those decisions are tracked (stage 2, PR 8b);
  * - the test is chosen by the building's number of members, recorded in its
  *   building rules (MEMBER_BAND); none recorded refuses the count;
  * - an ordinary resolution: more votes for than against, by unit entitlement
  *   on a poll (s 3.15(1)); equal votes refused;
  * - a special resolution with 4 or more members: more votes for than against
  *   and the votes against not more than 1/4 of the votes those present could
- *   cast, counted as the units recorded at the item (s 3.16(1)); equal votes
- *   refused; with 3 members refused (s 3.16(2), NOT_CONFIRMED);
+ *   cast (s 3.16(1)). Since stage 2, PR 8a-ii the chair gives the units
+ *   present or represented (votesPresentAttestation), which must match the
+ *   units entered at the item, so a unit present that did not vote is entered
+ *   as abstaining; a unit barred for money owed is present but cannot cast a
+ *   vote. Equal votes refused; with 3 members refused (s 3.16(2),
+ *   NOT_CONFIRMED);
  * - a unanimous resolution with 3 or more members: a vote or an abstention
  *   recorded for every unit, none against and at least 1 for (s 3.18(1));
  * - 1 or 2 members (ss 3.15(2), 3.16(3), 3.18(2)) and an unopposed resolution
@@ -1481,10 +1491,12 @@ export const RECORDS = {
  * - an item with no resolution category cannot be recorded as resolved at a
  *   general meeting, since nothing counts it (a StrataVerze choice).
  * The debtor rule (s 3.20(3): with 3 or more members, no vote on an ordinary
- * or special resolution while an amount is unpaid) is NOT applied:
- * debtorsMayVoteOn is left out, because the shared rule cannot depend on the
- * number of members. It must be applied before quorum is recorded and lets a
- * count through (stage 2, PR 8a-ii; FOR_REVIEW).
+ * or special resolution while an amount is unpaid) is applied since stage 2,
+ * PR 8a-ii (29 Oct 2026), in the same change as the chair's quorum answer:
+ * debtorsMayVoteOn lists the categories a debtor may still vote on, and
+ * debtorRuleAppliesWhen limits the rule to 3 or more members. With no band
+ * recorded the rule applies (it fails closed). An unpaid amount is read as an
+ * overdue contribution notice (FOR_REVIEW).
  */
 
 const ACT_TIE =
@@ -1620,14 +1632,29 @@ export const MEETING_RULES: MeetingRuleSet = {
   committeeCategoryRefusal:
     "Only an ordinary resolution can go on an executive committee meeting agenda. Put this motion on a general meeting agenda instead.",
   motionCategories: ["ORDINARY", "SPECIAL"],
-  // debtorsMayVoteOn is left out on purpose: the debtor rule depends on the number of members (see above).
+  // With 3 or more members, a unit owing an amount votes on neither an ordinary nor a special resolution (s 3.20(3)).
+  debtorsMayVoteOn: ["UNANIMOUS", "UNOPPOSED"],
+  debtorRuleAppliesWhen: { selector: MEMBER_BAND.key, in: ["THREE", "FOUR_OR_MORE"] },
   pollCategories: RESOLUTIONS.pollOnlyFor,
   excludeCommonPropertyRows: true,
   // Every outcome at a general meeting comes from the count, so an item with no category cannot be recorded as resolved there.
   categoryRequiredAtGeneralMeetings: true,
   memberBandSelector: MEMBER_BAND.key,
+  // The chair's answers for each motion (Matthew Wrigley's decision of 29 Oct 2026, DECISIONS): never worked out or assumed.
+  quorumAttestation: {
+    label: "Standard quorum present for this motion",
+    help: `Yes if people entitled to vote for at least ${MEETINGS.quorum.fractionOfUnits === 1 / 2 ? "half" : `${Math.round(MEETINGS.quorum.fractionOfUnits * 100)}%`} of the units were present in person or by proxy when this motion was decided. Absentee votes do not count toward it, and neither does a unit that cannot vote because an amount is unpaid. With 1 or 2 members everyone entitled to vote must be present. Answer No if only a reduced quorum was present: StrataVerze does not record those decisions yet.`,
+    source: `${UTMA} sch 3 ss 3.9, 3.12, 3.31(4)`,
+    status: "STRATAVERZE",
+  },
+  votesPresentAttestation: {
+    label: "Units present or represented for this motion",
+    help: "Count every unit whose voter was present in person, by proxy or by an absentee vote when this motion was decided, including those that did not vote and those that cannot vote because an amount is unpaid. Enter each of them above, as Abstain if it did not vote.",
+    source: `${UTMA} sch 3 ss 3.16(1), 3.31(4)`,
+    status: "STRATAVERZE",
+  },
   notes:
-    "Draft, from the ACT pack (not signed off), VIC, ACT and WA stage 2, PR 8a-i. Every count at a meeting is refused until quorum is recorded for each motion; the debtor rule is not applied yet.",
+    "Draft, from the ACT pack (not signed off), VIC, ACT and WA stage 2, PR 8a-i and 8a-ii. Standard quorum is the chair's answer for each motion and the units present for a special resolution are the chair's count; a reduced quorum is refused until its decisions are tracked.",
 };
 
 /** How far each part of MEETING_RULES not carrying its own status is checked. */
@@ -1638,12 +1665,21 @@ export const MEETING_RULES_STATUS = {
     note: "14 days for a general meeting and 7 days for an executive committee meeting. A general meeting's notice must reasonably be expected to be received 14 days before, which the whole-day check does not test, and 21 days where an unopposed or unanimous resolution is moved, neither of which is offered on an agenda.",
   },
   minutesDeadlines: { status: "CONFIRMED" as RuleStatus, source: `${UTMA} sch 2 s 2.1(2)`, note: "A copy to each member within 14 days, general and executive committee meetings." },
-  quorumRules: { status: "CONFIRMED" as RuleStatus, source: `${UTMA} sch 3 ss 3.9 to 3.12`, note: "Held as data; not evaluated. The executive committee's quorum (more than half) has no shared basis, so it is not held." },
+  quorumRules: {
+    status: "CONFIRMED" as RuleStatus,
+    source: `${UTMA} sch 3 ss 3.9 to 3.12`,
+    note: "Held as data; not evaluated. Since stage 2, PR 8a-ii whether there was a standard quorum is the chair's answer for each motion (quorumAttestation). The executive committee's quorum (more than half) has no shared basis, so it is not held.",
+  },
   retention: { status: "CONFIRMED" as RuleStatus, source: RECORDS.source, note: "At least 7 years; no separate period for ballot papers was found." },
   debtorsMayVoteOn: {
-    status: "STRATAVERZE" as RuleStatus,
+    status: "CONFIRMED" as RuleStatus,
     source: `${UTMA} sch 3 s 3.20(3)`,
-    note: "Left out: with 3 or more members a unit cannot vote on an ordinary or special resolution while an amount is unpaid, which the shared rule cannot express. Not applied until stage 2, PR 8a-ii; every count is refused until then.",
+    note: "With 3 or more members a unit cannot vote on an ordinary or special resolution while an amount is unpaid (since stage 2, PR 8a-ii: debtorsMayVoteOn with debtorRuleAppliesWhen on the number of members). With no number of members recorded the rule applies (a StrataVerze choice, it fails closed). An unpaid amount is read as an overdue contribution notice (a StrataVerze reading, FOR_REVIEW).",
+  },
+  quorumAttestation: {
+    status: "STRATAVERZE" as RuleStatus,
+    source: `${UTMA} sch 3 ss 3.9, 3.16(1), 3.31(4)`,
+    note: "Whether there was a standard quorum is the chair's answer for each motion, and the units present for a special resolution the chair's count, checked against the units entered. Neither is worked out or assumed, until attendance is recorded (Matthew Wrigley's decision of 29 Oct 2026, DECISIONS).",
   },
   labelsAndLists: { status: "STRATAVERZE" as RuleStatus, source: "StrataVerze", note: "The names, the categories each meeting and the motions list offer, pre-meeting voting not offered and common property rows not counted are StrataVerze choices (FOR_REVIEW)." },
 } as const;
@@ -1959,7 +1995,7 @@ export const FOR_REVIEW = [
   "FOR LEGAL REVIEW: what the opening words of UTMA s 94(1), \"unless otherwise decided by ordinary resolution\", let an ordinary resolution do (INTEREST.openingWords).",
   "BUILDING_SELECTORS: the scheme type and the three plan variants (retirement village, mixed use, class B units only) are recorded by the adviser or StrataVerze in the Building rules section, outside the locked building record. Each variant's \"yes\" is marked not supported because StrataVerze applies none of their rules yet (a StrataVerze proposal). The unit thresholds (bank account exemption, sinking fund, communications officer, proxy limit, the unit leg of the audit test) are worked out from the number of units: the building's lots other than common property rows, read only where it matches the building's total lots. The member thresholds (1 to 3 members, 4 or more members) are not worked out, because members are not units. The annual budget leg of the audit test is not a recorded fact, so at 100 units or fewer the value says the budget decides.",
   "DATED_RULES restates the Bill's quorum and absentee vote changes as NOT LAW values that are never applied, beside the in-force values from R25 (26 Jun 2026; earlier days have no value). When the Bill passes and pt 6 is notified, a new pack version restates them as enacted with the day they commence. Confirm both choices.",
-  "LATE_CHARGE (stage 2, PR 5): 10% a year by default and 0 to 20% by special resolution are from the notes (s 94(1)). Three accrual values are NOT_CONFIRMED, so no interest is charged until a pack version records them: the day interest starts (the due date, or the day after), any grace period, and the days a year's rate is shared over (365, or another basis). The special resolution is checked against the motion's recorded category (SPECIAL) and outcome (CARRIED). GO-LIVE GAP: since stage 2, PR 8a-i the meeting engine holds the sch 3 s 3.16(1) test and an ACT general meeting records CARRIED only from the count, but every ACT count is refused until quorum is recorded for each motion (stage 2, PR 8a-ii), and the 3-member test and 1 or 2 members are refused, so no ACT special resolution can be recorded as CARRIED at a meeting yet. Rounding (once, half up, to the cent, on the sum of the days, as NSW interest) and applying each payment to the contribution first are StrataVerze choices. Confirm each.",
+  "LATE_CHARGE (stage 2, PR 5): 10% a year by default and 0 to 20% by special resolution are from the notes (s 94(1)). Three accrual values are NOT_CONFIRMED, so no interest is charged until a pack version records them: the day interest starts (the due date, or the day after), any grace period, and the days a year's rate is shared over (365, or another basis). The special resolution is checked against the motion's recorded category (SPECIAL) and outcome (CARRIED). Since stage 2, PR 8a-ii (29 Oct 2026) an ACT special resolution with 4 or more members can be recorded as CARRIED at a meeting from the count (sch 3 s 3.16(1)), with the chair's standard quorum answer and units present, so it can now set this rate; the 3-member test and a reduced quorum decision are still refused. Rounding (once, half up, to the cent, on the sum of the days, as NSW interest) and applying each payment to the contribution first are StrataVerze choices. Confirm each.",
   "PAYMENT_ALLOCATION_ORDER: contributions, then interest, then recovery costs, as NSW. Decided by Matthew Wrigley on 28 Oct 2026 as a StrataVerze choice (DECISIONS), since the notes record no order. Recorded here so the decision is visible at sign-off.",
   "NOTICE_RULES (stage 2, PR 6a): each notice goes out 28 days before it falls due and never with less than 14 days' notice, as Matthew Wrigley decided on 28 Oct 2026 (DECISIONS); the 28 days is the most the law allows (UTMA ss 79(2)(e), 90(2)(e)). A due date more than 28 days after the notice is refused, and a special contribution due further away is planned 28 days before it falls due. Recorded here so the decision is visible at sign-off.",
   "FOR LEGAL REVIEW: whether a general fund contribution payable by instalments is given one notice for each instalment as it falls due (StrataVerze's reading, NOTICE_RULES.checked.noticeMode) or one notice that states every instalment date (UTMA s 79(2)(f)).",
@@ -1973,18 +2009,18 @@ export const FOR_REVIEW = [
   "Form 1 (AF2012-112) was not read, so whether ACT contribution notices must be in an approved form is not recorded (NOTICE_RULES.checked.form is null). Check it before any ACT notice is issued.",
   "A notice that goes out late states a later due date, 14 days after it goes out and within the 28 days: StrataVerze's reading of UTMA ss 80, 91 (the notes say only that a contribution is payable on the date stated in the notice), recorded as STRATAVERZE, not CONFIRMED. Confirm.",
   "MEETING_RULES (stage 2, PR 8a-i) is StrataVerze's mapping of MEETINGS and RESOLUTIONS to the shared shape. StrataVerze choices: the names (Ordinary, Special, Unopposed and Unanimous Resolution); a general meeting and the motions list offer ordinary and special resolutions, and an executive committee ordinary resolutions only; unopposed and unanimous resolutions are not offered on an agenda (their 21 days' notice, sch 3 s 3.6(2), is not checked); pre-meeting electronic voting (sch 3 s 3.31A) is not offered; common property rows are not counted as units; an item with no resolution category (such as an election) cannot be recorded as resolved at a general meeting, because every outcome there comes from the count and such an item has no test to count it by (it can be recorded as lost, or deferred). Confirm each.",
-  "The number of members (MEMBER_BAND: 1 or 2, 3, or 4 or more) is recorded by the adviser or StrataVerze in the Building rules section, because members are not units (s 10: each part-owner is a member). It can go out of date when the owners change, and nothing checks it against the roll. Only 4 or more members is marked supported. With none recorded, or a value not known, every count is refused. Confirm who records it and when it is checked.",
-  "Votes present (sch 3 s 3.16(1), \"the total votes that can be cast by people present, including proxy votes\") are counted as the units with a vote or an abstention recorded at the item, including absentee votes the chair enters (an absentee voter is taken to be present, s 3.31(4)), and not a unit barred for money owed. A person present who casts no vote and is not recorded as abstaining is not counted, so the votes present can be fewer than the Act's and the test is stricter than the Act's (the votes against are measured against a smaller number). This is revisited when quorum is recorded for each motion (stage 2, PR 8a-ii), which records who is present. Confirm.",
-  "Refused at a meeting until confirmed: the 3-member special resolution test (s 3.16(2): against less than 1/3, of what is NOT_CONFIRMED); an unopposed resolution (s 3.17: its member scope is NOT_CONFIRMED; confirming it would let it be counted); 1 or 2 members (ss 3.15(2), 3.16(3), 3.18(2), with the quorum of s 3.12), counted from stage 2, PR 8a-ii. Equal votes on an ordinary or special resolution are refused, because whether the chair has a casting vote with more than 2 members is not in the notes (with 2 members there is none, s 3.30) and StrataVerze does not record one.",
+  "The number of members (MEMBER_BAND: 1 or 2, 3, or 4 or more) is recorded by the adviser or StrataVerze in the Building rules section, because members are not units (s 10: each part-owner is a member). It can go out of date when the owners change, and nothing checks it against the roll. Only 4 or more members is marked supported. With none recorded, or a value not known, every count is refused. Since stage 2, PR 8a-ii (29 Oct 2026) it also decides whether the debtor rule applies (s 3.20(3): 3 or more members), so a stale band changes both the test chosen and whether a unit owing money votes; with none recorded the debtor rule applies. A 3-member building's ordinary resolution is counted from this PR too, as 3 and 4 or more members share the ordinary resolution test (s 3.15(1)); only its special resolution stays refused. Confirm who records it and when it is checked.",
+  "Votes present (sch 3 s 3.16(1), \"the total votes that can be cast by people present, including proxy votes\"): since stage 2, PR 8a-ii (29 Oct 2026) the chair gives, for each special resolution, the units present or represented (in person, by proxy or by an absentee vote, s 3.31(4), including those that do not vote). The count is refused unless that number equals the units with a vote or an abstention entered, so a unit present that did not vote must be entered as abstaining and is never left out of the votes present. The votes present are then the units entered, less a unit barred for money owed, which is present but cannot cast a vote. The chair's count and the check are StrataVerze's, until attendance is recorded. With 1 or 2 members the number is asked too, though their test does not use it. Confirm.",
+  "Refused at a meeting until confirmed: the 3-member special resolution test (s 3.16(2): against less than 1/3, of what is NOT_CONFIRMED); an unopposed resolution (s 3.17: its member scope is NOT_CONFIRMED; confirming it would let it be counted); 1 or 2 members (ss 3.15(2), 3.16(3), 3.18(2), with the quorum of s 3.12). Equal votes on an ordinary or special resolution are refused, because whether the chair has a casting vote with more than 2 members is not in the notes (with 2 members there is none, s 3.30) and StrataVerze does not record one. A 3-member ordinary resolution is counted since stage 2, PR 8a-ii (29 Oct 2026), by the same test as 4 or more members (s 3.15(1)).",
   "A unanimous resolution (s 3.18(1)) needs a vote or an abstention recorded for every unit: a unit with nothing recorded refuses the count, since StrataVerze cannot tell whether its voter was present. Confirm.",
-  "FOR LEGAL REVIEW: the debtor rule (sch 3 s 3.20(3): with 3 or more members a unit cannot vote on an ordinary or special resolution while an amount is unpaid) is not applied yet. MEETING_RULES.debtorsMayVoteOn is left out, so no vote is barred, which is safe only because every count is refused until quorum is recorded for each motion. Both are planned together (stage 2, PR 8a-ii), as is what counts as an unpaid amount.",
-  "Quorum (sch 3 ss 3.9 to 3.11) is counted for each motion, and a decision with a reduced quorum takes effect 28 days later unless disallowed. Until quorum is recorded for each motion (stage 2, PR 8a-ii), every count at a meeting is refused; a reduced quorum decision is refused until its later effect is tracked (stage 2, PR 8b).",
+  "FOR LEGAL REVIEW: the debtor rule (sch 3 s 3.20(3): with 3 or more members a unit cannot vote on an ordinary or special resolution while an amount is unpaid) is applied since stage 2, PR 8a-ii (29 Oct 2026), in the same change as the chair's quorum answer: a unit owing an amount is not counted at the meeting and cannot vote online on such a motion, and with 1 or 2 members it is not barred. An unpaid amount is read as a contribution notice issued, past its due date and not paid in full on the meeting's date, as for Queensland (a StrataVerze reading: s 3.20(3) says \"all amounts payable\", which may be wider). With no number of members recorded the rule applies. Confirm.",
+  "Quorum (sch 3 ss 3.9 to 3.11) is counted for each motion, and a decision with a reduced quorum takes effect 28 days later unless disallowed. Since stage 2, PR 8a-ii (29 Oct 2026) whether there was a standard quorum (people entitled to vote for at least half of the units) is the chair's answer for each motion, kept with the outcome in the meeting record with who recorded it (Matthew Wrigley's decision of 29 Oct 2026, DECISIONS). It is never filled in for the chair, and a motion not answered is refused. StrataVerze does not record attendance yet, so it does not work the quorum out, and nothing checks the answer against the votes: absentee votes are entered like any other vote but do not count toward the quorum (s 3.31(4)), and a unit barred for money owed does not either. With 1 or 2 members everyone entitled to vote must be present (s 3.12): the chair's answer covers that too. \"No\" (a reduced quorum) is refused until those decisions and their later effect are tracked (stage 2, PR 8b). When attendance is recorded (meeting management, Stage C) the quorum will be worked out from it instead. Confirm.",
 ] as const;
 
 /**
  * StrataVerze's decisions. Matthew Wrigley has not reviewed this draft as a
  * whole; the decisions so far are the payment order and the notice timing
- * (28 Oct 2026). Points for the review are in FOR_REVIEW and marked "FOR
+ * (28 Oct 2026), and the quorum answer (29 Oct 2026). Points for the review are in FOR_REVIEW and marked "FOR
  * REVIEW" and "FOR LEGAL REVIEW" above.
  */
 export const DECISIONS: readonly { decision: string; decidedBy: string; decidedOn: string }[] = [
@@ -1998,6 +2034,12 @@ export const DECISIONS: readonly { decision: string; decidedBy: string; decidedO
       "Notice timing (NOTICE_RULES): each contribution notice goes out 28 days before it falls due, the most the law allows (UTMA ss 79(2)(e), 90(2)(e)), and is never given less than 14 days' notice. Matthew Wrigley's StrataVerze decision of 28 Oct 2026: the ACT sets no least notice, so the 14 days and the 28-day lead are StrataVerze choices, not rules of law.",
     decidedBy: "Matthew Wrigley",
     decidedOn: "2026-10-28",
+  },
+  {
+    decision:
+      "Quorum (MEETING_RULES.quorumAttestation): the chair's answer for each motion, \"standard quorum present: yes or no\", is accepted until attendance is recorded. It is never filled in for the chair, a motion not answered is refused, and the answer is kept in the meeting record with who recorded it. When attendance is recorded the quorum is to be worked out from it instead. Matthew Wrigley's StrataVerze decision of 29 Oct 2026.",
+    decidedBy: "Matthew Wrigley",
+    decidedOn: "2026-10-29",
   },
 ];
 

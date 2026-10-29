@@ -752,9 +752,9 @@ export const ENTITLEMENT_SCHEDULES: readonly EntitlementScheduleDefinition[] = [
  *   occupiable answer, since a lot has no state for a database check.
  * - Read: since stage 2 PR 8a-i, the count at conduct on a poll on an
  *   ordinary resolution (s 89(3)), refused where a lot that voted has none.
- *   The ordinary resolution's outcome is itself refused until whether the
- *   meeting had a quorum is recorded (stage 2 PR 8a-ii), so nothing is
- *   recorded from it yet. Every reader fails closed on a lot with no lot
+ *   Since stage 2 PR 8a-ii (29 Oct 2026) the outcome is recorded where the
+ *   chair answers that the meeting had a quorum for the item and the tier is
+ *   1 to 4 (MEETING_RULES). Every reader fails closed on a lot with no lot
  *   entitlement (src/lib/jurisdiction/building-data.ts).
  * - Not applied yet: the s 23A insurance premium fee. The pack has no
  *   CONTRIBUTION_INSURANCE, so the whole of every Victorian fee, insurance
@@ -2646,9 +2646,13 @@ export const DATED_RULES = {
  * resolution rule carries its source and status; MEETING_RULES_STATUS gives
  * those of the other parts. What the count at a meeting records and refuses:
  * - an ordinary resolution: a majority of the votes cast, by lot entitlement
- *   on a poll (s 89). Refused until whether the meeting had a quorum is
- *   recorded for the item (without one it is an interim resolution, s 78),
- *   and on equal votes (the casting vote of s 89A is not recorded);
+ *   on a poll (s 89). Whether the meeting had a quorum is the chair's answer
+ *   for the item (quorumAttestation, since stage 2, PR 8a-ii, 29 Oct 2026),
+ *   never worked out or assumed: not answered, the count is refused; "no",
+ *   a count that carries is an interim resolution (s 78) and refused, and one
+ *   that fails is recorded as lost; a "no" the votes counted contradict (half
+ *   of all lots counted) is refused. Equal votes are refused (the casting
+ *   vote of s 89A is not recorded);
  * - a special resolution: 75% of all lots for, debtors included as they may
  *   vote on it (ss 89B, 96). Where it fails it may pass as an interim special
  *   resolution (s 97), which is refused at the meeting until interim
@@ -2659,10 +2663,14 @@ export const DATED_RULES = {
  * - common property rows are not counted as lots.
  * - an item with no resolution category cannot be recorded as resolved at a
  *   general meeting, since nothing counts it (a StrataVerze choice).
- * Tier 5 owners corporations (2-lot and services only, ss 7A, 8) are not
- * handled yet (stage 2, PR 8a-ii): the general tests are applied, except that
- * with 2 lots or fewer a failed special resolution is refused rather than
- * tested as an interim special resolution, which s 97 does not give them.
+ * Since stage 2, PR 8a-ii (29 Oct 2026): a tier 5 owners corporation (2-lot
+ * and services only, ss 7A, 8) is not counted at all, and neither is one
+ * whose tier cannot be worked out (countingRefusedWhen, which fails closed):
+ * every outcome but a deferral is refused, whatever the item. With 2 lots or
+ * fewer a failed special resolution is still never tested as an interim
+ * special resolution (a second line of defence). The arrears rule (s 89B)
+ * applies to tiers 1 to 4 only (debtorRuleAppliesWhen; s 7A), and where the
+ * tier cannot be worked out it applies (it fails closed).
  */
 
 const VIC_TIE =
@@ -2670,6 +2678,9 @@ const VIC_TIE =
 
 const VIC_TWO_LOT_INTERIM =
   `An owners corporation of 2 lots cannot pass an interim special resolution, and its special resolution means a unanimous one (${OCA} s 7A). StrataVerze does not apply the rules for 2-lot owners corporations yet, so the count cannot decide it`;
+
+const VIC_TIER_5 =
+  `This owners corporation is tier 5 (a 2-lot subdivision or services only). It is exempt from many of the meeting and resolution rules (${OCA} ss 7A, 8), and for it a special resolution means a unanimous one. StrataVerze does not apply the rules for tier 5 owners corporations yet, so its votes cannot be counted`;
 
 const VIC_GENERAL_QUORUM = {
   basis: "PERCENT_OF_LOTS_ELSE_ENTITLEMENT",
@@ -2720,8 +2731,9 @@ export const MEETING_RULES: MeetingRuleSet = {
     },
     // Never on an agenda: a special resolution that fails may pass as one. On a poll its first route is NOT_CONFIRMED,
     // so it has no poll test and is refused on a poll (FOR_REVIEW MEETING_RULES_INTERIM). A 2-lot owners corporation
-    // is exempt from s 97 (s 7A), so with 2 lots or fewer it is refused, never reported as interim, until the 2-lot
-    // rules are applied (stage 2, PR 8a-ii; FOR_REVIEW MEETING_RULES_TIER_5).
+    // is exempt from s 97 (s 7A), so with 2 lots or fewer it is refused, never reported as interim. Since stage 2,
+    // PR 8a-ii (29 Oct 2026) a tier 5 owners corporation is not counted at all (countingRefusedWhen); this variant
+    // stays as a second line of defence (FOR_REVIEW MEETING_RULES_TIER_5).
     INTERIM_SPECIAL: {
       basis: "BY_VARIANT",
       variants: [
@@ -2765,8 +2777,27 @@ export const MEETING_RULES: MeetingRuleSet = {
   excludeCommonPropertyRows: true,
   // Every outcome at a general meeting comes from the count, so an item with no category cannot be recorded as resolved there.
   categoryRequiredAtGeneralMeetings: true,
+  // Stage 2, PR 8a-ii (29 Oct 2026): a tier 5 owners corporation, or one whose tier cannot be worked out, is not counted.
+  countingRefusedWhen: [
+    {
+      when: tierIn([TIER_5.tier]),
+      refusal: VIC_TIER_5,
+      undecided: "StrataVerze cannot tell whether this owners corporation is tier 5 (a 2-lot subdivision or services only), whose votes it does not count yet",
+      source: `${OCA} ss 7(6), 7A, 8`,
+      status: "CONFIRMED",
+    },
+  ],
+  // The arrears rule (s 89B) does not apply to tier 5 (s 7A). Where the tier cannot be worked out, it applies.
+  debtorRuleAppliesWhen: tierIn([TIER_1.tier, TIER_2.tier, TIER_3.tier, TIER_4.tier]),
+  // The chair's answer for each item (Matthew Wrigley's decision of 29 Oct 2026, DECISIONS): never worked out or assumed.
+  quorumAttestation: {
+    label: "Quorum present for this item",
+    help: `Yes if at least ${MEETINGS.quorum.percentOfTotalLots}% of the lots were present in person or by proxy when this item was decided, or, if that many lots is not available, lots holding at least ${MEETINGS.quorum.otherwisePercentOfTotalLotEntitlement}% of the total lot entitlement. Without a quorum every resolution is an interim resolution, which StrataVerze does not record yet.`,
+    source: `${OCA} ss 77, 78(1)`,
+    status: "STRATAVERZE",
+  },
   notes:
-    "Draft, from the Victorian pack (not signed off), VIC, ACT and WA stage 2, PR 8a-i. Interim resolutions, ballots and the minutes deadline are not applied yet.",
+    "Draft, from the Victorian pack (not signed off), VIC, ACT and WA stage 2, PR 8a-i and 8a-ii. Quorum is the chair's answer for each item; tier 5 is not counted. Interim resolutions, ballots and the minutes deadline are not applied yet.",
 };
 
 /** How far each part of MEETING_RULES not carrying its own status is checked. */
@@ -2786,7 +2817,21 @@ export const MEETING_RULES_STATUS = {
     source: `${OCA} s 145`,
     note: "At least 7 years; voting papers and ballots 12 months after the vote, held as the secret ballot period (a StrataVerze mapping).",
   },
-  debtorsMayVoteOn: { status: "CONFIRMED" as RuleStatus, source: ARREARS.source, note: "An owner in arrears may vote only on special and unanimous resolutions (s 89B). Arrears are read as an overdue fee notice (FOR_REVIEW MEETING_RULES_ARREARS)." },
+  debtorsMayVoteOn: {
+    status: "CONFIRMED" as RuleStatus,
+    source: ARREARS.source,
+    note: "An owner in arrears may vote only on special and unanimous resolutions (s 89B), except in a tier 5 owners corporation, which is exempt from s 89B (s 7A): debtorRuleAppliesWhen reads the tier, and where it cannot be worked out the rule applies (a StrataVerze choice, it fails closed). Arrears are read as an overdue fee notice (FOR_REVIEW MEETING_RULES_ARREARS).",
+  },
+  quorumAttestation: {
+    status: "STRATAVERZE" as RuleStatus,
+    source: `${OCA} ss 77, 78(1)`,
+    note: "Whether the meeting had a quorum is the chair's answer for each item, never worked out or assumed, until attendance is recorded (Matthew Wrigley's decision of 29 Oct 2026, DECISIONS). A \"no\" the votes counted contradict is refused. Whether quorum is judged once or for each item is NOT_CONFIRMED (FOR_REVIEW MEETING_RULES_QUORUM).",
+  },
+  countingRefusedWhen: {
+    status: "CONFIRMED" as RuleStatus,
+    source: `${OCA} ss 7(6), 7A, 8`,
+    note: "A tier 5 owners corporation is exempt from many of the meeting and resolution rules, and StrataVerze does not apply its own rules yet, so its votes are not counted. Refusing a building whose tier cannot be worked out is a StrataVerze choice (it fails closed). FOR_REVIEW MEETING_RULES_TIER_5.",
+  },
   labelsAndLists: { status: "STRATAVERZE" as RuleStatus, source: "StrataVerze", note: "The names, the categories each meeting and the motions list offer, the poll categories, pre-meeting voting not offered and common property rows not counted are StrataVerze choices (FOR_REVIEW MEETING_RULES)." },
 } as const;
 
@@ -2947,19 +2992,28 @@ export const FOR_REVIEW = [
   {
     key: "MEETING_RULES_ORDINARY",
     point:
-      "An ordinary resolution counted at a meeting is refused until whether the meeting had a quorum is recorded for the item (stage 2, PR 8a-ii): without a quorum every resolution is interim (s 78). Equal votes are refused too: a chair who is a lot owner or a proxy has a casting vote and without it the resolution is not passed (s 89A), and StrataVerze does not record who chaired or a casting vote. Confirm.",
+      "An ordinary resolution counted at a meeting (since stage 2, PR 8a-ii, 29 Oct 2026) needs the chair's answer whether the meeting had a quorum for the item (MEETING_RULES_QUORUM). With \"yes\" it is recorded as carried or lost by the votes cast (by lot entitlement on a poll). With \"no\" a count that carries is an interim resolution (s 78), refused until interim resolutions are recorded (stage 2, PR 8b), and one that fails is recorded as lost. Not answered, it is refused. Equal votes are refused too: a chair who is a lot owner or a proxy has a casting vote and without it the resolution is not passed (s 89A), and StrataVerze does not record who chaired or a casting vote. A carried ordinary resolution can now authorise interest (LATE_CHARGE: any resolution carried at a general meeting, s 29(1)). Confirm.",
     before: "Victorian meetings are run",
     kind: "STRATAVERZE",
   },
   {
     key: "MEETING_RULES_TIER_5",
-    point: "Tier 5 owners corporations (2-lot subdivisions and services only) are exempt from the meeting and resolution rules in ss 7A and 8, and for a 2-lot owners corporation a special resolution means a unanimous one. Not handled yet (stage 2, PR 8a-ii): the general tests are applied, which for 2 lots needs both lots for a special resolution, as unanimity does. Section 97 does not apply to a 2-lot owners corporation (s 7A), so with 2 lots or fewer a special resolution that fails the general test is never tested as an interim special resolution: the count is refused, saying the 2-lot rules are not applied yet, rather than reporting it as interim (1 lot for and none against was reported as an interim special resolution before) or recording it as lost. Nothing is written either way. That refusal reads the number of lots counted, not the tier, so a services only owners corporation is not caught until the tier is read (stage 2, PR 8a-ii).",
+    point:
+      "Tier 5 owners corporations (2-lot subdivisions and services only) are exempt from the meeting and resolution rules in ss 7A and 8, and for a 2-lot owners corporation a special resolution means a unanimous one. Since stage 2, PR 8a-ii (29 Oct 2026) their votes are not counted at all: at a general meeting every outcome other than a deferral is refused for a tier 5 owners corporation, whatever the item (countingRefusedWhen, read from TIER), so the chair can only defer. Where the tier cannot be worked out (one of several owners corporations, mostly or only non-occupiable lots, 2 occupiable lots with other lots, a lot with no occupiable answer, the lots not matching the total, or the services only answer missing) every count is refused too, with what the building rules are missing: this tightens PR 8a-i, which recorded special and unanimous resolutions for such buildings. Counting a 2-lot special resolution as a unanimous one is not done (a StrataVerze choice, until the tier 5 rules are applied). With 2 lots or fewer a special resolution is still never tested as an interim special resolution (a second line of defence). Confirm.",
     before: "Victorian meetings are run",
     kind: "LEGAL",
   },
   {
     key: "MEETING_RULES_ARREARS",
-    point: "An owner in arrears is read as a lot with a fee notice issued, past its due date and not paid in full on the meeting's date, as for Queensland. The rule that a payment other than cash counts only if made at least 4 business days before the vote (s 89B) is not applied. Confirm.",
+    point:
+      "An owner in arrears is read as a lot with a fee notice issued, past its due date and not paid in full on the meeting's date, as for Queensland. The rule that a payment other than cash counts only if made at least 4 business days before the vote (s 89B) is not applied. Since stage 2, PR 8a-ii (29 Oct 2026) the rule applies to tiers 1 to 4 only, as tier 5 is exempt from s 89B (s 7A): an owner of a tier 5 owners corporation is not barred from voting online on a motion. Where the tier cannot be worked out, the owner is barred as in tiers 1 to 4 (a StrataVerze choice: it fails closed). At a meeting both are moot, as neither is counted. Confirm.",
+    before: "Victorian meetings are run",
+    kind: "LEGAL",
+  },
+  {
+    key: "MEETING_RULES_QUORUM",
+    point:
+      "Whether the meeting had a quorum (s 77: at least 50% of the lots, or if that is not available 50% of the total lot entitlement) is the chair's answer for each item, kept with the outcome in the meeting record with who recorded it (Matthew Wrigley's decision of 29 Oct 2026, DECISIONS). It is never filled in for the chair, and an item not answered is refused. StrataVerze does not record attendance yet, so it does not work the quorum out. It refuses a \"no quorum\" answer only where the lots whose votes are counted already make up half of all lots. Whether s 78 judges quorum once for the meeting or for each item is not in the notes (asked for each item, to confirm). When attendance is recorded (meeting management, Stage C) the quorum will be worked out from it instead. Confirm.",
     before: "Victorian meetings are run",
     kind: "LEGAL",
   },
@@ -3083,7 +3137,8 @@ export const FOR_REVIEW = [
 /**
  * StrataVerze choices this draft proposes. Matthew Wrigley has not reviewed
  * the draft, so `decidedBy` and `decidedOn` stay null on each, except the
- * payment order and the notice timing he decided on 28 Oct 2026.
+ * payment order and the notice timing he decided on 28 Oct 2026, and the
+ * quorum answer he decided on 29 Oct 2026.
  */
 export const DECISIONS: readonly { decision: string; proposedOn: string; decidedBy: string | null; decidedOn: string | null }[] = [
   { decision: "Support unlimited owners corporations first; limited owners corporations are listed but blocked (OWNERS_CORPORATION_TYPE).", proposedOn: "2026-10-27", decidedBy: null, decidedOn: null },
@@ -3105,6 +3160,13 @@ export const DECISIONS: readonly { decision: string; proposedOn: string; decided
     proposedOn: "2026-10-28",
     decidedBy: "Matthew Wrigley",
     decidedOn: "2026-10-28",
+  },
+  {
+    decision:
+      "Quorum (MEETING_RULES.quorumAttestation): the chair's answer for each item, \"quorum present: yes or no\", is accepted until attendance is recorded. It is never filled in for the chair, an item not answered is refused, and the answer is kept in the meeting record with who recorded it. When attendance is recorded the quorum is to be worked out from it instead. Matthew Wrigley's StrataVerze decision of 29 Oct 2026.",
+    proposedOn: "2026-10-29",
+    decidedBy: "Matthew Wrigley",
+    decidedOn: "2026-10-29",
   },
 ];
 

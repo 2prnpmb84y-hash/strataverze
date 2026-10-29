@@ -193,17 +193,20 @@ describe("Australian Capital Territory pack (pending)", () => {
   const pack = PENDING_RULE_PACKS.ACT;
   const act = pack.rules;
 
-  it("is a draft for review, not signed off, with only the payment order and the notice timing decided", () => {
+  it("is a draft for review, not signed off, with only the payment order, the notice timing and the quorum answer decided", () => {
     expect(pack.code).toBe("AU-ACT");
     expect(pack.state).toBe("ACT");
-    expect(pack.version).toBe("2026.10.8");
+    expect(pack.version).toBe("2026.10.9");
     expect(pack.status).toBe("DRAFT");
     expect(pack.reviewedOn).toBeNull();
     expect(pack.reviewer).toBe("Matthew Wrigley");
-    expect(act.DECISIONS).toHaveLength(2);
-    for (const d of act.DECISIONS) expect(d).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-28" });
+    expect(act.DECISIONS).toHaveLength(3);
+    for (const d of act.DECISIONS.slice(0, 2)) expect(d).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-28" });
     expect(act.DECISIONS[0].decision).toContain("PAYMENT_ALLOCATION_ORDER");
     expect(act.DECISIONS[1].decision).toContain("NOTICE_RULES");
+    // Stage 2, PR 8a-ii: the chair's quorum answer (29 Oct 2026).
+    expect(act.DECISIONS[2]).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-29" });
+    expect(act.DECISIONS[2].decision).toContain("quorumAttestation");
   });
 
   it("holds exactly one entitlement schedule on each lot: unit entitlement", () => {
@@ -303,7 +306,7 @@ describe("Victorian pack (pending)", () => {
   it("is a draft, not signed off, and never given to a building", () => {
     expect(pack.code).toBe("AU-VIC");
     expect(pack.state).toBe("VIC");
-    expect(pack.version).toBe("2026.10.8");
+    expect(pack.version).toBe("2026.10.9");
     expect(pack.status).toBe("DRAFT");
     expect(pack.reviewedOn).toBeNull();
     expect(rulePackFor("VIC")).toBeNull();
@@ -318,17 +321,21 @@ describe("Victorian pack (pending)", () => {
     expect(packs.map(([code]) => code)).toContain("AU-VIC");
   });
 
-  it("has proposed decisions, none decided but the payment order and the notice timing (Matthew Wrigley, 28 Oct 2026)", () => {
+  it("has proposed decisions, none decided but the payment order and the notice timing (Matthew Wrigley, 28 Oct 2026) and the quorum answer (29 Oct 2026)", () => {
     expect(vic.DECISIONS.length).toBeGreaterThan(1);
     for (const d of vic.DECISIONS) {
       if (d.decision.includes("PAYMENT_ALLOCATION_ORDER") || d.decision.includes("NOTICE_RULES")) {
         expect(d).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-28" });
         continue;
       }
+      if (d.decision.includes("quorumAttestation")) {
+        expect(d).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-29", proposedOn: "2026-10-29" });
+        continue;
+      }
       expect(d.decidedBy).toBeNull();
       expect(d.decidedOn).toBeNull();
     }
-    expect(vic.DECISIONS.filter((d) => d.decidedBy != null)).toHaveLength(2);
+    expect(vic.DECISIONS.filter((d) => d.decidedBy != null)).toHaveLength(3);
   });
 
   it("switches every NSW workflow off, with the same keys", () => {
@@ -538,13 +545,16 @@ describe("Western Australia pack (pending)", () => {
   const pack = PENDING_RULE_PACKS.WA;
   const wa = pack.rules;
 
-  it("is a draft, not yet signed off, with only the payment order and the notice timing decided", () => {
-    expect(pack.version).toBe("2026.10.6");
+  it("is a draft, not yet signed off, with only the payment order, the notice timing and the 2-lot quorum decided", () => {
+    expect(pack.version).toBe("2026.10.7");
     expect(pack.status).toBe("DRAFT");
     expect(pack.reviewedOn).toBeNull();
-    expect(wa.DECISIONS).toHaveLength(2);
-    for (const d of wa.DECISIONS) expect(d).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-28" });
+    expect(wa.DECISIONS).toHaveLength(3);
+    for (const d of wa.DECISIONS.slice(0, 2)) expect(d).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-28" });
     expect(wa.DECISIONS[1].decision).toContain("NOTICE_RULES");
+    // Stage 2, PR 8a-ii: the 2-lot quorum (29 Oct 2026).
+    expect(wa.DECISIONS[2]).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-29" });
+    expect(wa.DECISIONS[2].decision).toContain("quorumNeedsEveryLot");
     expect(wa.NOT_CONFIRMED.length).toBeGreaterThan(0);
     expect(wa.FOR_REVIEW.length).toBeGreaterThan(0);
   });

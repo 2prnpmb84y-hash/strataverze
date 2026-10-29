@@ -21,6 +21,8 @@ vi.mock("@/config/statutory", async (importOriginal) => {
       if (key === "QLD") return actual.QLD_RULE_PACK;
       // A draft pack given as if live (VIC, ACT and WA stage 2, PR 8a-i): it has no buildings yet.
       if (key === "ACT") return actual.PENDING_RULE_PACKS.ACT;
+      if (key === "VIC") return actual.PENDING_RULE_PACKS.VIC;
+      if (key === "WA") return actual.PENDING_RULE_PACKS.WA;
       return actual.rulePackFor(state);
     },
   };
@@ -93,12 +95,32 @@ describe("stored rule set rows", () => {
     expect(rs.memberBandSelector).toBe("memberBand");
     expect(rs.categoryRequiredAtGeneralMeetings).toBe(true);
     expect(rs.pollCategories).toEqual(["ORDINARY", "SPECIAL"]);
-    expect("debtorsMayVoteOn" in rs).toBe(false);
+    // The debtor rule since stage 2, PR 8a-ii (29 Oct 2026).
+    expect(rs.debtorsMayVoteOn).toBe(ACT.debtorsMayVoteOn);
     for (const state of ["NSW", "QLD"] as const) {
       first.mockResolvedValue(olderRow(state, state === "NSW" ? NSW_RULE_SET : QLD));
       const other = await getActiveRuleSet(state);
       expect("memberBandSelector" in other).toBe(false);
       expect("categoryRequiredAtGeneralMeetings" in other).toBe(false);
+    }
+  });
+
+  it("copy the counting refusal, the debtor condition, the chair's questions and the 2-lot quorum from the seed only where it has them (stage 2, PR 8a-ii)", async () => {
+    const keys = ["countingRefusedWhen", "debtorRuleAppliesWhen", "quorumAttestation", "votesPresentAttestation", "quorumNeedsEveryLot"] as const;
+    for (const state of ["VIC", "ACT", "WA"] as const) {
+      const seed = PENDING_RULE_PACKS[state].rules.MEETING_RULES;
+      first.mockResolvedValue(olderRow(state, seed));
+      const rs = await getActiveRuleSet(state);
+      expect(keys.filter((k) => k in rs), state).toEqual(keys.filter((k) => seed[k] !== undefined));
+      for (const k of keys) {
+        if (seed[k] === undefined) expect(k in rs, `${state} ${k}`).toBe(false);
+        else expect(rs[k], `${state} ${k}`).toBe(seed[k]);
+      }
+    }
+    for (const state of ["NSW", "QLD"] as const) {
+      first.mockResolvedValue(olderRow(state, state === "NSW" ? NSW_RULE_SET : QLD));
+      const other = await getActiveRuleSet(state);
+      for (const k of keys) expect(k in other, `${state} ${k}`).toBe(false);
     }
   });
 

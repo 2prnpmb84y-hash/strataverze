@@ -5,10 +5,13 @@
  * 28-day voting period closes (STA s 121), so the meeting cannot record them
  * as resolved or lost; an ordinary resolution is counted. An unfinancial
  * owner votes on unanimous and without dissent resolutions only (s 120(2)).
+ * In a 2-lot scheme the quorum needs both lots (s 130(2), (4)): since stage 2,
+ * PR 8a-ii (29 Oct 2026, Matthew Wrigley's decision) a count is refused unless
+ * both lots are counted at the item. No quorum answer is asked.
  */
 import { describe, expect, it } from "vitest";
 import { MEETING_RULES as NSW_RULE_SET, PENDING_RULE_PACKS, QLD_RULE_PACK, type StatutoryRules } from "@/config/statutory";
-import { buildConductTally, countNeedsMemberBand, countsVotesAtConduct, laterDecisionRefusal, type ChairVote, type TallyLot } from "./conduct-tally";
+import { buildConductTally, conductVotingView, countNeedsMemberBand, countsVotesAtConduct, laterDecisionRefusal, type ChairVote, type TallyLot } from "./conduct-tally";
 import { resolveOutcome } from "./conduct";
 
 const WA_RULES = PENDING_RULE_PACKS.WA.rules as unknown as StatutoryRules;
@@ -93,5 +96,57 @@ describe("an unfinancial owner (s 120(2))", () => {
   it("is not counted on an ordinary or special resolution, and is on a unanimous or without dissent one", () => {
     for (const c of ["ORDINARY", "SPECIAL"]) expect(valueOf(count(c, votes([1, 2]), owing)).notCounted.map((v) => v.lotId)).toEqual(["lot-2"]);
     for (const c of ["UNANIMOUS", "WITHOUT_DISSENT"]) expect(valueOf(count(c, votes([1, 2]), owing)).notCounted).toEqual([]);
+  });
+});
+
+describe("a 2-lot scheme's quorum (s 130(2), (4)): both lots must be counted at the item", () => {
+  const TWO: TallyLot[] = [
+    { id: "lot-1", lotNumber: "1", entitlement: 10 },
+    { id: "lot-2", lotNumber: "2", entitlement: 10 },
+    { id: "cp", lotNumber: "CP", entitlement: 0, lotType: "COMMON" },
+  ];
+  const two = (chairVotes: ChairVote[], extra: Partial<Parameters<typeof buildConductTally>[0]> = {}) => count("ORDINARY", chairVotes, { lots: TWO, recordedLotCount: 2, ...extra });
+  const refusal = `${WA.quorumNeedsEveryLot!.refusal}. Nothing was saved. The item can be deferred.`;
+
+  it("refuses the count with one lot, or none, counted", () => {
+    expect(two(votes([1]))).toEqual({ ok: false, error: refusal });
+    expect(two([])).toEqual({ ok: false, error: refusal });
+    expect(refusal).toMatch(/^In a 2-lot scheme the meeting has a quorum only with both lots present or represented, and there is no fallback \(.+ s 130\(2\), \(4\)\)\./);
+    expect(refusal).not.toMatch(/[;–—]/);
+  });
+
+  it("counts both lots voting or abstaining, and records the outcome", () => {
+    const t = valueOf(two([vote(1, "FOR"), vote(2, "ABSTAIN")])).tally!;
+    expect(t).toEqual({ forCount: 1, againstCount: 0, abstainCount: 1, totalLots: 2 });
+    expect(resolveOutcome(WA, { requestedOutcome: "RESOLVED", resolutionCategory: "ORDINARY", tally: t })).toMatchObject({ outcome: "RESOLVED", status: "CARRIED" });
+    expect(valueOf(two(votes([1], [2]))).tally).toMatchObject({ forCount: 1, againstCount: 1 });
+  });
+
+  it("does not let a lot whose vote is not counted for money owed make up the quorum", () => {
+    expect(two(votes([1, 2]), { owingLotIds: new Set(["lot-2"]) })).toEqual({ ok: false, error: refusal });
+  });
+
+  it("refuses where the lots entered and the number recorded do not agree, or no number is recorded", () => {
+    expect(two(votes([1, 2]), { recordedLotCount: 3 })).toEqual({
+      ok: false,
+      error: "The building records 3 lots but 2 are entered, so this resolution cannot be counted. Enter every lot, or correct the number of lots, first.",
+    });
+    expect(count("ORDINARY", votes([1, 2]), { recordedLotCount: 2 })).toEqual({
+      ok: false,
+      error: "The building records 2 lots but 8 are entered, so this resolution cannot be counted. Enter every lot, or correct the number of lots, first.",
+    });
+    expect(two(votes([1, 2]), { recordedLotCount: null }).ok).toBe(false);
+  });
+
+  it("is not checked with 3 or more lots, or for an item with no category", () => {
+    expect(count("ORDINARY", votes([1])).ok).toBe(true);
+    expect(count("ORDINARY", votes([1]), { recordedLotCount: null }).ok).toBe(true);
+    expect(two(votes([1]), { category: null }).ok).toBe(true);
+  });
+
+  it("asks the chair nothing at the conduct screen", () => {
+    const view = conductVotingView(WA, WA_RULES, TWO, [{ id: "o", resolutionCategory: "ORDINARY" }], "AGM")!;
+    expect(view.items).toEqual({ o: { pollAllowed: true, proxiesAllowed: true } });
+    expect(view).not.toHaveProperty("attestation");
   });
 });

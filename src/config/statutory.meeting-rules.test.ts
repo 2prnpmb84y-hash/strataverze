@@ -4,11 +4,18 @@
  * a name, the interim special and unopposed resolutions are never offered on
  * an agenda, every rule and variant says where it comes from and how far it
  * is checked, and the NSW and Queensland rule sets carry none of the new keys.
+ *
+ * Quorum attestation, the counting refusal and the debtor condition (VIC, ACT
+ * and WA stage 2, PR 8a-ii, 29 Oct 2026): every condition names a building
+ * selector the pack has, with values among its options; every pack whose
+ * tests need a quorum answer words the question; and a pack with any of the
+ * new keys offers no pre-meeting ballot, which applies none of them.
  */
 import { describe, expect, it } from "vitest";
 import { MEETING_RULES as NSW_RULE_SET, PENDING_RULE_PACKS, QLD_RULE_PACK } from "./statutory";
 import { usesDraftKeys, type MeetingRuleSet, type ResolutionCategory, type ResolutionRule } from "@/lib/meetings/rules";
-import type { RecordedBuildingSelector, RuleStatus } from "./statutory/types";
+import { countNeedsQuorum, countNeedsVotesPresent } from "@/lib/meetings/conduct-tally";
+import type { BuildingSelector, RecordedBuildingSelector, RuleStatus, SelectorCondition } from "./statutory/types";
 
 const STATUSES: RuleStatus[] = ["CONFIRMED", "GUIDANCE", "STRATAVERZE", "NOT_CONFIRMED"];
 const DRAFTS = [
@@ -76,6 +83,61 @@ describe.each(DRAFTS)("%s meeting rules", (state, rs) => {
   });
 });
 
+/** The selector conditions a condition reads, as [key, values]. */
+const selectorTests = (c: SelectorCondition): [string, readonly string[]][] =>
+  "all" in c ? c.all.flatMap(selectorTests) : "any" in c ? c.any.flatMap(selectorTests) : "selector" in c ? [[c.selector, c.in]] : [];
+
+const NEW_KEYS = ["countingRefusedWhen", "debtorRuleAppliesWhen", "quorumAttestation", "votesPresentAttestation", "quorumNeedsEveryLot"] as const;
+const PACK_RULES = { VIC: PENDING_RULE_PACKS.VIC.rules, ACT: PENDING_RULE_PACKS.ACT.rules, WA: PENDING_RULE_PACKS.WA.rules };
+const NO_DASH_OR_SEMICOLON = /[;–—]/;
+
+describe.each(DRAFTS)("%s quorum attestation, counting refusal and debtor condition (stage 2, PR 8a-ii)", (state, rs) => {
+  const selectors = PACK_RULES[state].BUILDING_SELECTORS as readonly BuildingSelector[];
+
+  it("reads only building selectors the pack has, with values among their options", () => {
+    const conditions = [...(rs.countingRefusedWhen ?? []).map((r) => r.when), ...(rs.debtorRuleAppliesWhen ? [rs.debtorRuleAppliesWhen] : [])];
+    for (const cond of conditions) {
+      for (const [key, values] of selectorTests(cond)) {
+        const selector = selectors.find((sel) => sel.key === key);
+        expect(selector, `${state} ${key}`).toBeDefined();
+        for (const v of values) expect(selector!.options.map((o) => o.value), `${state} ${key} ${v}`).toContain(v);
+      }
+    }
+  });
+
+  it("words the quorum question where any category's test needs it, and the units present where any needs them", () => {
+    const categories = Object.keys(rs.resolutionCategories);
+    if (categories.some((c) => countNeedsQuorum(rs, c))) expect(rs.quorumAttestation, state).toBeDefined();
+    if (categories.some((c) => countNeedsVotesPresent(rs, c))) expect(rs.votesPresentAttestation, state).toBeDefined();
+    for (const a of [rs.quorumAttestation, rs.votesPresentAttestation]) {
+      if (!a) continue;
+      expect(a.label).toMatch(/^[A-Z][^.]*[a-z]$/);
+      expect(a.help).toMatch(/^[A-Z].*\.$/);
+      expect(`${a.label} ${a.help}`).not.toMatch(NO_DASH_OR_SEMICOLON);
+      expect(a.source.length).toBeGreaterThan(5);
+      expect(STATUSES).toContain(a.status);
+    }
+  });
+
+  it("gives its counting refusals in plain words, ready to follow with a full stop", () => {
+    for (const r of rs.countingRefusedWhen ?? []) {
+      for (const text of [r.refusal, r.undecided]) {
+        expect(text).toMatch(/^[A-Z]/);
+        expect(text).not.toMatch(/[.;–—]$|[;–—]/);
+      }
+      expect(STATUSES).toContain(r.status);
+    }
+    if (rs.quorumNeedsEveryLot) {
+      expect(rs.quorumNeedsEveryLot.refusal).toMatch(/^[A-Z]/);
+      expect(rs.quorumNeedsEveryLot.refusal).not.toMatch(/[.;–—]$|[;–—]/);
+    }
+  });
+
+  it("offers no pre-meeting ballot where it has any of the new keys, since closing a ballot applies none of them", () => {
+    if (NEW_KEYS.some((k) => rs[k] !== undefined)) expect(rs.preMeetingEvoting).toBeNull();
+  });
+});
+
 describe("Victoria", () => {
   const vic = PENDING_RULE_PACKS.VIC.rules;
   it("defers no shared shape any more", () => {
@@ -88,6 +150,16 @@ describe("Victoria", () => {
     expect(vic.MEETING_RULES.resolutionCategories.SPECIAL?.interimCategory).toBe("INTERIM_SPECIAL");
     expect(vic.MEETING_RULES.resolutionCategories.ORDINARY?.withoutQuorum).toBe("INTERIM");
     expect(vic.MEETING_RULES.retention).toEqual({ generalYears: 7, secretBallotMonths: 12 });
+  });
+
+  it("does not count a tier 5 owners corporation, and applies the arrears rule to tiers 1 to 4 only (stage 2, PR 8a-ii)", () => {
+    expect(vic.MEETING_RULES.countingRefusedWhen?.map((r) => r.when)).toEqual([{ selector: "tier", in: ["TIER_5"] }]);
+    expect(vic.MEETING_RULES.debtorRuleAppliesWhen).toEqual({ selector: "tier", in: ["TIER_1", "TIER_2", "TIER_3", "TIER_4"] });
+    expect(vic.MEETING_RULES.votesPresentAttestation).toBeUndefined();
+    expect(vic.MEETING_RULES.quorumNeedsEveryLot).toBeUndefined();
+    // The ordinary and special resolutions ask for the quorum; the unanimous one does not.
+    expect(["ORDINARY", "SPECIAL", "UNANIMOUS"].map((c) => countNeedsQuorum(vic.MEETING_RULES, c))).toEqual([true, true, false]);
+    expect(vic.MEETING_RULES.quorumAttestation?.help).toContain("50% of the lots");
   });
 });
 
@@ -112,9 +184,16 @@ describe("the ACT", () => {
     }
   });
 
-  it("applies no debtor rule yet, so every count waits for quorum to be recorded", () => {
-    expect(act.MEETING_RULES.debtorsMayVoteOn).toBeUndefined();
-    for (const [c, rule] of rulesOf(act.MEETING_RULES)) expect(rule.withoutQuorum, c).toBe("DECIDED_LATER");
+  it("applies the debtor rule with 3 or more members, and asks the quorum for every motion and the units present for a special resolution (stage 2, PR 8a-ii)", () => {
+    expect(act.MEETING_RULES.debtorsMayVoteOn).toEqual(["UNANIMOUS", "UNOPPOSED"]);
+    expect(act.MEETING_RULES.debtorRuleAppliesWhen).toEqual({ selector: "memberBand", in: ["THREE", "FOUR_OR_MORE"] });
+    expect(act.MEETING_RULES.countingRefusedWhen).toBeUndefined();
+    expect(act.MEETING_RULES.quorumNeedsEveryLot).toBeUndefined();
+    for (const [c, rule] of rulesOf(act.MEETING_RULES)) {
+      expect(rule.withoutQuorum, c).toBe("DECIDED_LATER");
+      expect(countNeedsQuorum(act.MEETING_RULES, c), c).toBe(true);
+      expect(countNeedsVotesPresent(act.MEETING_RULES, c), c).toBe(c === "SPECIAL");
+    }
     expect(act.MEETING_RULES.pollCategories).toEqual(["ORDINARY", "SPECIAL"]);
     expect(act.MEETING_RULES.minutesDeadlines).toEqual({ AGM: 14, EGM: 14, FIRST_AGM: 14, COMMITTEE: 14 });
   });
@@ -127,6 +206,13 @@ describe("Western Australia", () => {
     expect(wa.resolutionCategories.ORDINARY?.votingPeriodDays).toBeUndefined();
     expect(wa.debtorsMayVoteOn).toEqual(["UNANIMOUS", "WITHOUT_DISSENT"]);
   });
+
+  it("asks no quorum answer, and needs both lots of a 2-lot scheme counted (stage 2, PR 8a-ii)", () => {
+    for (const c of Object.keys(wa.resolutionCategories)) expect(countNeedsQuorum(wa, c), c).toBe(false);
+    for (const k of ["countingRefusedWhen", "debtorRuleAppliesWhen", "quorumAttestation", "votesPresentAttestation"] as const) expect(wa[k], k).toBeUndefined();
+    expect(wa.quorumNeedsEveryLot).toMatchObject({ lotsAtMost: 2, status: "CONFIRMED" });
+    expect(wa.quorumNeedsEveryLot?.source).toMatch(/s 130\(2\), \(4\)/);
+  });
 });
 
 describe("NSW and Queensland", () => {
@@ -135,6 +221,12 @@ describe("NSW and Queensland", () => {
       for (const [c, rule] of rulesOf(rs)) expect(usesDraftKeys(rule), c).toBe(false);
       expect(rs).not.toHaveProperty("memberBandSelector");
       expect(rs).not.toHaveProperty("categoryRequiredAtGeneralMeetings");
+      // Stage 2, PR 8a-ii (29 Oct 2026): none of the new keys either, and no item asks the chair anything.
+      for (const k of NEW_KEYS) expect(rs, k).not.toHaveProperty(k);
+      for (const c of Object.keys(rs.resolutionCategories)) {
+        expect(countNeedsQuorum(rs, c), c).toBe(false);
+        expect(countNeedsVotesPresent(rs, c), c).toBe(false);
+      }
     }
     expect(NSW_RULE_SET).not.toHaveProperty("excludeCommonPropertyRows");
     expect(QLD_RULE_PACK.rules.MEETING_RULES.excludeCommonPropertyRows).toBe(true);
