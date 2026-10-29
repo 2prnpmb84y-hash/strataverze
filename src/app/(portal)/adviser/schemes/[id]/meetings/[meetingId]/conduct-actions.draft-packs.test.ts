@@ -153,6 +153,18 @@ describe("Western Australia", () => {
     expect(votes.notCounted.map((x) => x.lotId)).toEqual(["lot-2"]);
     expect(votes.tally).toMatchObject({ forCount: 1, againstCount: 1, forUE: 10, againstUE: 10, totalLots: 8, totalEntitlement: 80 });
     expect((row.rule as { resolution: { votingPeriodDays: number } }).resolution.votingPeriodDays).toBe(28);
+    // Review M and L2: the lots of the meeting (the common property left out) and the debtor rule as it was then.
+    expect((votes as unknown as { lotIds: string[] }).lotIds).toEqual(lots.slice(0, 8).map((l) => l.id));
+    expect((row.rule as { debtorsMayVoteOn: string[] }).debtorsMayVoteOn).toEqual(["UNANIMOUS", "WITHOUT_DISSENT"]);
+  });
+
+  it("asks for the outcome notice only where a lot had nothing entered (review L4)", async () => {
+    at("WA", "UNANIMOUS");
+    const all = await record("RESOLVED", lots.slice(0, 8).map((l, i) => v(i + 1, i === 7 ? "ABSTAIN" : "FOR")));
+    expect(all.notice).not.toMatch(/notice of the outcome|Record each written vote/);
+    vi.clearAllMocks();
+    at("WA", "UNANIMOUS");
+    expect((await record("RESOLVED", [v(1, "FOR")])).notice).toMatch(/Give the written notice of the outcome to the owners with no-one present at the meeting and record the day it was given\. Record each written vote/);
   });
 
   it("refuses an item already open, writing nothing more (D10)", async () => {
@@ -217,6 +229,9 @@ describe("Victoria", () => {
     expect(updateAgendaItem).not.toHaveBeenCalled();
     expect(sharedFake.table("PendingResolution")).toHaveLength(1);
     expect(sharedFake.table("PendingResolution")[0]).toMatchObject({ kind: "INTERIM_SPECIAL", category: "SPECIAL", takesEffectAs: "SPECIAL", status: "PENDING" });
+    // Only Western Australia's voting period keeps the meeting's lots and debtor rule (PR 8b-ii review).
+    expect(sharedFake.table("PendingResolution")[0].meetingVotes).not.toHaveProperty("lotIds");
+    expect(sharedFake.table("PendingResolution")[0].rule).not.toHaveProperty("debtorsMayVoteOn");
   });
 
   it("refuses an ordinary or special resolution until the quorum is answered, before reading the votes or the debts, writing nothing", async () => {

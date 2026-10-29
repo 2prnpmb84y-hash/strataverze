@@ -660,7 +660,11 @@ export const PENDING_RULE_PACKS = {
     // the tests are CONFIRMED; how they are applied is STRATAVERZE, Matthew Wrigley's decisions D1, D2 and D8 to D11 of
     // 29 Oct 2026, recorded in DECISIONS and kept in FOR_REVIEW for legal confirmation. The 2-lot quorum still applies at
     // the meeting. The MEETING_RULES header and notes are rewritten, and FOR_REVIEW's voting period and without dissent
-    // points. No legal value or status already recorded changed; still a draft.
+    // points. After review (same day, same version): only the building's lots at the meeting, kept with the resolution,
+    // may vote in writing, the debtor rule a written vote is judged by is the pack's at the meeting, kept with it, and an
+    // outcome notice given after the close is flagged; FOR_REVIEW's voting period point records these and that the
+    // minutes show an open item's stored outcome until PR 8b-iv. No legal value or status already recorded changed;
+    // still a draft.
     version: "2026.10.8",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",

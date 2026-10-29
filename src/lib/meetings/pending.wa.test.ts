@@ -65,6 +65,7 @@ const facts = (extra: Partial<VotingPeriodFacts> = {}): VotingPeriodFacts => ({
   resolution: WA.resolutionCategories.SPECIAL!,
   meetingTally: tally12({ forCount: 4, forUE: 40, againstCount: 1, againstUE: 10 }),
   enteredLotIds: lotIds(1, 5),
+  meetingLotIds: lotIds(1, 12),
   lateVotes: [],
   ...extra,
 });
@@ -228,6 +229,40 @@ describe("closeTally and absentLotCount", () => {
     }
   });
 
+  it("refuses written votes from outside the meeting's lots, entered at it, twice for a lot, or more than its lots (review M)", () => {
+    const lots = { meetingLotIds: lotIds(1, 4), enteredLotIds: lotIds(1, 3) };
+    const meeting = { forCount: 3, againstCount: 0, totalLots: 4 };
+    const refused = { error: "A written vote is recorded for a lot that was not one of the lots at the meeting with nothing entered, so the votes cannot be counted. Check the written votes." };
+    expect(closeTally(meeting, [late("lot-4", "FOR")], lots)).toEqual({ tally: { forCount: 4, againstCount: 0, totalLots: 4 } });
+    expect(closeTally(meeting, [late("lot-5", "FOR")], lots)).toEqual(refused);
+    expect(closeTally(meeting, [late("lot-3", "FOR")], lots)).toEqual(refused);
+    expect(closeTally(meeting, [late("lot-4", "FOR"), late("lot-4", "FOR")], lots)).toEqual(refused);
+    expect(closeTally(meeting, [late("lot-4", "FOR")], { ...lots, meetingLotIds: null })).toEqual(refused);
+    expect(closeTally({ ...meeting, totalLots: 3 }, [late("lot-4", "FOR")], lots)).toEqual(refused);
+    // No written vote: nothing to check.
+    expect(closeTally(meeting, [], { ...lots, meetingLotIds: null })).toEqual({ tally: meeting });
+  });
+
+  it("the probe: a 4-lot unanimous resolution, 3 for and lot 4 with nothing entered; a lot added later voting for never carries it", () => {
+    const four = facts({
+      category: "UNANIMOUS",
+      resolution: WA.resolutionCategories.UNANIMOUS!,
+      meetingTally: { forCount: 3, againstCount: 0, abstainCount: 0, totalLots: 4 },
+      enteredLotIds: lotIds(1, 3),
+      meetingLotIds: lotIds(1, 4),
+      lateVotes: [late("lot-5", "FOR")],
+    });
+    const ready = row({ noticeGivenOn: "2026-11-05" });
+    expect(pendingDecision(ready, "2026-12-08", { votingPeriod: four })).toEqual({
+      settle: false,
+      waitUntil: null,
+      blocker: "A written vote is recorded for a lot that was not one of the lots at the meeting with nothing entered, so the votes cannot be counted. Check the written votes.",
+    });
+    // Lot 4 itself voting for carries it, and lot 4 not voting leaves it lost.
+    expect(pendingDecision(ready, "2026-12-08", { votingPeriod: { ...four, lateVotes: [late("lot-4", "FOR")] } })).toMatchObject({ settle: true, status: "CARRIED" });
+    expect(pendingDecision(ready, "2026-12-08", { votingPeriod: { ...four, lateVotes: [] } })).toMatchObject({ settle: true, status: "LOST" });
+  });
+
   it("counts the lots with nothing entered, once each", () => {
     expect(absentLotCount(facts())).toBe(7);
     expect(absentLotCount(facts({ enteredLotIds: ["lot-1", "lot-1"] }))).toBe(11);
@@ -237,7 +272,16 @@ describe("closeTally and absentLotCount", () => {
 });
 
 describe("written votes after the meeting (D8)", () => {
-  const ok = { lotId: "lot-6", lotNumber: "6", vote: "FOR", receivedOn: "2026-11-20", today: "2026-11-25", enteredLotIds: lotIds(1, 5), lateLotIds: [] as string[] };
+  const ok = {
+    lotId: "lot-6",
+    lotNumber: "6",
+    vote: "FOR",
+    receivedOn: "2026-11-20",
+    today: "2026-11-25",
+    enteredLotIds: lotIds(1, 5),
+    lateLotIds: [] as string[],
+    meetingLotIds: lotIds(1, 12) as readonly string[] | null,
+  };
 
   it("takes FOR or AGAINST from a lot with nothing entered, received from the day it was made to the close", () => {
     expect(lateVoteProblem(row(), ok)).toBeNull();
@@ -249,6 +293,13 @@ describe("written votes after the meeting (D8)", () => {
   it("refuses everything else, saying why", () => {
     expect(lateVoteProblem(row(), { ...ok, vote: "ABSTAIN" })).toBe("Choose For or Against. Nothing was saved.");
     expect(lateVoteProblem(row(), { ...ok, lotNumber: null })).toBe("Choose a lot of this building. Nothing was saved.");
+    // Review M: a lot added (or entered again) after the meeting was not one of its lots, and a row without them takes none.
+    expect(lateVoteProblem(row(), { ...ok, lotId: "lot-13", lotNumber: "13" })).toBe(
+      "Lot 13 was not one of the building's lots at the meeting, so it cannot vote in writing on this resolution. Nothing was saved.",
+    );
+    expect(lateVoteProblem(row(), { ...ok, meetingLotIds: null })).toBe(
+      "The lots of the meeting were not kept with this resolution, so a written vote cannot be recorded. Nothing was saved.",
+    );
     expect(lateVoteProblem(row(), { ...ok, lotId: "lot-3", lotNumber: "3" })).toBe(
       "Lot 3 had a vote or an abstention entered at the meeting, so it cannot vote again in writing. Nothing was saved.",
     );
@@ -274,6 +325,11 @@ describe("the words", () => {
       "Recorded. Its voting period is open until 30 November 2026. It is decided as at 1 December 2026 on the votes at the meeting and the written votes received by then. Give the written notice of the outcome to the owners with no-one present at the meeting and record the day it was given. Record each written vote under Decided later on this page.",
     );
     expect(notice).not.toMatch(NO_DASH);
+    // Review L4: every lot entered at the meeting, so no outcome notice and no written vote are asked for.
+    expect(pendingRecordedNotice(VP, dates, { someLotAbsent: false })).toBe(
+      "Recorded. Its voting period is open until 30 November 2026. It is decided as at 1 December 2026 on the votes at the meeting and the written votes received by then.",
+    );
+    expect(pendingRecordedNotice(VP, dates, { someLotAbsent: true })).toBe(notice);
   });
 
   it("refuses Motion lost on an open vote in plain words", () => {
@@ -313,6 +369,10 @@ describe("the meeting page's panel", () => {
     ]);
     // Lots 1 to 5 were entered at the meeting and lot 6 has voted in writing.
     expect(p.lateVote).toEqual({ words: VP.lateVotes!.words, lots: LOTS.slice(6) });
+    // Review M: only the lots of the meeting are offered (lot 13 added since is not), and none where they were not kept.
+    const added = pendingPanelItem(panelRow(), { itemLabel: "3. New by-law", today: "2026-11-20", facts: { votingPeriod: facts() }, lots: [...LOTS, { id: "lot-13", lotNumber: "13" }] });
+    expect(added.lateVote?.lots.map((l) => l.lotNumber)).toEqual(["6", "7", "8", "9", "10", "11", "12"]);
+    expect(pendingPanelItem(panelRow(), { itemLabel: "3. New by-law", today: "2026-11-20", facts: { votingPeriod: facts({ meetingLotIds: null }) }, lots: LOTS })).not.toHaveProperty("lateVote");
     for (const w of [p.standing, ...p.facts]) expect(w).not.toMatch(NO_DASH);
   });
 

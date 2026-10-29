@@ -67,6 +67,13 @@ export interface PendingRuleSnapshot {
   pending: PendingResolutionRule;
   /** The rule of the item's category at the meeting. */
   resolution: ResolutionRule | null;
+  /**
+   * Western Australia's voting period (PR 8b-ii review L2): the categories a
+   * lot owing money may still vote on, as the pack held them at the meeting
+   * (null where it recorded no such rule). Left out of rows kept before it,
+   * and of the other kinds: the current pack is then read.
+   */
+  debtorsMayVoteOn?: readonly string[] | null;
 }
 
 /** The later of two days. */
@@ -142,6 +149,12 @@ export interface VotingPeriodFacts {
   meetingTally: ResolutionTally | null;
   /** The lots with a vote or an abstention entered at the item at the meeting, counted or not counted for money owed. */
   enteredLotIds: readonly string[];
+  /**
+   * The building's lots at the meeting, those its count was made over (PR
+   * 8b-ii review M), or null where they were not kept: only these may vote in
+   * writing, and with null none may (it fails closed).
+   */
+  meetingLotIds: readonly string[] | null;
   /** The written votes received since, one per lot. */
   lateVotes: readonly LateVote[];
 }
@@ -258,9 +271,32 @@ export function absentLotCount(facts: Pick<VotingPeriodFacts, "meetingTally" | "
  * entitled to vote), or a written vote whose entitlement is missing where it
  * is needed, is refused: it fails closed.
  */
-export function closeTally(meeting: ResolutionTally, late: readonly Pick<LateVote, "vote" | "entitlement">[]): { tally: ResolutionTally } | { error: string } {
+export function closeTally(
+  meeting: ResolutionTally,
+  late: readonly (Pick<LateVote, "vote" | "entitlement"> & { lotId?: string })[],
+  /**
+   * The lots of the meeting (PR 8b-ii review M): where given, every written
+   * vote must be from one of `meetingLotIds` (null: none kept) with nothing
+   * entered at the meeting, one per lot, and the lots voting can never be
+   * more than the lots of the meeting. Otherwise it fails closed.
+   */
+  lots?: { meetingLotIds: readonly string[] | null; enteredLotIds: readonly string[] },
+): { tally: ResolutionTally } | { error: string } {
   if (meeting.poll || meeting.votesPresentCount != null || meeting.votesPresentEntitlement != null || meeting.eligibleLots != null) {
     return { error: "The votes at the meeting were counted in a way the written votes cannot be added to, so it cannot be decided here." };
+  }
+  if (lots && late.length > 0) {
+    const ids = late.map((v) => v.lotId ?? null);
+    const entered = new Set(lots.enteredLotIds);
+    const meetingLots = lots.meetingLotIds ? new Set(lots.meetingLotIds) : null;
+    const outside =
+      !meetingLots ||
+      ids.some((id) => id == null || !meetingLots.has(id) || entered.has(id)) ||
+      new Set(ids).size !== ids.length ||
+      (meeting.totalLots != null && entered.size + ids.length > meeting.totalLots);
+    if (outside) {
+      return { error: "A written vote is recorded for a lot that was not one of the lots at the meeting with nothing entered, so the votes cannot be counted. Check the written votes." };
+    }
   }
   const tally: ResolutionTally = { ...meeting };
   const weighs = meeting.forUE != null || meeting.againstUE != null;
@@ -300,7 +336,7 @@ export function votingPeriodClose(row: PendingRowView, facts: VotingPeriodFacts 
       return { blocker: `The ${late.noticeWords} is not recorded as given, so it cannot be decided. Record the day it was given.` };
     }
   }
-  const counted = closeTally(facts.meetingTally, facts.lateVotes);
+  const counted = closeTally(facts.meetingTally, facts.lateVotes, { meetingLotIds: facts.meetingLotIds, enteredLotIds: facts.enteredLotIds });
   if ("error" in counted) return { blocker: counted.error };
   const category = facts.category as ResolutionCategory;
   const evaluation = evaluateResolution({ resolutionCategories: { [category]: facts.resolution } }, category, counted.tally, "unit entitlement", { atClose: true });
@@ -312,8 +348,9 @@ export function votingPeriodClose(row: PendingRowView, facts: VotingPeriodFacts 
 
 /**
  * Why a written vote received after the meeting cannot be recorded, or null
- * (D8): only under a rule that takes them, FOR or AGAINST, from a lot of the
- * building with nothing entered at the item and no written vote yet, received
+ * (D8): only under a rule that takes them, FOR or AGAINST, from one of the
+ * building's lots at the meeting (review M: none where they were not kept)
+ * with nothing entered at the item and no written vote yet, received
  * from the day it was made to the day the period closes, and never after
  * today. A debt is judged by the caller, on the day it was received.
  */
@@ -328,12 +365,18 @@ export function lateVoteProblem(
     today: string;
     enteredLotIds: readonly string[];
     lateLotIds: readonly string[];
+    /** The building's lots at the meeting, or null where they were not kept. */
+    meetingLotIds: readonly string[] | null;
   },
 ): string | null {
   if (row.status !== "PENDING") return "This resolution is already decided. Nothing was saved.";
   if (!row.rule.lateVotes) return "Written votes after the meeting are not taken on this resolution. Nothing was saved.";
   if (c.vote !== "FOR" && c.vote !== "AGAINST") return "Choose For or Against. Nothing was saved.";
   if (c.lotNumber == null) return "Choose a lot of this building. Nothing was saved.";
+  if (!c.meetingLotIds) return "The lots of the meeting were not kept with this resolution, so a written vote cannot be recorded. Nothing was saved.";
+  if (!c.meetingLotIds.includes(c.lotId)) {
+    return `Lot ${c.lotNumber} was not one of the building's lots at the meeting, so it cannot vote in writing on this resolution. Nothing was saved.`;
+  }
   if (c.enteredLotIds.includes(c.lotId)) {
     return `Lot ${c.lotNumber} had a vote or an abstention entered at the meeting, so it cannot vote again in writing. Nothing was saved.`;
   }
@@ -437,11 +480,18 @@ const article = (text: string) => (/^[aeiou]/i.test(text) && !/^(?:unan|uni|use|
  * What the chair is told when a count is recorded as pending, with its dates.
  * Plain words with no dashes or semicolons.
  */
-export function pendingRecordedNotice(rule: PendingResolutionRule, dates: PendingDates): string {
+export function pendingRecordedNotice(
+  rule: PendingResolutionRule,
+  dates: PendingDates,
+  /** Western Australia (PR 8b-ii review L4): whether a lot had nothing entered at the item, so the outcome notice is needed. Taken as yes where not given. */
+  opts: { someLotAbsent?: boolean } = {},
+): string {
   // Western Australia's voting period (PR 8b-ii): open until it closes, then decided on the votes then.
   if (rule.lateVotes) {
-    const notice = rule.lateVotes.outcomeNoticeRequired ? ` Give the ${rule.lateVotes.noticeWords} and record the day it was given.` : "";
-    return `Recorded. Its voting period is open until ${formatDay(dates.windowClosesOn)}. It is decided as at ${formatDay(addDays(dates.windowClosesOn, 1))} on the votes at the meeting and the written votes received by then.${notice} Record each written vote under Decided later on this page.`;
+    const needed = rule.lateVotes.outcomeNoticeRequired && opts.someLotAbsent !== false;
+    const notice = needed ? ` Give the ${rule.lateVotes.noticeWords} and record the day it was given.` : "";
+    const written = opts.someLotAbsent === false ? "" : " Record each written vote under Decided later on this page.";
+    return `Recorded. Its voting period is open until ${formatDay(dates.windowClosesOn)}. It is decided as at ${formatDay(addDays(dates.windowClosesOn, 1))} on the votes at the meeting and the written votes received by then.${notice}${written}`;
   }
   const name = rule.label.toLowerCase();
   const notice = dates.noticeDueOn ? ` Give the owners notice of it by ${formatDay(dates.noticeDueOn)} and record the day it was given.` : "";
@@ -654,8 +704,10 @@ export function pendingPanelItem(
   }
 
   // The lots that may still vote in writing (D8): nothing entered at the meeting and no written vote yet.
+  // Review M: only the building's lots at the meeting, none where they were not kept.
   const taken = new Set([...(voting?.enteredLotIds ?? []), ...(voting?.lateVotes ?? []).map((v) => v.lotId)]);
-  const lateLots = lateRule && voting && pending ? (ctx.lots ?? []).filter((l) => !taken.has(l.id)) : [];
+  const meetingLots = new Set(voting?.meetingLotIds ?? []);
+  const lateLots = lateRule && voting && pending ? (ctx.lots ?? []).filter((l) => meetingLots.has(l.id) && !taken.has(l.id)) : [];
   return {
     id: row.id,
     itemId: row.agendaItemId,
