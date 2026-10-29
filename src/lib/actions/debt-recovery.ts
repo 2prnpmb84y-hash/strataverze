@@ -13,7 +13,9 @@ import {
   isCaseStatus,
   isClosedStatus,
   isValidAmount,
+  legalReferralComplete,
   MAX_NOTE_LENGTH,
+  stepCompletionProblem,
 } from "@/lib/auth/debt-recovery-access";
 import { confirmedCentsFrom, feeErrorMessage } from "@/lib/billing/disclosure";
 import { captureUsageFee } from "@/lib/billing/capture";
@@ -29,7 +31,7 @@ import {
   getOverdueLevyNoticesForLot,
   getDebtRecoveryCaseById,
   getPaymentPlanForCase,
-  getDebtRecoverySteps,
+  readDebtRecoverySteps,
 } from "@/lib/queries/debt-recovery";
 import { messageTermsFor, rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
 import { UnsupportedJurisdictionError, needRule } from "@/config/statutory";
@@ -37,6 +39,9 @@ import { stepPausedByPlan } from "@/lib/debt-recovery/payment-plans";
 import { lotOwnerIds } from "@/lib/debt-recovery/lot-owners";
 
 type ActionResult = { error?: string; success?: boolean; id?: string };
+
+/** A step completion refused under the case lock: its message is shown, and nothing is written. */
+class StepCompletionRefused extends Error {}
 
 /**
  * Authorise an action on an existing case: the caller must be an adviser or
@@ -195,6 +200,10 @@ export async function updateDebtRecoveryCaseAction(
     const exclusionReason = formData.get("exclusionReason") as string;
 
     if (status && !isCaseStatus(status)) return { error: "Invalid case status" };
+    // No screen reopens a closed case (its current step is CLOSED), so its status stays.
+    if (status && status !== caseRow.status && isCaseClosed(caseRow)) {
+      return { error: "This case is closed, so its status cannot be changed." };
+    }
     // Closing goes through closeDebtRecoveryCaseAction, which records a reason.
     if (status && isClosedStatus(status) && status !== caseRow.status) {
       return { error: "Close the case from the close case form" };
@@ -212,6 +221,21 @@ export async function updateDebtRecoveryCaseAction(
       // Only a pack with the payment plan workflow pauses recovery for a plan.
       if (rules.FEATURES.statutoryPaymentPlans && stepPausedByPlan("LEGAL_REFERRAL", followed, needRule(rules, "PAYMENT_PLANS"))) {
         return { error: "A payment plan is being followed for this lot, so the case cannot be referred for legal recovery. Mark the plan as not followed first." };
+      }
+      // Referred for legal recovery only once the case's legal referral step
+      // is complete, as the steps are completed in order on the case screen.
+      // A completed step is never reopened, so no lock is needed.
+      let caseSteps: Awaited<ReturnType<typeof readDebtRecoverySteps>>;
+      try {
+        caseSteps = await readDebtRecoverySteps(caseId);
+      } catch (err) {
+        // A failed read is not "no referral step": say so, and save nothing.
+        logError("Failed to read the case's recovery steps:", err);
+        return { error: "Could not check the case's steps. Nothing was saved." };
+      }
+      if (!legalReferralComplete(caseSteps)) {
+        const label = rules.DEBT_RECOVERY_STEP_LABELS?.LEGAL_REFERRAL ?? "legal referral";
+        return { error: `Complete the ${label} step before referring this case for legal recovery.` };
       }
     }
 
@@ -282,6 +306,22 @@ export async function completeDebtRecoveryStepAction(
     }
 
     await db.transaction(async (tx) => {
+      // Lock the case row (FOR NO KEY UPDATE, held until the transaction
+      // ends), so completions on one case run one at a time: a second sees
+      // the step the first completed and the case's new current step. Under
+      // the lock, only the case's current step can be completed, and only
+      // while the case is open, as the case screens offer. Nothing is written
+      // before this check.
+      const lockedCase = await tx.orm.public.DebtRecoveryCase.where((c) => c.id.eq(caseId)).forNoKeyUpdate().first();
+      const caseSteps = await tx.orm.public.DebtRecoveryStep
+        .where((s) => s.caseId.eq(caseId))
+        .orderBy((s) => s.stepOrder.asc())
+        .all();
+      const problem = lockedCase
+        ? stepCompletionProblem(lockedCase, caseSteps, stepId, rules.DEBT_RECOVERY_STEP_LABELS)
+        : "Step not found";
+      if (problem) throw new StepCompletionRefused(problem);
+
       await updateDebtRecoveryStep(
         stepId,
         {
@@ -311,15 +351,16 @@ export async function completeDebtRecoveryStepAction(
           state: pack.state,
         });
       }
-    });
 
-    // The next step is the case's own next step (its steps were set from the
-    // rule pack when it was opened), after the one just completed.
-    const caseSteps = await getDebtRecoverySteps(caseId);
-    const nextStep = caseSteps.find((s) => s.stepOrder > step.stepOrder);
-    if (nextStep) {
-      await updateDebtRecoveryCase(caseId, { currentStep: nextStep.stepType });
-    }
+      // The next step is the case's own next step (its steps were set from
+      // the rule pack when it was opened), after the one just completed. Moved
+      // in the same transaction, so the case's current step always follows
+      // its completed steps.
+      const nextStep = [...caseSteps].sort((a, b) => a.stepOrder - b.stepOrder).find((s) => s.stepOrder > step.stepOrder);
+      if (nextStep) {
+        await updateDebtRecoveryCase(caseId, { currentStep: nextStep.stepType }, tx.orm);
+      }
+    });
 
     await logDebtRecoveryActivity({
       caseId,
@@ -332,6 +373,7 @@ export async function completeDebtRecoveryStepAction(
 
     return { success: true };
   } catch (err) {
+    if (err instanceof StepCompletionRefused) return { error: err.message };
     if (err instanceof AuthorisationError) return { error: err.message };
     const feeError = feeErrorMessage(err);
     if (feeError) return { error: feeError };

@@ -6,7 +6,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { QLD_RULE_PACK, statutoryRulesFor, type NswRules } from "@/config/statutory";
+import { PENDING_RULE_PACKS, QLD_RULE_PACK, RULE_PACKS, statutoryRulesFor, type NswRules } from "@/config/statutory";
 import { flaggableDueOnOrBefore, lotDebtsFrom, proceedingsDeadlineFlags, proceedingsDeadlineRule, proceedingsDeadlineWarning, type LotDebt } from "./proceedings-deadline";
 import { NEVER_RECOVERABLE_FROM_OWNER, usageFee } from "@/lib/billing/fee-engine";
 import { feeWordingFor, toFeeView } from "@/lib/billing/disclosure";
@@ -43,6 +43,28 @@ describe("debt recovery step labels", () => {
       // No pack values in a client file: only need-rule may be imported from the config.
       for (const m of text.matchAll(/from "(@\/config\/statutory[^"]*)"/g)) expect(m[1], rel).toBe("@/config/statutory/need-rule");
     }
+  });
+});
+
+describe("every pack's recovery steps (step order fix, 29 Oct 2026)", () => {
+  const packs = [...Object.values(RULE_PACKS), ...Object.values(PENDING_RULE_PACKS)];
+
+  it("have unique, strictly increasing step orders and unique step types, starting at LEDGER_VERIFICATION", () => {
+    // The server completes the steps in step order, and a new case's current
+    // step is the database default for current_step (LEDGER_VERIFICATION).
+    let checked = 0;
+    for (const pack of packs) {
+      // A draft pack's rules may not declare the steps at all.
+      const steps = (pack.rules as { DEBT_RECOVERY_STEPS?: readonly { stepType: string; stepOrder: number }[] }).DEBT_RECOVERY_STEPS;
+      if (!steps) continue;
+      checked++;
+      const orders = steps.map((s) => s.stepOrder);
+      for (let i = 1; i < orders.length; i++) expect(orders[i], `${pack.code} step ${i + 1}`).toBeGreaterThan(orders[i - 1]);
+      expect(new Set(orders).size, pack.code).toBe(orders.length);
+      expect(new Set(steps.map((s) => s.stepType)).size, pack.code).toBe(steps.length);
+      expect(steps[0]?.stepType, pack.code).toBe("LEDGER_VERIFICATION");
+    }
+    expect(checked).toBeGreaterThanOrEqual(2);
   });
 });
 

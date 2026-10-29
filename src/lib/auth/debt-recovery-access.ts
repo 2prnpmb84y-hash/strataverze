@@ -89,3 +89,46 @@ export function isValidAmount(value: unknown): value is number {
     Math.abs(value * 100 - Math.round(value * 100)) < 1e-6
   );
 }
+
+/** A case's recovery step, as far as the order of the steps goes. */
+export type StepForOrder = { id: string; stepType: string; stepOrder: number; status: string };
+
+/**
+ * The case's current step: the first step not yet complete, by step order,
+ * when it is also the step the case records as current (`currentStep`, moved
+ * to the next step by order as each step is completed). It is the one step
+ * the case screens offer to complete. Null when the case has no such step
+ * (every step is complete, or the record and the steps disagree, in which
+ * case nothing may be completed rather than a step passed over).
+ */
+export function currentRecoveryStep<T extends StepForOrder>(caseRow: { currentStep: string | null }, steps: readonly T[]): T | null {
+  const next = [...steps].sort((a, b) => a.stepOrder - b.stepOrder).find((s) => s.status !== "COMPLETED");
+  return next && next.stepType === caseRow.currentStep ? next : null;
+}
+
+/**
+ * Why this step may not be completed now, or null if it may. As the case
+ * screens allow: only the current step, and only while the case is open.
+ * `labels` are the building's step names (`rules.DEBT_RECOVERY_STEP_LABELS`).
+ */
+export function stepCompletionProblem(
+  caseRow: { status: string; currentStep: string | null },
+  steps: readonly StepForOrder[],
+  stepId: string,
+  labels: Readonly<Record<string, string>> = {},
+): string | null {
+  if (isClosedStatus(caseRow.status)) return "This case is closed, so its steps cannot be completed.";
+  const step = steps.find((s) => s.id === stepId);
+  if (!step) return "Step not found";
+  if (step.status === "COMPLETED") return "This step is already complete";
+  const current = currentRecoveryStep(caseRow, steps);
+  if (current?.id === step.id) return null;
+  return current
+    ? `Steps are completed in order. Complete ${labels[current.stepType] ?? current.stepType} first.`
+    : "Steps are completed in order, and this step is not the current step.";
+}
+
+/** Whether the case's legal referral step is complete, so it may be marked as referred for legal recovery. */
+export function legalReferralComplete(steps: readonly Pick<StepForOrder, "stepType" | "status">[]): boolean {
+  return steps.some((s) => s.stepType === "LEGAL_REFERRAL" && s.status === "COMPLETED");
+}

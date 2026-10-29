@@ -1,0 +1,2164 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`closeDebtRecoveryCaseAction > NSW CLOSED_PAID 1`] = `
+{
+  "result": {
+    "success": true,
+  },
+  "writes": [
+    {
+      "updateDebtRecoveryCase": [
+        "case-1",
+        {
+          "closedAt": "<timestamp>",
+          "closedReason": "Closed as CLOSED_PAID",
+          "currentStep": "CLOSED",
+          "status": "CLOSED_PAID",
+        },
+      ],
+    },
+    {
+      "logDebtRecoveryActivity": [
+        {
+          "activityType": "CASE_CLOSED",
+          "caseId": "case-1",
+          "description": "Case closed: paid — Closed as CLOSED_PAID",
+          "performedBy": "adviser",
+        },
+      ],
+    },
+    {
+      "revalidatePath": "/adviser/schemes/scheme-1",
+    },
+    {
+      "revalidatePath": "/owner/levies",
+    },
+  ],
+}
+`;
+
+exports[`closeDebtRecoveryCaseAction > NSW CLOSED_SETTLED 1`] = `
+{
+  "result": {
+    "success": true,
+  },
+  "writes": [
+    {
+      "updateDebtRecoveryCase": [
+        "case-1",
+        {
+          "closedAt": "<timestamp>",
+          "closedReason": "Closed as CLOSED_SETTLED",
+          "currentStep": "CLOSED",
+          "status": "CLOSED_SETTLED",
+        },
+      ],
+    },
+    {
+      "logDebtRecoveryActivity": [
+        {
+          "activityType": "CASE_CLOSED",
+          "caseId": "case-1",
+          "description": "Case closed: settled — Closed as CLOSED_SETTLED",
+          "performedBy": "adviser",
+        },
+      ],
+    },
+    {
+      "revalidatePath": "/adviser/schemes/scheme-1",
+    },
+    {
+      "revalidatePath": "/owner/levies",
+    },
+  ],
+}
+`;
+
+exports[`closeDebtRecoveryCaseAction > NSW CLOSED_WRITTEN_OFF 1`] = `
+{
+  "result": {
+    "success": true,
+  },
+  "writes": [
+    {
+      "updateDebtRecoveryCase": [
+        "case-1",
+        {
+          "closedAt": "<timestamp>",
+          "closedReason": "Closed as CLOSED_WRITTEN_OFF",
+          "currentStep": "CLOSED",
+          "status": "CLOSED_WRITTEN_OFF",
+        },
+      ],
+    },
+    {
+      "logDebtRecoveryActivity": [
+        {
+          "activityType": "CASE_CLOSED",
+          "caseId": "case-1",
+          "description": "Case closed: written_off — Closed as CLOSED_WRITTEN_OFF",
+          "performedBy": "adviser",
+        },
+      ],
+    },
+    {
+      "revalidatePath": "/adviser/schemes/scheme-1",
+    },
+    {
+      "revalidatePath": "/owner/levies",
+    },
+  ],
+}
+`;
+
+exports[`closeDebtRecoveryCaseAction > QLD CLOSED_PAID 1`] = `
+{
+  "result": {
+    "success": true,
+  },
+  "writes": [
+    {
+      "updateDebtRecoveryCase": [
+        "case-1",
+        {
+          "closedAt": "<timestamp>",
+          "closedReason": "Closed as CLOSED_PAID",
+          "currentStep": "CLOSED",
+          "status": "CLOSED_PAID",
+        },
+      ],
+    },
+    {
+      "logDebtRecoveryActivity": [
+        {
+          "activityType": "CASE_CLOSED",
+          "caseId": "case-1",
+          "description": "Case closed: paid — Closed as CLOSED_PAID",
+          "performedBy": "adviser",
+        },
+      ],
+    },
+    {
+      "revalidatePath": "/adviser/schemes/scheme-1",
+    },
+    {
+      "revalidatePath": "/owner/levies",
+    },
+  ],
+}
+`;
+
+exports[`closeDebtRecoveryCaseAction > QLD CLOSED_SETTLED 1`] = `
+{
+  "result": {
+    "success": true,
+  },
+  "writes": [
+    {
+      "updateDebtRecoveryCase": [
+        "case-1",
+        {
+          "closedAt": "<timestamp>",
+          "closedReason": "Closed as CLOSED_SETTLED",
+          "currentStep": "CLOSED",
+          "status": "CLOSED_SETTLED",
+        },
+      ],
+    },
+    {
+      "logDebtRecoveryActivity": [
+        {
+          "activityType": "CASE_CLOSED",
+          "caseId": "case-1",
+          "description": "Case closed: settled — Closed as CLOSED_SETTLED",
+          "performedBy": "adviser",
+        },
+      ],
+    },
+    {
+      "revalidatePath": "/adviser/schemes/scheme-1",
+    },
+    {
+      "revalidatePath": "/owner/levies",
+    },
+  ],
+}
+`;
+
+exports[`closeDebtRecoveryCaseAction > QLD CLOSED_WRITTEN_OFF 1`] = `
+{
+  "result": {
+    "success": true,
+  },
+  "writes": [
+    {
+      "updateDebtRecoveryCase": [
+        "case-1",
+        {
+          "closedAt": "<timestamp>",
+          "closedReason": "Closed as CLOSED_WRITTEN_OFF",
+          "currentStep": "CLOSED",
+          "status": "CLOSED_WRITTEN_OFF",
+        },
+      ],
+    },
+    {
+      "logDebtRecoveryActivity": [
+        {
+          "activityType": "CASE_CLOSED",
+          "caseId": "case-1",
+          "description": "Case closed: written_off — Closed as CLOSED_WRITTEN_OFF",
+          "performedBy": "adviser",
+        },
+      ],
+    },
+    {
+      "revalidatePath": "/adviser/schemes/scheme-1",
+    },
+    {
+      "revalidatePath": "/owner/levies",
+    },
+  ],
+}
+`;
+
+exports[`completeDebtRecoveryStepAction, NSW, every step in order > NSW in order 01 LEDGER_VERIFICATION 1`] = `
+{
+  "result": {
+    "success": true,
+  },
+  "writes": [
+    {
+      "updateDebtRecoveryStep": [
+        "step-01",
+        {
+          "completedAt": "<timestamp>",
+          "completedBy": "adviser",
+          "evidenceNotes": "Evidence for LEDGER_VERIFICATION",
+          "noticeMethod": null,
+          "noticeSentAt": null,
+          "outcome": "LEDGER_VERIFICATION done",
+          "status": "COMPLETED",
+        },
+      ],
+    },
+    {
+      "updateDebtRecoveryCase": [
+        "case-1",
+        {
+          "currentStep": "INITIAL_CONTACT",
+        },
+      ],
+    },
+    {
+      "logDebtRecoveryActivity": [
+        {
+          "activityType": "STEP_ADVANCED",
+          "caseId": "case-1",
+          "description": "Step completed: LEDGER_VERIFICATION done",
+          "performedBy": "adviser",
+        },
+      ],
+    },
+    {
+      "revalidatePath": "/adviser/schemes/scheme-1",
+    },
+  ],
+}
+`;
+
+exports[`completeDebtRecoveryStepAction, NSW, every step in order > NSW in order 02 INITIAL_CONTACT 1`] = `
+{
+  "result": {
+    "success": true,
+  },
+  "writes": [
+    {
+      "updateDebtRecoveryStep": [
+        "step-02",
+        {
+          "completedAt": "<timestamp>",
+          "completedBy": "adviser",
+          "evidenceNotes": "Evidence for INITIAL_CONTACT",
+          "noticeMethod": "REGISTERED_POST",
+          "noticeSentAt": "<timestamp>",
+          "outcome": "INITIAL_CONTACT done",
+          "status": "COMPLETED",
+        },
+      ],
+    },
+    {
+      "updateDebtRecoveryCase": [
+        "case-1",
+        {
+          "currentStep": "REMINDER_NOTICE",
+        },
+      ],
+    },
+    {
+      "logDebtRecoveryActivity": [
+        {
+          "activityType": "STEP_ADVANCED",
+          "caseId": "case-1",
+          "description": "Step completed: INITIAL_CONTACT done",
+          "performedBy": "adviser",
+        },
+      ],
+    },
+    {
+      "revalidatePath": "/adviser/schemes/scheme-1",
+    },
+  ],
+}
+`;
+
+exports[`completeDebtRecoveryStepAction, NSW, every step in order > NSW in order 03 REMINDER_NOTICE 1`] = `
+{
+  "result": {
+    "success": true,
+  },
+  "writes": [
+    {
+      "updateDebtRecoveryStep": [
+        "step-03",
+        {
+          "completedAt": "<timestamp>",
+          "completedBy": "adviser",
+          "evidenceNotes": "Evidence for REMINDER_NOTICE",
+          "noticeMethod": "REGISTERED_POST",
+          "noticeSentAt": "<timestamp>",
+          "outcome": "REMINDER_NOTICE done",
+          "status": "COMPLETED",
+        },
+      ],
+    },
+    {
+      "captureUsageFee": [
+        {
+          "actorId": "adviser",
+          "code": "RECOVERY_STEP",
+          "confirmedCents": 550,
+          "payerProfileId": "debtor",
+          "schemeId": "scheme-1",
+          "sourceId": "step-03",
+          "sourceType": "DebtRecoveryStep",
+          "state": "NSW",
+          "variant": "REMINDER",
+        },
+      ],
+    },
+    {
+      "updateDebtRecoveryCase": [
+        "case-1",
+        {
+          "currentStep": "FINAL_NOTICE",
+        },
+      ],
+    },
+    {
+      "logDebtRecoveryActivity": [
+        {
+          "activityType": "STEP_ADVANCED",
+          "caseId": "case-1",
+          "description": "Step completed: REMINDER_NOTICE done",
+          "performedBy": "adviser",
+        },
+      ],
+    },
+    {
+      "revalidatePath": "/adviser/schemes/scheme-1",
+    },
+  ],
+}
+`;
+
+exports[`completeDebtRecoveryStepAction, NSW, every step in order > NSW in order 04 FINAL_NOTICE 1`] = `
+{
+  "result": {
+    "success": true,
+  },
+  "writes": [
+    {
+      "updateDebtRecoveryStep": [
+        "step-04",
+        {
+          "completedAt": "<timestamp>",
+          "completedBy": "adviser",
+          "evidenceNotes": "Evidence for FINAL_NOTICE",
+          "noticeMethod": "REGISTERED_POST",
+          "noticeSentAt": "<timestamp>",
+          "outcome": "FINAL_NOTICE done",
+          "status": "COMPLETED",
+        },
+      ],
+    },
+    {
+      "captureUsageFee": [
+        {
+          "actorId": "adviser",
+          "code": "RECOVERY_STEP",
+          "confirmedCents": 1100,
+          "payerProfileId": "debtor",
+          "schemeId": "scheme-1",
+          "sourceId": "step-04",
+          "sourceType": "DebtRecoveryStep",
+          "state": "NSW",
+          "variant": "FINAL_NOTICE",
+        },
+      ],
+    },
+    {
+      "updateDebtRecoveryCase": [
+        "case-1",
+        {
+          "currentStep": "HARDSHIP_REVIEW",
+        },
+      ],
+    },
+    {
+      "logDebtRecoveryActivity": [
+        {
+          "activityType": "STEP_ADVANCED",
+          "caseId": "case-1",
+          "description": "Step completed: FINAL_NOTICE done",
+          "performedBy": "adviser",
+        },
+      ],
+    },
+    {
+      "revalidatePath": "/adviser/schemes/scheme-1",
+    },
+  ],
+}
+`;
+
+exports[`completeDebtRecoveryStepAction, NSW, every step in order > NSW in order 05 HARDSHIP_REVIEW 1`] = `
+{
+  "result": {
+    "success": true,
+  },
+  "writes": [
+    {
+      "updateDebtRecoveryStep": [
+        "step-05",
+        {
+          "completedAt": "<timestamp>",
+          "completedBy": "adviser",
+          "evidenceNotes": "Evidence for HARDSHIP_REVIEW",
+          "noticeMethod": null,
+          "noticeSentAt": null,
+          "outcome": "HARDSHIP_REVIEW done",
+          "status": "COMPLETED",
+        },
+      ],
+    },
+    {
+      "updateDebtRecoveryCase": [
+        "case-1",
+        {
+          "currentStep": "COMMITTEE_REVIEW",
+        },
+      ],
+    },
+    {
+      "logDebtRecoveryActivity": [
+        {
+          "activityType": "STEP_ADVANCED",
+          "caseId": "case-1",
+          "description": "Step completed: HARDSHIP_REVIEW done",
+          "performedBy": "adviser",
+        },
+      ],
+    },
+    {
+      "revalidatePath": "/adviser/schemes/scheme-1",
+    },
+  ],
+}
+`;
+
+exports[`completeDebtRecoveryStepAction, NSW, every step in order > NSW in order 06 COMMITTEE_REVIEW 1`] = `
+{
+  "result": {
+    "success": true,
+  },
+  "writes": [
+    {
+      "updateDebtRecoveryStep": [
+        "step-06",
+        {
+          "completedAt": "<timestamp>",
+          "completedBy": "adviser",
+          "evidenceNotes": "Evidence for COMMITTEE_REVIEW",
+          "noticeMethod": null,
+          "noticeSentAt": null,
+          "outcome": "COMMITTEE_REVIEW done",
+          "status": "COMPLETED",
+        },
+      ],
+    },
+    {
+      "updateDebtRecoveryCase": [
+        "case-1",
+        {
+          "currentStep": "LEGAL_REFERRAL",
+        },
+      ],
+    },
+    {
+      "logDebtRecoveryActivity": [
+        {
+          "activityType": "STEP_ADVANCED",
+          "caseId": "case-1",
+          "description": "Step completed: COMMITTEE_REVIEW done",
+          "performedBy": "adviser",
+        },
+      ],
+    },
+    {
+      "revalidatePath": "/adviser/schemes/scheme-1",
+    },
+  ],
+}
+`;
+
+exports[`completeDebtRecoveryStepAction, NSW, every step in order > NSW in order 07 LEGAL_REFERRAL 1`] = `
+{
+  "result": {
+    "success": true,
+  },
+  "writes": [
+    {
+      "updateDebtRecoveryStep": [
+        "step-07",
+        {
+          "completedAt": "<timestamp>",
+          "completedBy": "adviser",
+          "evidenceNotes": "Evidence for LEGAL_REFERRAL",
+          "noticeMethod": null,
+          "noticeSentAt": null,
+          "outcome": "LEGAL_REFERRAL done",
+          "status": "COMPLETED",
+        },
+      ],
+    },
+    {
+      "captureUsageFee": [
+        {
+          "actorId": "adviser",
+          "code": "RECOVERY_STEP",
+          "confirmedCents": 2200,
+          "payerProfileId": "debtor",
+          "schemeId": "scheme-1",
+          "sourceId": "step-07",
+          "sourceType": "DebtRecoveryStep",
+          "state": "NSW",
+          "variant": "REFERRAL",
+        },
+      ],
+    },
+    {
+      "updateDebtRecoveryCase": [
+        "case-1",
+        {
+          "currentStep": "PROCEEDINGS",
+        },
+      ],
+    },
+    {
+      "logDebtRecoveryActivity": [
+        {
+          "activityType": "STEP_ADVANCED",
+          "caseId": "case-1",
+          "description": "Step completed: LEGAL_REFERRAL done",
+          "performedBy": "adviser",
+        },
+      ],
+    },
+    {
+      "revalidatePath": "/adviser/schemes/scheme-1",
+    },
+  ],
+}
+`;
+
+exports[`completeDebtRecoveryStepAction, NSW, every step in order > NSW in order 08 PROCEEDINGS 1`] = `
+{
+  "result": {
+    "success": true,
+  },
+  "writes": [
+    {
+      "updateDebtRecoveryStep": [
+        "step-08",
+        {
+          "completedAt": "<timestamp>",
+          "completedBy": "adviser",
+          "evidenceNotes": "Evidence for PROCEEDINGS",
+          "noticeMethod": null,
+          "noticeSentAt": null,
+          "outcome": "PROCEEDINGS done",
+          "status": "COMPLETED",
+        },
+      ],
+    },
+    {
+      "updateDebtRecoveryCase": [
+        "case-1",
+        {
+          "currentStep": "ENFORCEMENT",
+        },
+      ],
+    },
+    {
+      "logDebtRecoveryActivity": [
+        {
+          "activityType": "STEP_ADVANCED",
+          "caseId": "case-1",
+          "description": "Step completed: PROCEEDINGS done",
+          "performedBy": "adviser",
+        },
+      ],
+    },
+    {
+      "revalidatePath": "/adviser/schemes/scheme-1",
+    },
+  ],
+}
+`;
+
+exports[`completeDebtRecoveryStepAction, NSW, every step in order > NSW in order 09 ENFORCEMENT 1`] = `
+{
+  "result": {
+    "success": true,
+  },
+  "writes": [
+    {
+      "updateDebtRecoveryStep": [
+        "step-09",
+        {
+          "completedAt": "<timestamp>",
+          "completedBy": "adviser",
+          "evidenceNotes": "Evidence for ENFORCEMENT",
+          "noticeMethod": null,
+          "noticeSentAt": null,
+          "outcome": "ENFORCEMENT done",
+          "status": "COMPLETED",
+        },
+      ],
+    },
+    {
+      "updateDebtRecoveryCase": [
+        "case-1",
+        {
+          "currentStep": "CLOSED",
+        },
+      ],
+    },
+    {
+      "logDebtRecoveryActivity": [
+        {
+          "activityType": "STEP_ADVANCED",
+          "caseId": "case-1",
+          "description": "Step completed: ENFORCEMENT done",
+          "performedBy": "adviser",
+        },
+      ],
+    },
+    {
+      "revalidatePath": "/adviser/schemes/scheme-1",
+    },
+  ],
+}
+`;
+
+exports[`completeDebtRecoveryStepAction, NSW, every step in order > NSW in order 10 CLOSED 1`] = `
+{
+  "result": {
+    "success": true,
+  },
+  "writes": [
+    {
+      "updateDebtRecoveryStep": [
+        "step-10",
+        {
+          "completedAt": "<timestamp>",
+          "completedBy": "adviser",
+          "evidenceNotes": "Evidence for CLOSED",
+          "noticeMethod": null,
+          "noticeSentAt": null,
+          "outcome": "CLOSED done",
+          "status": "COMPLETED",
+        },
+      ],
+    },
+    {
+      "logDebtRecoveryActivity": [
+        {
+          "activityType": "STEP_ADVANCED",
+          "caseId": "case-1",
+          "description": "Step completed: CLOSED done",
+          "performedBy": "adviser",
+        },
+      ],
+    },
+    {
+      "revalidatePath": "/adviser/schemes/scheme-1",
+    },
+  ],
+}
+`;
+
+exports[`completeDebtRecoveryStepAction, QLD, every step in order > QLD in order 01 LEDGER_VERIFICATION 1`] = `
+{
+  "result": {
+    "success": true,
+  },
+  "writes": [
+    {
+      "updateDebtRecoveryStep": [
+        "step-01",
+        {
+          "completedAt": "<timestamp>",
+          "completedBy": "adviser",
+          "evidenceNotes": "Evidence for LEDGER_VERIFICATION",
+          "noticeMethod": null,
+          "noticeSentAt": null,
+          "outcome": "LEDGER_VERIFICATION done",
+          "status": "COMPLETED",
+        },
+      ],
+    },
+    {
+      "updateDebtRecoveryCase": [
+        "case-1",
+        {
+          "currentStep": "INITIAL_CONTACT",
+        },
+      ],
+    },
+    {
+      "logDebtRecoveryActivity": [
+        {
+          "activityType": "STEP_ADVANCED",
+          "caseId": "case-1",
+          "description": "Step completed: LEDGER_VERIFICATION done",
+          "performedBy": "adviser",
+        },
+      ],
+    },
+    {
+      "revalidatePath": "/adviser/schemes/scheme-1",
+    },
+  ],
+}
+`;
+
+exports[`completeDebtRecoveryStepAction, QLD, every step in order > QLD in order 02 INITIAL_CONTACT 1`] = `
+{
+  "result": {
+    "success": true,
+  },
+  "writes": [
+    {
+      "updateDebtRecoveryStep": [
+        "step-02",
+        {
+          "completedAt": "<timestamp>",
+          "completedBy": "adviser",
+          "evidenceNotes": "Evidence for INITIAL_CONTACT",
+          "noticeMethod": "REGISTERED_POST",
+          "noticeSentAt": "<timestamp>",
+          "outcome": "INITIAL_CONTACT done",
+          "status": "COMPLETED",
+        },
+      ],
+    },
+    {
+      "updateDebtRecoveryCase": [
+        "case-1",
+        {
+          "currentStep": "REMINDER_NOTICE",
+        },
+      ],
+    },
+    {
+      "logDebtRecoveryActivity": [
+        {
+          "activityType": "STEP_ADVANCED",
+          "caseId": "case-1",
+          "description": "Step completed: INITIAL_CONTACT done",
+          "performedBy": "adviser",
+        },
+      ],
+    },
+    {
+      "revalidatePath": "/adviser/schemes/scheme-1",
+    },
+  ],
+}
+`;
+
+exports[`completeDebtRecoveryStepAction, QLD, every step in order > QLD in order 03 REMINDER_NOTICE 1`] = `
+{
+  "result": {
+    "success": true,
+  },
+  "writes": [
+    {
+      "updateDebtRecoveryStep": [
+        "step-03",
+        {
+          "completedAt": "<timestamp>",
+          "completedBy": "adviser",
+          "evidenceNotes": "Evidence for REMINDER_NOTICE",
+          "noticeMethod": "REGISTERED_POST",
+          "noticeSentAt": "<timestamp>",
+          "outcome": "REMINDER_NOTICE done",
+          "status": "COMPLETED",
+        },
+      ],
+    },
+    {
+      "captureUsageFee": [
+        {
+          "actorId": "adviser",
+          "code": "RECOVERY_STEP",
+          "confirmedCents": 550,
+          "payerProfileId": "debtor",
+          "schemeId": "scheme-1",
+          "sourceId": "step-03",
+          "sourceType": "DebtRecoveryStep",
+          "state": "QLD",
+          "variant": "REMINDER",
+        },
+      ],
+    },
+    {
+      "updateDebtRecoveryCase": [
+        "case-1",
+        {
+          "currentStep": "FINAL_NOTICE",
+        },
+      ],
+    },
+    {
+      "logDebtRecoveryActivity": [
+        {
+          "activityType": "STEP_ADVANCED",
+          "caseId": "case-1",
+          "description": "Step completed: REMINDER_NOTICE done",
+          "performedBy": "adviser",
+        },
+      ],
+    },
+    {
+      "revalidatePath": "/adviser/schemes/scheme-1",
+    },
+  ],
+}
+`;
+
+exports[`completeDebtRecoveryStepAction, QLD, every step in order > QLD in order 04 FINAL_NOTICE 1`] = `
+{
+  "result": {
+    "success": true,
+  },
+  "writes": [
+    {
+      "updateDebtRecoveryStep": [
+        "step-04",
+        {
+          "completedAt": "<timestamp>",
+          "completedBy": "adviser",
+          "evidenceNotes": "Evidence for FINAL_NOTICE",
+          "noticeMethod": "REGISTERED_POST",
+          "noticeSentAt": "<timestamp>",
+          "outcome": "FINAL_NOTICE done",
+          "status": "COMPLETED",
+        },
+      ],
+    },
+    {
+      "captureUsageFee": [
+        {
+          "actorId": "adviser",
+          "code": "RECOVERY_STEP",
+          "confirmedCents": 1100,
+          "payerProfileId": "debtor",
+          "schemeId": "scheme-1",
+          "sourceId": "step-04",
+          "sourceType": "DebtRecoveryStep",
+          "state": "QLD",
+          "variant": "FINAL_NOTICE",
+        },
+      ],
+    },
+    {
+      "updateDebtRecoveryCase": [
+        "case-1",
+        {
+          "currentStep": "HARDSHIP_REVIEW",
+        },
+      ],
+    },
+    {
+      "logDebtRecoveryActivity": [
+        {
+          "activityType": "STEP_ADVANCED",
+          "caseId": "case-1",
+          "description": "Step completed: FINAL_NOTICE done",
+          "performedBy": "adviser",
+        },
+      ],
+    },
+    {
+      "revalidatePath": "/adviser/schemes/scheme-1",
+    },
+  ],
+}
+`;
+
+exports[`completeDebtRecoveryStepAction, QLD, every step in order > QLD in order 05 HARDSHIP_REVIEW 1`] = `
+{
+  "result": {
+    "success": true,
+  },
+  "writes": [
+    {
+      "updateDebtRecoveryStep": [
+        "step-05",
+        {
+          "completedAt": "<timestamp>",
+          "completedBy": "adviser",
+          "evidenceNotes": "Evidence for HARDSHIP_REVIEW",
+          "noticeMethod": null,
+          "noticeSentAt": null,
+          "outcome": "HARDSHIP_REVIEW done",
+          "status": "COMPLETED",
+        },
+      ],
+    },
+    {
+      "updateDebtRecoveryCase": [
+        "case-1",
+        {
+          "currentStep": "COMMITTEE_REVIEW",
+        },
+      ],
+    },
+    {
+      "logDebtRecoveryActivity": [
+        {
+          "activityType": "STEP_ADVANCED",
+          "caseId": "case-1",
+          "description": "Step completed: HARDSHIP_REVIEW done",
+          "performedBy": "adviser",
+        },
+      ],
+    },
+    {
+      "revalidatePath": "/adviser/schemes/scheme-1",
+    },
+  ],
+}
+`;
+
+exports[`completeDebtRecoveryStepAction, QLD, every step in order > QLD in order 06 COMMITTEE_REVIEW 1`] = `
+{
+  "result": {
+    "success": true,
+  },
+  "writes": [
+    {
+      "updateDebtRecoveryStep": [
+        "step-06",
+        {
+          "completedAt": "<timestamp>",
+          "completedBy": "adviser",
+          "evidenceNotes": "Evidence for COMMITTEE_REVIEW",
+          "noticeMethod": null,
+          "noticeSentAt": null,
+          "outcome": "COMMITTEE_REVIEW done",
+          "status": "COMPLETED",
+        },
+      ],
+    },
+    {
+      "updateDebtRecoveryCase": [
+        "case-1",
+        {
+          "currentStep": "LEGAL_REFERRAL",
+        },
+      ],
+    },
+    {
+      "logDebtRecoveryActivity": [
+        {
+          "activityType": "STEP_ADVANCED",
+          "caseId": "case-1",
+          "description": "Step completed: COMMITTEE_REVIEW done",
+          "performedBy": "adviser",
+        },
+      ],
+    },
+    {
+      "revalidatePath": "/adviser/schemes/scheme-1",
+    },
+  ],
+}
+`;
+
+exports[`completeDebtRecoveryStepAction, QLD, every step in order > QLD in order 07 LEGAL_REFERRAL 1`] = `
+{
+  "result": {
+    "success": true,
+  },
+  "writes": [
+    {
+      "updateDebtRecoveryStep": [
+        "step-07",
+        {
+          "completedAt": "<timestamp>",
+          "completedBy": "adviser",
+          "evidenceNotes": "Evidence for LEGAL_REFERRAL",
+          "noticeMethod": null,
+          "noticeSentAt": null,
+          "outcome": "LEGAL_REFERRAL done",
+          "status": "COMPLETED",
+        },
+      ],
+    },
+    {
+      "captureUsageFee": [
+        {
+          "actorId": "adviser",
+          "code": "RECOVERY_STEP",
+          "confirmedCents": 2200,
+          "payerProfileId": "debtor",
+          "schemeId": "scheme-1",
+          "sourceId": "step-07",
+          "sourceType": "DebtRecoveryStep",
+          "state": "QLD",
+          "variant": "REFERRAL",
+        },
+      ],
+    },
+    {
+      "updateDebtRecoveryCase": [
+        "case-1",
+        {
+          "currentStep": "PROCEEDINGS",
+        },
+      ],
+    },
+    {
+      "logDebtRecoveryActivity": [
+        {
+          "activityType": "STEP_ADVANCED",
+          "caseId": "case-1",
+          "description": "Step completed: LEGAL_REFERRAL done",
+          "performedBy": "adviser",
+        },
+      ],
+    },
+    {
+      "revalidatePath": "/adviser/schemes/scheme-1",
+    },
+  ],
+}
+`;
+
+exports[`completeDebtRecoveryStepAction, QLD, every step in order > QLD in order 08 PROCEEDINGS 1`] = `
+{
+  "result": {
+    "success": true,
+  },
+  "writes": [
+    {
+      "updateDebtRecoveryStep": [
+        "step-08",
+        {
+          "completedAt": "<timestamp>",
+          "completedBy": "adviser",
+          "evidenceNotes": "Evidence for PROCEEDINGS",
+          "noticeMethod": null,
+          "noticeSentAt": null,
+          "outcome": "PROCEEDINGS done",
+          "status": "COMPLETED",
+        },
+      ],
+    },
+    {
+      "updateDebtRecoveryCase": [
+        "case-1",
+        {
+          "currentStep": "ENFORCEMENT",
+        },
+      ],
+    },
+    {
+      "logDebtRecoveryActivity": [
+        {
+          "activityType": "STEP_ADVANCED",
+          "caseId": "case-1",
+          "description": "Step completed: PROCEEDINGS done",
+          "performedBy": "adviser",
+        },
+      ],
+    },
+    {
+      "revalidatePath": "/adviser/schemes/scheme-1",
+    },
+  ],
+}
+`;
+
+exports[`completeDebtRecoveryStepAction, QLD, every step in order > QLD in order 09 ENFORCEMENT 1`] = `
+{
+  "result": {
+    "success": true,
+  },
+  "writes": [
+    {
+      "updateDebtRecoveryStep": [
+        "step-09",
+        {
+          "completedAt": "<timestamp>",
+          "completedBy": "adviser",
+          "evidenceNotes": "Evidence for ENFORCEMENT",
+          "noticeMethod": null,
+          "noticeSentAt": null,
+          "outcome": "ENFORCEMENT done",
+          "status": "COMPLETED",
+        },
+      ],
+    },
+    {
+      "updateDebtRecoveryCase": [
+        "case-1",
+        {
+          "currentStep": "CLOSED",
+        },
+      ],
+    },
+    {
+      "logDebtRecoveryActivity": [
+        {
+          "activityType": "STEP_ADVANCED",
+          "caseId": "case-1",
+          "description": "Step completed: ENFORCEMENT done",
+          "performedBy": "adviser",
+        },
+      ],
+    },
+    {
+      "revalidatePath": "/adviser/schemes/scheme-1",
+    },
+  ],
+}
+`;
+
+exports[`completeDebtRecoveryStepAction, QLD, every step in order > QLD in order 10 CLOSED 1`] = `
+{
+  "result": {
+    "success": true,
+  },
+  "writes": [
+    {
+      "updateDebtRecoveryStep": [
+        "step-10",
+        {
+          "completedAt": "<timestamp>",
+          "completedBy": "adviser",
+          "evidenceNotes": "Evidence for CLOSED",
+          "noticeMethod": null,
+          "noticeSentAt": null,
+          "outcome": "CLOSED done",
+          "status": "COMPLETED",
+        },
+      ],
+    },
+    {
+      "logDebtRecoveryActivity": [
+        {
+          "activityType": "STEP_ADVANCED",
+          "caseId": "case-1",
+          "description": "Step completed: CLOSED done",
+          "performedBy": "adviser",
+        },
+      ],
+    },
+    {
+      "revalidatePath": "/adviser/schemes/scheme-1",
+    },
+  ],
+}
+`;
+
+exports[`completeDebtRecoveryStepAction, refusals and plans > NSW pause refusal: FINAL_NOTICE is current and a payment plan is being followed 1`] = `
+{
+  "result": {
+    "error": "A payment plan is being followed for this lot, so this step waits. Mark the plan as not followed if instalments are missed.",
+  },
+  "writes": [],
+}
+`;
+
+exports[`completeDebtRecoveryStepAction, refusals and plans > NSW: a step already complete 1`] = `
+{
+  "result": {
+    "error": "This step is already complete",
+  },
+  "writes": [],
+}
+`;
+
+exports[`completeDebtRecoveryStepAction, refusals and plans > QLD: a payment plan does not pause FINAL_NOTICE (no payment plan workflow) 1`] = `
+{
+  "result": {
+    "success": true,
+  },
+  "writes": [
+    {
+      "updateDebtRecoveryStep": [
+        "step-04",
+        {
+          "completedAt": "<timestamp>",
+          "completedBy": "adviser",
+          "evidenceNotes": "Evidence for FINAL_NOTICE",
+          "noticeMethod": "REGISTERED_POST",
+          "noticeSentAt": "<timestamp>",
+          "outcome": "FINAL_NOTICE done",
+          "status": "COMPLETED",
+        },
+      ],
+    },
+    {
+      "captureUsageFee": [
+        {
+          "actorId": "adviser",
+          "code": "RECOVERY_STEP",
+          "confirmedCents": 1100,
+          "payerProfileId": "debtor",
+          "schemeId": "scheme-1",
+          "sourceId": "step-04",
+          "sourceType": "DebtRecoveryStep",
+          "state": "QLD",
+          "variant": "FINAL_NOTICE",
+        },
+      ],
+    },
+    {
+      "updateDebtRecoveryCase": [
+        "case-1",
+        {
+          "currentStep": "HARDSHIP_REVIEW",
+        },
+      ],
+    },
+    {
+      "logDebtRecoveryActivity": [
+        {
+          "activityType": "STEP_ADVANCED",
+          "caseId": "case-1",
+          "description": "Step completed: FINAL_NOTICE done",
+          "performedBy": "adviser",
+        },
+      ],
+    },
+    {
+      "revalidatePath": "/adviser/schemes/scheme-1",
+    },
+  ],
+}
+`;
+
+exports[`completeDebtRecoveryStepAction, refusals and plans > deliberate: NSW closed case, its CLOSED step completed after the case was closed 1`] = `
+{
+  "result": {
+    "error": "This case is closed, so its steps cannot be completed.",
+  },
+  "writes": [],
+}
+`;
+
+exports[`completeDebtRecoveryStepAction, refusals and plans > deliberate: NSW out of order, FINAL_NOTICE while LEDGER_VERIFICATION is current 1`] = `
+{
+  "result": {
+    "error": "Steps are completed in order. Complete Ledger Verification first.",
+  },
+  "writes": [],
+}
+`;
+
+exports[`completeDebtRecoveryStepAction, refusals and plans > deliberate: NSW out of order, HARDSHIP_REVIEW passed over (COMMITTEE_REVIEW while HARDSHIP_REVIEW is current) 1`] = `
+{
+  "result": {
+    "error": "Steps are completed in order. Complete Hardship Review first.",
+  },
+  "writes": [],
+}
+`;
+
+exports[`completeDebtRecoveryStepAction, refusals and plans > deliberate: QLD out of order, LEGAL_REFERRAL while REMINDER_NOTICE is current 1`] = `
+{
+  "result": {
+    "error": "Steps are completed in order. Complete Reminder Notice first.",
+  },
+  "writes": [],
+}
+`;
+
+exports[`initiateDebtRecoveryAction > FEATURES off (debtRecoverySteps false) 1`] = `
+{
+  "paymentPlans": [],
+  "result": {
+    "error": "This is not available for this building.",
+  },
+  "writes": [],
+}
+`;
+
+exports[`initiateDebtRecoveryAction > NSW, an active payment plan (linked, case starts in PAYMENT_PLAN) 1`] = `
+{
+  "paymentPlans": [
+    {
+      "caseId": "<DebtRecoveryCase 1>",
+      "id": "plan-1",
+      "status": "ACTIVE",
+    },
+  ],
+  "result": {
+    "id": "<DebtRecoveryCase 1>",
+    "success": true,
+  },
+  "writes": [
+    {
+      "createDebtRecoveryCase": [
+        {
+          "caseNumber": "DR-2026-0001",
+          "initiatedBy": "adviser",
+          "initiatedRole": "ADVISER",
+          "interestOwed": 35.5,
+          "lotId": "lot-1",
+          "ownerId": "debtor",
+          "principalOwed": 2000.25,
+          "rulePack": "AU-NSW 2026.10.16",
+          "schemeId": "scheme-1",
+          "totalOwed": 2035.75,
+        },
+      ],
+    },
+    {
+      "createDebtRecoveryStep": [
+        {
+          "actionRequired": "Check each overdue levy was validly raised and its notice served with the hardship information, and that payments were applied to the oldest levies first, then interest, then costs (unless the owner or a court or tribunal order directed otherwise)",
+          "approvalRequired": false,
+          "caseId": "<DebtRecoveryCase 1>",
+          "legalBasis": "SSMA 2015 ss 83, 85; payment order: NSW Government guidance (from 27 Oct 2025)",
+          "responsibleParty": "ADVISER",
+          "stepOrder": 1,
+          "stepType": "LEDGER_VERIFICATION",
+          "triggerCondition": "Case opened",
+        },
+      ],
+    },
+    {
+      "createDebtRecoveryStep": [
+        {
+          "actionRequired": "Contact the owner about the overdue levies: the amount owing, and that they can ask for a payment plan on the standard form",
+          "approvalRequired": false,
+          "caseId": "<DebtRecoveryCase 1>",
+          "noticeType": "REMINDER",
+          "responsibleParty": "ADVISER",
+          "stepOrder": 2,
+          "stepType": "INITIAL_CONTACT",
+          "triggerCondition": "Ledger verified",
+        },
+      ],
+    },
+    {
+      "createDebtRecoveryStep": [
+        {
+          "actionRequired": "Send a written reminder showing levies, interest and any costs separately, with the hardship information and how to ask for a payment plan",
+          "approvalRequired": false,
+          "caseId": "<DebtRecoveryCase 1>",
+          "legalBasis": "Interest: SSMA 2015 s 85",
+          "noticeType": "DEMAND",
+          "responsibleParty": "ADVISER",
+          "stepOrder": 3,
+          "stepType": "REMINDER_NOTICE",
+          "triggerCondition": "No payment or payment plan request after initial contact (period set by the building)",
+        },
+      ],
+    },
+    {
+      "createDebtRecoveryStep": [
+        {
+          "actionRequired": "Give the owner written notice at least 30 days before any recovery action. No action can be taken for levies covered by a payment plan that is being followed",
+          "approvalRequired": false,
+          "caseId": "<DebtRecoveryCase 1>",
+          "legalBasis": "NSW Government guidance on the changes from 27 Oct 2025",
+          "noticeType": "FINAL_DEMAND",
+          "responsibleParty": "ADVISER",
+          "stepOrder": 4,
+          "stepType": "FINAL_NOTICE",
+          "triggerCondition": "Reminder unpaid and no payment plan being followed",
+        },
+      ],
+    },
+    {
+      "createDebtRecoveryStep": [
+        {
+          "actionRequired": "Decide any payment plan request (and any request to waive interest) by majority vote at an owners corporation or strata committee meeting, recorded in the minutes, and reply in writing within 28 days. A refusal must give reasons. No fee can be charged. A request can arrive at any step",
+          "approvalRequired": true,
+          "caseId": "<DebtRecoveryCase 1>",
+          "legalBasis": "Strata Schemes Management Regulation 2016 cl 17K (Form 1); NSW Government guidance",
+          "responsibleParty": "COMMITTEE",
+          "stepOrder": 5,
+          "stepType": "HARDSHIP_REVIEW",
+          "triggerCondition": "Owner asks for a payment plan on the standard form",
+        },
+      ],
+    },
+    {
+      "createDebtRecoveryStep": [
+        {
+          "actionRequired": "Decide whether to start recovery proceedings, after the 30-day notice has expired and with no payment plan being followed",
+          "approvalRequired": true,
+          "caseId": "<DebtRecoveryCase 1>",
+          "responsibleParty": "COMMITTEE",
+          "stepOrder": 6,
+          "stepType": "COMMITTEE_REVIEW",
+          "triggerCondition": "30-day notice expired with no payment and no payment plan being followed",
+        },
+      ],
+    },
+    {
+      "createDebtRecoveryStep": [
+        {
+          "actionRequired": "Refer the matter to a solicitor with the ledger, notices, evidence of service and the authorising decision",
+          "approvalRequired": true,
+          "caseId": "<DebtRecoveryCase 1>",
+          "legalBasis": "SSMA 2015 s 86",
+          "responsibleParty": "ADVISER",
+          "stepOrder": 7,
+          "stepType": "LEGAL_REFERRAL",
+          "triggerCondition": "Recovery proceedings authorised",
+        },
+      ],
+    },
+    {
+      "createDebtRecoveryStep": [
+        {
+          "actionRequired": "Solicitor starts proceedings to recover the unpaid levies as a debt",
+          "approvalRequired": false,
+          "caseId": "<DebtRecoveryCase 1>",
+          "legalBasis": "SSMA 2015 s 86",
+          "responsibleParty": "SOLICITOR",
+          "stepOrder": 8,
+          "stepType": "PROCEEDINGS",
+          "triggerCondition": "Legal referral accepted",
+        },
+      ],
+    },
+    {
+      "createDebtRecoveryStep": [
+        {
+          "actionRequired": "Solicitor enforces the judgment or order",
+          "approvalRequired": false,
+          "caseId": "<DebtRecoveryCase 1>",
+          "responsibleParty": "SOLICITOR",
+          "stepOrder": 9,
+          "stepType": "ENFORCEMENT",
+          "triggerCondition": "Judgment or order obtained and unpaid",
+        },
+      ],
+    },
+    {
+      "createDebtRecoveryStep": [
+        {
+          "actionRequired": "Close the case and reconcile the lot ledger",
+          "approvalRequired": false,
+          "caseId": "<DebtRecoveryCase 1>",
+          "responsibleParty": "ADVISER",
+          "stepOrder": 10,
+          "stepType": "CLOSED",
+          "triggerCondition": "Debt paid, settled or written off",
+        },
+      ],
+    },
+    {
+      "updateDebtRecoveryCase": [
+        "<DebtRecoveryCase 1>",
+        {
+          "status": "PAYMENT_PLAN",
+        },
+      ],
+    },
+    {
+      "logDebtRecoveryActivity": [
+        {
+          "activityType": "CASE_OPENED",
+          "caseId": "<DebtRecoveryCase 1>",
+          "description": "Debt recovery case DR-2026-0001 initiated by adviser for $2035.75 owing",
+          "metadata": {
+            "interestOwed": 35.5,
+            "overdueNoticeCount": 2,
+            "principalOwed": 2000.25,
+            "totalOwed": 2035.75,
+          },
+          "performedBy": "adviser",
+        },
+      ],
+    },
+    {
+      "revalidatePath": "/adviser/schemes/scheme-1",
+    },
+    {
+      "revalidatePath": "/owner/levies",
+    },
+  ],
+}
+`;
+
+exports[`initiateDebtRecoveryAction > NSW, no overdue notices 1`] = `
+{
+  "paymentPlans": [],
+  "result": {
+    "error": "No overdue levy notices found for this lot",
+  },
+  "writes": [],
+}
+`;
+
+exports[`initiateDebtRecoveryAction > NSW, no payment plan 1`] = `
+{
+  "paymentPlans": [],
+  "result": {
+    "id": "<DebtRecoveryCase 1>",
+    "success": true,
+  },
+  "writes": [
+    {
+      "createDebtRecoveryCase": [
+        {
+          "caseNumber": "DR-2026-0001",
+          "initiatedBy": "adviser",
+          "initiatedRole": "ADVISER",
+          "interestOwed": 35.5,
+          "lotId": "lot-1",
+          "ownerId": "debtor",
+          "principalOwed": 2000.25,
+          "rulePack": "AU-NSW 2026.10.16",
+          "schemeId": "scheme-1",
+          "totalOwed": 2035.75,
+        },
+      ],
+    },
+    {
+      "createDebtRecoveryStep": [
+        {
+          "actionRequired": "Check each overdue levy was validly raised and its notice served with the hardship information, and that payments were applied to the oldest levies first, then interest, then costs (unless the owner or a court or tribunal order directed otherwise)",
+          "approvalRequired": false,
+          "caseId": "<DebtRecoveryCase 1>",
+          "legalBasis": "SSMA 2015 ss 83, 85; payment order: NSW Government guidance (from 27 Oct 2025)",
+          "responsibleParty": "ADVISER",
+          "stepOrder": 1,
+          "stepType": "LEDGER_VERIFICATION",
+          "triggerCondition": "Case opened",
+        },
+      ],
+    },
+    {
+      "createDebtRecoveryStep": [
+        {
+          "actionRequired": "Contact the owner about the overdue levies: the amount owing, and that they can ask for a payment plan on the standard form",
+          "approvalRequired": false,
+          "caseId": "<DebtRecoveryCase 1>",
+          "noticeType": "REMINDER",
+          "responsibleParty": "ADVISER",
+          "stepOrder": 2,
+          "stepType": "INITIAL_CONTACT",
+          "triggerCondition": "Ledger verified",
+        },
+      ],
+    },
+    {
+      "createDebtRecoveryStep": [
+        {
+          "actionRequired": "Send a written reminder showing levies, interest and any costs separately, with the hardship information and how to ask for a payment plan",
+          "approvalRequired": false,
+          "caseId": "<DebtRecoveryCase 1>",
+          "legalBasis": "Interest: SSMA 2015 s 85",
+          "noticeType": "DEMAND",
+          "responsibleParty": "ADVISER",
+          "stepOrder": 3,
+          "stepType": "REMINDER_NOTICE",
+          "triggerCondition": "No payment or payment plan request after initial contact (period set by the building)",
+        },
+      ],
+    },
+    {
+      "createDebtRecoveryStep": [
+        {
+          "actionRequired": "Give the owner written notice at least 30 days before any recovery action. No action can be taken for levies covered by a payment plan that is being followed",
+          "approvalRequired": false,
+          "caseId": "<DebtRecoveryCase 1>",
+          "legalBasis": "NSW Government guidance on the changes from 27 Oct 2025",
+          "noticeType": "FINAL_DEMAND",
+          "responsibleParty": "ADVISER",
+          "stepOrder": 4,
+          "stepType": "FINAL_NOTICE",
+          "triggerCondition": "Reminder unpaid and no payment plan being followed",
+        },
+      ],
+    },
+    {
+      "createDebtRecoveryStep": [
+        {
+          "actionRequired": "Decide any payment plan request (and any request to waive interest) by majority vote at an owners corporation or strata committee meeting, recorded in the minutes, and reply in writing within 28 days. A refusal must give reasons. No fee can be charged. A request can arrive at any step",
+          "approvalRequired": true,
+          "caseId": "<DebtRecoveryCase 1>",
+          "legalBasis": "Strata Schemes Management Regulation 2016 cl 17K (Form 1); NSW Government guidance",
+          "responsibleParty": "COMMITTEE",
+          "stepOrder": 5,
+          "stepType": "HARDSHIP_REVIEW",
+          "triggerCondition": "Owner asks for a payment plan on the standard form",
+        },
+      ],
+    },
+    {
+      "createDebtRecoveryStep": [
+        {
+          "actionRequired": "Decide whether to start recovery proceedings, after the 30-day notice has expired and with no payment plan being followed",
+          "approvalRequired": true,
+          "caseId": "<DebtRecoveryCase 1>",
+          "responsibleParty": "COMMITTEE",
+          "stepOrder": 6,
+          "stepType": "COMMITTEE_REVIEW",
+          "triggerCondition": "30-day notice expired with no payment and no payment plan being followed",
+        },
+      ],
+    },
+    {
+      "createDebtRecoveryStep": [
+        {
+          "actionRequired": "Refer the matter to a solicitor with the ledger, notices, evidence of service and the authorising decision",
+          "approvalRequired": true,
+          "caseId": "<DebtRecoveryCase 1>",
+          "legalBasis": "SSMA 2015 s 86",
+          "responsibleParty": "ADVISER",
+          "stepOrder": 7,
+          "stepType": "LEGAL_REFERRAL",
+          "triggerCondition": "Recovery proceedings authorised",
+        },
+      ],
+    },
+    {
+      "createDebtRecoveryStep": [
+        {
+          "actionRequired": "Solicitor starts proceedings to recover the unpaid levies as a debt",
+          "approvalRequired": false,
+          "caseId": "<DebtRecoveryCase 1>",
+          "legalBasis": "SSMA 2015 s 86",
+          "responsibleParty": "SOLICITOR",
+          "stepOrder": 8,
+          "stepType": "PROCEEDINGS",
+          "triggerCondition": "Legal referral accepted",
+        },
+      ],
+    },
+    {
+      "createDebtRecoveryStep": [
+        {
+          "actionRequired": "Solicitor enforces the judgment or order",
+          "approvalRequired": false,
+          "caseId": "<DebtRecoveryCase 1>",
+          "responsibleParty": "SOLICITOR",
+          "stepOrder": 9,
+          "stepType": "ENFORCEMENT",
+          "triggerCondition": "Judgment or order obtained and unpaid",
+        },
+      ],
+    },
+    {
+      "createDebtRecoveryStep": [
+        {
+          "actionRequired": "Close the case and reconcile the lot ledger",
+          "approvalRequired": false,
+          "caseId": "<DebtRecoveryCase 1>",
+          "responsibleParty": "ADVISER",
+          "stepOrder": 10,
+          "stepType": "CLOSED",
+          "triggerCondition": "Debt paid, settled or written off",
+        },
+      ],
+    },
+    {
+      "logDebtRecoveryActivity": [
+        {
+          "activityType": "CASE_OPENED",
+          "caseId": "<DebtRecoveryCase 1>",
+          "description": "Debt recovery case DR-2026-0001 initiated by adviser for $2035.75 owing",
+          "metadata": {
+            "interestOwed": 35.5,
+            "overdueNoticeCount": 2,
+            "principalOwed": 2000.25,
+            "totalOwed": 2035.75,
+          },
+          "performedBy": "adviser",
+        },
+      ],
+    },
+    {
+      "revalidatePath": "/adviser/schemes/scheme-1",
+    },
+    {
+      "revalidatePath": "/owner/levies",
+    },
+  ],
+}
+`;
+
+exports[`initiateDebtRecoveryAction > QLD, an active payment plan (not linked) 1`] = `
+{
+  "paymentPlans": [
+    {
+      "caseId": null,
+      "id": "plan-1",
+      "status": "ACTIVE",
+    },
+  ],
+  "result": {
+    "id": "<DebtRecoveryCase 1>",
+    "success": true,
+  },
+  "writes": [
+    {
+      "createDebtRecoveryCase": [
+        {
+          "caseNumber": "DR-2026-0001",
+          "initiatedBy": "adviser",
+          "initiatedRole": "ADVISER",
+          "interestOwed": 35.5,
+          "lotId": "lot-1",
+          "ownerId": "debtor",
+          "principalOwed": 2000.25,
+          "rulePack": "AU-QLD 2026.10.20",
+          "schemeId": "scheme-1",
+          "totalOwed": 2035.75,
+        },
+      ],
+    },
+    {
+      "createDebtRecoveryStep": [
+        {
+          "actionRequired": "Check each unpaid contribution was fixed and its contribution notice given at least 30 days before the date for payment, and that payments were applied first to the penalty, then to the contribution, then to recovery costs",
+          "approvalRequired": false,
+          "caseId": "<DebtRecoveryCase 1>",
+          "legalBasis": "StrataVerze practice. Contribution notice: Standard Module s 163. Payment order: Standard Module s 166(5)",
+          "responsibleParty": "ADVISER",
+          "stepOrder": 1,
+          "stepType": "LEDGER_VERIFICATION",
+          "triggerCondition": "Case opened",
+        },
+      ],
+    },
+    {
+      "createDebtRecoveryStep": [
+        {
+          "actionRequired": "Contact the owner about the unpaid contributions and the amount owing, including any penalty",
+          "approvalRequired": false,
+          "caseId": "<DebtRecoveryCase 1>",
+          "legalBasis": "StrataVerze practice",
+          "noticeType": "REMINDER",
+          "responsibleParty": "ADVISER",
+          "stepOrder": 2,
+          "stepType": "INITIAL_CONTACT",
+          "triggerCondition": "Ledger verified",
+        },
+      ],
+    },
+    {
+      "createDebtRecoveryStep": [
+        {
+          "actionRequired": "Send a written reminder showing the unpaid contributions, any penalty and any recovery costs separately",
+          "approvalRequired": false,
+          "caseId": "<DebtRecoveryCase 1>",
+          "legalBasis": "StrataVerze practice. Penalty: Standard Module s 165",
+          "noticeType": "DEMAND",
+          "responsibleParty": "ADVISER",
+          "stepOrder": 3,
+          "stepType": "REMINDER_NOTICE",
+          "triggerCondition": "No payment after initial contact (period set by the building)",
+        },
+      ],
+    },
+    {
+      "createDebtRecoveryStep": [
+        {
+          "actionRequired": "Tell the owner in writing that the body corporate may start proceedings to recover the unpaid contributions, the penalty and recovery costs reasonably incurred",
+          "approvalRequired": false,
+          "caseId": "<DebtRecoveryCase 1>",
+          "legalBasis": "StrataVerze practice. Recovery as a debt: Standard Module s 166(1)",
+          "noticeType": "FINAL_DEMAND",
+          "responsibleParty": "ADVISER",
+          "stepOrder": 4,
+          "stepType": "FINAL_NOTICE",
+          "triggerCondition": "Reminder unpaid",
+        },
+      ],
+    },
+    {
+      "createDebtRecoveryStep": [
+        {
+          "actionRequired": "If the owner asks, decide whether there are special reasons to waive the penalty or recovery costs, in whole or in part. A request can arrive at any step",
+          "approvalRequired": true,
+          "caseId": "<DebtRecoveryCase 1>",
+          "legalBasis": "StrataVerze practice. Waiver for special reasons: Standard Module s 166(6)",
+          "responsibleParty": "COMMITTEE",
+          "stepOrder": 5,
+          "stepType": "HARDSHIP_REVIEW",
+          "triggerCondition": "Owner asks for the penalty or recovery costs to be waived",
+        },
+      ],
+    },
+    {
+      "createDebtRecoveryStep": [
+        {
+          "actionRequired": "Decide whether to start proceedings to recover the debt. If a contribution has been unpaid for 2 years, proceedings must start within 2 months after the end of the 2 years",
+          "approvalRequired": true,
+          "caseId": "<DebtRecoveryCase 1>",
+          "legalBasis": "Standard Module ss 52(1)(e)(i), 166(2)",
+          "responsibleParty": "COMMITTEE",
+          "stepOrder": 6,
+          "stepType": "COMMITTEE_REVIEW",
+          "triggerCondition": "Final notice unpaid",
+        },
+      ],
+    },
+    {
+      "createDebtRecoveryStep": [
+        {
+          "actionRequired": "Refer the matter to a solicitor, or prepare the claim, with the ledger, the contribution notices and the committee's decision",
+          "approvalRequired": true,
+          "caseId": "<DebtRecoveryCase 1>",
+          "legalBasis": "StrataVerze practice. Recovery costs reasonably incurred: Standard Module s 166(1)(c)",
+          "responsibleParty": "ADVISER",
+          "stepOrder": 7,
+          "stepType": "LEGAL_REFERRAL",
+          "triggerCondition": "Proceedings decided by the committee",
+        },
+      ],
+    },
+    {
+      "createDebtRecoveryStep": [
+        {
+          "actionRequired": "Start proceedings to recover the debt: a claim in QCAT as a minor civil dispute for up to $25,000, or a claim in a court. An adjudicator cannot decide a debt dispute",
+          "approvalRequired": false,
+          "caseId": "<DebtRecoveryCase 1>",
+          "legalBasis": "BCCMA s 229A. QCAT Act sch 3",
+          "responsibleParty": "SOLICITOR",
+          "stepOrder": 8,
+          "stepType": "PROCEEDINGS",
+          "triggerCondition": "Legal referral accepted",
+        },
+      ],
+    },
+    {
+      "createDebtRecoveryStep": [
+        {
+          "actionRequired": "Enforce the order or judgment",
+          "approvalRequired": false,
+          "caseId": "<DebtRecoveryCase 1>",
+          "responsibleParty": "SOLICITOR",
+          "stepOrder": 9,
+          "stepType": "ENFORCEMENT",
+          "triggerCondition": "Order or judgment obtained and unpaid",
+        },
+      ],
+    },
+    {
+      "createDebtRecoveryStep": [
+        {
+          "actionRequired": "Close the case and reconcile the lot ledger",
+          "approvalRequired": false,
+          "caseId": "<DebtRecoveryCase 1>",
+          "legalBasis": "StrataVerze practice",
+          "responsibleParty": "ADVISER",
+          "stepOrder": 10,
+          "stepType": "CLOSED",
+          "triggerCondition": "Debt paid, settled or written off",
+        },
+      ],
+    },
+    {
+      "logDebtRecoveryActivity": [
+        {
+          "activityType": "CASE_OPENED",
+          "caseId": "<DebtRecoveryCase 1>",
+          "description": "Debt recovery case DR-2026-0001 initiated by adviser for $2035.75 owing",
+          "metadata": {
+            "interestOwed": 35.5,
+            "overdueNoticeCount": 2,
+            "principalOwed": 2000.25,
+            "totalOwed": 2035.75,
+          },
+          "performedBy": "adviser",
+        },
+      ],
+    },
+    {
+      "revalidatePath": "/adviser/schemes/scheme-1",
+    },
+    {
+      "revalidatePath": "/owner/levies",
+    },
+  ],
+}
+`;
+
+exports[`initiateDebtRecoveryAction > QLD, no overdue notices 1`] = `
+{
+  "paymentPlans": [],
+  "result": {
+    "error": "No overdue contribution notices found for this lot",
+  },
+  "writes": [],
+}
+`;
+
+exports[`initiateDebtRecoveryAction > unsupported state (VIC) 1`] = `
+{
+  "paymentPlans": [],
+  "result": {
+    "error": "StrataVerze has no strata rules for VIC yet, so this building cannot be managed here. Buildings can be in: New South Wales, Queensland.",
+  },
+  "writes": [],
+}
+`;
+
+exports[`updateDebtRecoveryCaseAction > NSW ON_HOLD with notes, before the referral step 1`] = `
+{
+  "result": {
+    "success": true,
+  },
+  "writes": [
+    {
+      "updateDebtRecoveryCase": [
+        "case-1",
+        {
+          "excludeFromRecovery": false,
+          "notes": "Owner overseas",
+          "priority": "HIGH",
+          "status": "ON_HOLD",
+        },
+      ],
+    },
+    {
+      "logDebtRecoveryActivity": [
+        {
+          "activityType": "STATUS_CHANGED",
+          "caseId": "case-1",
+          "description": "Case updated — status changed to ON_HOLD",
+          "performedBy": "adviser",
+        },
+      ],
+    },
+    {
+      "revalidatePath": "/adviser/schemes/scheme-1",
+    },
+    {
+      "revalidatePath": "/owner/levies",
+    },
+  ],
+}
+`;
+
+exports[`updateDebtRecoveryCaseAction > NSW REFERRED_LEGAL after the referral step, a payment plan being followed 1`] = `
+{
+  "result": {
+    "error": "A payment plan is being followed for this lot, so the case cannot be referred for legal recovery. Mark the plan as not followed first.",
+  },
+  "writes": [],
+}
+`;
+
+exports[`updateDebtRecoveryCaseAction > NSW REFERRED_LEGAL after the referral step, no plan 1`] = `
+{
+  "result": {
+    "success": true,
+  },
+  "writes": [
+    {
+      "updateDebtRecoveryCase": [
+        "case-1",
+        {
+          "excludeFromRecovery": false,
+          "notes": "Referred",
+          "solicitorName": "Smith Lawyers",
+          "solicitorRef": "SL-77",
+          "status": "REFERRED_LEGAL",
+        },
+      ],
+    },
+    {
+      "logDebtRecoveryActivity": [
+        {
+          "activityType": "STATUS_CHANGED",
+          "caseId": "case-1",
+          "description": "Case updated — status changed to REFERRED_LEGAL",
+          "performedBy": "adviser",
+        },
+      ],
+    },
+    {
+      "revalidatePath": "/adviser/schemes/scheme-1",
+    },
+    {
+      "revalidatePath": "/owner/levies",
+    },
+  ],
+}
+`;
+
+exports[`updateDebtRecoveryCaseAction > NSW REFERRED_LEGAL before the referral step, a payment plan being followed (the plan refusal) 1`] = `
+{
+  "result": {
+    "error": "A payment plan is being followed for this lot, so the case cannot be referred for legal recovery. Mark the plan as not followed first.",
+  },
+  "writes": [],
+}
+`;
+
+exports[`updateDebtRecoveryCaseAction > QLD REFERRED_LEGAL after the referral step, a payment plan being followed 1`] = `
+{
+  "result": {
+    "success": true,
+  },
+  "writes": [
+    {
+      "updateDebtRecoveryCase": [
+        "case-1",
+        {
+          "excludeFromRecovery": false,
+          "notes": "Referred",
+          "solicitorName": "Smith Lawyers",
+          "solicitorRef": "SL-77",
+          "status": "REFERRED_LEGAL",
+        },
+      ],
+    },
+    {
+      "logDebtRecoveryActivity": [
+        {
+          "activityType": "STATUS_CHANGED",
+          "caseId": "case-1",
+          "description": "Case updated — status changed to REFERRED_LEGAL",
+          "performedBy": "adviser",
+        },
+      ],
+    },
+    {
+      "revalidatePath": "/adviser/schemes/scheme-1",
+    },
+    {
+      "revalidatePath": "/owner/levies",
+    },
+  ],
+}
+`;
+
+exports[`updateDebtRecoveryCaseAction > QLD REFERRED_LEGAL after the referral step, no plan 1`] = `
+{
+  "result": {
+    "success": true,
+  },
+  "writes": [
+    {
+      "updateDebtRecoveryCase": [
+        "case-1",
+        {
+          "excludeFromRecovery": false,
+          "notes": "Referred",
+          "solicitorName": "Smith Lawyers",
+          "solicitorRef": "SL-77",
+          "status": "REFERRED_LEGAL",
+        },
+      ],
+    },
+    {
+      "logDebtRecoveryActivity": [
+        {
+          "activityType": "STATUS_CHANGED",
+          "caseId": "case-1",
+          "description": "Case updated — status changed to REFERRED_LEGAL",
+          "performedBy": "adviser",
+        },
+      ],
+    },
+    {
+      "revalidatePath": "/adviser/schemes/scheme-1",
+    },
+    {
+      "revalidatePath": "/owner/levies",
+    },
+  ],
+}
+`;
+
+exports[`updateDebtRecoveryCaseAction > QLD a case already REFERRED_LEGAL saved again with a court file number 1`] = `
+{
+  "result": {
+    "success": true,
+  },
+  "writes": [
+    {
+      "updateDebtRecoveryCase": [
+        "case-1",
+        {
+          "courtFileNumber": "2026/0042",
+          "excludeFromRecovery": false,
+          "status": "REFERRED_LEGAL",
+        },
+      ],
+    },
+    {
+      "logDebtRecoveryActivity": [
+        {
+          "activityType": "STATUS_CHANGED",
+          "caseId": "case-1",
+          "description": "Case updated — status changed to REFERRED_LEGAL",
+          "performedBy": "adviser",
+        },
+      ],
+    },
+    {
+      "revalidatePath": "/adviser/schemes/scheme-1",
+    },
+    {
+      "revalidatePath": "/owner/levies",
+    },
+  ],
+}
+`;
+
+exports[`updateDebtRecoveryCaseAction > deliberate: NSW REFERRED_LEGAL before the referral step, no plan 1`] = `
+{
+  "result": {
+    "error": "Complete the Legal Referral step before referring this case for legal recovery.",
+  },
+  "writes": [],
+}
+`;
+
+exports[`updateDebtRecoveryCaseAction > deliberate: QLD REFERRED_LEGAL before the referral step, no plan 1`] = `
+{
+  "result": {
+    "error": "Complete the Legal Referral step before referring this case for legal recovery.",
+  },
+  "writes": [],
+}
+`;

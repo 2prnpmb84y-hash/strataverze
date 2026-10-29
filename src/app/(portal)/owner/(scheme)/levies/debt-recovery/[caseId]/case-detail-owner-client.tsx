@@ -445,8 +445,8 @@ export function CaseDetailOwnerClient({
                       </p>
                     )}
 
-                    {/* Committee can complete active steps */}
-                    {isCommittee && isActive && !isClosed && (
+                    {/* Committee can complete the active step, until it is complete */}
+                    {isCommittee && isActive && !isClosed && step.status !== "COMPLETED" && (
                       <div className="mt-2 space-y-2">
                         {feeStepId === step.id && (
                           <FeeDisclosure
