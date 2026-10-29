@@ -127,6 +127,7 @@ beforeEach(() => {
     LevyNotice: [notice(FIX_ID, "n1", "2026-01-31"), notice(FIX_ID, "n2", "2026-01-31"), notice(ACT_ID, "n1", "2026-01-31"), notice(NSW_ID, "n1", "2026-01-31")],
     LevyPayment: [],
     LateChargeWaiver: [],
+    PendingResolution: [],
     SchemeSelectorValue: [],
     Lot: [],
   });
@@ -279,5 +280,45 @@ describe("the interest run", () => {
     // Statutory interest after the month's grace, from the due date: 30 days at 10% on $1,000, the waiver row ignored.
     const owed = await statutoryInterestForScheme(NSW_ID, "2026-03-02");
     expect(owed[0]).toMatchObject({ reason: "ACCRUED", interestCents: 822 });
+  });
+});
+
+describe("a waiver relying on a resolution decided later (stage 2, PR 8b-i, decision D20)", () => {
+  const ok = { levyNoticeId: `${FIX_ID}-n1`, kind: "WHOLE", reasons: "Hardship, by agreement", ...at(FIX_ID, "ordinary") };
+  const pending = (status: string, effectiveOn: string | null) => ({
+    id: "p1",
+    schemeId: FIX_ID,
+    meetingId: `${FIX_ID}-agm`,
+    agendaItemId: `${FIX_ID}-ordinary`,
+    kind: "INTERIM_NO_QUORUM",
+    status,
+    effectiveOn,
+  });
+
+  it("is decided on the day the resolution took effect, not the meeting's day", async () => {
+    sharedFake.table("PendingResolution").push(pending("CARRIED", "2026-03-01"));
+    expect(await waive(FIX_ID, ok)).toEqual({ success: true });
+    expect(sharedFake.table("LateChargeWaiver")[0]).toMatchObject({ decidedOn: "2026-03-01", resolutionMotionId: `${FIX_ID}-ordinary` });
+  });
+
+  it("is refused while the resolution is still pending (its item is INTERIM, never carried)", async () => {
+    Object.assign(sharedFake.table("AgendaItem").find((a) => a.id === `${FIX_ID}-ordinary`)!, { status: "INTERIM", outcome: "INTERIM" });
+    sharedFake.table("PendingResolution").push(pending("PENDING", null));
+    expect((await waive(FIX_ID, ok)).error).toMatch(/not carried/);
+    expect(sharedFake.table("LateChargeWaiver")).toHaveLength(0);
+  });
+
+  it("gives no day for a resolution decided later that has not taken effect, or is another meeting's", async () => {
+    const { resolutionDay } = await import("@/lib/finance/resolutions");
+    sharedFake.table("PendingResolution").push(pending("PENDING", null));
+    expect(await resolutionDay(FIX_ID, `${FIX_ID}-agm`, `${FIX_ID}-ordinary`)).toBeNull();
+    sharedFake.table("PendingResolution")[0] = pending("LOST", null);
+    expect(await resolutionDay(FIX_ID, `${FIX_ID}-agm`, `${FIX_ID}-ordinary`)).toBeNull();
+    sharedFake.table("PendingResolution")[0] = pending("CARRIED", "2026-03-01");
+    expect(await resolutionDay(FIX_ID, "another-meeting", `${FIX_ID}-ordinary`)).toBeNull();
+    expect(await resolutionDay(ACT_ID, `${FIX_ID}-agm`, `${FIX_ID}-ordinary`)).toBeNull();
+    expect(await resolutionDay(FIX_ID, `${FIX_ID}-agm`, `${FIX_ID}-ordinary`)).toBe("2026-03-01");
+    // Any other motion: the meeting's day, as before.
+    expect(await resolutionDay(FIX_ID, `${FIX_ID}-agm`, `${FIX_ID}-special`)).toBe("2026-02-15");
   });
 });

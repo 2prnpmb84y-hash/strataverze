@@ -90,3 +90,20 @@ export async function meetingDay(schemeId: string, meetingId: string): Promise<s
   const tz = isTimeZone(meeting.timezone) ? String(meeting.timezone) : await schemeTimeZone(schemeId);
   return storedDayIn(tz, meeting.scheduledAt) || null;
 }
+
+/**
+ * The day a resolution was decided, for a decision that relies on it (the
+ * late charge waiver; VIC, ACT and WA stage 2, PR 8b-i, Matthew Wrigley's
+ * decision D20 of 29 Oct 2026): where the motion was decided later (a
+ * pending resolution), the day it took effect, or null while it has not; for
+ * any other motion, the day its meeting was held (meetingDay). Reached only
+ * from the waiver, which NSW and Queensland packs never offer.
+ */
+export async function resolutionDay(schemeId: string, meetingId: string, motionId: string): Promise<string | null> {
+  const pending = await db.orm.public.PendingResolution.where((p) => p.agendaItemId.eq(motionId)).first();
+  if (pending) {
+    if (pending.schemeId !== schemeId || pending.meetingId !== meetingId) return null;
+    return pending.status === "CARRIED" && pending.effectiveOn ? String(pending.effectiveOn).slice(0, 10) : null;
+  }
+  return meetingDay(schemeId, meetingId);
+}

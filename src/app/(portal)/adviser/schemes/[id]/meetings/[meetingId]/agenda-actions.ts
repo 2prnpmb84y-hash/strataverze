@@ -25,6 +25,7 @@ import type { MeetingType } from "@/lib/meetings/rules";
 import { getActiveRuleSet, getActiveRuleSetForScheme } from "@/lib/meetings/rule-set-repo";
 import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { bodyCorporateName } from "@/lib/jurisdiction/wording";
+import { PENDING_ITEM_REFUSAL, isPendingItem } from "@/lib/meetings/pending";
 
 export type AgendaFormState = {
   error?: string;
@@ -209,6 +210,8 @@ export async function deleteAgendaItemAction(
 
     const item = await getAgendaItem(meetingId, itemId);
     if (!item) return { error: "Agenda item not found." };
+    // An item decided later (INTERIM, only ever under a draft pack) cannot be removed (decision D10).
+    if (isPendingItem(item)) return { error: PENDING_ITEM_REFUSAL };
 
     await deleteAgendaItem(meetingId, itemId);
     await recordMeetingEvent({

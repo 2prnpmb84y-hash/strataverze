@@ -9,6 +9,7 @@ import {
   evaluateResolution,
   isResolutionCategory,
   type MeetingRuleSet,
+  type PendingKind,
   type ResolutionOutcome,
   type ResolutionTally,
 } from "./rules";
@@ -43,6 +44,14 @@ export interface OutcomeResult {
    * cannot decide). Nothing may be written then. Left out otherwise.
    */
   refused?: string;
+  /**
+   * Where the count gives a resolution decided or taking effect later, of a
+   * kind the building's pack records (`pendingResolutions`; VIC, ACT and WA
+   * stage 2, PR 8b-i): its kind, and the value the agenda item's status and
+   * outcome are stored as until it is decided (INTERIM). It is never carried
+   * until then. Left out otherwise, and never set with `refused`.
+   */
+  later?: { kind: PendingKind; stored: "INTERIM" };
 }
 
 /** "a" or "an" before a name, by its first sound: "a unanimous resolution", "an interim special resolution". */
@@ -91,6 +100,16 @@ export function resolveOutcome(
       params.tally,
       params.pollEntitlement,
     );
+    // Decided later, of a kind the pack records (the draft packs only): stored as pending, never as carried.
+    const laterKind = evaluation.result === "INTERIM" ? evaluation.laterKind : undefined;
+    if (laterKind && ruleSet.pendingResolutions?.[laterKind]) {
+      return {
+        outcome: params.requestedOutcome,
+        status: statusForOutcome(params.requestedOutcome),
+        evaluation,
+        later: { kind: laterKind, stored: "INTERIM" },
+      };
+    }
     // Neither carried nor lost (the draft packs only): refused, and nothing is written.
     if (evaluation.result) {
       return {

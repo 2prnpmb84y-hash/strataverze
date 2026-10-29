@@ -191,10 +191,26 @@ export function countNeedsVotesPresent(ruleSet: MeetingRuleSet, category: string
   return !!rule && draftNeeds(rule, false).votesPresent;
 }
 
+/**
+ * Whether the count of an item asks, after "no" to the quorum, whether a
+ * reduced quorum was present (the ACT; VIC, ACT and WA stage 2, PR 8b-i):
+ * the pack words the question and records reduced quorum decisions, and the
+ * item's rule, or one of its variants, is decided later without a quorum.
+ * Never an NSW, Queensland, Victorian or Western Australian item.
+ */
+export function countNeedsReducedQuorum(ruleSet: MeetingRuleSet, category: string | null | undefined): boolean {
+  if (!ruleSet.reducedQuorumAttestation || !ruleSet.pendingResolutions?.REDUCED_QUORUM) return false;
+  if (!isResolutionCategory(ruleSet, category)) return false;
+  const rule = ruleSet.resolutionCategories[category];
+  return !!rule && withVariants(rule).some((r) => r.withoutQuorum === "DECIDED_LATER");
+}
+
 /** The chair's answers for an item, as sent from the browser and read by parseAttestation. */
 export interface Attestation {
   quorumPresent?: boolean;
   unitsPresent?: number;
+  /** After "no" to the quorum, whether a reduced quorum was present (the ACT, PR 8b-i): read only where the item asks it. */
+  reducedQuorumPresent?: boolean;
 }
 
 const ATTESTATION_KEYS = ["quorumPresent", "unitsPresent"];
@@ -206,19 +222,27 @@ const ATTESTATION_KEYS = ["quorumPresent", "unitsPresent"];
  * `lotCount`; either may be left out or null (not answered). Any other key or
  * value is refused, so an answer is never guessed.
  */
-export function parseAttestation(input: unknown, lotCount: number): Attestation | null {
+export function parseAttestation(
+  input: unknown,
+  lotCount: number,
+  /** Whether the item asks for the reduced quorum (countNeedsReducedQuorum): only then is `reducedQuorumPresent` accepted. */
+  options: { reducedQuorum?: boolean } = {},
+): Attestation | null {
   if (input == null) return {};
   if (typeof input !== "object" || Array.isArray(input)) return null;
   const record = input as Record<string, unknown>;
-  if (Object.keys(record).some((k) => !ATTESTATION_KEYS.includes(k))) return null;
-  const { quorumPresent, unitsPresent } = record;
+  const keys = options.reducedQuorum ? [...ATTESTATION_KEYS, "reducedQuorumPresent"] : ATTESTATION_KEYS;
+  if (Object.keys(record).some((k) => !keys.includes(k))) return null;
+  const { quorumPresent, unitsPresent, reducedQuorumPresent } = record;
   if (quorumPresent != null && typeof quorumPresent !== "boolean") return null;
+  if (reducedQuorumPresent != null && typeof reducedQuorumPresent !== "boolean") return null;
   if (unitsPresent != null && !(typeof unitsPresent === "number" && Number.isInteger(unitsPresent) && unitsPresent >= 0 && unitsPresent <= lotCount)) {
     return null;
   }
   return {
     ...(typeof quorumPresent === "boolean" ? { quorumPresent } : {}),
     ...(typeof unitsPresent === "number" ? { unitsPresent } : {}),
+    ...(typeof reducedQuorumPresent === "boolean" ? { reducedQuorumPresent } : {}),
   };
 }
 
@@ -354,6 +378,8 @@ export function buildConductTally(input: {
   unitsPresent?: number | null;
   /** Whether the pack's debtor rule applies to the building (debtorRuleApplies). True where not given. */
   debtorRuleApplies?: boolean;
+  /** After "no" to the quorum, whether a reduced quorum was present (the ACT, PR 8b-i), where the item asks it (countNeedsReducedQuorum). */
+  reducedQuorumPresent?: boolean | null;
 }): ConductTallyResult {
   // Queensland and the draft packs leave common property rows out of the lots; NSW counts every row, as before.
   const params = input.ruleSet.excludeCommonPropertyRows ? { ...input, lots: input.lots.filter(isLotRow) } : input;
@@ -538,6 +564,10 @@ export function buildConductTally(input: {
   if (draft.memberBand && params.memberBand) tally.memberBand = params.memberBand;
   // The chair's answer, only where the test depends on it (VIC, ACT and WA stage 2, PR 8a-ii). Not answered, it stays off, and the test refuses.
   if (typeof params.quorumPresent === "boolean" && countNeedsQuorum(ruleSet, category)) tally.quorumPresent = params.quorumPresent;
+  // The reduced quorum answer (the ACT, PR 8b-i), only after "no" and where the item asks it. Not answered, it stays off, and the test refuses.
+  if (params.quorumPresent === false && typeof params.reducedQuorumPresent === "boolean" && countNeedsReducedQuorum(ruleSet, category)) {
+    tally.reducedQuorumPresent = params.reducedQuorumPresent;
+  }
 
   return { ok: true, value: { tally, counted, notCounted } };
 }
@@ -696,6 +726,8 @@ export interface ConductVotingItem {
   proxiesAllowed: boolean;
   quorumAsked?: { label: string; help: string };
   unitsPresentAsked?: { label: string; help: string };
+  /** After "no" to the quorum, whether a reduced quorum was present (the ACT, PR 8b-i). Left out otherwise. */
+  reducedQuorumAsked?: { label: string; help: string };
 }
 
 /** The conduct screen's voting view, or null where the meeting's votes are not counted at conduct (NSW, or a committee meeting). */
@@ -720,6 +752,7 @@ export function conductVotingView(
   const words = (a: { label: string; help: string }) => ({ label: a.label, help: a.help });
   const quorumWords = ruleSet.quorumAttestation;
   const unitsPresentWords = ruleSet.votesPresentAttestation;
+  const reducedQuorumWords = ruleSet.reducedQuorumAttestation;
   return {
     lots: rows
       .map((l) => ({ id: l.id, lotNumber: String(l.lotNumber) }))
@@ -732,6 +765,7 @@ export function conductVotingView(
           proxiesAllowed: !allowed(ruleSet.proxiesBarredOn, i.resolutionCategory),
           ...(quorumWords && countNeedsQuorum(ruleSet, i.resolutionCategory) ? { quorumAsked: words(quorumWords) } : {}),
           ...(unitsPresentWords && countNeedsVotesPresent(ruleSet, i.resolutionCategory) ? { unitsPresentAsked: words(unitsPresentWords) } : {}),
+          ...(reducedQuorumWords && countNeedsReducedQuorum(ruleSet, i.resolutionCategory) ? { reducedQuorumAsked: words(reducedQuorumWords) } : {}),
         },
       ]),
     ),

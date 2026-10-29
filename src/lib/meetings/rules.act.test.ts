@@ -46,11 +46,72 @@ describe("the number of members chooses the test", () => {
 });
 
 describe("every ACT count needs the quorum recorded for the motion", () => {
-  it("is refused while it is not recorded, and decided later without one", () => {
+  it("is refused while it is not recorded, and without one until the reduced quorum is answered", () => {
     expect(evaluateResolution(ACT, "ORDINARY", tally({ forCount: 5, quorumPresent: undefined })).result).toBe("UNDETERMINED");
     const without = evaluateResolution(ACT, "SPECIAL", tally({ forCount: 9, againstCount: 1, quorumPresent: false }));
     expect(without.result).toBe("UNDETERMINED");
-    expect(without.reason).toBe("The meeting had no quorum for this item, so it is decided later, which StrataVerze does not track yet");
+    expect(without.reason).toBe(
+      "The meeting had no standard quorum for this item, and whether it had a reduced quorum is not recorded, so the votes cannot decide it",
+    );
+  });
+
+  it("under a rule set that records no reduced quorum decisions, refuses every count without a quorum, as before", () => {
+    const { pendingResolutions: _p, reducedQuorumAttestation: _r, ...before } = ACT;
+    void _p;
+    void _r;
+    const without = evaluateResolution(before, "SPECIAL", tally({ forCount: 9, againstCount: 1, quorumPresent: false, reducedQuorumPresent: true }));
+    expect(without).toEqual({
+      passed: false,
+      result: "UNDETERMINED",
+      reason: "The meeting had no quorum for this item, so it is decided later, which StrataVerze does not track yet",
+    });
+  });
+});
+
+describe("a reduced quorum (sch 3 ss 3.9 to 3.11; stage 2, PR 8b-i, decision D6)", () => {
+  it("with a reduced quorum, a count that passes is a reduced quorum decision, decided later", () => {
+    expect(evaluateResolution(ACT, "ORDINARY", tally({ forCount: 3, againstCount: 1, quorumPresent: false, reducedQuorumPresent: true }))).toEqual({
+      passed: false,
+      result: "INTERIM",
+      laterKind: "REDUCED_QUORUM",
+      reason: "Majority of votes cast, at a reduced quorum, so it is decided later",
+    });
+    const special = evaluateResolution(ACT, "SPECIAL", tally({ forCount: 9, againstCount: 3, quorumPresent: false, reducedQuorumPresent: true }));
+    expect(special).toMatchObject({ passed: false, result: "INTERIM", laterKind: "REDUCED_QUORUM" });
+  });
+
+  it("with a reduced quorum, a count that fails is lost at once", () => {
+    expect(evaluateResolution(ACT, "ORDINARY", tally({ forCount: 1, againstCount: 3, quorumPresent: false, reducedQuorumPresent: true }))).toEqual({
+      passed: false,
+      reason: "Not a majority of votes cast",
+    });
+    // The votes against are more than a quarter of those present.
+    const special = evaluateResolution(ACT, "SPECIAL", tally({ forCount: 8, againstCount: 4, quorumPresent: false, reducedQuorumPresent: true }));
+    expect(special).toEqual({ passed: false, reason: "Votes against are more than 25% of the votes those present could cast" });
+  });
+
+  it("with a reduced quorum, equal votes and a test that cannot be counted are still refused", () => {
+    expect(evaluateResolution(ACT, "ORDINARY", tally({ forCount: 2, againstCount: 2, quorumPresent: false, reducedQuorumPresent: true })).result).toBe("UNDETERMINED");
+    expect(evaluateResolution(ACT, "SPECIAL", tally({ forCount: 2, quorumPresent: false, reducedQuorumPresent: true, memberBand: "THREE" })).result).toBe("UNDETERMINED");
+  });
+
+  it("without a reduced quorum either, the meeting is adjourned: refused", () => {
+    const out = evaluateResolution(ACT, "ORDINARY", tally({ forCount: 3, quorumPresent: false, reducedQuorumPresent: false }));
+    expect(out).toEqual({
+      passed: false,
+      result: "UNDETERMINED",
+      reason: "The meeting had neither a standard nor a reduced quorum for this item, so the meeting is adjourned and the votes cannot decide it",
+    });
+  });
+
+  it("with 1 or 2 members, refuses a no in the pack's words, whatever the reduced quorum answer", () => {
+    const out = evaluateResolution(ACT, "ORDINARY", tally({ forCount: 2, quorumPresent: false, reducedQuorumPresent: true, memberBand: "ONE_OR_TWO" }));
+    expect(out.result).toBe("UNDETERMINED");
+    expect(out.reason).toMatch(/s 3\.12\)/);
+  });
+
+  it("a reduced quorum answer with a standard quorum changes nothing", () => {
+    expect(evaluateResolution(ACT, "ORDINARY", tally({ forCount: 3, againstCount: 1, reducedQuorumPresent: false }))).toEqual({ passed: true, reason: "Majority of votes cast" });
   });
 });
 

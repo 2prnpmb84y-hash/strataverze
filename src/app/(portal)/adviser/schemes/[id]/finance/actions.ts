@@ -100,7 +100,7 @@ import { auditLabelWords, levyFormWords } from "@/lib/jurisdiction/screen-words"
 import { capitalise } from "@/lib/jurisdiction/wording";
 import { fundNameWords, ledgerFundDefinition } from "@/lib/jurisdiction/funds";
 import { UnsupportedJurisdictionError, type StatutoryRules } from "@/config/statutory";
-import { generalMeetingResolutionProblem, meetingDay, resolutionOfKindProblem } from "@/lib/finance/resolutions";
+import { generalMeetingResolutionProblem, resolutionDay, resolutionOfKindProblem } from "@/lib/finance/resolutions";
 import { BudgetError, assertLineEditable, editableBudgetFor, getBudgets } from "@/lib/finance/budgets";
 import { levyScheduleActivationProblem } from "@/lib/finance/budget-status";
 import type { Numeric, TimestampString } from "@prisma/orm-postgres/target/codec-types";
@@ -3035,7 +3035,8 @@ export async function recordLateChargeWaiverAction(
 
     const resolution = await resolutionOfKindProblem(schemeId, meetingId, motionId, decidedBy);
     if (resolution) return { error: resolution };
-    const decidedOn = await meetingDay(schemeId, meetingId!);
+    // The day the resolution was decided: its meeting's day, or where it was decided later the day it took effect (D20).
+    const decidedOn = await resolutionDay(schemeId, meetingId!, motionId!);
     if (!decidedOn) return { error: "That meeting has no date recorded. Record the meeting's date first." };
 
     // Under the building's lock first, then the notice's (FOR NO KEY UPDATE), the order receipting and the

@@ -193,14 +193,14 @@ describe("Australian Capital Territory pack (pending)", () => {
   const pack = PENDING_RULE_PACKS.ACT;
   const act = pack.rules;
 
-  it("is a draft for review, not signed off, with only the payment order, the notice timing, the quorum answer and 1 or 2 members decided", () => {
+  it("is a draft for review, not signed off, with only the payment order, the notice timing, the quorum answer, 1 or 2 members and reduced quorum decisions decided", () => {
     expect(pack.code).toBe("AU-ACT");
     expect(pack.state).toBe("ACT");
-    expect(pack.version).toBe("2026.10.9");
+    expect(pack.version).toBe("2026.10.10");
     expect(pack.status).toBe("DRAFT");
     expect(pack.reviewedOn).toBeNull();
     expect(pack.reviewer).toBe("Matthew Wrigley");
-    expect(act.DECISIONS).toHaveLength(4);
+    expect(act.DECISIONS).toHaveLength(5);
     for (const d of act.DECISIONS.slice(0, 2)) expect(d).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-28" });
     expect(act.DECISIONS[0].decision).toContain("PAYMENT_ALLOCATION_ORDER");
     expect(act.DECISIONS[1].decision).toContain("NOTICE_RULES");
@@ -209,6 +209,10 @@ describe("Australian Capital Territory pack (pending)", () => {
     expect(act.DECISIONS[2].decision).toContain("quorumAttestation");
     expect(act.DECISIONS[3]).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-29" });
     expect(act.DECISIONS[3].decision).toContain("ONE_OR_TWO");
+    // Stage 2, PR 8b-i: reduced quorum decisions (29 Oct 2026), kept in FOR_REVIEW for legal confirmation.
+    expect(act.DECISIONS[4]).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-29" });
+    for (const d of ["D1", "D2", "D3", "D5", "D6", "D10", "D11", "D19"]) expect(act.DECISIONS[4].decision).toContain(`(${d})`);
+    expect(act.FOR_REVIEW.some((p) => p.startsWith("Reduced quorum decisions") && p.includes("(D6)") && p.includes("(D5)"))).toBe(true);
   });
 
   it("holds exactly one entitlement schedule on each lot: unit entitlement", () => {
@@ -308,7 +312,7 @@ describe("Victorian pack (pending)", () => {
   it("is a draft, not signed off, and never given to a building", () => {
     expect(pack.code).toBe("AU-VIC");
     expect(pack.state).toBe("VIC");
-    expect(pack.version).toBe("2026.10.9");
+    expect(pack.version).toBe("2026.10.10");
     expect(pack.status).toBe("DRAFT");
     expect(pack.reviewedOn).toBeNull();
     expect(rulePackFor("VIC")).toBeNull();
@@ -323,21 +327,25 @@ describe("Victorian pack (pending)", () => {
     expect(packs.map(([code]) => code)).toContain("AU-VIC");
   });
 
-  it("has proposed decisions, none decided but the payment order and the notice timing (Matthew Wrigley, 28 Oct 2026) and the quorum answer (29 Oct 2026)", () => {
+  it("has proposed decisions, none decided but the payment order and the notice timing (Matthew Wrigley, 28 Oct 2026), the quorum answer and interim resolutions (29 Oct 2026)", () => {
     expect(vic.DECISIONS.length).toBeGreaterThan(1);
     for (const d of vic.DECISIONS) {
       if (d.decision.includes("PAYMENT_ALLOCATION_ORDER") || d.decision.includes("NOTICE_RULES")) {
         expect(d).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-28" });
         continue;
       }
-      if (d.decision.includes("quorumAttestation")) {
+      if (d.decision.includes("quorumAttestation") || d.decision.includes("pendingResolutions")) {
         expect(d).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-29", proposedOn: "2026-10-29" });
         continue;
       }
       expect(d.decidedBy).toBeNull();
       expect(d.decidedOn).toBeNull();
     }
-    expect(vic.DECISIONS.filter((d) => d.decidedBy != null)).toHaveLength(3);
+    expect(vic.DECISIONS.filter((d) => d.decidedBy != null)).toHaveLength(4);
+    // Stage 2, PR 8b-i: interim resolutions, kept in FOR_REVIEW MEETING_RULES_PENDING for legal confirmation.
+    const pending = vic.DECISIONS.find((d) => d.decision.includes("pendingResolutions"))!;
+    for (const id of ["D1", "D2", "D3", "D4", "D7", "D10", "D11", "D19", "D20"]) expect(pending.decision).toContain(`(${id})`);
+    expect(vic.FOR_REVIEW.find((p) => p.key === "MEETING_RULES_PENDING")?.kind).toBe("LEGAL");
   });
 
   it("switches every NSW workflow off, with the same keys", () => {

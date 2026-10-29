@@ -8,6 +8,10 @@
     {
       "path": "/api/cron/levy-notices",
       "schedule": "0 20 * * *"
+    },
+    {
+      "path": "/api/cron/pending-resolutions",
+      "schedule": "30 16 * * *"
     }
   ]
 }

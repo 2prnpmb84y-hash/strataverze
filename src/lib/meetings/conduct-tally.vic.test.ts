@@ -152,10 +152,11 @@ describe("what the count lets the chair record", () => {
     expect(decide("SPECIAL", votes([1, 2, 3], [4, 5, 6]), "MOTION_LOST").refused).toBeUndefined();
   });
 
-  it("refuses an interim special resolution, as resolved or lost", () => {
+  it("gives an interim special resolution as decided later, never carried (stage 2, PR 8b-i)", () => {
     for (const requested of ["RESOLVED", "MOTION_LOST"] as const) {
       const r = decide("SPECIAL", votes([1, 2, 3, 4], [5, 6]), requested);
-      expect(r.refused).toMatch(/^The votes recorded make this motion an interim special resolution\./);
+      expect(r.later).toEqual({ kind: "INTERIM_SPECIAL", stored: "INTERIM" });
+      expect(r).not.toHaveProperty("refused");
       expect(r.evaluation?.result).toBe("INTERIM");
     }
   });
@@ -177,20 +178,19 @@ describe("what the count lets the chair record", () => {
     expect(withQuorum("ORDINARY", votes([1], [2]), true).refused).toMatch(/The votes are equal/);
   });
 
-  it("without a quorum, records only a lost ordinary resolution: one that carries is interim and refused", () => {
+  it("without a quorum, records a lost ordinary resolution, and gives one that carries as an interim resolution decided later (stage 2, PR 8b-i)", () => {
     expect(withQuorum("ORDINARY", votes([1], [2, 3]), false, "MOTION_LOST")).toMatchObject({ outcome: "MOTION_LOST", status: "LOST" });
     const carried = withQuorum("ORDINARY", votes([1, 2], [3]), false);
-    expect(carried.evaluation?.result).toBe("INTERIM");
-    expect(carried.refused).toBe(
-      "The votes recorded make this motion an interim resolution. Majority of votes cast, at a meeting without a quorum, so it is an interim resolution. StrataVerze does not record interim resolutions yet, so this outcome cannot be recorded here. Nothing was saved. The item can be deferred.",
-    );
+    expect(carried.evaluation).toMatchObject({ result: "INTERIM", laterKind: "INTERIM_NO_QUORUM" });
+    expect(carried.later).toEqual({ kind: "INTERIM_NO_QUORUM", stored: "INTERIM" });
+    expect(carried).not.toHaveProperty("refused");
   });
 
   it("decides the second interim special route (no vote against, at least 1 for) by the quorum answer", () => {
     // 3 of 8 for and none against: below 75% and below route 1's 50%, so only route 2 can pass it.
     const route2 = votes([1, 2, 3]);
     expect(withQuorum("SPECIAL", route2, true).evaluation?.result).toBe("INTERIM");
-    expect(withQuorum("SPECIAL", route2, true).refused).toMatch(/^The votes recorded make this motion an interim special resolution\./);
+    expect(withQuorum("SPECIAL", route2, true).later).toEqual({ kind: "INTERIM_SPECIAL", stored: "INTERIM" });
     expect(withQuorum("SPECIAL", route2, false, "MOTION_LOST")).toMatchObject({ outcome: "MOTION_LOST", status: "LOST" });
     expect(withQuorum("SPECIAL", route2, false, "MOTION_LOST").refused).toBeUndefined();
     expect(withQuorum("SPECIAL", route2, null).refused).toMatch(/whether there was one for this item is not recorded/);
