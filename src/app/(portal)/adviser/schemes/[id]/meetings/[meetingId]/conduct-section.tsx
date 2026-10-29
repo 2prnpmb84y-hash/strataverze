@@ -41,14 +41,14 @@ export interface AttestationWords {
  * (conductVotingView). Absent or null: outcomes are recorded as before.
  *
  * Where an item's test needs them (VIC, ACT and WA stage 2, PR 8a-ii), the
- * item has `quorumAsked` and `unitsPresentAsked` and the view carries the
- * questions' words in `attestation`. Left out otherwise (Queensland).
+ * item has `quorumAsked` and `unitsPresentAsked`, each carrying the
+ * question's words from the pack, so a question cannot be asked without
+ * them. Left out otherwise (Queensland).
  */
 export interface ConductVotingProps {
   lots: { id: string; lotNumber: string }[];
-  items: Record<string, { pollAllowed: boolean; proxiesAllowed: boolean; quorumAsked?: true; unitsPresentAsked?: true }>;
+  items: Record<string, { pollAllowed: boolean; proxiesAllowed: boolean; quorumAsked?: AttestationWords; unitsPresentAsked?: AttestationWords }>;
   pollLabel: string;
-  attestation?: { quorum?: AttestationWords; unitsPresent?: AttestationWords };
 }
 
 type LotVote = { vote: string; byProxy: boolean };
@@ -57,16 +57,6 @@ type ItemChoices = ConductVotingProps["items"][string];
 
 /** What the chair answered for an item, as sent to the server: an unanswered question is left out, never false. */
 type AttestationAnswers = { quorumPresent?: boolean; unitsPresent?: number };
-
-// Used only if the server page leaves a question's words out, so the question is never hidden from the chair.
-const QUORUM_FALLBACK: AttestationWords = {
-  label: "Quorum present for this item",
-  help: "Answer whether there was a quorum when this item was decided.",
-};
-const UNITS_PRESENT_FALLBACK: AttestationWords = {
-  label: "Lots present or represented for this item",
-  help: "Count every lot present in person or represented when this item was decided.",
-};
 
 /**
  * The units present as the chair typed them: a whole number from 0 to the
@@ -118,6 +108,8 @@ export function ConductSection({
   // The chair's answers, by item: whether there was a quorum (unanswered until chosen), and the units present as typed.
   const [quorum, setQuorum] = useState<Record<string, boolean>>({});
   const [present, setPresent] = useState<Record<string, string>>({});
+  // The screen's own refusal of the units present typed, by item, shown beside the field.
+  const [unitsError, setUnitsError] = useState<Record<string, string>>({});
 
   function run(fn: () => Promise<ConductActionState>) {
     setError(null);
@@ -164,6 +156,15 @@ export function ConductSection({
     return { answers, unitsUnreadable };
   }
 
+  function clearUnitsError(itemId: string) {
+    setUnitsError((all) => {
+      if (!(itemId in all)) return all;
+      const rest = { ...all };
+      delete rest[itemId];
+      return rest;
+    });
+  }
+
   function recordOutcome(itemId: string, outcome: string) {
     if (!voting) {
       run(() => recordAgendaOutcomeAction(schemeId, meetingId, itemId, outcome));
@@ -178,11 +179,14 @@ export function ConductSection({
     const lotCount = voting.lots.length;
     const { answers, unitsUnreadable } = answersFor(itemId, choices, lotCount);
     // Units present that are not a whole number are never sent. A deferral is not counted, so it goes ahead without them.
-    if (unitsUnreadable && outcome !== "DEFERRED") {
+    if (unitsUnreadable && outcome !== "DEFERRED" && choices.unitsPresentAsked) {
+      setError(null);
       setNotice(null);
-      setError(`Enter the units present as a whole number from 0 to ${lotCount}. Nothing was saved.`);
+      const refusal = `Enter "${choices.unitsPresentAsked.label}" as a whole number from 0 to ${lotCount}. Nothing was saved.`;
+      setUnitsError((all) => ({ ...all, [itemId]: refusal }));
       return;
     }
+    clearUnitsError(itemId);
     run(() => recordAgendaOutcomeAction(schemeId, meetingId, itemId, outcome, votesFor(itemId), polls[itemId] === true, answers));
   }
 
@@ -301,13 +305,15 @@ export function ConductSection({
                 {running && voting && asks(choicesFor(item.id)) && (
                   <ChairAnswers
                     choices={choicesFor(item.id)}
-                    words={voting.attestation}
-                    lotCount={voting.lots.length}
                     quorum={quorum[item.id]}
                     present={present[item.id] ?? ""}
+                    unitsError={unitsError[item.id] ?? null}
                     disabled={pending}
                     onQuorum={(yes) => setQuorum((all) => ({ ...all, [item.id]: yes }))}
-                    onPresent={(text) => setPresent((all) => ({ ...all, [item.id]: text }))}
+                    onPresent={(text) => {
+                      setPresent((all) => ({ ...all, [item.id]: text }));
+                      clearUnitsError(item.id);
+                    }}
                   />
                 )}
                 {running && voting && (
@@ -352,30 +358,29 @@ export function ConductSection({
  */
 function ChairAnswers({
   choices,
-  words,
-  lotCount,
   quorum,
   present,
+  unitsError,
   disabled,
   onQuorum,
   onPresent,
 }: {
   choices: ItemChoices;
-  words: ConductVotingProps["attestation"];
-  lotCount: number;
   quorum: boolean | undefined;
   present: string;
+  unitsError: string | null;
   disabled: boolean;
   onQuorum: (yes: boolean) => void;
   onPresent: (text: string) => void;
 }) {
   const id = useId();
-  const quorumWords = words?.quorum ?? QUORUM_FALLBACK;
-  const unitsWords = words?.unitsPresent ?? UNITS_PRESENT_FALLBACK;
+  const quorumWords = choices.quorumAsked;
+  const unitsWords = choices.unitsPresentAsked;
+  const unanswered = quorum === undefined;
   return (
     <div className="mt-3 space-y-3 rounded-[var(--radius-card)] border border-amber-200 bg-amber-50 px-3 py-2">
-      {choices.quorumAsked && (
-        <fieldset aria-describedby={`${id}-quorum-help`}>
+      {quorumWords && (
+        <fieldset aria-describedby={unanswered ? `${id}-quorum-help ${id}-quorum-unanswered` : `${id}-quorum-help`}>
           <legend className="text-xs font-medium text-ink">{quorumWords.label}</legend>
           <p id={`${id}-quorum-help`} className="mt-1 text-xs text-ink-muted">
             {quorumWords.help}
@@ -398,12 +403,14 @@ function ChairAnswers({
               </label>
             ))}
           </div>
-          {quorum === undefined && (
-            <p className="mt-1 text-xs text-amber-800">Not answered yet. Answer it before recording Resolved or Motion lost.</p>
+          {unanswered && (
+            <p id={`${id}-quorum-unanswered`} className="mt-1 text-xs text-amber-800">
+              Not answered yet. Answer it before recording Resolved or Motion lost.
+            </p>
           )}
         </fieldset>
       )}
-      {choices.unitsPresentAsked && (
+      {unitsWords && (
         <div>
           <label htmlFor={`${id}-units`} className="block text-xs font-medium text-ink">
             {unitsWords.label}
@@ -413,17 +420,22 @@ function ChairAnswers({
           </p>
           <input
             id={`${id}-units`}
-            type="number"
+            type="text"
             inputMode="numeric"
-            min={0}
-            max={lotCount}
-            step={1}
+            pattern="[0-9]*"
+            autoComplete="off"
             value={present}
             disabled={disabled}
-            aria-describedby={`${id}-units-help`}
+            aria-invalid={unitsError ? true : undefined}
+            aria-describedby={unitsError ? `${id}-units-help ${id}-units-error` : `${id}-units-help`}
             onChange={(e) => onPresent(e.target.value)}
             className="mt-2 w-24 rounded border border-line bg-white px-2 py-1 text-xs"
           />
+          {unitsError && (
+            <p id={`${id}-units-error`} role="alert" className="mt-1 text-xs text-red-700">
+              {unitsError}
+            </p>
+          )}
         </div>
       )}
     </div>

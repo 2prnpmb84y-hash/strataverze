@@ -96,15 +96,16 @@ describe("the lots counted", () => {
     const view = conductVotingView(VIC, VIC_RULES, LOTS, [{ id: "i1", resolutionCategory: "ORDINARY" }, { id: "i2", resolutionCategory: "SPECIAL" }], "AGM")!;
     expect(view.lots.map((l) => l.lotNumber)).toEqual(["1", "2", "3", "4", "5", "6", "7", "8"]);
     // Stage 2, PR 8a-ii: both ask the chair whether there was a quorum, in the pack's words; neither asks the lots present.
-    expect(view.items).toEqual({ i1: { pollAllowed: true, proxiesAllowed: true, quorumAsked: true }, i2: { pollAllowed: false, proxiesAllowed: true, quorumAsked: true } });
+    const quorum = { label: "Quorum present for this item", help: VIC.quorumAttestation!.help };
+    expect(view.items).toEqual({ i1: { pollAllowed: true, proxiesAllowed: true, quorumAsked: quorum }, i2: { pollAllowed: false, proxiesAllowed: true, quorumAsked: quorum } });
     expect(view.pollLabel).toBe("Poll asked for, counted by lot entitlement");
-    expect(view.attestation).toEqual({ quorum: { label: "Quorum present for this item", help: VIC.quorumAttestation!.help } });
   });
 
   it("asks no quorum on a unanimous resolution or an item with no category, and words nothing when no item asks", () => {
     const view = conductVotingView(VIC, VIC_RULES, LOTS, [{ id: "u", resolutionCategory: "UNANIMOUS" }, { id: "n", resolutionCategory: null }], "AGM")!;
     expect(view.items).toEqual({ u: { pollAllowed: false, proxiesAllowed: true }, n: { pollAllowed: false, proxiesAllowed: true } });
     expect(view).not.toHaveProperty("attestation");
+    expect(JSON.stringify(view)).not.toContain(VIC.quorumAttestation!.label);
   });
 });
 

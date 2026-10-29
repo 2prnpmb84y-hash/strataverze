@@ -678,13 +678,21 @@ export interface ConductVotingView {
    * proxy may vote. Where the item's test needs them (the draft packs, VIC,
    * ACT and WA stage 2, PR 8a-ii), `quorumAsked` and `unitsPresentAsked`:
    * the chair must answer whether there was a quorum, and count the lots
-   * present or represented. Left out otherwise, never false.
+   * present or represented. Each carries the question's words from the pack
+   * (label and help), so a question is never asked without them. Left out
+   * otherwise, never false.
    */
-  items: Record<string, { pollAllowed: boolean; proxiesAllowed: boolean; quorumAsked?: true; unitsPresentAsked?: true }>;
+  items: Record<string, ConductVotingItem>;
   /** The poll choice, naming the entitlement a poll counts by. */
   pollLabel: string;
-  /** The questions' words, from the pack, where an item asks them (VIC, ACT and WA stage 2, PR 8a-ii). Left out otherwise. */
-  attestation?: { quorum?: { label: string; help: string }; unitsPresent?: { label: string; help: string } };
+}
+
+/** One agenda item's choices on the conduct screen (see ConductVotingView.items). */
+export interface ConductVotingItem {
+  pollAllowed: boolean;
+  proxiesAllowed: boolean;
+  quorumAsked?: { label: string; help: string };
+  unitsPresentAsked?: { label: string; help: string };
 }
 
 /** The conduct screen's voting view, or null where the meeting's votes are not counted at conduct (NSW, or a committee meeting). */
@@ -706,11 +714,9 @@ export function conductVotingView(
   }
   const allowed = (list: readonly string[] | undefined, c: string | null) => !!c && !!list?.includes(c);
   // The chair's answers (the draft packs only): asked only where the item's test needs them and the pack words the question.
-  const quorumAsked = (c: string | null) => !!ruleSet.quorumAttestation && countNeedsQuorum(ruleSet, c);
-  const unitsPresentAsked = (c: string | null) => !!ruleSet.votesPresentAttestation && countNeedsVotesPresent(ruleSet, c);
   const words = (a: { label: string; help: string }) => ({ label: a.label, help: a.help });
-  const asksQuorum = items.some((i) => quorumAsked(i.resolutionCategory));
-  const asksUnitsPresent = items.some((i) => unitsPresentAsked(i.resolutionCategory));
+  const quorumWords = ruleSet.quorumAttestation;
+  const unitsPresentWords = ruleSet.votesPresentAttestation;
   return {
     lots: rows
       .map((l) => ({ id: l.id, lotNumber: String(l.lotNumber) }))
@@ -721,19 +727,11 @@ export function conductVotingView(
         {
           pollAllowed: allowed(ruleSet.pollCategories, i.resolutionCategory),
           proxiesAllowed: !allowed(ruleSet.proxiesBarredOn, i.resolutionCategory),
-          ...(quorumAsked(i.resolutionCategory) ? { quorumAsked: true as const } : {}),
-          ...(unitsPresentAsked(i.resolutionCategory) ? { unitsPresentAsked: true as const } : {}),
+          ...(quorumWords && countNeedsQuorum(ruleSet, i.resolutionCategory) ? { quorumAsked: words(quorumWords) } : {}),
+          ...(unitsPresentWords && countNeedsVotesPresent(ruleSet, i.resolutionCategory) ? { unitsPresentAsked: words(unitsPresentWords) } : {}),
         },
       ]),
     ),
     pollLabel,
-    ...(asksQuorum || asksUnitsPresent
-      ? {
-          attestation: {
-            ...(asksQuorum && ruleSet.quorumAttestation ? { quorum: words(ruleSet.quorumAttestation) } : {}),
-            ...(asksUnitsPresent && ruleSet.votesPresentAttestation ? { unitsPresent: words(ruleSet.votesPresentAttestation) } : {}),
-          },
-        }
-      : {}),
   };
 }

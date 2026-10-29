@@ -35,7 +35,7 @@ const WORDS = {
   quorum: { label: "Quorum words from the pack", help: "Help for the quorum from the pack." },
   unitsPresent: { label: "Units present words from the pack", help: "Help for the units present from the pack." },
 };
-// q asks the quorum, s asks the quorum and the units present, n asks nothing.
+// q asks the quorum, s asks the quorum and the units present, n asks nothing. Each question carries its words.
 const VOTING = {
   lots: [
     { id: "l1", lotNumber: "1" },
@@ -44,13 +44,15 @@ const VOTING = {
     { id: "l4", lotNumber: "4" },
   ],
   items: {
-    q: { pollAllowed: false, proxiesAllowed: true, quorumAsked: true as const },
-    s: { pollAllowed: false, proxiesAllowed: true, quorumAsked: true as const, unitsPresentAsked: true as const },
+    q: { pollAllowed: false, proxiesAllowed: true, quorumAsked: WORDS.quorum },
+    s: { pollAllowed: false, proxiesAllowed: true, quorumAsked: WORDS.quorum, unitsPresentAsked: WORDS.unitsPresent },
     n: { pollAllowed: false, proxiesAllowed: true },
   },
   pollLabel: "Poll asked for",
-  attestation: WORDS,
 };
+const UNITS_REFUSAL = `Enter "${WORDS.unitsPresent.label}" as a whole number from 0 to 4. Nothing was saved.`;
+/** The ids an element's aria-describedby names, as the texts they hold. */
+const describedBy = (el: Element) => (el.getAttribute("aria-describedby") ?? "").split(" ").map((id) => document.getElementById(id)?.textContent);
 
 const itemRow = (title: string) => screen.getByText(title).closest("li") as HTMLElement;
 /** Choose an outcome once the previous call has finished (the buttons are disabled while one runs). */
@@ -80,18 +82,20 @@ describe("the chair's answers on the conduct screen", () => {
     for (const g of groups) {
       expect(g.tagName).toBe("FIELDSET");
       expect(g.querySelector("legend")?.textContent).toBe(WORDS.quorum.label);
-      expect(document.getElementById(g.getAttribute("aria-describedby") ?? "")?.textContent).toBe(WORDS.quorum.help);
+      // Described by the help and, while unanswered, the note saying so.
+      expect(describedBy(g)).toEqual([WORDS.quorum.help, "Not answered yet. Answer it before recording Resolved or Motion lost."]);
       expect(within(g).getAllByRole("radio").map((r) => (r.closest("label") as HTMLElement).textContent)).toEqual(["Yes", "No"]);
     }
     // The units present on s only, as a whole number field tied to its label and help.
     const units = screen.getAllByLabelText(WORDS.unitsPresent.label);
     expect(units).toHaveLength(1);
     expect(itemRow("Approve the new rules").contains(units[0])).toBe(true);
-    expect(units[0].getAttribute("type")).toBe("number");
-    expect(units[0].getAttribute("step")).toBe("1");
-    expect(units[0].getAttribute("min")).toBe("0");
-    expect(units[0].getAttribute("max")).toBe("4");
-    expect(document.getElementById(units[0].getAttribute("aria-describedby") ?? "")?.textContent).toBe(WORDS.unitsPresent.help);
+    // A text field asking for digits, so whatever is typed reaches the whole number check and a scroll cannot change it.
+    expect(units[0].getAttribute("type")).toBe("text");
+    expect(units[0].getAttribute("inputmode")).toBe("numeric");
+    expect(units[0].getAttribute("pattern")).toBe("[0-9]*");
+    expect(units[0].hasAttribute("aria-invalid")).toBe(false);
+    expect(describedBy(units[0])).toEqual([WORDS.unitsPresent.help]);
     // Outside the folded votes, so the chair cannot miss them.
     for (const el of [...groups, ...units]) expect(el.closest("details")).toBeNull();
   });
@@ -125,6 +129,14 @@ describe("the chair's answers on the conduct screen", () => {
     await click("Any other business", "Motion lost");
     expect(record.mock.calls[1]).toEqual(["s1", "m1", "n", "MOTION_LOST", [], false]);
     expect(record.mock.calls[1]).toHaveLength(6);
+  });
+
+  it("stops describing the quorum as unanswered once it is answered", () => {
+    render(<ConductSection {...BASE} voting={VOTING} />);
+    const group = within(itemRow("Adopt the budget")).getByRole("group", { name: WORDS.quorum.label });
+    fireEvent.click(within(group).getByRole("radio", { name: "No" }));
+    expect(describedBy(group)).toEqual([WORDS.quorum.help]);
+    expect(within(group).queryByText(/Not answered yet/)).toBeNull();
   });
 
   it("keeps the answers for each item apart", async () => {
@@ -167,18 +179,31 @@ describe("the chair's answers on the conduct screen", () => {
     await click("Approve the new rules", "Motion lost");
     expect(record.mock.calls[2][6]).toEqual({ quorumPresent: true, unitsPresent: 0 });
 
-    // A part number, a negative number, a number in another form, or more than the lots: never sent.
-    for (const typed of ["2.5", "-1", "1e1", "5"]) {
+    // Letters, a part number, a negative number, a number in another form, or more than the lots: never sent.
+    for (const typed of ["abc", "2.5", "-1", "1e1", "5", "3 lots"]) {
       fireEvent.change(field, { target: { value: typed } });
+      expect((field as HTMLInputElement).value).toBe(typed);
       await click("Approve the new rules", "Resolved");
       expect(record).toHaveBeenCalledTimes(3);
-      await waitFor(() => expect(screen.getByText("Enter the units present as a whole number from 0 to 4. Nothing was saved.")).toBeTruthy());
+      // Refused beside the field, in the pack's words, and announced: not in the shared error box.
+      const alert = within(itemRow("Approve the new rules")).getByRole("alert");
+      expect(alert.textContent).toBe(UNITS_REFUSAL);
+      expect(field.getAttribute("aria-invalid")).toBe("true");
+      expect(describedBy(field)).toEqual([WORDS.unitsPresent.help, UNITS_REFUSAL]);
+      expect(document.querySelector(".bg-red-50")).toBeNull();
     }
+
+    // Editing the field clears the refusal.
+    fireEvent.change(field, { target: { value: "2" } });
+    expect(within(itemRow("Approve the new rules")).queryByRole("alert")).toBeNull();
+    expect(field.hasAttribute("aria-invalid")).toBe(false);
+    expect(describedBy(field)).toEqual([WORDS.unitsPresent.help]);
 
     // A deferral is not counted, so it goes ahead without them.
     fireEvent.change(field, { target: { value: "2.5" } });
     await click("Approve the new rules", "Deferred");
     expect(record.mock.calls[3]).toEqual(["s1", "m1", "s", "DEFERRED", [], false, { quorumPresent: true }]);
+    expect(within(itemRow("Approve the new rules")).queryByRole("alert")).toBeNull();
   });
 
   it("sends the votes with the answers", async () => {
@@ -193,7 +218,7 @@ describe("the chair's answers on the conduct screen", () => {
   it("keeps the Queensland and NSW calls as they were", async () => {
     const QLD_RULES = QLD_RULE_PACK.rules as unknown as StatutoryRules;
     const qld = conductVotingView(QLD_RULES.MEETING_RULES, QLD_RULES, [{ id: "l1", lotNumber: "1" }], ITEMS.map((i) => ({ id: i.id, resolutionCategory: "ORDINARY" })), "AGM")!;
-    expect(qld.attestation).toBeUndefined();
+    expect(Object.values(qld.items).every((i) => !("quorumAsked" in i) && !("unitsPresentAsked" in i))).toBe(true);
     const { unmount } = render(<ConductSection {...BASE} voting={qld} />);
     expect(document.querySelector("fieldset")).toBeNull();
     await click("Adopt the budget", "Resolved");
@@ -215,13 +240,13 @@ describe("the chair's answers on the conduct screen", () => {
     for (const state of ["ACT", "VIC"] as const) {
       const rules = PENDING_RULE_PACKS[state].rules as unknown as StatutoryRules;
       const view = conductVotingView(rules.MEETING_RULES, rules, lots, items, "AGM")!;
-      const quorum = view.attestation?.quorum;
-      expect(quorum?.label).toBeTruthy();
+      const quorum = view.items.q.quorumAsked;
+      expect(quorum?.label).toBe(rules.MEETING_RULES.quorumAttestation?.label);
       const html = renderToStaticMarkup(<ConductSection {...BASE} voting={view} />);
       expect(html.split(`<legend class="text-xs font-medium text-ink">${quorum!.label}</legend>`)).toHaveLength(3);
       expect(html).toContain(quorum!.help.replace(/"/g, "&quot;").slice(0, 40));
-      expect(html.includes("type=\"number\"")).toBe(state === "ACT");
-      if (state === "ACT") expect(html).toContain(view.attestation!.unitsPresent!.label);
+      expect(html.includes('inputMode="numeric"')).toBe(state === "ACT");
+      if (state === "ACT") expect(html).toContain(view.items.s.unitsPresentAsked!.label);
       expect(text(html)).not.toMatch(/[;–—]/);
     }
     // The screen's own words, as the chair sees them.
