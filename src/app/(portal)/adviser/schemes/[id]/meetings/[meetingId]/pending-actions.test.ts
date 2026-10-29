@@ -14,6 +14,7 @@ const repo = vi.hoisted(() => ({
   recordPendingPetition: vi.fn(),
   recordSpecialMeetingNotice: vi.fn(),
   recordPendingConfirmation: vi.fn(),
+  recordLateVote: vi.fn(),
 }));
 const owing = vi.fn();
 const revalidatePath = vi.fn();
@@ -36,7 +37,7 @@ vi.mock("@/lib/meetings/debtor-voting-repo", () => ({ lotsOwingMoney: (...a: unk
 vi.mock("@/lib/meetings/pending-repo", () => repo);
 vi.mock("@/lib/meetings/rule-set-repo", async () => {
   const { PENDING_RULE_PACKS, MEETING_RULES } = await import("@/config/statutory");
-  return { getActiveRuleSet: vi.fn(async (s: string) => (s === "NSW" ? MEETING_RULES : PENDING_RULE_PACKS[s as "VIC" | "ACT"].rules.MEETING_RULES)) };
+  return { getActiveRuleSet: vi.fn(async (s: string) => (s === "NSW" ? MEETING_RULES : PENDING_RULE_PACKS[s as "VIC" | "ACT" | "WA"].rules.MEETING_RULES)) };
 });
 vi.mock("@/lib/jurisdiction/scheme-rules", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/jurisdiction/scheme-rules")>();
@@ -58,7 +59,7 @@ const lots = [
   { id: "cp", lotNumber: "CP", lotType: "COMMON" },
 ];
 const at = (st: string) => {
-  state.scheme = { id: "s1", state: st, timeZone: st === "VIC" ? "Australia/Melbourne" : "Australia/Sydney", totalLots: 2, lots };
+  state.scheme = { id: "s1", state: st, timeZone: st === "VIC" ? "Australia/Melbourne" : st === "WA" ? "Australia/Perth" : "Australia/Sydney", totalLots: 2, lots };
   state.meeting = { id: "m1", schemeId: "s1" };
 };
 
@@ -138,5 +139,42 @@ describe("a petition", () => {
     state.building = { scheme: state.scheme, lots, recorded: {} };
     owing.mockResolvedValue(new Set(["lot-1"]));
     expect(await barred("2026-11-20", "ORDINARY")).toEqual(new Set(["lot-1"]));
+  });
+});
+
+describe("a written vote after the meeting (Western Australia, PR 8b-ii)", () => {
+  it("passes the lot, the vote and the day to the repository, with the lots owing money on that day (D8)", async () => {
+    at("WA");
+    repo.recordLateVote.mockResolvedValue({ ok: true, notice: "Recorded. Lot 1 voted for in writing." });
+    expect(await A.recordLateVoteAction("s1", "m1", " p1 ", " lot-1 ", "FOR", "2026-11-20")).toEqual({ ok: true, notice: "Recorded. Lot 1 voted for in writing." });
+    const args = repo.recordLateVote.mock.calls[0][0] as { barredLotIds: (d: string, c: string) => Promise<Set<string>> } & Record<string, unknown>;
+    expect(args).toMatchObject({
+      scheme: { id: "s1", timeZone: "Australia/Perth", totalLots: 2, lots },
+      meetingId: "m1",
+      pendingId: "p1",
+      lotId: "lot-1",
+      vote: "FOR",
+      receivedOn: "2026-11-20",
+      actorId: "adviser",
+    });
+    expect(revalidatePath).toHaveBeenCalledWith("/adviser/schemes/s1/meetings/m1");
+    // A special resolution: the lots owing money on the day received are barred (s 120(2)), every building alike.
+    owing.mockResolvedValue(new Set(["lot-2"]));
+    expect(await args.barredLotIds("2026-11-20", "SPECIAL")).toEqual(new Set(["lot-2"]));
+    expect(owing).toHaveBeenCalledWith(state.scheme, ["lot-1", "lot-2", "cp"], "2026-11-20");
+    // Unanimous and without dissent: a lot owing money may still vote.
+    owing.mockClear();
+    for (const c of ["UNANIMOUS", "WITHOUT_DISSENT"]) expect(await args.barredLotIds("2026-11-20", c)).toEqual(new Set());
+    expect(owing).not.toHaveBeenCalled();
+  });
+
+  it("is refused for a pack that takes none, and returns the repository's refusal", async () => {
+    at("NSW");
+    expect(await A.recordLateVoteAction("s1", "m1", "p1", "lot-1", "FOR", "2026-11-20")).toEqual({ error: "This building's rules record no resolutions decided later." });
+    expect(repo.recordLateVote).not.toHaveBeenCalled();
+    at("WA");
+    repo.recordLateVote.mockResolvedValue({ error: "Choose For or Against. Nothing was saved." });
+    expect(await A.recordLateVoteAction("s1", "m1", "p1", "lot-1", "ABSTAIN", "2026-11-20")).toEqual({ error: "Choose For or Against. Nothing was saved." });
+    expect(revalidatePath).not.toHaveBeenCalled();
   });
 });

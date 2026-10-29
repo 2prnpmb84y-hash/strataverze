@@ -4,13 +4,15 @@
  * The meeting page's "Decided later" panel (VIC, ACT and WA stage 2, PR 8b-i,
  * 29 Oct 2026): each resolution of the meeting decided or taking effect
  * later, where it stands, and what an adviser records about it while it is
- * pending. Every word and day comes from the server (pendingPanelData); this
- * file takes no pack value.
+ * pending: from PR 8b-ii also Western Australia's written votes after the
+ * meeting and its outcome notice. Every word and day comes from the server
+ * (pendingPanelData); this file takes no pack value.
  */
 import { useId, useState, useTransition } from "react";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
+  recordLateVoteAction,
   recordPendingConfirmationAction,
   recordPendingNoticeAction,
   recordPendingPetitionAction,
@@ -37,6 +39,10 @@ export interface PendingItemProps {
   windowClosesOn: string;
   today: string;
   confirmChoices: { meetingId: string; label: string; items: { id: string; label: string }[] }[];
+  /** The question for the notice's day, where it is not the usual one (Western Australia's outcome notice, PR 8b-ii). */
+  noticeLabel?: string;
+  /** Western Australia's written votes after the meeting (PR 8b-ii): who may vote and until when, and the lots that may. */
+  lateVote?: { words: string; lots: { id: string; lotNumber: string }[] };
 }
 
 const STATUS: Record<PendingItemProps["status"], { label: string; style: string }> = {
@@ -98,6 +104,9 @@ function PendingItem({
   const [called, setCalled] = useState("");
   const [confirmMeeting, setConfirmMeeting] = useState(item.confirmChoices[0]?.meetingId ?? "");
   const [confirmItem, setConfirmItem] = useState("");
+  const [lateDay, setLateDay] = useState("");
+  const [lateLot, setLateLot] = useState("");
+  const [lateVote, setLateVote] = useState("");
 
   function run(fn: () => Promise<PendingActionState>) {
     setError(null);
@@ -150,7 +159,7 @@ function PendingItem({
       {item.canRecordNotice && (
         <div className="flex items-end gap-2 flex-wrap">
           <label htmlFor={`${id}-notice`} className="text-xs text-ink">
-            Day the owners were given notice of it
+            {item.noticeLabel ?? "Day the owners were given notice of it"}
             <input
               id={`${id}-notice`}
               type="date"
@@ -166,6 +175,55 @@ function PendingItem({
             Record the notice
           </Button>
         </div>
+      )}
+
+      {item.lateVote && (
+        <fieldset className="space-y-2">
+          <legend className="text-xs font-medium text-ink">Written vote</legend>
+          <p className="text-xs text-ink-muted">{item.lateVote.words}</p>
+          <div className="flex items-end gap-2 flex-wrap">
+            <label htmlFor={`${id}-late-day`} className="text-xs text-ink">
+              Day it was received
+              <input
+                id={`${id}-late-day`}
+                type="date"
+                min={item.madeOn}
+                max={item.windowClosesOn < item.today ? item.windowClosesOn : item.today}
+                value={lateDay}
+                disabled={pending}
+                onChange={(e) => setLateDay(e.target.value)}
+                className="mt-1 block rounded border border-line bg-white px-2 py-1 text-xs"
+              />
+            </label>
+            <label htmlFor={`${id}-late-lot`} className="text-xs text-ink">
+              Lot
+              <select id={`${id}-late-lot`} value={lateLot} disabled={pending} onChange={(e) => setLateLot(e.target.value)} className="mt-1 block rounded border border-line bg-white px-2 py-1 text-xs">
+                <option value="">Choose the lot</option>
+                {item.lateVote.lots.map((l) => (
+                  <option key={l.id} value={l.id}>
+                    Lot {l.lotNumber}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label htmlFor={`${id}-late-vote`} className="text-xs text-ink">
+              Vote
+              <select id={`${id}-late-vote`} value={lateVote} disabled={pending} onChange={(e) => setLateVote(e.target.value)} className="mt-1 block rounded border border-line bg-white px-2 py-1 text-xs">
+                <option value="">Choose the vote</option>
+                <option value="FOR">For</option>
+                <option value="AGAINST">Against</option>
+              </select>
+            </label>
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={pending || !lateDay || !lateLot || !lateVote}
+              onClick={() => run(() => recordLateVoteAction(schemeId, meetingId, item.id, lateLot, lateVote, lateDay))}
+            >
+              Record the written vote
+            </Button>
+          </div>
+        </fieldset>
       )}
 
       {item.petitionWords && (

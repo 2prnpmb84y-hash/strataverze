@@ -4,8 +4,9 @@
  * What an adviser records about a resolution decided later (VIC, ACT and WA
  * stage 2, PR 8b-i, 29 Oct 2026), from the meeting page's "Decided later"
  * panel: the day the owners were given notice of it, a petition with the lots
- * that signed it, Victoria's special general meeting notice (s 78), and a
- * later meeting's decision on it. Each needs governance.manage, is allowed
+ * that signed it, Victoria's special general meeting notice (s 78), a later
+ * meeting's decision on it, and (PR 8b-ii) Western Australia's written votes
+ * received after the meeting (s 121(2)). Each needs governance.manage, is allowed
  * whatever the meeting's status (after it is published too), and writes an
  * append-only event on the original meeting (pending-repo.ts). Refused for a
  * building whose pack records no resolutions decided later.
@@ -23,6 +24,7 @@ import { selectorBuildingFor } from "@/lib/queries/building-selectors";
 import { debtorRuleApplies, debtorVoteRefusal } from "@/lib/meetings/debtor-voting";
 import { lotsOwingMoney } from "@/lib/meetings/debtor-voting-repo";
 import {
+  recordLateVote,
   recordPendingConfirmation,
   recordPendingNotice,
   recordPendingPetition,
@@ -76,7 +78,7 @@ export async function recordPendingNoticeAction(schemeId: string, meetingId: str
 /**
  * The lots barred for money owed on a day from voting on a category, where
  * the pack's debtor rule applies to the building (the ACT petition, decision
- * D5). Where the condition cannot be worked out the rule applies (fails
+ * D5; Western Australia's written votes, decision D8). Where the condition cannot be worked out the rule applies (fails
  * closed, as at conduct).
  */
 function barredLots(c: { scheme: { id: string; timeZone: string | null; state: string }; building: PendingScheme; ruleSet: MeetingRuleSet }) {
@@ -143,6 +145,33 @@ export async function recordPendingConfirmationAction(
       pendingId: text(pendingId),
       confirmingMeetingId: text(confirmingMeetingId),
       confirmingItemId: text(confirmingItemId),
+      actorId: c.actorId,
+    }),
+  );
+}
+
+/**
+ * Western Australia s 121(2) (PR 8b-ii): a written vote received after the
+ * meeting from a lot with nothing entered at the item, FOR or AGAINST, its
+ * debt judged on the day it was received (decision D8).
+ */
+export async function recordLateVoteAction(
+  schemeId: string,
+  meetingId: string,
+  pendingId: string,
+  lotId: string,
+  vote: string,
+  receivedOn: string,
+): Promise<PendingActionState> {
+  return run(schemeId, meetingId, (c) =>
+    recordLateVote({
+      scheme: c.building,
+      meetingId,
+      pendingId: text(pendingId),
+      lotId: text(lotId),
+      vote: text(vote),
+      receivedOn: text(receivedOn),
+      barredLotIds: barredLots(c),
       actorId: c.actorId,
     }),
   );
