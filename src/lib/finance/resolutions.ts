@@ -157,7 +157,14 @@ export async function authorityResolution(
   for (const c of candidates) {
     let problem: string | null;
     if (c.meeting === "GENERAL") {
-      problem = c.kind === "ANY" ? await generalMeetingResolutionProblem(schemeId, meetingId, motionId) : await resolutionOfKindProblem(schemeId, meetingId, motionId, { kind: c.kind, words: c.words.replace(/^an? /, "") });
+      problem = await generalMeetingResolutionProblem(schemeId, meetingId, motionId);
+      if (problem === null && c.kind !== "ANY") {
+        // As resolutionOfKindProblem checks it, with "an" before a vowel ("an ordinary resolution", PR 9b).
+        const motion = await db.orm.public.AgendaItem.where((a) => a.id.eq(motionId)).first();
+        const kindWords = c.words.replace(/^an? /, "");
+        const article = /^[aeiou]/i.test(kindWords) ? "an" : "a";
+        if (motion?.resolutionCategory !== c.kind) problem = `That motion is not recorded as ${article} ${kindWords}. Choose a motion carried as ${article} ${kindWords}.`;
+      }
     } else if (c.kind !== "ANY") {
       problem = "A committee resolution of a particular kind cannot be checked yet, so it cannot be relied on.";
     } else {

@@ -13,8 +13,8 @@ import { feeWordingFor } from "@/lib/billing/disclosure";
 import { needRule } from "@/config/statutory";
 import { caseWordsFor } from "@/lib/jurisdiction/screen-words";
 import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
-import { recoveryGatesApply } from "@/lib/debt-recovery/recovery-gates";
-import { recoveryStepRequirements } from "@/lib/debt-recovery/recovery-requirements";
+import { recoveryGatesApply, statutoryChargeApplies } from "@/lib/debt-recovery/recovery-gates";
+import { recoveryChargePanel, recoveryStepRequirements } from "@/lib/debt-recovery/recovery-requirements";
 
 export default async function DebtRecoveryCaseDetailPage({
   params,
@@ -78,10 +78,14 @@ export default async function DebtRecoveryCaseDetailPage({
   const stepRequirements = recoveryGatesApply(rules)
     ? await recoveryStepRequirements(id, rules, debtCase.id, debtCase.steps.map((s) => s.stepType))
     : null;
+  // A pack with a statutory charge (the ACT, PR 9b): the lodged charge and the
+  // form to record its revocation. Nothing is read for any other pack.
+  const chargePanel = statutoryChargeApplies(rules) ? await recoveryChargePanel(id, rules, debtCase.id) : null;
 
   return (
     <CaseDetailClient
       {...(stepRequirements ? { stepRequirements } : {})}
+      {...(chargePanel ? { chargePanel } : {})}
       recoveryFees={await previewRecoveryFees({ state: pack.state, wording: feeWordingFor(rules) })}
       stepGuidance={needRule(rules, "DEBT_RECOVERY_GUIDANCE")}
       stepLabels={needRule(rules, "DEBT_RECOVERY_STEP_LABELS")}

@@ -16,6 +16,7 @@ import {
   completeDebtRecoveryStepAction,
   closeDebtRecoveryCaseAction,
   addDebtRecoveryNoteAction,
+  recordChargeRevocationAction,
 } from "@/lib/actions/debt-recovery";
 
 // ─── Types ──────────────────────────────────────────────────────
@@ -109,8 +110,26 @@ type StepRequirement = {
   problem?: string;
   authority?: { words: string; meetings: { id: string; label: string; motions: { id: string; label: string }[] }[] };
   forum?: { options: { key: string; words: string }[]; notes: string[] };
+  /** The charge step (PR 9b): the charge's name, who may declare it, where it is lodged, the meetings to choose from. */
+  charge?: { words: string; declaredWords: string; lodgedWith: string; meetings: { id: string; label: string; motions: { id: string; label: string }[] }[] };
   recorded?: string[];
 };
+
+/**
+ * A lodged charge on the case (PR 9b), as the server page works it out (plain
+ * data, no pack): its name, what is recorded, and, while its revocation is not
+ * recorded, where the revocation is lodged and the building's day. Given only
+ * for a pack with such a charge and a case with one lodged.
+ */
+type ChargePanel = {
+  title: string;
+  lines: string[];
+  revocation: { lodgedWith: string; today: string } | null;
+};
+
+/** The charge step's choice on the form (PR 9b). */
+type ChargeForm = { declared: "" | "YES" | "NO"; meetingId: string; itemId: string; lodgedOn: string };
+const NO_CHARGE_CHOICE: ChargeForm = { declared: "", meetingId: "", itemId: "", lodgedOn: "" };
 
 // ─── Helpers ────────────────────────────────────────────────────
 
@@ -175,9 +194,12 @@ export function CaseDetailClient({
   paymentPlanLabel,
   timeZone,
   stepRequirements,
+  chargePanel,
 }: {
   /** Each step's extra fields under a draft pack's recovery rules, by step type; left out for NSW and Queensland. */
   stepRequirements?: Readonly<Record<string, StepRequirement>>;
+  /** The case's lodged charge and the form to record its revocation (PR 9b); left out unless the pack has such a charge and one is lodged. */
+  chargePanel?: ChargePanel;
   /** The building's time zone (schemes.time_zone), for the dates and times of the case's events. */
   timeZone: string;
   /** The PAYMENT_PLAN status, as the building's pack has it ("Payment Plan", "Payment Arrangement"; caseWordsFor). */
@@ -497,6 +519,8 @@ export function CaseDetailClient({
             </div>
           </Card>
 
+          {chargePanel && <ChargePanelCard panel={chargePanel} caseId={debtCase.id} schemeId={schemeId} router={router} />}
+
           {/* Quick Actions */}
           <Card>
             <div className="p-4 space-y-2">
@@ -726,6 +750,7 @@ function WizardStepContent({
   const [authorityMeetingId, setAuthorityMeetingId] = useState("");
   const [authorityItemId, setAuthorityItemId] = useState("");
   const [forum, setForum] = useState("");
+  const [charge, setCharge] = useState<ChargeForm>(NO_CHARGE_CHOICE);
   const feeConfirmation = useFeeConfirmation(fee);
 
   const isCompleted = step.status === "COMPLETED";
@@ -746,6 +771,14 @@ function WizardStepContent({
       formData.set("authorityItemId", authorityItemId);
     }
     if (requirement?.forum) formData.set("forum", forum);
+    if (requirement?.charge) {
+      formData.set("chargeDeclared", charge.declared);
+      if (charge.declared === "YES") {
+        formData.set("chargeMeetingId", charge.meetingId);
+        formData.set("chargeItemId", charge.itemId);
+        formData.set("chargeLodgedOn", charge.lodgedOn);
+      }
+    }
 
     startTransition(async () => {
       const result = await completeDebtRecoveryStepAction(
@@ -975,6 +1008,8 @@ function WizardStepContent({
                 }}
                 onItem={setAuthorityItemId}
                 onForum={setForum}
+                charge={charge}
+                onCharge={(patch) => setCharge((c) => ({ ...c, ...patch, ...(patch.meetingId !== undefined ? { itemId: "" } : {}) }))}
               />
             )}
             <FeeDisclosure
@@ -1029,6 +1064,8 @@ function RequirementFields({
   onMeeting,
   onItem,
   onForum,
+  charge,
+  onCharge,
 }: {
   requirement: StepRequirement;
   stepId: string;
@@ -1038,6 +1075,8 @@ function RequirementFields({
   onMeeting: (id: string) => void;
   onItem: (id: string) => void;
   onForum: (key: string) => void;
+  charge: ChargeForm;
+  onCharge: (patch: Partial<ChargeForm>) => void;
 }) {
   const select =
     "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-turquoise focus:outline-none focus:ring-1 focus:ring-turquoise";
@@ -1112,7 +1151,161 @@ function RequirementFields({
           )}
         </div>
       )}
+      {requirement.charge && <ChargeFields charge={requirement.charge} stepId={stepId} value={charge} onChange={onCharge} select={select} />}
     </div>
+  );
+}
+
+/**
+ * The charge step's fields (PR 9b): whether the charge was declared and
+ * lodged; if it was, the meeting and motion that declared it and the day it
+ * was lodged. The words come from the server. The server checks every value
+ * again.
+ */
+function ChargeFields({
+  charge,
+  stepId,
+  value,
+  onChange,
+  select,
+}: {
+  charge: NonNullable<StepRequirement["charge"]>;
+  stepId: string;
+  value: ChargeForm;
+  onChange: (patch: Partial<ChargeForm>) => void;
+  select: string;
+}) {
+  const meeting = charge.meetings.find((m) => m.id === value.meetingId);
+  return (
+    <fieldset className="space-y-2">
+      <legend className="text-sm text-gray-700">Was {charge.words} declared and lodged?</legend>
+      <div className="flex flex-wrap gap-4 text-sm text-gray-700">
+        <label className="flex items-center gap-2">
+          <input type="radio" name={`charge-declared-${stepId}`} value="YES" checked={value.declared === "YES"} onChange={() => onChange({ declared: "YES" })} />
+          Yes, declared and lodged
+        </label>
+        <label className="flex items-center gap-2">
+          <input type="radio" name={`charge-declared-${stepId}`} value="NO" checked={value.declared === "NO"} onChange={() => onChange({ declared: "NO" })} />
+          No, none was declared
+        </label>
+      </div>
+      {value.declared === "YES" && (
+        <div className="space-y-2">
+          <p className="text-sm text-gray-700">Declared by {charge.declaredWords}.</p>
+          {charge.meetings.length === 0 ? (
+            <p className="text-sm text-amber-700">No meeting of this scheme has such a motion carried yet.</p>
+          ) : (
+            <>
+              <div>
+                <label htmlFor={`charge-meeting-${stepId}`} className="mb-1 block text-sm font-medium text-gray-700">
+                  Meeting
+                </label>
+                <select id={`charge-meeting-${stepId}`} value={value.meetingId} onChange={(e) => onChange({ meetingId: e.target.value })} className={select}>
+                  <option value="">Select the meeting...</option>
+                  {charge.meetings.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor={`charge-motion-${stepId}`} className="mb-1 block text-sm font-medium text-gray-700">
+                  Motion carried
+                </label>
+                <select id={`charge-motion-${stepId}`} value={value.itemId} onChange={(e) => onChange({ itemId: e.target.value })} className={select} disabled={!meeting}>
+                  <option value="">Select the motion...</option>
+                  {meeting?.motions.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </>
+          )}
+          <div>
+            <label htmlFor={`charge-lodged-${stepId}`} className="mb-1 block text-sm font-medium text-gray-700">
+              Day lodged with {charge.lodgedWith}
+            </label>
+            <input id={`charge-lodged-${stepId}`} type="date" value={value.lodgedOn} onChange={(e) => onChange({ lodgedOn: e.target.value })} className={select} />
+          </div>
+        </div>
+      )}
+    </fieldset>
+  );
+}
+
+// ─── Charge Panel ───────────────────────────────────────────────
+
+/**
+ * The case's lodged charge (PR 9b): what is recorded and, while its
+ * revocation is not recorded, the form to record the day the revocation was
+ * lodged. The server checks the day again, under the case lock.
+ */
+function ChargePanelCard({
+  panel,
+  caseId,
+  schemeId,
+  router,
+}: {
+  panel: ChargePanel;
+  caseId: string;
+  schemeId: string;
+  router: ReturnType<typeof useRouter>;
+}) {
+  const [lodgedOn, setLodgedOn] = useState("");
+  const [message, setMessage] = useState<{ error: boolean; text: string } | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  function record() {
+    setMessage(null);
+    startTransition(async () => {
+      const result = await recordChargeRevocationAction(caseId, schemeId, lodgedOn);
+      if (result.error) {
+        setMessage({ error: true, text: result.error });
+      } else {
+        setMessage({ error: false, text: "Revocation recorded." });
+        setLodgedOn("");
+        router.refresh();
+      }
+    });
+  }
+
+  return (
+    <Card>
+      <div className="p-4 space-y-3">
+        <p className="text-sm font-medium text-gray-900">{panel.title}</p>
+        {panel.lines.map((line) => (
+          <p key={line} className="text-sm text-gray-700">
+            {line}
+          </p>
+        ))}
+        {panel.revocation && (
+          <div className="space-y-2 border-t border-gray-100 pt-3">
+            <label htmlFor="charge-revocation-lodged" className="block text-sm font-medium text-gray-700">
+              Day the revocation was lodged with {panel.revocation.lodgedWith}
+            </label>
+            <input
+              id="charge-revocation-lodged"
+              type="date"
+              max={panel.revocation.today}
+              value={lodgedOn}
+              onChange={(e) => setLodgedOn(e.target.value)}
+              className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-turquoise focus:outline-none focus:ring-1 focus:ring-turquoise"
+            />
+            <Button variant="primary" onClick={record} disabled={isPending || !lodgedOn}>
+              {isPending ? "Saving..." : "Record the revocation"}
+            </Button>
+          </div>
+        )}
+        {message && (
+          <p role={message.error ? "alert" : "status"} className={`text-sm ${message.error ? "text-red-700" : "text-emerald-700"}`}>
+            {message.text}
+          </p>
+        )}
+      </div>
+    </Card>
   );
 }
 

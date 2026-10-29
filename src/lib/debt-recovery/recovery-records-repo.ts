@@ -1,6 +1,6 @@
 /**
  * Reading and writing debt_recovery_records (VIC, ACT and WA stage 2, PR 9a,
- * migration 20261125). Only called for a pack with the recovery gates
+ * migration 20261125; the ACT statutory charge and its revocation, PR 9b). Only called for a pack with the recovery gates
  * (recoveryGatesApply), so an NSW or Queensland case never reads or writes
  * the table.
  */
@@ -24,6 +24,8 @@ export async function readRecoveryRecords(caseId: string, orm: Orm = db.orm) {
     resolutionKind: r.resolutionKind == null ? null : String(r.resolutionKind),
     amount: r.amount == null ? null : String(r.amount),
     forum: r.forum == null ? null : String(r.forum),
+    // The day lodged: the statutory charge and its revocation only (PR 9b).
+    lodgedOn: r.lodgedOn == null ? null : isoDay(r.lodgedOn),
   }));
 }
 
@@ -71,7 +73,7 @@ export async function createRecoveryRecords(
       resolutionKind: r.resolutionKind,
       amount: r.amount == null ? null : (r.amount as unknown as Numeric<12, 2>),
       forum: r.forum,
-      lodgedOn: null,
+      lodgedOn: r.lodgedOn ?? null,
       rulePack: base.rulePack,
       recordedBy: base.recordedBy,
       notes: null,

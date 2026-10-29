@@ -917,7 +917,10 @@ export interface DebtRecoveryRules {
   stepTiming?: readonly DebtStepTimingRule[];
   /** A final notice the law prescribes (Victoria s 32, PR 9c). Not applied in PR 9a: refused. */
   finalNotice?: StatutoryFinalNoticeRule;
-  /** A statutory charge over the lot (the ACT, PR 9b). Not applied in PR 9a: refused. */
+  /**
+   * A statutory charge over the lot (the ACT), applied since PR 9b: recorded when its step is completed,
+   * revoked by a later record, and a case with a charge not revoked cannot be closed.
+   */
   statutoryCharge?: StatutoryChargeRule;
   /** The buildings a case may be opened for (Victoria tiers 1 to 4, PR 9c). Not applied in PR 9a: refused. */
   appliesWhen?: SelectorCondition;
@@ -1019,9 +1022,21 @@ export interface StatutoryFinalNoticeRule {
   source: string;
 }
 
-/** A statutory charge over the lot for the debt (the ACT ss 96, 97, PR 9b). */
+/**
+ * A statutory charge over the lot for the debt (the ACT ss 96, 97, applied
+ * since PR 9b). Completing `stepType` records either that a charge was
+ * declared (by a resolution among `declaredBy`) and lodged with `lodgedWith`
+ * on a day, or that none was. A lodged charge is outstanding until its
+ * revocation is recorded as lodged, and `closeBlockedUntilRevoked` says which
+ * closings it blocks (with no value: every closing). `revocation.withinDays`
+ * is a deadline StrataVerze does not apply yet: with a value it refuses every
+ * action; with none, no deadline is checked and recording the revocation is
+ * not blocked.
+ */
 export interface StatutoryChargeRule {
   stepType: "STATUTORY_CHARGE";
+  /** How the screens name the charge ("a statutory charge over the unit lease"). */
+  words: string;
   declaredBy: CheckedValue<readonly DebtAuthorityResolution[]>;
   certifiedBy: string;
   lodgedWith: string;
