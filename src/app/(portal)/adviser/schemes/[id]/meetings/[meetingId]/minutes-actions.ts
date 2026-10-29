@@ -1,7 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { dayIn, meetingZone } from "@/lib/jurisdiction/time-zone";
+import { dayIn, meetingZone, todayIn } from "@/lib/jurisdiction/time-zone";
+import { scheduleFor } from "@/lib/jurisdiction/building-data";
 import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
 import { AuthorisationError } from "@/lib/auth/require-membership";
 import { requireSchemeAccess } from "@/lib/auth/require-access";
@@ -19,9 +20,10 @@ import {
   updateMinutes,
 } from "@/lib/queries/minutes";
 import { getActiveRuleSet } from "@/lib/meetings/rule-set-repo";
-import { assembleMinutesContent, retentionUntil } from "@/lib/meetings/minutes";
+import { assembleMinutesContent, minutesItemExtras, retentionUntil } from "@/lib/meetings/minutes";
+import { pendingRowsForMinutes } from "@/lib/meetings/pending-repo";
 import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
-import { recordMeetingEvent } from "@/lib/meetings/events";
+import { getMeetingEvents, recordMeetingEvent } from "@/lib/meetings/events";
 import { canTransition } from "@/lib/meetings/lifecycle";
 import { notifyMeetingScheduled } from "@/lib/notifications";
 import { captureConfirmedMinutes } from "@/lib/vault/sources";
@@ -51,6 +53,24 @@ export async function assembleMinutesAction(
     if (confirmed)
       return { error: "The minutes have already been confirmed." };
 
+    const pack = rulesForState(scheme.state).rules;
+    // The draft packs only (VIC, ACT and WA stage 2, PR 8b-iv, 29 Oct 2026): what the minutes give for each item beyond
+    // its outcome. The events and the resolutions decided later are read only where the pack asks for them, so NSW and
+    // Queensland read nothing more and their items are as before.
+    const contents = pack.MEETING_RULES.minutesContents;
+    const extras = contents
+      ? minutesItemExtras(
+          contents,
+          pack.MEETING_RULES.resolutionLabels,
+          items,
+          contents.voting ? await getMeetingEvents(meetingId) : [],
+          contents.laterEffect ? await pendingRowsForMinutes(meetingId) : [],
+          todayIn(timeZoneOf(scheme)),
+          // What a poll is counted by, as the pack names it (review L5, as conduct names it).
+          contents.voting ? scheduleFor(pack, "POLL_VOTE").name : null,
+        )
+      : null;
+
     const content = assembleMinutesContent({
       scheme: { name: scheme.name, planNumber: scheme.planNumber },
       meeting: {
@@ -66,8 +86,9 @@ export async function assembleMinutesAction(
         resolutionText: a.resolutionText,
         explanatoryNote: a.explanatoryNote,
         outcome: a.outcome,
+        ...(extras?.get(a.id) ?? {}),
       })),
-    }, rulesForState(scheme.state).rules.TERMINOLOGY);
+    }, pack.TERMINOLOGY);
 
     const version = (existing[0]?.version ?? 0) + 1;
     await createMinutes({

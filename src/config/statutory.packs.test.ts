@@ -193,14 +193,14 @@ describe("Australian Capital Territory pack (pending)", () => {
   const pack = PENDING_RULE_PACKS.ACT;
   const act = pack.rules;
 
-  it("is a draft for review, not signed off, with only the payment order, the notice timing, the quorum answer, 1 or 2 members, reduced quorum decisions and notice by motion decided", () => {
+  it("is a draft for review, not signed off, with only the payment order, the notice timing, the quorum answer, 1 or 2 members, reduced quorum decisions, notice by motion and proxy caps decided", () => {
     expect(pack.code).toBe("AU-ACT");
     expect(pack.state).toBe("ACT");
-    expect(pack.version).toBe("2026.10.11");
+    expect(pack.version).toBe("2026.10.12");
     expect(pack.status).toBe("DRAFT");
     expect(pack.reviewedOn).toBeNull();
     expect(pack.reviewer).toBe("Matthew Wrigley");
-    expect(act.DECISIONS).toHaveLength(7);
+    expect(act.DECISIONS).toHaveLength(8);
     for (const d of act.DECISIONS.slice(0, 2)) expect(d).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-28" });
     expect(act.DECISIONS[0].decision).toContain("PAYMENT_ALLOCATION_ORDER");
     expect(act.DECISIONS[1].decision).toContain("NOTICE_RULES");
@@ -225,6 +225,15 @@ describe("Australian Capital Territory pack (pending)", () => {
     expect(act.FOR_REVIEW.some((p) => p.startsWith("Notice by motion") && p.includes("D13") && p.includes("reasonably expected to be received"))).toBe(true);
     // The point it replaces, that unanimous resolutions are not offered for want of the 21 days, is gone.
     expect(act.FOR_REVIEW.some((p) => p.includes("unopposed and unanimous resolutions are not offered on an agenda"))).toBe(false);
+    // Stage 2, PR 8b-iv: proxy caps warned only (29 Oct 2026, decision D15), kept in FOR_REVIEW, and the minutes point.
+    expect(act.DECISIONS[7]).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-29" });
+    expect(act.DECISIONS[7].decision).toContain("(D15)");
+    expect(act.DECISIONS[7].decision).toContain("PROXY_RULES");
+    expect(act.FOR_REVIEW.some((p) => p.startsWith("Proxy caps") && p.includes("D15") && p.includes("may be over") && p.includes("which no screen has yet"))).toBe(true);
+    expect(act.FOR_REVIEW.some((p) => p.includes("when a proxy is checked"))).toBe(false);
+    expect(act.FOR_REVIEW.some((p) => p.startsWith("Minutes (sch 2 s 2.1(1)(c)") && p.includes("Stage C"))).toBe(true);
+    // The minutes now state the later effect, so the point saying they do not is gone.
+    expect(act.FOR_REVIEW.some((p) => p.includes("The minutes do not state the later effect yet"))).toBe(false);
   });
 
   it("holds exactly one entitlement schedule on each lot: unit entitlement", () => {
@@ -324,7 +333,7 @@ describe("Victorian pack (pending)", () => {
   it("is a draft, not signed off, and never given to a building", () => {
     expect(pack.code).toBe("AU-VIC");
     expect(pack.state).toBe("VIC");
-    expect(pack.version).toBe("2026.10.11");
+    expect(pack.version).toBe("2026.10.12");
     expect(pack.status).toBe("DRAFT");
     expect(pack.reviewedOn).toBeNull();
     expect(rulePackFor("VIC")).toBeNull();
@@ -346,14 +355,25 @@ describe("Victorian pack (pending)", () => {
         expect(d).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-28" });
         continue;
       }
-      if (d.decision.includes("quorumAttestation") || d.decision.includes("pendingResolutions") || d.decision.includes("noticeNotCheckedFor")) {
+      if (d.decision.includes("quorumAttestation") || d.decision.includes("pendingResolutions") || d.decision.includes("noticeNotCheckedFor") || d.decision.includes("PROXY_RULES")) {
         expect(d).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-29", proposedOn: "2026-10-29" });
         continue;
       }
       expect(d.decidedBy).toBeNull();
       expect(d.decidedOn).toBeNull();
     }
-    expect(vic.DECISIONS.filter((d) => d.decidedBy != null)).toHaveLength(6);
+    expect(vic.DECISIONS.filter((d) => d.decidedBy != null)).toHaveLength(7);
+    // Stage 2, PR 8b-iv: proxy caps (D15 to D17) and the minutes (D18), kept in FOR_REVIEW PROXY_CAPS and MINUTES_CONTENTS.
+    const proxies = vic.DECISIONS.find((d) => d.decision.includes("PROXY_RULES"))!;
+    for (const id of ["D15", "D16", "D17", "D18"]) expect(proxies.decision).toContain(`(${id})`);
+    for (const id of ["D15", "D16", "D17"]) expect(vic.FOR_REVIEW.find((p) => p.key === "PROXY_CAPS")?.point).toContain(`(${id})`);
+    expect(vic.FOR_REVIEW.find((p) => p.key === "MINUTES_CONTENTS")?.point).toContain("D18");
+    // Review (29 Oct 2026): where the warnings show, no floor below 1 proxy, joint owners and the in-force start, for Matthew Wrigley.
+    const caps = vic.FOR_REVIEW.find((p) => p.key === "PROXY_CAPS")?.point ?? "";
+    for (const words of ["proxy limits panel", "which no screen has yet", "no floor is applied", "larger of 1 and the share rounded down", "Joint owners", "9 Sep 2026"]) expect(caps).toContain(words);
+    expect(caps).not.toContain("when a proxy is checked");
+    expect(vic.FOR_REVIEW.find((p) => p.key === "MINUTES_CONTENTS")?.point).toContain("Stage C");
+    expect(vic.FOR_REVIEW.find((p) => p.key === "MEETING_RULES_PENDING")?.point).not.toContain("The minutes do not state the later effect yet");
     // Stage 2, PR 8b-iii: the committee notice not checked (D12) and business days (D14), kept in FOR_REVIEW.
     const notChecked = vic.DECISIONS.find((d) => d.decision.includes("noticeNotCheckedFor"))!;
     for (const id of ["D12", "D14"]) expect(notChecked.decision).toContain(`(${id})`);
@@ -579,7 +599,7 @@ describe("Western Australia pack (pending)", () => {
   const wa = pack.rules;
 
   it("is a draft, not yet signed off, with only the payment order, the notice timing, the 2-lot quorum, the voting period, council notice not checked and debt recovery decided", () => {
-    expect(pack.version).toBe("2026.10.10");
+    expect(pack.version).toBe("2026.10.11");
     expect(pack.status).toBe("DRAFT");
     expect(pack.reviewedOn).toBeNull();
     expect(wa.DECISIONS).toHaveLength(6);
@@ -598,6 +618,9 @@ describe("Western Australia pack (pending)", () => {
     expect(point).toContain("7 days of grace");
     // The point it replaces, that the meeting cannot record these resolutions, is gone.
     expect(wa.FOR_REVIEW.some((p) => p.includes("Until the voting period is tracked"))).toBe(false);
+    // Stage 2, PR 8b-iv: the minutes name an open item and give its later effect, so "Not yet done" is gone.
+    expect(point).toContain("Voting open");
+    expect(point).not.toContain("Not yet done");
     // Stage 2, PR 8b-iii: council notice not checked (29 Oct 2026, decision D12), kept in FOR_REVIEW.
     expect(wa.DECISIONS[4]).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-29" });
     expect(wa.DECISIONS[4].decision).toContain("(D12)");

@@ -1,0 +1,1467 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`createProxyAction (golden) > NSW: returns, writes and reads as before 1`] = `
+{
+  "commonProperty": {
+    "access": [
+      "Lot.where(fn).first()",
+      "LotProxy.create({"lotId":"l3","proxyName":"Pat Holder","proxyEmail":"holder@example.com","proxyPhone":"0400 000 000","meetingDate":"2026-11-20T00:00:00.000Z","meetingTitle":"Annual general meeting","notes":"For the AGM only"})",
+    ],
+    "calls": [
+      [
+        "requireSchemeAccess",
+        [
+          "s1",
+          "lots.manage",
+        ],
+      ],
+      [
+        "revalidatePath",
+        "/adviser/schemes/s1/lots/l3",
+      ],
+    ],
+    "proxies": [
+      {
+        "id": "px1",
+        "isActive": true,
+        "lotId": "l2",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "px2",
+        "isActive": true,
+        "lotId": "x1",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "<id 1>",
+        "lotId": "l3",
+        "meetingDate": "2026-11-20T00:00:00.000Z",
+        "meetingTitle": "Annual general meeting",
+        "notes": "For the AGM only",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+        "proxyPhone": "0400 000 000",
+      },
+    ],
+    "result": {},
+  },
+  "emailMixedCase": {
+    "access": [
+      "Lot.where(fn).first()",
+      "LotProxy.create({"lotId":"l1","proxyName":"Pat Holder","proxyEmail":" Holder@Example.com ","proxyPhone":null,"meetingDate":"2026-11-20T00:00:00.000Z","meetingTitle":null,"notes":null})",
+    ],
+    "calls": [
+      [
+        "requireSchemeAccess",
+        [
+          "s1",
+          "lots.manage",
+        ],
+      ],
+      [
+        "revalidatePath",
+        "/adviser/schemes/s1/lots/l1",
+      ],
+    ],
+    "proxies": [
+      {
+        "id": "px1",
+        "isActive": true,
+        "lotId": "l2",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "px2",
+        "isActive": true,
+        "lotId": "x1",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "<id 1>",
+        "lotId": "l1",
+        "meetingDate": "2026-11-20T00:00:00.000Z",
+        "meetingTitle": null,
+        "notes": null,
+        "proxyEmail": " Holder@Example.com ",
+        "proxyName": "Pat Holder",
+        "proxyPhone": null,
+      },
+    ],
+    "result": {},
+  },
+  "full": {
+    "access": [
+      "Lot.where(fn).first()",
+      "LotProxy.create({"lotId":"l1","proxyName":"Pat Holder","proxyEmail":"holder@example.com","proxyPhone":"0400 000 000","meetingDate":"2026-11-20T00:00:00.000Z","meetingTitle":"Annual general meeting","notes":"For the AGM only"})",
+    ],
+    "calls": [
+      [
+        "requireSchemeAccess",
+        [
+          "s1",
+          "lots.manage",
+        ],
+      ],
+      [
+        "revalidatePath",
+        "/adviser/schemes/s1/lots/l1",
+      ],
+    ],
+    "proxies": [
+      {
+        "id": "px1",
+        "isActive": true,
+        "lotId": "l2",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "px2",
+        "isActive": true,
+        "lotId": "x1",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "<id 1>",
+        "lotId": "l1",
+        "meetingDate": "2026-11-20T00:00:00.000Z",
+        "meetingTitle": "Annual general meeting",
+        "notes": "For the AGM only",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+        "proxyPhone": "0400 000 000",
+      },
+    ],
+    "result": {},
+  },
+  "meetingDateOnly": {
+    "access": [
+      "Lot.where(fn).first()",
+      "LotProxy.create({"lotId":"l1","proxyName":"Pat Holder","proxyEmail":null,"proxyPhone":null,"meetingDate":"2026-11-20T00:00:00.000Z","meetingTitle":null,"notes":null})",
+    ],
+    "calls": [
+      [
+        "requireSchemeAccess",
+        [
+          "s1",
+          "lots.manage",
+        ],
+      ],
+      [
+        "revalidatePath",
+        "/adviser/schemes/s1/lots/l1",
+      ],
+    ],
+    "proxies": [
+      {
+        "id": "px1",
+        "isActive": true,
+        "lotId": "l2",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "px2",
+        "isActive": true,
+        "lotId": "x1",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "<id 1>",
+        "lotId": "l1",
+        "meetingDate": "2026-11-20T00:00:00.000Z",
+        "meetingTitle": null,
+        "notes": null,
+        "proxyEmail": null,
+        "proxyName": "Pat Holder",
+        "proxyPhone": null,
+      },
+    ],
+    "result": {},
+  },
+  "nameOnly": {
+    "access": [
+      "Lot.where(fn).first()",
+      "LotProxy.create({"lotId":"l1","proxyName":"Sam Other","proxyEmail":null,"proxyPhone":null,"meetingDate":null,"meetingTitle":null,"notes":null})",
+    ],
+    "calls": [
+      [
+        "requireSchemeAccess",
+        [
+          "s1",
+          "lots.manage",
+        ],
+      ],
+      [
+        "revalidatePath",
+        "/adviser/schemes/s1/lots/l1",
+      ],
+    ],
+    "proxies": [
+      {
+        "id": "px1",
+        "isActive": true,
+        "lotId": "l2",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "px2",
+        "isActive": true,
+        "lotId": "x1",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "<id 1>",
+        "lotId": "l1",
+        "meetingDate": null,
+        "meetingTitle": null,
+        "notes": null,
+        "proxyEmail": null,
+        "proxyName": "Sam Other",
+        "proxyPhone": null,
+      },
+    ],
+    "result": {},
+  },
+  "noLot": {
+    "access": [
+      "Lot.where(fn).first()",
+    ],
+    "calls": [
+      [
+        "requireSchemeAccess",
+        [
+          "s1",
+          "lots.manage",
+        ],
+      ],
+      [
+        "recordSecurityEventLater",
+        {
+          "action": "access.denied",
+          "outcome": "denied",
+          "reason": "record not found",
+          "resourceType": "Lot",
+          "schemeId": "s1",
+        },
+      ],
+    ],
+    "proxies": [
+      {
+        "id": "px1",
+        "isActive": true,
+        "lotId": "l2",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "px2",
+        "isActive": true,
+        "lotId": "x1",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+    ],
+    "result": {
+      "error": "Lot not found.",
+    },
+  },
+  "noName": {
+    "access": [
+      "Lot.where(fn).first()",
+      "LotProxy.create({"lotId":"l1","proxyName":"","proxyEmail":null,"proxyPhone":null,"meetingDate":null,"meetingTitle":null,"notes":null})",
+    ],
+    "calls": [
+      [
+        "requireSchemeAccess",
+        [
+          "s1",
+          "lots.manage",
+        ],
+      ],
+      [
+        "revalidatePath",
+        "/adviser/schemes/s1/lots/l1",
+      ],
+    ],
+    "proxies": [
+      {
+        "id": "px1",
+        "isActive": true,
+        "lotId": "l2",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "px2",
+        "isActive": true,
+        "lotId": "x1",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "<id 1>",
+        "lotId": "l1",
+        "meetingDate": null,
+        "meetingTitle": null,
+        "notes": null,
+        "proxyEmail": null,
+        "proxyName": "",
+        "proxyPhone": null,
+      },
+    ],
+    "result": {},
+  },
+  "noPermission": {
+    "access": [],
+    "calls": [
+      [
+        "requireSchemeAccess",
+        [
+          "s1",
+          "lots.manage",
+        ],
+      ],
+    ],
+    "proxies": [
+      {
+        "id": "px1",
+        "isActive": true,
+        "lotId": "l2",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "px2",
+        "isActive": true,
+        "lotId": "x1",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+    ],
+    "result": {
+      "error": "You do not have permission to do this.",
+    },
+  },
+  "otherBuildingsLot": {
+    "access": [
+      "Lot.where(fn).first()",
+    ],
+    "calls": [
+      [
+        "requireSchemeAccess",
+        [
+          "s1",
+          "lots.manage",
+        ],
+      ],
+      [
+        "recordSecurityEventLater",
+        {
+          "action": "access.denied",
+          "outcome": "denied",
+          "reason": "record not found",
+          "resourceType": "Lot",
+          "schemeId": "s1",
+        },
+      ],
+    ],
+    "proxies": [
+      {
+        "id": "px1",
+        "isActive": true,
+        "lotId": "l2",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "px2",
+        "isActive": true,
+        "lotId": "x1",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+    ],
+    "result": {
+      "error": "Lot not found.",
+    },
+  },
+  "ownerInArrearsAsHolder": {
+    "access": [
+      "Lot.where(fn).first()",
+      "LotProxy.create({"lotId":"l2","proxyName":"Lot 1 Owner","proxyEmail":"holder@example.com","proxyPhone":null,"meetingDate":"2026-11-20T00:00:00.000Z","meetingTitle":null,"notes":null})",
+    ],
+    "calls": [
+      [
+        "requireSchemeAccess",
+        [
+          "s1",
+          "lots.manage",
+        ],
+      ],
+      [
+        "revalidatePath",
+        "/adviser/schemes/s1/lots/l2",
+      ],
+    ],
+    "proxies": [
+      {
+        "id": "px1",
+        "isActive": true,
+        "lotId": "l2",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "px2",
+        "isActive": true,
+        "lotId": "x1",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "<id 1>",
+        "lotId": "l2",
+        "meetingDate": "2026-11-20T00:00:00.000Z",
+        "meetingTitle": null,
+        "notes": null,
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Lot 1 Owner",
+        "proxyPhone": null,
+      },
+    ],
+    "result": {},
+  },
+  "writeFails": {
+    "access": [
+      "Lot.where(fn).first()",
+      "LotProxy.create({"lotId":"l1","proxyName":"Pat Holder","proxyEmail":"holder@example.com","proxyPhone":"0400 000 000","meetingDate":"2026-11-20T00:00:00.000Z","meetingTitle":"Annual general meeting","notes":"For the AGM only"}) FAILED",
+    ],
+    "calls": [
+      [
+        "requireSchemeAccess",
+        [
+          "s1",
+          "lots.manage",
+        ],
+      ],
+    ],
+    "proxies": [
+      {
+        "id": "px1",
+        "isActive": true,
+        "lotId": "l2",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "px2",
+        "isActive": true,
+        "lotId": "x1",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+    ],
+    "result": {
+      "error": "Failed to add proxy.",
+    },
+  },
+}
+`;
+
+exports[`createProxyAction (golden) > QLD: returns, writes and reads as before 1`] = `
+{
+  "commonProperty": {
+    "access": [
+      "Lot.where(fn).first()",
+      "LotProxy.create({"lotId":"l3","proxyName":"Pat Holder","proxyEmail":"holder@example.com","proxyPhone":"0400 000 000","meetingDate":"2026-11-20T00:00:00.000Z","meetingTitle":"Annual general meeting","notes":"For the AGM only"})",
+    ],
+    "calls": [
+      [
+        "requireSchemeAccess",
+        [
+          "s1",
+          "lots.manage",
+        ],
+      ],
+      [
+        "revalidatePath",
+        "/adviser/schemes/s1/lots/l3",
+      ],
+    ],
+    "proxies": [
+      {
+        "id": "px1",
+        "isActive": true,
+        "lotId": "l2",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "px2",
+        "isActive": true,
+        "lotId": "x1",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "<id 1>",
+        "lotId": "l3",
+        "meetingDate": "2026-11-20T00:00:00.000Z",
+        "meetingTitle": "Annual general meeting",
+        "notes": "For the AGM only",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+        "proxyPhone": "0400 000 000",
+      },
+    ],
+    "result": {},
+  },
+  "emailMixedCase": {
+    "access": [
+      "Lot.where(fn).first()",
+      "LotProxy.create({"lotId":"l1","proxyName":"Pat Holder","proxyEmail":" Holder@Example.com ","proxyPhone":null,"meetingDate":"2026-11-20T00:00:00.000Z","meetingTitle":null,"notes":null})",
+    ],
+    "calls": [
+      [
+        "requireSchemeAccess",
+        [
+          "s1",
+          "lots.manage",
+        ],
+      ],
+      [
+        "revalidatePath",
+        "/adviser/schemes/s1/lots/l1",
+      ],
+    ],
+    "proxies": [
+      {
+        "id": "px1",
+        "isActive": true,
+        "lotId": "l2",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "px2",
+        "isActive": true,
+        "lotId": "x1",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "<id 1>",
+        "lotId": "l1",
+        "meetingDate": "2026-11-20T00:00:00.000Z",
+        "meetingTitle": null,
+        "notes": null,
+        "proxyEmail": " Holder@Example.com ",
+        "proxyName": "Pat Holder",
+        "proxyPhone": null,
+      },
+    ],
+    "result": {},
+  },
+  "full": {
+    "access": [
+      "Lot.where(fn).first()",
+      "LotProxy.create({"lotId":"l1","proxyName":"Pat Holder","proxyEmail":"holder@example.com","proxyPhone":"0400 000 000","meetingDate":"2026-11-20T00:00:00.000Z","meetingTitle":"Annual general meeting","notes":"For the AGM only"})",
+    ],
+    "calls": [
+      [
+        "requireSchemeAccess",
+        [
+          "s1",
+          "lots.manage",
+        ],
+      ],
+      [
+        "revalidatePath",
+        "/adviser/schemes/s1/lots/l1",
+      ],
+    ],
+    "proxies": [
+      {
+        "id": "px1",
+        "isActive": true,
+        "lotId": "l2",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "px2",
+        "isActive": true,
+        "lotId": "x1",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "<id 1>",
+        "lotId": "l1",
+        "meetingDate": "2026-11-20T00:00:00.000Z",
+        "meetingTitle": "Annual general meeting",
+        "notes": "For the AGM only",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+        "proxyPhone": "0400 000 000",
+      },
+    ],
+    "result": {},
+  },
+  "meetingDateOnly": {
+    "access": [
+      "Lot.where(fn).first()",
+      "LotProxy.create({"lotId":"l1","proxyName":"Pat Holder","proxyEmail":null,"proxyPhone":null,"meetingDate":"2026-11-20T00:00:00.000Z","meetingTitle":null,"notes":null})",
+    ],
+    "calls": [
+      [
+        "requireSchemeAccess",
+        [
+          "s1",
+          "lots.manage",
+        ],
+      ],
+      [
+        "revalidatePath",
+        "/adviser/schemes/s1/lots/l1",
+      ],
+    ],
+    "proxies": [
+      {
+        "id": "px1",
+        "isActive": true,
+        "lotId": "l2",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "px2",
+        "isActive": true,
+        "lotId": "x1",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "<id 1>",
+        "lotId": "l1",
+        "meetingDate": "2026-11-20T00:00:00.000Z",
+        "meetingTitle": null,
+        "notes": null,
+        "proxyEmail": null,
+        "proxyName": "Pat Holder",
+        "proxyPhone": null,
+      },
+    ],
+    "result": {},
+  },
+  "nameOnly": {
+    "access": [
+      "Lot.where(fn).first()",
+      "LotProxy.create({"lotId":"l1","proxyName":"Sam Other","proxyEmail":null,"proxyPhone":null,"meetingDate":null,"meetingTitle":null,"notes":null})",
+    ],
+    "calls": [
+      [
+        "requireSchemeAccess",
+        [
+          "s1",
+          "lots.manage",
+        ],
+      ],
+      [
+        "revalidatePath",
+        "/adviser/schemes/s1/lots/l1",
+      ],
+    ],
+    "proxies": [
+      {
+        "id": "px1",
+        "isActive": true,
+        "lotId": "l2",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "px2",
+        "isActive": true,
+        "lotId": "x1",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "<id 1>",
+        "lotId": "l1",
+        "meetingDate": null,
+        "meetingTitle": null,
+        "notes": null,
+        "proxyEmail": null,
+        "proxyName": "Sam Other",
+        "proxyPhone": null,
+      },
+    ],
+    "result": {},
+  },
+  "noLot": {
+    "access": [
+      "Lot.where(fn).first()",
+    ],
+    "calls": [
+      [
+        "requireSchemeAccess",
+        [
+          "s1",
+          "lots.manage",
+        ],
+      ],
+      [
+        "recordSecurityEventLater",
+        {
+          "action": "access.denied",
+          "outcome": "denied",
+          "reason": "record not found",
+          "resourceType": "Lot",
+          "schemeId": "s1",
+        },
+      ],
+    ],
+    "proxies": [
+      {
+        "id": "px1",
+        "isActive": true,
+        "lotId": "l2",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "px2",
+        "isActive": true,
+        "lotId": "x1",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+    ],
+    "result": {
+      "error": "Lot not found.",
+    },
+  },
+  "noName": {
+    "access": [
+      "Lot.where(fn).first()",
+      "LotProxy.create({"lotId":"l1","proxyName":"","proxyEmail":null,"proxyPhone":null,"meetingDate":null,"meetingTitle":null,"notes":null})",
+    ],
+    "calls": [
+      [
+        "requireSchemeAccess",
+        [
+          "s1",
+          "lots.manage",
+        ],
+      ],
+      [
+        "revalidatePath",
+        "/adviser/schemes/s1/lots/l1",
+      ],
+    ],
+    "proxies": [
+      {
+        "id": "px1",
+        "isActive": true,
+        "lotId": "l2",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "px2",
+        "isActive": true,
+        "lotId": "x1",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "<id 1>",
+        "lotId": "l1",
+        "meetingDate": null,
+        "meetingTitle": null,
+        "notes": null,
+        "proxyEmail": null,
+        "proxyName": "",
+        "proxyPhone": null,
+      },
+    ],
+    "result": {},
+  },
+  "noPermission": {
+    "access": [],
+    "calls": [
+      [
+        "requireSchemeAccess",
+        [
+          "s1",
+          "lots.manage",
+        ],
+      ],
+    ],
+    "proxies": [
+      {
+        "id": "px1",
+        "isActive": true,
+        "lotId": "l2",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "px2",
+        "isActive": true,
+        "lotId": "x1",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+    ],
+    "result": {
+      "error": "You do not have permission to do this.",
+    },
+  },
+  "otherBuildingsLot": {
+    "access": [
+      "Lot.where(fn).first()",
+    ],
+    "calls": [
+      [
+        "requireSchemeAccess",
+        [
+          "s1",
+          "lots.manage",
+        ],
+      ],
+      [
+        "recordSecurityEventLater",
+        {
+          "action": "access.denied",
+          "outcome": "denied",
+          "reason": "record not found",
+          "resourceType": "Lot",
+          "schemeId": "s1",
+        },
+      ],
+    ],
+    "proxies": [
+      {
+        "id": "px1",
+        "isActive": true,
+        "lotId": "l2",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "px2",
+        "isActive": true,
+        "lotId": "x1",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+    ],
+    "result": {
+      "error": "Lot not found.",
+    },
+  },
+  "ownerInArrearsAsHolder": {
+    "access": [
+      "Lot.where(fn).first()",
+      "LotProxy.create({"lotId":"l2","proxyName":"Lot 1 Owner","proxyEmail":"holder@example.com","proxyPhone":null,"meetingDate":"2026-11-20T00:00:00.000Z","meetingTitle":null,"notes":null})",
+    ],
+    "calls": [
+      [
+        "requireSchemeAccess",
+        [
+          "s1",
+          "lots.manage",
+        ],
+      ],
+      [
+        "revalidatePath",
+        "/adviser/schemes/s1/lots/l2",
+      ],
+    ],
+    "proxies": [
+      {
+        "id": "px1",
+        "isActive": true,
+        "lotId": "l2",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "px2",
+        "isActive": true,
+        "lotId": "x1",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "<id 1>",
+        "lotId": "l2",
+        "meetingDate": "2026-11-20T00:00:00.000Z",
+        "meetingTitle": null,
+        "notes": null,
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Lot 1 Owner",
+        "proxyPhone": null,
+      },
+    ],
+    "result": {},
+  },
+  "writeFails": {
+    "access": [
+      "Lot.where(fn).first()",
+      "LotProxy.create({"lotId":"l1","proxyName":"Pat Holder","proxyEmail":"holder@example.com","proxyPhone":"0400 000 000","meetingDate":"2026-11-20T00:00:00.000Z","meetingTitle":"Annual general meeting","notes":"For the AGM only"}) FAILED",
+    ],
+    "calls": [
+      [
+        "requireSchemeAccess",
+        [
+          "s1",
+          "lots.manage",
+        ],
+      ],
+    ],
+    "proxies": [
+      {
+        "id": "px1",
+        "isActive": true,
+        "lotId": "l2",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "px2",
+        "isActive": true,
+        "lotId": "x1",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+    ],
+    "result": {
+      "error": "Failed to add proxy.",
+    },
+  },
+}
+`;
+
+exports[`revokeProxyAction (golden) > NSW: returns, writes and reads as before 1`] = `
+{
+  "anotherLotsProxy": {
+    "access": [
+      "Lot.where(fn).first()",
+      "LotProxy.where(fn).update({"isActive":false})",
+    ],
+    "calls": [
+      [
+        "requireSchemeAccess",
+        [
+          "s1",
+          "lots.manage",
+        ],
+      ],
+      [
+        "revalidatePath",
+        "/adviser/schemes/s1/lots/l1",
+      ],
+    ],
+    "proxies": [
+      {
+        "id": "px1",
+        "isActive": true,
+        "lotId": "l2",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "px2",
+        "isActive": true,
+        "lotId": "x1",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+    ],
+    "result": {},
+  },
+  "noPermission": {
+    "access": [],
+    "calls": [
+      [
+        "requireSchemeAccess",
+        [
+          "s1",
+          "lots.manage",
+        ],
+      ],
+    ],
+    "proxies": [
+      {
+        "id": "px1",
+        "isActive": true,
+        "lotId": "l2",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "px2",
+        "isActive": true,
+        "lotId": "x1",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+    ],
+    "result": {
+      "error": "You do not have permission to do this.",
+    },
+  },
+  "noProxy": {
+    "access": [
+      "Lot.where(fn).first()",
+      "LotProxy.where(fn).update({"isActive":false})",
+    ],
+    "calls": [
+      [
+        "requireSchemeAccess",
+        [
+          "s1",
+          "lots.manage",
+        ],
+      ],
+      [
+        "revalidatePath",
+        "/adviser/schemes/s1/lots/l2",
+      ],
+    ],
+    "proxies": [
+      {
+        "id": "px1",
+        "isActive": true,
+        "lotId": "l2",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "px2",
+        "isActive": true,
+        "lotId": "x1",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+    ],
+    "result": {},
+  },
+  "otherBuildingsLot": {
+    "access": [
+      "Lot.where(fn).first()",
+    ],
+    "calls": [
+      [
+        "requireSchemeAccess",
+        [
+          "s1",
+          "lots.manage",
+        ],
+      ],
+      [
+        "recordSecurityEventLater",
+        {
+          "action": "access.denied",
+          "outcome": "denied",
+          "reason": "record not found",
+          "resourceType": "Lot",
+          "schemeId": "s1",
+        },
+      ],
+    ],
+    "proxies": [
+      {
+        "id": "px1",
+        "isActive": true,
+        "lotId": "l2",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "px2",
+        "isActive": true,
+        "lotId": "x1",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+    ],
+    "result": {
+      "error": "Lot not found.",
+    },
+  },
+  "revoked": {
+    "access": [
+      "Lot.where(fn).first()",
+      "LotProxy.where(fn).update({"isActive":false})",
+    ],
+    "calls": [
+      [
+        "requireSchemeAccess",
+        [
+          "s1",
+          "lots.manage",
+        ],
+      ],
+      [
+        "revalidatePath",
+        "/adviser/schemes/s1/lots/l2",
+      ],
+    ],
+    "proxies": [
+      {
+        "id": "px1",
+        "isActive": false,
+        "lotId": "l2",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "px2",
+        "isActive": true,
+        "lotId": "x1",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+    ],
+    "result": {},
+  },
+  "writeFails": {
+    "access": [
+      "Lot.where(fn).first()",
+      "LotProxy.where(fn).update({"isActive":false}) FAILED",
+    ],
+    "calls": [
+      [
+        "requireSchemeAccess",
+        [
+          "s1",
+          "lots.manage",
+        ],
+      ],
+    ],
+    "proxies": [
+      {
+        "id": "px1",
+        "isActive": true,
+        "lotId": "l2",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "px2",
+        "isActive": true,
+        "lotId": "x1",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+    ],
+    "result": {
+      "error": "Failed to revoke proxy.",
+    },
+  },
+}
+`;
+
+exports[`revokeProxyAction (golden) > QLD: returns, writes and reads as before 1`] = `
+{
+  "anotherLotsProxy": {
+    "access": [
+      "Lot.where(fn).first()",
+      "LotProxy.where(fn).update({"isActive":false})",
+    ],
+    "calls": [
+      [
+        "requireSchemeAccess",
+        [
+          "s1",
+          "lots.manage",
+        ],
+      ],
+      [
+        "revalidatePath",
+        "/adviser/schemes/s1/lots/l1",
+      ],
+    ],
+    "proxies": [
+      {
+        "id": "px1",
+        "isActive": true,
+        "lotId": "l2",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "px2",
+        "isActive": true,
+        "lotId": "x1",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+    ],
+    "result": {},
+  },
+  "noPermission": {
+    "access": [],
+    "calls": [
+      [
+        "requireSchemeAccess",
+        [
+          "s1",
+          "lots.manage",
+        ],
+      ],
+    ],
+    "proxies": [
+      {
+        "id": "px1",
+        "isActive": true,
+        "lotId": "l2",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "px2",
+        "isActive": true,
+        "lotId": "x1",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+    ],
+    "result": {
+      "error": "You do not have permission to do this.",
+    },
+  },
+  "noProxy": {
+    "access": [
+      "Lot.where(fn).first()",
+      "LotProxy.where(fn).update({"isActive":false})",
+    ],
+    "calls": [
+      [
+        "requireSchemeAccess",
+        [
+          "s1",
+          "lots.manage",
+        ],
+      ],
+      [
+        "revalidatePath",
+        "/adviser/schemes/s1/lots/l2",
+      ],
+    ],
+    "proxies": [
+      {
+        "id": "px1",
+        "isActive": true,
+        "lotId": "l2",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "px2",
+        "isActive": true,
+        "lotId": "x1",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+    ],
+    "result": {},
+  },
+  "otherBuildingsLot": {
+    "access": [
+      "Lot.where(fn).first()",
+    ],
+    "calls": [
+      [
+        "requireSchemeAccess",
+        [
+          "s1",
+          "lots.manage",
+        ],
+      ],
+      [
+        "recordSecurityEventLater",
+        {
+          "action": "access.denied",
+          "outcome": "denied",
+          "reason": "record not found",
+          "resourceType": "Lot",
+          "schemeId": "s1",
+        },
+      ],
+    ],
+    "proxies": [
+      {
+        "id": "px1",
+        "isActive": true,
+        "lotId": "l2",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "px2",
+        "isActive": true,
+        "lotId": "x1",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+    ],
+    "result": {
+      "error": "Lot not found.",
+    },
+  },
+  "revoked": {
+    "access": [
+      "Lot.where(fn).first()",
+      "LotProxy.where(fn).update({"isActive":false})",
+    ],
+    "calls": [
+      [
+        "requireSchemeAccess",
+        [
+          "s1",
+          "lots.manage",
+        ],
+      ],
+      [
+        "revalidatePath",
+        "/adviser/schemes/s1/lots/l2",
+      ],
+    ],
+    "proxies": [
+      {
+        "id": "px1",
+        "isActive": false,
+        "lotId": "l2",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "px2",
+        "isActive": true,
+        "lotId": "x1",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+    ],
+    "result": {},
+  },
+  "writeFails": {
+    "access": [
+      "Lot.where(fn).first()",
+      "LotProxy.where(fn).update({"isActive":false}) FAILED",
+    ],
+    "calls": [
+      [
+        "requireSchemeAccess",
+        [
+          "s1",
+          "lots.manage",
+        ],
+      ],
+    ],
+    "proxies": [
+      {
+        "id": "px1",
+        "isActive": true,
+        "lotId": "l2",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+      {
+        "id": "px2",
+        "isActive": true,
+        "lotId": "x1",
+        "meetingDate": "2026-11-20",
+        "proxyEmail": "holder@example.com",
+        "proxyName": "Pat Holder",
+      },
+    ],
+    "result": {
+      "error": "Failed to revoke proxy.",
+    },
+  },
+}
+`;
