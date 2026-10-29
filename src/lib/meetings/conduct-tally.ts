@@ -50,7 +50,7 @@
  * Victorian building of tier 5, or whose tier cannot be worked out, is not
  * counted at all (countingRefusal). A pack's debtor rule may apply only to
  * some buildings (debtorRuleApplies). A Western Australian 2-lot scheme's
- * count needs both lots counted at the item (quorumNeedsEveryLot).
+ * count needs both lots recorded at the item (quorumNeedsEveryLot).
  */
 import type { StatutoryRules } from "@/config/statutory";
 import {
@@ -442,8 +442,10 @@ export function buildConductTally(input: {
     };
   }
 
-  // Western Australia's 2-lot scheme (VIC, ACT and WA stage 2, PR 8a-ii): the quorum needs both lots, so each must be counted
-  // at the item. A building that is that small by the lots entered or the number it records is checked, and they must agree.
+  // Western Australia's 2-lot scheme (VIC, ACT and WA stage 2, PR 8a-ii): the quorum needs both lots, so each must be recorded
+  // at the item, with a vote or an abstention. A lot whose vote is not counted for money owed was still there, so it makes up
+  // the quorum (Matthew Wrigley's decision of 29 Oct 2026); the resolution is then decided by the counted votes. A building
+  // that is that small by the lots entered or the number it records is checked, and they must agree.
   const everyLot = ruleSet.quorumNeedsEveryLot;
   if (everyLot && (params.lots.length <= everyLot.lotsAtMost || (params.recordedLotCount != null && params.recordedLotCount <= everyLot.lotsAtMost))) {
     if (params.recordedLotCount == null) {
@@ -463,7 +465,8 @@ export function buildConductTally(input: {
         error: `${entered} entered, and a scheme needs at least ${everyLot.lotsAtMost}, so this resolution cannot be counted. Enter every lot, or correct the number of lots, first.`,
       };
     }
-    if (counted.length < params.lots.length) return { ok: false, error: `${everyLot.refusal}. Nothing was saved. The item can be deferred.` };
+    // Each lot is recorded once (counted, or not counted for money owed), so this is every lot entered.
+    if (counted.length + notCounted.length < params.lots.length) return { ok: false, error: `${everyLot.refusal}. Nothing was saved. The item can be deferred.` };
   }
 
   // The ACT's special resolution (VIC, ACT and WA stage 2, PR 8a-ii): the votes present are those the chair counts as present or
