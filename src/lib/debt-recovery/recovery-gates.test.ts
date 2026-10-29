@@ -218,10 +218,10 @@ describe("failing closed", () => {
     expect(recoveryGateProblem(withRecovery({ authorityToSue: { recordedAtStep: "X" } }), { action: "INITIATE" })).toBe(shape);
     // The ACT pack's DEBT_RECOVERY before PR 9b (its own forum and charge fields): every gate refused it.
     expect(recoveryGateProblem(withRecovery({ statutoryCharge: { available: true, securesInterest: true, powerOfSale: false, revokeAndLodgeWhenPaid: true } }), { action: "INITIATE" })).toBe(shape);
-    // The ACT draft pack as it stands: its DEBT_RECOVERY has the old forum and statutoryCharge, so every gate refuses.
+    // Since PR 9b the ACT pack's DEBT_RECOVERY is in the shared shape, so opening a case passes.
     const act = PENDING_RULE_PACKS.ACT.rules as unknown as Rules;
     expect(recoveryGatesApply(act)).toBe(true);
-    expect(recoveryGateProblem(act, { action: "INITIATE" })).not.toBeNull();
+    expect(recoveryGateProblem(act, { action: "INITIATE" })).toBeNull();
   });
 
   it("a forum option that is only guidance is shown as a note and cannot be recorded", () => {

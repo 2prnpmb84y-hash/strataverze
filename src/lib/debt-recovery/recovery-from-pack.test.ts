@@ -13,6 +13,7 @@ import { NEVER_RECOVERABLE_FROM_OWNER, usageFee } from "@/lib/billing/fee-engine
 import { feeWordingFor, toFeeView } from "@/lib/billing/disclosure";
 import { TEST_PRICE_BOOK as book } from "@/lib/billing/test-price-book";
 import { auDate } from "@/lib/onboarding/property-onboarding";
+import { recoveryFeeVariant } from "@/lib/billing/hook-codes";
 
 const NSW = statutoryRulesFor("NSW") as NswRules;
 const QLD = QLD_RULE_PACK.rules;
@@ -330,5 +331,115 @@ describe("the draft packs' debt recovery switch (stage 2, PR 9a)", () => {
     }
     expect(PENDING_RULE_PACKS.VIC.rules.FEATURES.debtRecoverySteps).toBe(false);
     expect(PENDING_RULE_PACKS.WA.rules.FEATURES.debtRecoverySteps).toBe(true);
+  });
+});
+
+describe("ACT debt recovery (draft, stage 2, PR 9b)", () => {
+  const act = PENDING_RULE_PACKS.ACT.rules;
+  const steps = act.DEBT_RECOVERY_STEPS;
+  // Compile-time: the pack's DEBT_RECOVERY follows the shared shape, its own fields kept.
+  const shared: DebtRecoveryRules = act.DEBT_RECOVERY;
+  const ownerText = steps.flatMap((s) => [s.actionRequired, s.legalBasis ?? "", s.triggerCondition, act.DEBT_RECOVERY_STEP_LABELS[s.stepType] ?? ""]);
+  const recovery = act.DEBT_RECOVERY;
+
+  it("follows the shared DebtRecoveryRules shape, with the authority, the forum and the statutory charge", () => {
+    expect(shared.source.length).toBeGreaterThan(10);
+    expect(shared.authorityToSue?.recordedAtStep).toBe("COMMITTEE_REVIEW");
+    expect(shared.forum?.recordedAtStep).toBe("PROCEEDINGS");
+    expect(shared.statutoryCharge?.stepType).toBe("STATUTORY_CHARGE");
+    // No key StrataVerze does not apply yet, and none written as undefined.
+    for (const k of ["stepTiming", "finalNotice", "appliesWhen"]) expect(k in recovery, k).toBe(false);
+    expect("amountThreshold" in recovery.authorityToSue).toBe(false);
+    for (const [k, v] of Object.entries(recovery)) expect(v, k).not.toBeUndefined();
+    // The fields kept for the review, renamed so they do not clash with the shared keys.
+    expect(recovery.forumGuidance).toMatchObject({ tribunal: "ACAT", status: "GUIDANCE", courtIncludesAcat: true, courtIncludesAcatStatus: "CONFIRMED" });
+    expect(recovery.statutoryChargeFacts).toEqual({ available: true, securesInterest: true, powerOfSale: false, revokeAndLodgeWhenPaid: true });
+  });
+
+  it("uses the NSW step types plus STATUTORY_CHARGE right after COMMITTEE_REVIEW, in order, each with a label and guidance", () => {
+    const nswTypes = NSW.DEBT_RECOVERY_STEPS.map((s) => s.stepType);
+    const at = nswTypes.indexOf("COMMITTEE_REVIEW") + 1;
+    expect(steps.map((s) => s.stepType)).toEqual([...nswTypes.slice(0, at), "STATUTORY_CHARGE", ...nswTypes.slice(at)]);
+    expect(steps.map((s) => s.stepOrder)).toEqual(steps.map((_, i) => i + 1));
+    for (const s of steps) {
+      expect(act.DEBT_RECOVERY_STEP_LABELS[s.stepType], s.stepType).toBeTruthy();
+      expect(act.DEBT_RECOVERY_GUIDANCE[s.stepType], s.stepType).toBeTruthy();
+    }
+    expect(Object.keys(act.DEBT_RECOVERY_STEP_LABELS).sort()).toEqual(steps.map((s) => s.stepType).sort());
+    expect(act.FEATURES.debtRecoverySteps).toBe(true);
+  });
+
+  it("charges every recovery step fee to the owners corporation, never the owner, and the charge step is unpriced (D10)", () => {
+    expect(act.NEVER_RECOVERABLE_FEE_VARIANTS.map((v) => `${v.code}:${v.variant}`).sort()).toEqual(
+      ["RECOVERY_STEP:FINAL_NOTICE", "RECOVERY_STEP:PAYMENT_PLAN", "RECOVERY_STEP:REFERRAL", "RECOVERY_STEP:REMINDER"],
+    );
+    expect("RECOVERY_COSTS_RECOVERABLE" in act).toBe(false);
+    for (const variant of ["REMINDER", "FINAL_NOTICE", "REFERRAL", "PAYMENT_PLAN"]) {
+      const quote = usageFee({ code: "RECOVERY_STEP", variant, priceBook: book, date: "2026-11-01", neverRecoverableFromOwner: act.NEVER_RECOVERABLE_FEE_VARIANTS });
+      if (quote) expect(quote.recoverableFromOwner, variant).toBe(false);
+    }
+    expect(recoveryFeeVariant("STATUTORY_CHARGE")).toBeNull();
+  });
+
+  it("owner text never states the ACAT limit, the Magistrates Court or ACAT's civil jurisdiction, and never says levy", () => {
+    for (const t of ownerText) {
+      expect(t).not.toMatch(/\$\d|Magistrates|civil jurisdiction|tribunal|guidance/i);
+      expect(t).not.toMatch(/\blev(y|ies)\b/i);
+    }
+    expect(steps.find((s) => s.stepType === "PROCEEDINGS")?.actionRequired).toContain("a court, which includes ACAT (UTMA dictionary)");
+    expect(steps.find((s) => s.stepType === "COMMITTEE_REVIEW")?.legalBasis).toContain("UTMA sch 2 s 2.5(2)(a)");
+    expect(steps.find((s) => s.stepType === "STATUTORY_CHARGE")?.legalBasis).toBe("UTMA ss 96, 97");
+    // The forum options that may be recorded: only the confirmed court. The guidance forum is never in owner text.
+    const guidanceWords = recovery.forum.options.filter((o) => o.status === "GUIDANCE").map((o) => o.words);
+    expect(guidanceWords.length).toBeGreaterThan(0);
+    for (const t of ownerText) for (const w of guidanceWords) expect(t).not.toContain(w);
+  });
+
+  it("states only CONFIRMED law to owners, and says StrataVerze practice where a step is StrataVerze's own", () => {
+    for (const s of steps) {
+      expect(s.status, s.stepType).toBeDefined();
+      if (s.status === "STRATAVERZE") expect(s.legalBasis, s.stepType).toMatch(/^StrataVerze practice/);
+      if (s.status === "NOT_CONFIRMED") expect(s.legalBasis, s.stepType).toBeUndefined();
+    }
+    expect(steps.filter((s) => s.status === "CONFIRMED").map((s) => s.stepType)).toEqual(["STATUTORY_CHARGE", "PROCEEDINGS"]);
+    // The guidance (advisers only) keeps the points not confirmed and the forum guidance.
+    expect(act.DEBT_RECOVERY_GUIDANCE.PROCEEDINGS).toMatch(/Guidance, not confirmed: ACAT says levies may be recovered as a debt in its civil jurisdiction, up to \$25,000/);
+    expect(act.DEBT_RECOVERY_GUIDANCE.PROCEEDINGS).toMatch(/The limit is never applied/);
+    expect(act.DEBT_RECOVERY_GUIDANCE.STATUTORY_CHARGE).toMatch(/Not confirmed: any form or fee for the charge or its revocation, and any period for the revocation/);
+    expect(act.DEBT_RECOVERY_GUIDANCE.COMMITTEE_REVIEW).toMatch(/decision D7/);
+  });
+
+  it("holds every value checked: a value only where it is CONFIRMED or STRATAVERZE, and a note otherwise", () => {
+    const a = recovery.authorityToSue;
+    const c = recovery.statutoryCharge;
+    const checked = [a.accepted, a.managerMayDecide, c.declaredBy, c.revocation.required, c.revocation.withinDays, c.closeBlockedUntilRevoked, ...recovery.forum.options.flatMap((o) => (o.limitCents ? [o.limitCents] : []))];
+    for (const v of checked) {
+      if (v.value != null) expect(["CONFIRMED", "STRATAVERZE"]).toContain(v.status);
+      else expect(v.note.length).toBeGreaterThan(10);
+    }
+    // D7: an executive committee motion or a general meeting ordinary resolution, never the adviser alone.
+    expect(a.accepted.value?.map((r) => [r.meeting, r.kind])).toEqual([["COMMITTEE", "ANY"], ["GENERAL", "ORDINARY"]]);
+    expect(a.managerMayDecide.value).toBe(false);
+    // D8: declared by an executive committee or general meeting motion; revocation required, no deadline; any close blocked.
+    expect(c.declaredBy.value?.map((r) => [r.meeting, r.kind])).toEqual([["COMMITTEE", "ANY"], ["GENERAL", "ANY"]]);
+    expect(c.declaredBy.status).toBe("STRATAVERZE");
+    expect(c.revocation.required).toMatchObject({ value: true, status: "CONFIRMED" });
+    expect(c.revocation.withinDays).toMatchObject({ value: null, status: "NOT_CONFIRMED" });
+    expect(c.closeBlockedUntilRevoked).toMatchObject({ value: "ANY_CLOSE", status: "STRATAVERZE" });
+    expect([c.securesInterest, c.powerOfSale, c.lodgedWith, c.certifiedBy]).toEqual([true, false, "the registrar-general", "the executive committee"]);
+    // D13: only the court may be recorded; ACAT is guidance, and its limit is never applied.
+    expect(recovery.forum.options.map((o) => [o.key, o.status])).toEqual([["COURT", "CONFIRMED"], ["ACAT", "GUIDANCE"]]);
+    expect(recovery.forum.options.find((o) => o.key === "ACAT")?.limitCents).toMatchObject({ value: null, status: "GUIDANCE", guidance: 2_500_000 });
+    expect(recovery.forum.excluded).toEqual([]);
+  });
+
+  it("have no dashes or semicolons in their text", () => {
+    const texts = [...ownerText, ...Object.values(act.DEBT_RECOVERY_GUIDANCE)];
+    for (const t of texts) expect(t).not.toMatch(/[;–—]| - /);
+  });
+
+  it("is switched on only with DEBT_RECOVERY.authorityToSue, like every draft pack", () => {
+    expect(PENDING_RULE_PACKS.ACT.rules.FEATURES.debtRecoverySteps).toBe(true);
+    expect(PENDING_RULE_PACKS.ACT.rules.DEBT_RECOVERY.authorityToSue).toBeDefined();
   });
 });
