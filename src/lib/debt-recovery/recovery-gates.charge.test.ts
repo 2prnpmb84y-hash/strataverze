@@ -145,14 +145,14 @@ describe("the charge step", () => {
     expect(recoveryRecordsToWrite(RULES, { stepType: "STATUTORY_CHARGE", authority: null, forum: null, today: "2026-11-02", amountOwing: "1", charge: refused })).toEqual([]);
   });
 
-  it("refuses a declaration before the case was opened, or with the opening day unknown", () => {
-    expect(recoveryGateProblem(RULES, atCharge(declared(COMMITTEE, "2026-09-30", "2026-10-22")))).toBe(
-      "That resolution took effect before this case was opened, so it cannot be relied on for it. Choose the motion that declared the charge for this case.",
-    );
-    expect(recoveryGateProblem(RULES, atCharge(declared(COMMITTEE, "2026-10-01", "2026-10-22")))).toBeNull();
-    expect(recoveryGateProblem(RULES, atCharge(declared(COMMITTEE, "2026-10-20", "2026-10-22"), { caseOpenedOn: null }))).toBe(
-      "The day this case was opened is not known, so no resolution can be checked against it.",
-    );
+  it("accepts a charge declared and lodged before the case was opened, and needs no opening day (review M1)", () => {
+    expect(recoveryGateProblem(RULES, atCharge(declared(COMMITTEE, "2026-09-01", "2026-09-05")))).toBeNull();
+    expect(recoveryGateProblem(RULES, atCharge(declared(COMMITTEE, "2026-10-20", "2026-10-22"), { caseOpenedOn: null }))).toBeNull();
+    expect(recoveryRecordsToWrite(RULES, { stepType: "STATUTORY_CHARGE", authority: null, forum: null, today: "2026-11-02", amountOwing: "1", charge: declared(COMMITTEE, "2026-09-01", "2026-09-05") })).toMatchObject([
+      { kind: "STATUTORY_CHARGE_LODGED", decidedOn: "2026-09-01", lodgedOn: "2026-09-05" },
+    ]);
+    // Still: lodged on or after the declaration, and neither after today.
+    expect(recoveryGateProblem(RULES, atCharge(declared(COMMITTEE, "2026-09-01", "2026-08-31")))).toBe("It cannot have been lodged before the resolution that declared it took effect (01/09/2026).");
   });
 
   it("refuses a missing or unreal day lodged, one after today and one before the declaration took effect", () => {
@@ -174,6 +174,21 @@ describe("the charge step", () => {
 });
 
 describe("the case's charge from its records", () => {
+  it("matches by the days lodged, whatever order the rows come in or however they tie (review L2)", () => {
+    const lodged = { kind: "STATUTORY_CHARGE_LODGED", lodgedOn: "2026-10-22" };
+    const revoked = { kind: "STATUTORY_CHARGE_REVOKED", lodgedOn: "2026-10-30" };
+    expect(chargeFacts([revoked, lodged])).toEqual(REVOKED);
+    expect(chargeFacts([lodged, revoked])).toEqual(REVOKED);
+    // A revocation lodged the same day as the charge revokes it.
+    expect(chargeFacts([{ kind: "STATUTORY_CHARGE_REVOKED", lodgedOn: "2026-10-22" }, lodged])).toEqual({ lodgedOn: "2026-10-22", revokedOn: "2026-10-22" });
+    // A later charge, listed first, is still the latest; an earlier revocation does not revoke it.
+    const earlier = [{ kind: "STATUTORY_CHARGE_LODGED", lodgedOn: "2026-10-02" }, { kind: "STATUTORY_CHARGE_REVOKED", lodgedOn: "2026-10-05" }];
+    expect(chargeFacts([lodged, ...earlier])).toEqual(OUTSTANDING);
+    expect(chargeFacts([...earlier].reverse())).toEqual({ lodgedOn: "2026-10-02", revokedOn: "2026-10-05" });
+    // A revocation with no real day revokes nothing.
+    expect(chargeFacts([lodged, { kind: "STATUTORY_CHARGE_REVOKED", lodgedOn: null }])).toEqual(OUTSTANDING);
+  });
+
   it("is the latest charge lodged and a revocation recorded after it", () => {
     expect(chargeFacts([])).toEqual(NOTHING_LODGED);
     expect(chargeFacts([{ kind: "AUTHORITY_TO_SUE", lodgedOn: null }])).toEqual(NOTHING_LODGED);

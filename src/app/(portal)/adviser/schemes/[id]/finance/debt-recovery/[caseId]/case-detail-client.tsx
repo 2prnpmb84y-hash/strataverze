@@ -110,8 +110,8 @@ type StepRequirement = {
   problem?: string;
   authority?: { words: string; meetings: { id: string; label: string; motions: { id: string; label: string }[] }[] };
   forum?: { options: { key: string; words: string }[]; notes: string[] };
-  /** The charge step (PR 9b): the charge's name, who may declare it, where it is lodged, the meetings to choose from. */
-  charge?: { words: string; declaredWords: string; lodgedWith: string; meetings: { id: string; label: string; motions: { id: string; label: string }[] }[] };
+  /** The charge step (PR 9b): the charge's name, who may declare it, where it is lodged, the building's day, the meetings to choose from. */
+  charge?: { words: string; declaredWords: string; lodgedWith: string; today: string; meetings: { id: string; label: string; motions: { id: string; label: string }[] }[] };
   recorded?: string[];
 };
 
@@ -1228,7 +1228,7 @@ function ChargeFields({
             <label htmlFor={`charge-lodged-${stepId}`} className="mb-1 block text-sm font-medium text-gray-700">
               Day lodged with {charge.lodgedWith}
             </label>
-            <input id={`charge-lodged-${stepId}`} type="date" value={value.lodgedOn} onChange={(e) => onChange({ lodgedOn: e.target.value })} className={select} />
+            <input id={`charge-lodged-${stepId}`} type="date" max={charge.today} value={value.lodgedOn} onChange={(e) => onChange({ lodgedOn: e.target.value })} className={select} />
           </div>
         </div>
       )}

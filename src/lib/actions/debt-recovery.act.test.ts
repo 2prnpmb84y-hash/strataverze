@@ -12,7 +12,7 @@
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const spy = vi.hoisted(() => ({ failCaseMove: false, failRecord: false }));
+const spy = vi.hoisted(() => ({ failCaseMove: false, failRecord: false, profileId: "adviser", afterFirstRead: null as null | (() => void) }));
 
 vi.mock("@prisma/orm-postgres/orm-client", async () => (await import("@/test/fake-orm")).fakeOrmClient);
 vi.mock("@/prisma/db", async () => ({ db: (await import("@/test/fake-orm")).sharedFake.db }));
@@ -37,11 +37,20 @@ vi.mock("@/lib/debt-recovery/recovery-records-repo", async (orig) => {
       if (spy.failRecord) throw new Error("record store down");
       return real.createRecoveryRecords(...a);
     },
+    // Something can be recorded on the case just after the first read (review M2: a change since the check).
+    readRecoveryRecords: async (...a: Parameters<typeof real.readRecoveryRecords>) => {
+      const rows = await real.readRecoveryRecords(...a);
+      const then = spy.afterFirstRead;
+      spy.afterFirstRead = null;
+      then?.();
+      return rows;
+    },
   };
 });
 vi.mock("@/lib/auth/require-membership", async (orig) => ({
   ...(await orig<typeof import("@/lib/auth/require-membership")>()),
-  requireSchemeMembership: vi.fn(async () => ({ profile: { id: "adviser" }, membership: {}, roles: ["ADVISER"] })),
+  // The caller: the adviser unless a test says otherwise. authoriseCaseAction itself is the real one.
+  requireSchemeMembership: vi.fn(async () => ({ profile: { id: spy.profileId }, membership: {}, roles: ["ADVISER"] })),
 }));
 const captureUsageFee = vi.fn(async () => {});
 vi.mock("@/lib/billing/capture", () => ({ captureUsageFee: (...a: unknown[]) => (captureUsageFee as (...x: unknown[]) => unknown)(...a) }));
@@ -82,6 +91,8 @@ beforeEach(() => {
   vi.setSystemTime(new Date("2026-11-02T01:00:00.000Z"));
   spy.failCaseMove = false;
   spy.failRecord = false;
+  spy.profileId = "adviser";
+  spy.afterFirstRead = null;
   captureUsageFee.mockClear();
 });
 
@@ -292,11 +303,17 @@ describe("the Statutory Charge step (D8)", () => {
     ["no day lodged", { chargeLodgedOn: "" }, "Enter the day it was lodged with the registrar-general."],
     ["a day lodged after today", { chargeLodgedOn: "2026-11-03" }, "The day it was lodged with the registrar-general cannot be after today (02/11/2026)."],
     ["a day lodged before it was declared", { chargeLodgedOn: "2026-10-19" }, "It cannot have been lodged before the resolution that declared it took effect (20/10/2026)."],
-    ["a declaration before the case was opened", { chargeMeetingId: "agm", chargeItemId: "g-ordinary", openedAt: "2026-10-15T02:00:00.000Z" }, "That resolution took effect before this case was opened, so it cannot be relied on for it. Choose the motion that declared the charge for this case."],
   ])("refuses %s, with nothing written", async (_what, { openedAt, ...fields }: Record<string, string>, error) => {
     at(openedAt);
     expect(await declare(fields)).toEqual({ error });
     expectNothingWritten("STATUTORY_CHARGE", 1);
+  });
+
+  it("records a charge declared and lodged before the case was opened (review M1)", async () => {
+    at("2026-10-15T02:00:00.000Z");
+    expect(await declare({ chargeMeetingId: "agm", chargeItemId: "g-ordinary", chargeLodgedOn: "2026-10-12" })).toEqual({ success: true });
+    expect(records()[1]).toMatchObject({ kind: "STATUTORY_CHARGE_LODGED", decidedOn: "2026-10-10", lodgedOn: "2026-10-12", resolutionKind: "GENERAL_MEETING" });
+    expectRecordsValid();
   });
 
   it("writes the record in the step's transaction: a failure later in it leaves neither", async () => {
@@ -382,6 +399,21 @@ describe("recording the revocation", () => {
     expect(sharedFake.table("DebtRecoveryActivity")).toEqual([]);
   });
 
+  it("is refused for the debtor (the owner of the unit), with nothing written", async () => {
+    seed({ currentOrder: order("LEGAL_REFERRAL"), records: [AUTHORITY_RECORD, CHARGE_RECORD] });
+    spy.profileId = "debtor";
+    expect(await revoke("2026-10-30")).toEqual({ error: "You cannot act on a debt recovery case for your own lot." });
+    expect(revocations()).toEqual([]);
+    expect(sharedFake.table("DebtRecoveryActivity")).toEqual([]);
+  });
+
+  it("is refused for a case of another building, with nothing written", async () => {
+    seed({ currentOrder: order("LEGAL_REFERRAL"), records: [AUTHORITY_RECORD, CHARGE_RECORD] });
+    sharedFake.table("Scheme").push({ id: "scheme-2", state: "ACT", timeZone: "Australia/Sydney" });
+    expect(await actions.recordChargeRevocationAction("case-1", "scheme-2", "2026-10-30")).toEqual({ error: "Case not found." });
+    expect(revocations()).toEqual([]);
+  });
+
   it("is not available for a building whose pack has no charge (NSW)", async () => {
     seed({ st: "NSW", currentOrder: 4, records: [] });
     expect(await revoke("2026-10-30")).toEqual({ error: "This is not available for this building." });
@@ -421,6 +453,24 @@ describe("closing an ACT case", () => {
     expectNothingWritten("CLOSED", 2);
     seed({ currentOrder: order("CLOSED"), records: [AUTHORITY_RECORD, CHARGE_RECORD, REVOKED_RECORD] });
     expect(await complete("CLOSED")).toEqual({ success: true });
+  });
+
+  it("the Closed step checks the charge again under the case lock: a charge recorded since the first check refuses it (review M2)", async () => {
+    seed({ currentOrder: order("CLOSED"), records: [AUTHORITY_RECORD, CHARGE_RECORD, REVOKED_RECORD] });
+    // Just after the check before the transaction, a new charge is on record (lodged after the revocation).
+    spy.afterFirstRead = () => sharedFake.table("DebtRecoveryRecord").push(row({ id: "r-4", kind: "STATUTORY_CHARGE_LODGED", decidedOn: "2026-10-31", lodgedOn: "2026-11-01", recordedAt: "2026-11-01T00:00:00.000Z", resolutionMeetingId: "exec", resolutionItemId: "e-carried", resolutionKind: "COMMITTEE" }));
+    expect(await complete("CLOSED")).toEqual({
+      error: "A statutory charge over the unit lease was lodged with the registrar-general on 01/11/2026, and its revocation is not recorded as lodged. Record the revocation before closing this case. Nothing was saved.",
+    });
+    expectNothingWritten("CLOSED", 4);
+  });
+
+  it("the debtor cannot complete the Closed step, nor close the case", async () => {
+    seed({ currentOrder: order("CLOSED"), records: [AUTHORITY_RECORD, CHARGE_RECORD, REVOKED_RECORD] });
+    spy.profileId = "debtor";
+    expect(await complete("CLOSED")).toEqual({ error: "You cannot act on a debt recovery case for your own lot." });
+    expect(await close("CLOSED_PAID")).toEqual({ error: "You cannot act on a debt recovery case for your own lot." });
+    expect(theCase().status).toBe("IN_PROGRESS");
   });
 
   it("after recording the revocation through the action, the case closes", async () => {

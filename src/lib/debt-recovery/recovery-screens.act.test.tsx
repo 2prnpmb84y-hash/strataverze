@@ -127,6 +127,8 @@ describe("the ACT adviser case page", () => {
     expect(after).toContain("Day lodged with the registrar-general");
     expect(container.querySelector(`#charge-meeting-step-${order("STATUTORY_CHARGE")}`)).not.toBeNull();
     expect(container.querySelector(`#charge-lodged-step-${order("STATUTORY_CHARGE")}`)?.getAttribute("type")).toBe("date");
+    // No day after the building's day can be picked (review L5); the server checks it again.
+    expect(container.querySelector(`#charge-lodged-step-${order("STATUTORY_CHARGE")}`)?.getAttribute("max")).toBe("2026-11-02");
     expect(container.innerHTML).toContain("Annual general meeting (10 Oct 2026)");
   });
 

@@ -196,26 +196,29 @@ export interface RecordedRecoveryFacts {
 
 /**
  * The statutory charge on a case, from its records (PR 9b): the day the latest
- * charge was lodged, and the day its revocation was lodged, if recorded after
- * it. Null days where none is recorded.
+ * charge was lodged, and the day its revocation was lodged, if one was lodged
+ * on or after it. Null days where none is recorded.
  */
 export interface ChargeFacts {
   lodgedOn: string | null;
   revokedOn: string | null;
 }
 
-/** A case's charge from its records, oldest first (a revocation counts only after the charge it revokes). */
+/**
+ * A case's charge from its records, in any order (review L2: matched by the
+ * days lodged, not by when the rows were recorded, so ties and ordering do
+ * not matter). The charge is the one lodged latest; a revocation revokes it
+ * only if it was lodged on or after that day (the latest such). A lodged day
+ * is always recorded (migration 20261125's check); a row without a real one
+ * is still a charge, outstanding until a revocation with a real day, and such
+ * a revocation revokes nothing.
+ */
 export function chargeFacts(rows: readonly { kind: string; lodgedOn?: string | null }[]): ChargeFacts {
-  let lodgedOn: string | null = null;
-  let revokedOn: string | null = null;
-  for (const row of rows) {
-    if (row.kind === "STATUTORY_CHARGE_LODGED") {
-      lodgedOn = row.lodgedOn ?? "";
-      revokedOn = null;
-    } else if (row.kind === "STATUTORY_CHARGE_REVOKED" && lodgedOn != null) {
-      revokedOn = row.lodgedOn ?? "";
-    }
-  }
+  const day = (r: { lodgedOn?: string | null }) => (isDay(r.lodgedOn) ? r.lodgedOn : "");
+  const latest = (days: string[]) => days.reduce<string | null>((max, d) => (max == null || d > max ? d : max), null);
+  const lodgedOn = latest(rows.filter((r) => r.kind === "STATUTORY_CHARGE_LODGED").map(day));
+  if (lodgedOn == null) return { lodgedOn: null, revokedOn: null };
+  const revokedOn = latest(rows.filter((r) => r.kind === "STATUTORY_CHARGE_REVOKED").map(day).filter((d) => d !== "" && d >= lodgedOn));
   return { lodgedOn, revokedOn };
 }
 
@@ -318,9 +321,10 @@ export function recoveryGateProblem(rules: Rules, input: RecoveryGateInput): str
 /**
  * Why the charge step's choice is refused, or null (PR 9b). No charge
  * declared records nothing. A declared charge needs a resolution the pack
- * accepts, checked as the authority is (taken effect, on or after the day the
- * case was opened), and the day it was lodged: a real day, not before the
- * resolution took effect and not after the building's day.
+ * accepts that has taken effect (on any day up to the building's day: one
+ * before the case was opened is accepted, review M1), and the day it was
+ * lodged: a real day, not before the resolution took effect and not after
+ * the building's day. The motion's subject is not checked.
  */
 function chargeStepProblem(
   charge: NonNullable<RecoveryStepNeeds["charge"]>,
@@ -333,10 +337,7 @@ function chargeStepProblem(
   if (fact.problem !== null) return fact.problem;
   if (!charge.declaredBy.some((x) => sameResolution(x, fact.resolution))) return `Choose ${charge.declaredWords}.`;
   if (!isDay(fact.decidedOn) || fact.decidedOn > input.today) return "That resolution has not taken effect yet, so it cannot be relied on.";
-  if (!input.caseOpenedOn) return "The day this case was opened is not known, so no resolution can be checked against it.";
-  if (fact.decidedOn < input.caseOpenedOn) {
-    return "That resolution took effect before this case was opened, so it cannot be relied on for it. Choose the motion that declared the charge for this case.";
-  }
+  // No limit on how early: a charge declared and lodged before the case was opened is recorded (review M1, D8 sets none).
   const lodged = (choice.lodgedOn ?? "").trim();
   if (!isDay(lodged)) return `Enter the day it was lodged with ${charge.lodgedWith}.`;
   if (lodged > input.today) return `The day it was lodged with ${charge.lodgedWith} cannot be after today (${auDate(input.today)}).`;

@@ -27,10 +27,11 @@ export interface RecoveryStepRequirement {
   /** Where proceedings were started: the options, and the notes advisers are shown (guidance, never applied). */
   forum?: { options: { key: string; words: string }[]; notes: string[] };
   /**
-   * The statutory charge (PR 9b): how the screens name it, who may declare it, where it is lodged, and the
-   * meetings with motions the declaration may be chosen from.
+   * The statutory charge (PR 9b): how the screens name it, who may declare it, where it is lodged, the
+   * building's day (the latest day lodged that may be entered) and the meetings with motions the declaration
+   * may be chosen from.
    */
-  charge?: { words: string; declaredWords: string; lodgedWith: string; meetings: { id: string; label: string; motions: { id: string; label: string }[] }[] };
+  charge?: { words: string; declaredWords: string; lodgedWith: string; today: string; meetings: { id: string; label: string; motions: { id: string; label: string }[] }[] };
   /** What the case records for this step, in words. */
   recorded?: string[];
 }
@@ -73,7 +74,9 @@ export async function recoveryStepRequirements(
     if (needs.forum) out[t] = { ...out[t], forum: { options: [...needs.forum.options], notes: [...needs.forum.notes] } };
     if (needs.charge) {
       accepted.push(...needs.charge.declaredBy);
-      out[t] = { ...out[t], charge: { words: needs.charge.words, declaredWords: needs.charge.declaredWords, lodgedWith: needs.charge.lodgedWith, meetings: [] } };
+      const { schemeToday } = await import("@/lib/jurisdiction/scheme-time");
+      const today = await schemeToday(schemeId);
+      out[t] = { ...out[t], charge: { words: needs.charge.words, declaredWords: needs.charge.declaredWords, lodgedWith: needs.charge.lodgedWith, today, meetings: [] } };
     }
   }
   if (Object.keys(out).length === 0) return null;

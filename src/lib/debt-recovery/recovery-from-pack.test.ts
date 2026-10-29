@@ -443,3 +443,20 @@ describe("ACT debt recovery (draft, stage 2, PR 9b)", () => {
     expect(PENDING_RULE_PACKS.ACT.rules.DEBT_RECOVERY.authorityToSue).toBeDefined();
   });
 });
+
+describe("a pack with a statutory charge has no statutory payment plans (PR 9b review L1)", () => {
+  it("every pack, active or pending, with DEBT_RECOVERY.statutoryCharge has FEATURES.statutoryPaymentPlans off", () => {
+    const packs = [...Object.values(RULE_PACKS), ...Object.values(PENDING_RULE_PACKS)] as unknown as {
+      code: string;
+      rules: { FEATURES: { statutoryPaymentPlans: boolean }; DEBT_RECOVERY?: { statutoryCharge?: unknown } };
+    }[];
+    const withCharge = packs.filter((p) => p.rules.DEBT_RECOVERY?.statutoryCharge);
+    expect(withCharge.map((p) => p.code)).toContain("AU-ACT");
+    for (const p of withCharge) {
+      expect(
+        p.rules.FEATURES.statutoryPaymentPlans,
+        `${p.code}: completePlan (src/lib/debt-recovery/payment-plan-requests.ts) closes a case as paid when the last instalment is paid without checking a lodged statutory charge's revocation, so a pack with a statutory charge must not have statutory payment plans until completePlan applies the charge close gate`,
+      ).toBe(false);
+    }
+  });
+});

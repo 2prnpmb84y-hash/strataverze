@@ -38,6 +38,7 @@ import { UnsupportedJurisdictionError, needRule, type StatutoryRules } from "@/c
 import { stepPausedByPlan } from "@/lib/debt-recovery/payment-plans";
 import { lotOwnerIds } from "@/lib/debt-recovery/lot-owners";
 import {
+  chargeCloseProblem,
   chargeFacts,
   chargeRevocationProblem,
   recoveryGateProblem,
@@ -367,6 +368,15 @@ export async function completeDebtRecoveryStepAction(
         ? stepCompletionProblem(lockedCase, caseSteps, stepId, rules.DEBT_RECOVERY_STEP_LABELS)
         : "Step not found";
       if (problem) throw new StepCompletionRefused(problem);
+      // The Closed step under a pack with a statutory charge (the ACT, PR 9b
+      // review M2): the case's charge is read again under the lock, so a
+      // revocation or charge recorded since the check above is seen. Never
+      // reached for NSW, Queensland or Western Australia.
+      if (step.stepType === "CLOSED" && statutoryChargeApplies(rules)) {
+        const charge = chargeFacts(await readRecoveryRecords(caseId, tx.orm));
+        const chargeProblem = chargeCloseProblem(rules, { charge });
+        if (chargeProblem) throw new StepCompletionRefused(chargeProblem);
+      }
 
       await updateDebtRecoveryStep(
         stepId,
