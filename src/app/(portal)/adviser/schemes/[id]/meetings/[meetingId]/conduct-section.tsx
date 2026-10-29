@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useId, useState, useTransition } from "react";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,18 +29,57 @@ export interface ConductItemView {
   outcome: string | null;
 }
 
+/** The words of one of the chair's questions, as the server page passes them (from the building's pack). */
+export interface AttestationWords {
+  label: string;
+  help: string;
+}
+
 /**
  * Where the building's votes are counted at conduct (Queensland), what the
  * chair records them against: plain data from the server page
  * (conductVotingView). Absent or null: outcomes are recorded as before.
+ *
+ * Where an item's test needs them (VIC, ACT and WA stage 2, PR 8a-ii), the
+ * item has `quorumAsked` and `unitsPresentAsked` and the view carries the
+ * questions' words in `attestation`. Left out otherwise (Queensland).
  */
 export interface ConductVotingProps {
   lots: { id: string; lotNumber: string }[];
-  items: Record<string, { pollAllowed: boolean; proxiesAllowed: boolean }>;
+  items: Record<string, { pollAllowed: boolean; proxiesAllowed: boolean; quorumAsked?: true; unitsPresentAsked?: true }>;
   pollLabel: string;
+  attestation?: { quorum?: AttestationWords; unitsPresent?: AttestationWords };
 }
 
 type LotVote = { vote: string; byProxy: boolean };
+
+type ItemChoices = ConductVotingProps["items"][string];
+
+/** What the chair answered for an item, as sent to the server: an unanswered question is left out, never false. */
+type AttestationAnswers = { quorumPresent?: boolean; unitsPresent?: number };
+
+// Used only if the server page leaves a question's words out, so the question is never hidden from the chair.
+const QUORUM_FALLBACK: AttestationWords = {
+  label: "Quorum present for this item",
+  help: "Answer whether there was a quorum when this item was decided.",
+};
+const UNITS_PRESENT_FALLBACK: AttestationWords = {
+  label: "Lots present or represented for this item",
+  help: "Count every lot present in person or represented when this item was decided.",
+};
+
+/**
+ * The units present as the chair typed them: a whole number from 0 to the
+ * number of lots, or undefined when left blank. Anything else is null (not
+ * a whole number), so a part number or a stray letter is never sent.
+ */
+function parseUnitsPresent(text: string, lotCount: number): number | undefined | null {
+  const t = text.trim();
+  if (t === "") return undefined;
+  if (!/^\d+$/.test(t)) return null;
+  const n = Number(t);
+  return n <= lotCount ? n : null;
+}
 
 const VOTE_CHOICES = [
   { value: "", label: "Not voting" },
@@ -76,6 +115,9 @@ export function ConductSection({
   // The votes being recorded, by item then lot, and whether a poll was asked for.
   const [votes, setVotes] = useState<Record<string, Record<string, LotVote>>>({});
   const [polls, setPolls] = useState<Record<string, boolean>>({});
+  // The chair's answers, by item: whether there was a quorum (unanswered until chosen), and the units present as typed.
+  const [quorum, setQuorum] = useState<Record<string, boolean>>({});
+  const [present, setPresent] = useState<Record<string, string>>({});
 
   function run(fn: () => Promise<ConductActionState>) {
     setError(null);
@@ -100,6 +142,48 @@ export function ConductSection({
 
   function votesFor(itemId: string) {
     return Object.entries(votes[itemId] ?? {}).map(([lotId, v]) => ({ lotId, vote: v.vote, byProxy: v.byProxy }));
+  }
+
+  const choicesFor = (itemId: string): ItemChoices => voting?.items[itemId] ?? { pollAllowed: false, proxiesAllowed: true };
+  const asks = (c: ItemChoices) => !!(c.quorumAsked || c.unitsPresentAsked);
+
+  /**
+   * The chair's answers for an item that asks: only what was answered (an
+   * unanswered quorum is left out, never sent as No), and whether the units
+   * present typed are not a whole number in range.
+   */
+  function answersFor(itemId: string, choices: ItemChoices, lotCount: number): { answers: AttestationAnswers; unitsUnreadable: boolean } {
+    const answers: AttestationAnswers = {};
+    let unitsUnreadable = false;
+    if (choices.quorumAsked && typeof quorum[itemId] === "boolean") answers.quorumPresent = quorum[itemId];
+    if (choices.unitsPresentAsked) {
+      const units = parseUnitsPresent(present[itemId] ?? "", lotCount);
+      if (units === null) unitsUnreadable = true;
+      else if (units !== undefined) answers.unitsPresent = units;
+    }
+    return { answers, unitsUnreadable };
+  }
+
+  function recordOutcome(itemId: string, outcome: string) {
+    if (!voting) {
+      run(() => recordAgendaOutcomeAction(schemeId, meetingId, itemId, outcome));
+      return;
+    }
+    const choices = choicesFor(itemId);
+    // Queensland, and any item that asks nothing: exactly the six arguments as before.
+    if (!asks(choices)) {
+      run(() => recordAgendaOutcomeAction(schemeId, meetingId, itemId, outcome, votesFor(itemId), polls[itemId] === true));
+      return;
+    }
+    const lotCount = voting.lots.length;
+    const { answers, unitsUnreadable } = answersFor(itemId, choices, lotCount);
+    // Units present that are not a whole number are never sent. A deferral is not counted, so it goes ahead without them.
+    if (unitsUnreadable && outcome !== "DEFERRED") {
+      setNotice(null);
+      setError(`Enter the units present as a whole number from 0 to ${lotCount}. Nothing was saved.`);
+      return;
+    }
+    run(() => recordAgendaOutcomeAction(schemeId, meetingId, itemId, outcome, votesFor(itemId), polls[itemId] === true, answers));
   }
 
   const running = status === "IN_PROGRESS";
@@ -203,25 +287,7 @@ export function ConductSection({
                               key={o}
                               type="button"
                               disabled={pending}
-                              onClick={() =>
-                                run(() =>
-                                  voting
-                                    ? recordAgendaOutcomeAction(
-                                        schemeId,
-                                        meetingId,
-                                        item.id,
-                                        o,
-                                        votesFor(item.id),
-                                        polls[item.id] === true,
-                                      )
-                                    : recordAgendaOutcomeAction(
-                                        schemeId,
-                                        meetingId,
-                                        item.id,
-                                        o,
-                                      ),
-                                )
-                              }
+                              onClick={() => recordOutcome(item.id, o)}
                               className="text-[11px] px-2 py-1 rounded-full border border-line hover:bg-paper-2 text-ink-muted"
                             >
                               {OUTCOME_LABELS[o]}
@@ -232,10 +298,22 @@ export function ConductSection({
                     )}
                   </div>
                 </div>
+                {running && voting && asks(choicesFor(item.id)) && (
+                  <ChairAnswers
+                    choices={choicesFor(item.id)}
+                    words={voting.attestation}
+                    lotCount={voting.lots.length}
+                    quorum={quorum[item.id]}
+                    present={present[item.id] ?? ""}
+                    disabled={pending}
+                    onQuorum={(yes) => setQuorum((all) => ({ ...all, [item.id]: yes }))}
+                    onPresent={(text) => setPresent((all) => ({ ...all, [item.id]: text }))}
+                  />
+                )}
                 {running && voting && (
                   <VoteRecorder
                     lots={voting.lots}
-                    choices={voting.items[item.id] ?? { pollAllowed: false, proxiesAllowed: true }}
+                    choices={choicesFor(item.id)}
                     pollLabel={voting.pollLabel}
                     votes={votes[item.id] ?? {}}
                     poll={polls[item.id] === true}
@@ -264,6 +342,94 @@ export function ConductSection({
   );
 }
 
+/**
+ * The chair's answers for one item, where its test needs them (VIC, ACT and
+ * WA stage 2, PR 8a-ii; Matthew Wrigley's decision of 29 Oct 2026): whether
+ * there was a quorum, as Yes or No, and the units present. Shown above the
+ * votes, not folded away, so the chair cannot miss them. Never filled in for
+ * the chair: until Yes or No is chosen the quorum is unanswered, and the
+ * server refuses the outcome.
+ */
+function ChairAnswers({
+  choices,
+  words,
+  lotCount,
+  quorum,
+  present,
+  disabled,
+  onQuorum,
+  onPresent,
+}: {
+  choices: ItemChoices;
+  words: ConductVotingProps["attestation"];
+  lotCount: number;
+  quorum: boolean | undefined;
+  present: string;
+  disabled: boolean;
+  onQuorum: (yes: boolean) => void;
+  onPresent: (text: string) => void;
+}) {
+  const id = useId();
+  const quorumWords = words?.quorum ?? QUORUM_FALLBACK;
+  const unitsWords = words?.unitsPresent ?? UNITS_PRESENT_FALLBACK;
+  return (
+    <div className="mt-3 space-y-3 rounded-[var(--radius-card)] border border-amber-200 bg-amber-50 px-3 py-2">
+      {choices.quorumAsked && (
+        <fieldset aria-describedby={`${id}-quorum-help`}>
+          <legend className="text-xs font-medium text-ink">{quorumWords.label}</legend>
+          <p id={`${id}-quorum-help`} className="mt-1 text-xs text-ink-muted">
+            {quorumWords.help}
+          </p>
+          <div className="mt-2 flex items-center gap-4 text-xs text-ink">
+            {([
+              [true, "Yes"],
+              [false, "No"],
+            ] as const).map(([value, label]) => (
+              <label key={label} className="flex items-center gap-1">
+                <input
+                  type="radio"
+                  name={`${id}-quorum`}
+                  value={value ? "yes" : "no"}
+                  checked={quorum === value}
+                  disabled={disabled}
+                  onChange={() => onQuorum(value)}
+                />
+                {label}
+              </label>
+            ))}
+          </div>
+          {quorum === undefined && (
+            <p className="mt-1 text-xs text-amber-800">Not answered yet. Answer it before recording Resolved or Motion lost.</p>
+          )}
+        </fieldset>
+      )}
+      {choices.unitsPresentAsked && (
+        <div>
+          <label htmlFor={`${id}-units`} className="block text-xs font-medium text-ink">
+            {unitsWords.label}
+          </label>
+          <p id={`${id}-units-help`} className="mt-1 text-xs text-ink-muted">
+            {unitsWords.help}
+          </p>
+          <input
+            id={`${id}-units`}
+            type="number"
+            inputMode="numeric"
+            min={0}
+            max={lotCount}
+            step={1}
+            value={present}
+            disabled={disabled}
+            aria-describedby={`${id}-units-help`}
+            onChange={(e) => onPresent(e.target.value)}
+            className="mt-2 w-24 rounded border border-line bg-white px-2 py-1 text-xs"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 /** The votes for one item: each lot's vote, whether by proxy, and a poll where one may be asked for. */
 function VoteRecorder({
   lots,
@@ -276,7 +442,7 @@ function VoteRecorder({
   onPoll,
 }: {
   lots: ConductVotingProps["lots"];
-  choices: { pollAllowed: boolean; proxiesAllowed: boolean };
+  choices: ItemChoices;
   pollLabel: string;
   votes: Record<string, LotVote>;
   poll: boolean;
