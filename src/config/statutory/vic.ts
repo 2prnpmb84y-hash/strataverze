@@ -7,8 +7,8 @@
  * applied to any building: `rulePackFor` returns active packs only, and
  * Victoria is not in SUPPORTED_SCHEME_STATES or the database's state check.
  * DECISIONS lists proposed choices, and two decided: the payment order and
- * the notice timing (Matthew Wrigley, 28 Oct 2026). FOR_REVIEW lists the
- * points to settle first.
+ * the notice timing (Matthew Wrigley, 28 Oct 2026), and later ones up to
+ * debt recovery (29 Oct 2026). FOR_REVIEW lists the points to settle first.
  *
  * Every value comes from the research notes of 27 Oct 2026 prepared for
  * Matthew Wrigley ("Victoria: owners corporation law research notes"), which
@@ -54,18 +54,30 @@
  * NOTICE_RULES (from FEE_NOTICES, with checked values) since stage 2, PR 6a,
  * and MEETING_RULES (from MEETINGS, RESOLUTIONS, ARREARS and RECORDS) since
  * stage 2, PR 8a-i, so no shared shape is deferred (DEFERRED_SHARED_SHAPES is
- * empty). The final fee notice (s 32) stays in FEE_NOTICES.finalNotice.
+ * empty). The final fee notice (s 32) stays in FEE_NOTICES.finalNotice, and
+ * since stage 2, PR 9c debt recovery is in the shared shape too
+ * (DEBT_RECOVERY, DEBT_RECOVERY_STEPS, their labels and guidance, and
+ * NEVER_RECOVERABLE_FEE_VARIANTS; Matthew Wrigley's decisions D2 to D6 and
+ * D10 to D15 of 29 Oct 2026, kept in FOR_REVIEW).
  */
 
 import type { MeetingRuleSet } from "@/lib/meetings/rules";
 import type {
+  AuthorityToSueRule,
   BuildingFactDefinition,
   BuildingSelector,
   DatedRules,
   DatedValue,
+  DebtAuthorityResolution,
+  DebtForumRule,
+  DebtRecoveryAppliesWhen,
+  DebtRecoveryRules,
+  DebtRecoveryStepRule,
+  DebtStepTimingRule,
   DerivedBuildingSelector,
   DerivedSelectorRule,
   EntitlementScheduleDefinition,
+  FeeVariant,
   NoStatutoryRule,
   FundDefinition,
   LateChargeRules,
@@ -77,6 +89,7 @@ import type {
   RecordedFactKey,
   RuleStatus,
   SharedTerminology,
+  StatutoryFinalNoticeRule,
 } from "./types";
 
 const OCA = "Owners Corporations Act 2006 (Vic)";
@@ -985,7 +998,8 @@ export const FEE_NOTICES = {
  * legal rule by Matthew Wrigley's decision of 28 Oct 2026, with the 35-day
  * lead (DECISIONS). No hardship statement is required until new s 31(2)(ab)
  * commences (HARDSHIP_ON_NOTICES). The tier 5 exemption from s 31 (s 7A(1)(a))
- * is not applied yet, and the final fee notice (s 32) is a later PR.
+ * is not applied yet. The final fee notice (s 32) is DEBT_RECOVERY.finalNotice
+ * (stage 2, PR 9c).
  *
  * The fields outside `checked` hold the safest values for a reader that knows
  * only them: the 28-day minimum, and a lead of 28 days, since the most notice
@@ -1298,6 +1312,354 @@ export const FEE_RECOVERY = {
   source: `${OCA} ss 7A(1)(a), 28(1), 30, 31, 32, 152(4), 153(1A), 162, 163, 165(1)(ca), (4)`,
   status: "CONFIRMED" as RuleStatus,
 } as const;
+
+// ---------------------------------------------------------------------------
+// E2. Debt recovery rules and steps (stage 2, PR 9c)
+// ---------------------------------------------------------------------------
+
+/** Who decided how the Victorian recovery rules are applied, as DECISIONS records it (stage 2, PR 9c). */
+const VIC_DEBT_DECISION = "Matthew Wrigley's StrataVerze decisions of 29 Oct 2026 (DECISIONS)";
+
+const VIC_GENERAL_ORDINARY: DebtAuthorityResolution = { meeting: "GENERAL", kind: "ORDINARY", words: "an ordinary resolution at a general meeting" };
+const VIC_GENERAL_SPECIAL: DebtAuthorityResolution = { meeting: "GENERAL", kind: "SPECIAL", words: "a special resolution at a general meeting" };
+
+/**
+ * Who may decide to start proceedings (s 18 as substituted on 9 Sep 2026,
+ * CONFIRMED; stage 2, PR 9c, decision D2), recorded when COMMITTEE_REVIEW is
+ * completed. A special resolution before any proceeding in a court or
+ * tribunal (s 18(1)); an ordinary resolution for an order for payment of no
+ * more than twice the total amount of the current annual fees (s 18(2)).
+ * Whether that total is the owners corporation's or the lot's, and the
+ * financial year that makes it "current", are not confirmed, so the
+ * comparator has no value and every proceeding needs a special resolution at
+ * a general meeting. Never a committee: delegation under s 11(3), (5) is not
+ * confirmed. The adviser can never decide alone.
+ */
+const VIC_AUTHORITY_TO_SUE = {
+  recordedAtStep: "COMMITTEE_REVIEW",
+  accepted: {
+    value: [VIC_GENERAL_ORDINARY, VIC_GENERAL_SPECIAL],
+    status: "STRATAVERZE",
+    source: `${OCA} s 18(1), (2) (substituted by ${CLAA} s 32); ${VIC_DEBT_DECISION}, D2`,
+    note: "The kinds of resolution are CONFIRMED (s 18(1), (2)). Which one a claim needs is decided by amountThreshold: while its comparator has no value only the special resolution is accepted. Accepting only a motion carried at a general meeting, never a committee (delegation under s 11(3), (5) NOT_CONFIRMED), is decision D2.",
+  },
+  amountThreshold: {
+    multiple: AUTHORITY_TO_SUE.ordinaryResolutionForMoneyUpToTimesCurrentAnnualFees,
+    comparator: {
+      value: null,
+      status: "NOT_CONFIRMED",
+      source: `${OCA} s 18(2)`,
+      note: "Whether \"the total amount of the current annual fees\" in s 18(2) means the owners corporation's total annual fees or the lot's is not stated in the notes, and the Victorian financial year is not confirmed, so the current annual fees cannot be worked out either. Until both are confirmed every proceeding needs a special resolution at a general meeting (decision D2).",
+    },
+    words: "twice the total amount of the current annual fees",
+    upTo: VIC_GENERAL_ORDINARY,
+    above: VIC_GENERAL_SPECIAL,
+    source: `${OCA} s 18(1), (2)`,
+  },
+  managerMayDecide: {
+    value: false,
+    status: "STRATAVERZE",
+    source: `${OCA} ss 11(3), (5), 18; ${VIC_DEBT_DECISION}, D2`,
+    note: "Section 18 needs a resolution of the owners corporation. Whether the committee, or a manager it delegates to, may give the authority is not confirmed (ss 11(3), (5)), so StrataVerze never lets the adviser decide alone.",
+  },
+  source: `${OCA} s 18(1), (2), (2A) (substituted by ${CLAA} s 32)`,
+  status: "STRATAVERZE",
+} satisfies AuthorityToSueRule;
+
+/**
+ * Where proceedings go (stage 2, PR 9c, decision D13), recorded when
+ * PROCEEDINGS is completed: VCAT, for an owners corporation dispute
+ * (ss 162, 163, CONFIRMED), or any court of competent jurisdiction, where the
+ * fees are recoverable as a debt (s 30, CONFIRMED). The notes name no
+ * particular court. No cap appears in OCA ss 162 to 169 (CONFIRMED); any VCAT
+ * Act limit is NOT_CONFIRMED (the VCAT Act was not read), so no limit is
+ * recorded or applied.
+ */
+const VIC_DEBT_FORUM: DebtForumRule = {
+  recordedAtStep: "PROCEEDINGS",
+  options: [
+    { key: "VCAT", words: "VCAT", status: "CONFIRMED", limitCents: null, source: `${OCA} ss 162, 163` },
+    { key: "COURT", words: "any court of competent jurisdiction", status: "CONFIRMED", limitCents: null, source: `${OCA} s 30` },
+  ],
+  excluded: [],
+  source: `${OCA} ss 30, 162, 163`,
+};
+
+/**
+ * Day counting (stage 2, PR 9c, decision D4, a StrataVerze reading): a step
+ * "after N days" may be completed from day N + 1 after the day counted from,
+ * in the building's day. How days are counted and when a notice is given are
+ * NOT_CONFIRMED (NOT_CONFIRMED list).
+ */
+const VIC_DAY_AFTER_PERIOD = {
+  value: "DAY_AFTER_PERIOD",
+  status: "STRATAVERZE",
+  source: `${VIC_DEBT_DECISION}, D4`,
+  note: "StrataVerze's reading: a step after 28 days may be completed from day 29 after the day counted from, in the building's day. How days are counted (calendar or clear days) and when a notice is taken to be given are not confirmed.",
+} as const;
+
+/**
+ * The days the final notice and proceedings wait (ss 32(1), 163(2),
+ * CONFIRMED; stage 2, PR 9c, decisions D4, D5, D14 and D15). The final notice
+ * from day 29 after the day each overdue fee notice was issued, counting only
+ * fee notices issued under this pack (a takeover notice refuses). Proceedings
+ * from day 29 after the day the final notice was recorded as given, in VCAT
+ * (s 163(2)) and, by decision D5, in a court too. Both are refused once the
+ * payment plan pause (new ss 32(3), 163(3), (4), DATED_RULES.PAYMENT_PLANS)
+ * is recorded as commenced or its latest start date has passed: the pause is
+ * not supported yet (D14).
+ */
+const VIC_STEP_TIMING: readonly DebtStepTimingRule[] = [
+  {
+    stepType: "FINAL_NOTICE",
+    after: { kind: "EACH_OVERDUE_NOTICE_ISSUED" },
+    days: { value: FEE_NOTICES.finalNotice.mayBeGivenIfUnpaidDaysAfterFeeNotice, status: "CONFIRMED", source: `${OCA} s 32(1)` },
+    earliest: VIC_DAY_AFTER_PERIOD,
+    pausedBy: "PAYMENT_PLANS",
+    words: "a final fee notice may be given only if the fees are not paid within 28 days after the fee notice (OCA s 32(1)), which StrataVerze counts from day 29 after the day each overdue fee notice was issued",
+    source: `${OCA} s 32(1); ${VIC_DEBT_DECISION}, D4, D14, D15`,
+    status: "STRATAVERZE",
+  },
+  {
+    stepType: "PROCEEDINGS",
+    after: { kind: "STEP_NOTICE_SENT", stepType: "FINAL_NOTICE" },
+    days: { value: FEE_RECOVERY.vcatOnlyIfUnpaidDaysAfterFinalNotice, status: "CONFIRMED", source: `${OCA} s 163(2)` },
+    earliest: VIC_DAY_AFTER_PERIOD,
+    forums: ["VCAT", "COURT"],
+    pausedBy: "PAYMENT_PLANS",
+    words: "an application to VCAT for payment can only be made if the amount is not paid within 28 days after the final notice (OCA s 163(2)), which StrataVerze counts from day 29 after the day the final notice was recorded as given, and applies to a claim in a court too",
+    source: `${OCA} s 163(2); ${VIC_DEBT_DECISION}, D4, D5, D14`,
+    status: "STRATAVERZE",
+  },
+];
+
+/**
+ * The final fee notice (s 32, CONFIRMED; stage 2, PR 9c, decision D3). It may
+ * be given if the fees are not paid within 28 days after the fee notice, in
+ * the approved form, and states that the amount must be paid immediately, the
+ * interest due to date and its daily accrual, and the intention to take
+ * Part 11 action if it is unpaid within 28 days after it. StrataVerze cannot
+ * produce the approved form (FOR_REVIEW APPROVED_FORMS_USE), and recording a
+ * final fee notice given outside StrataVerze is refused for now, so a case
+ * cannot pass the Final Notice step: it fails closed.
+ */
+const VIC_FINAL_NOTICE: StatutoryFinalNoticeRule = {
+  stepType: "FINAL_NOTICE",
+  words: "the final fee notice",
+  noticeType: "FINAL_FEE_NOTICE",
+  contents: [
+    { key: "PAY_IMMEDIATELY", words: FEE_NOTICES.finalNotice.mustState[0], status: "CONFIRMED", source: `${OCA} s 32(2)` },
+    { key: "INTEREST_TO_DATE_AND_DAILY", words: FEE_NOTICES.finalNotice.mustState[1], status: "CONFIRMED", source: `${OCA} s 32(2)(b)` },
+    { key: "PART_11_ACTION", words: FEE_NOTICES.finalNotice.mustState[2], status: "CONFIRMED", source: `${OCA} s 32(2)` },
+  ],
+  form: {
+    required: { value: FEE_NOTICES.finalNotice.approvedFormRequired, status: "CONFIRMED", source: `${OCA} s 32(1)` },
+    title: FEE_NOTICES.approvedForms.forms[1].title,
+    reference: FEE_NOTICES.approvedForms.forms[1].reference,
+    appliedFrom: {
+      value: null,
+      status: "NOT_CONFIRMED",
+      source: FEE_NOTICES.approvedForms.appliedFrom.source,
+      note: "the day the current approved forms applied from is not confirmed (April 2025 in guidance; the 28 April 2025 date was found in no official source).",
+      guidance: FEE_NOTICES.approvedForms.appliedFrom.guidance,
+    },
+    source: `${OCA} ss 32(1), 200; ${CAV_FORMS}`,
+  },
+  givenOutsideMayBeRecorded: {
+    value: false,
+    status: "STRATAVERZE",
+    source: `${VIC_DEBT_DECISION}, D3`,
+    note: "Recording a final fee notice given outside StrataVerze is refused for now, until how the approved forms are used is settled (FOR_REVIEW APPROVED_FORMS_USE and FINAL_NOTICE_OUTSIDE).",
+  },
+  dailyInterestRounding: {
+    value: "CENT",
+    status: "STRATAVERZE",
+    source: `${OCA} s 32(2)(b); ${VIC_DEBT_DECISION}`,
+    note: "The notes do not say how the daily interest is rounded. StrataVerze rounds it once, half up, to the cent.",
+  },
+  source: `${OCA} s 32(1), (2)`,
+};
+
+/**
+ * The buildings a recovery case may be opened for (stage 2, PR 9c, decision
+ * D6): tiers 1 to 4. A tier 5 owners corporation (a 2-lot subdivision, or
+ * services only) is exempt from ss 18, 31 and 32 (ss 7A(1)(a), 8, CONFIRMED),
+ * and one whose tier cannot be worked out is refused too.
+ */
+const VIC_RECOVERY_APPLIES: DebtRecoveryAppliesWhen = {
+  when: tierIn([TIER_1.tier, TIER_2.tier, TIER_3.tier, TIER_4.tier]),
+  refusal: "This is a tier 5 owners corporation (a 2-lot subdivision or services only), which is exempt from OCA ss 18, 31 and 32 (ss 7A(1)(a), 8), so StrataVerze does not run debt recovery for it",
+  unknown: "This owners corporation's tier cannot be worked out from what is recorded. A tier 5 owners corporation is exempt from OCA ss 18, 31 and 32 (ss 7A(1)(a), 8), so a case is opened only once the tier is known to be 1 to 4. Record the building's facts first",
+  source: `${OCA} ss 7, 7A(1)(a), 8; ${VIC_DEBT_DECISION}, D6`,
+  status: "STRATAVERZE",
+};
+
+/**
+ * Recovering unpaid fees in the shared DebtRecoveryRules shape (stage 2,
+ * PR 9c, 29 Oct 2026), read by the recovery gates
+ * (src/lib/debt-recovery/recovery-gates.ts). FEE_RECOVERY, AUTHORITY_TO_SUE
+ * and FEE_NOTICES.finalNotice above stay as the notes give them.
+ */
+export const DEBT_RECOVERY = {
+  authorityToSue: VIC_AUTHORITY_TO_SUE,
+  forum: VIC_DEBT_FORUM,
+  stepTiming: VIC_STEP_TIMING,
+  finalNotice: VIC_FINAL_NOTICE,
+  appliesWhen: VIC_RECOVERY_APPLIES,
+  source: `${OCA} ss 7A(1)(a), 18, 30, 31, 32, 162, 163`,
+} satisfies DebtRecoveryRules;
+
+/**
+ * The recovery steps copied onto each new case (stage 2, PR 9c, decision
+ * D11): NSW step types, so the case engine, fees and screens work unchanged,
+ * without the reminder notice. Each step's `status` says how far it was
+ * checked: owners see `actionRequired` and `legalBasis`, which state only
+ * CONFIRMED law, and say "StrataVerze practice" where a step is StrataVerze's
+ * own. The points not confirmed are in DEBT_RECOVERY_GUIDANCE (advisers only).
+ */
+export const DEBT_RECOVERY_STEPS: readonly DebtRecoveryStepRule[] = [
+  {
+    stepType: "LEDGER_VERIFICATION",
+    stepOrder: 1,
+    actionRequired: "Check each unpaid fee and its fee notice, and that payments were applied to fees first, then interest, then recovery costs",
+    legalBasis: "StrataVerze practice",
+    responsibleParty: "ADVISER",
+    approvalRequired: false,
+    triggerCondition: "Case opened",
+    status: "STRATAVERZE",
+  },
+  {
+    stepType: "INITIAL_CONTACT",
+    stepOrder: 2,
+    actionRequired: "Contact the owner about the unpaid fees and the amount owing, including any interest",
+    legalBasis: "StrataVerze practice",
+    responsibleParty: "ADVISER",
+    approvalRequired: false,
+    triggerCondition: "Ledger verified",
+    noticeType: "REMINDER",
+    status: "STRATAVERZE",
+  },
+  {
+    stepType: "FINAL_NOTICE",
+    stepOrder: 3,
+    actionRequired:
+      "Give the owner a final fee notice in the approved form if the fees are not paid within 28 days after the fee notice. It states that the amount must be paid immediately, the interest due to date and its daily accrual, and that the owners corporation intends to take action under Part 11 if the amount is not paid within 28 days after the final notice",
+    legalBasis: "OCA s 32(1), (2)",
+    responsibleParty: "ADVISER",
+    approvalRequired: false,
+    triggerCondition: "Fees unpaid 28 days after the fee notice",
+    noticeType: "FINAL_FEE_NOTICE",
+    status: "CONFIRMED",
+  },
+  {
+    stepType: "HARDSHIP_REVIEW",
+    stepOrder: 4,
+    actionRequired: "If the owner asks, decide whether to agree to payment by instalments or to waive interest. A request can arrive at any step",
+    legalBasis: "StrataVerze practice. Instalments under the owners corporation's rules: OCA Sch 1 item 3.5. Waiving interest in a particular case: OCA s 29(3)",
+    responsibleParty: "COMMITTEE",
+    approvalRequired: true,
+    triggerCondition: "Owner asks to pay by instalments or for interest to be waived",
+    status: "STRATAVERZE",
+  },
+  {
+    stepType: "COMMITTEE_REVIEW",
+    stepOrder: 5,
+    actionRequired:
+      "Decide by a special resolution at a general meeting whether to start proceedings to recover the unpaid fees. The law needs a special resolution before any proceeding in a court or tribunal, or an ordinary resolution for an order for payment of no more than twice the total amount of the current annual fees",
+    legalBasis: "StrataVerze practice (a special resolution at a general meeting decides every claim). Authority to start proceedings: OCA s 18(1), (2)",
+    responsibleParty: "GENERAL_MEETING",
+    approvalRequired: true,
+    triggerCondition: "Final fee notice given",
+    status: "STRATAVERZE",
+  },
+  {
+    stepType: "LEGAL_REFERRAL",
+    stepOrder: 6,
+    actionRequired: "Refer the matter to a solicitor, or prepare the application or claim, with the ledger, the fee notices, the final fee notice and the resolution to start proceedings",
+    legalBasis: "StrataVerze practice",
+    responsibleParty: "ADVISER",
+    approvalRequired: true,
+    triggerCondition: "Proceedings decided by the owners corporation",
+    status: "STRATAVERZE",
+  },
+  {
+    stepType: "PROCEEDINGS",
+    stepOrder: 7,
+    actionRequired:
+      "Apply to VCAT for an order for payment, or start proceedings in any court of competent jurisdiction to recover the unpaid fees as a debt. An application to VCAT for payment can only be made if the amount is not paid within 28 days after the final notice",
+    legalBasis: "OCA ss 162, 163(2) (VCAT), s 30 (a court)",
+    responsibleParty: "SOLICITOR",
+    approvalRequired: false,
+    triggerCondition: "Legal referral accepted and the amount unpaid 28 days after the final notice",
+    status: "CONFIRMED",
+  },
+  {
+    stepType: "ENFORCEMENT",
+    stepOrder: 8,
+    actionRequired: "Enforce the order or judgment",
+    responsibleParty: "SOLICITOR",
+    approvalRequired: false,
+    triggerCondition: "Order or judgment obtained and unpaid",
+    status: "NOT_CONFIRMED",
+  },
+  {
+    stepType: "CLOSED",
+    stepOrder: 9,
+    actionRequired: "Close the case and reconcile the lot ledger",
+    legalBasis: "StrataVerze practice",
+    responsibleParty: "ADVISER",
+    approvalRequired: false,
+    triggerCondition: "Debt paid, settled or written off",
+    status: "STRATAVERZE",
+  },
+];
+
+/** DRAFT, FOR STRATAVERZE TO REVIEW: the name the screens show for each step type (stage 2, PR 9c). */
+export const DEBT_RECOVERY_STEP_LABELS: Readonly<Record<string, string>> = {
+  LEDGER_VERIFICATION: "Ledger Verification",
+  INITIAL_CONTACT: "Initial Contact",
+  FINAL_NOTICE: "Final Notice",
+  HARDSHIP_REVIEW: "Instalment or Waiver Request",
+  COMMITTEE_REVIEW: "Authority to Start Proceedings",
+  LEGAL_REFERRAL: "Legal Referral",
+  PROCEEDINGS: "Proceedings",
+  ENFORCEMENT: "Enforcement",
+  CLOSED: "Closed",
+};
+
+/** Adviser-only guidance for each step, with the points not confirmed (stage 2, PR 9c). */
+export const DEBT_RECOVERY_GUIDANCE: Readonly<Record<string, string>> = {
+  LEDGER_VERIFICATION:
+    "Check each unpaid fee and its fee notice, and that payments were applied to fees first, then interest, then recovery costs. That order is a StrataVerze choice, as the notes record none before s 32I commences. This check, and showing fees, interest and costs separately, is StrataVerze practice.",
+  INITIAL_CONTACT:
+    "Contact the owner informally about the unpaid fees and the amount owing. An owner in arrears cannot vote, except on a special or unanimous resolution, unless paid in full (OCA s 89B). Statutory payment plans (ss 32A to 32J) are enacted but not in force. This contact is StrataVerze practice.",
+  FINAL_NOTICE:
+    "The final fee notice (OCA s 32) may be given if the fees are not paid within 28 days after the fee notice. It must be in the approved form and state that the amount must be paid immediately, the interest due to date and its daily accrual, and that the owners corporation intends Part 11 action if it is unpaid within 28 days after the final notice. CAV guidance says to write 0 where no interest is charged. StrataVerze cannot produce the approved form yet, and recording a final fee notice given outside StrataVerze is refused for now (decision D3), so a case cannot pass this step yet. StrataVerze counts the 28 days from day 29 after the day each overdue fee notice was issued (decision D4), and counts only fee notices issued in StrataVerze under this pack, so a notice brought across at takeover is refused (decision D15). Not confirmed: how days are counted and when a notice is given. When the payment plan law commences (1 Dec 2027 at the latest) a request will pause the 28 days (new s 32(3)), which StrataVerze does not support yet, so from then this step is refused (decision D14).",
+  HARDSHIP_REVIEW:
+    "The owners corporation's rules may provide for payment of fees by instalments by owners in financial difficulty (OCA Sch 1 item 3.5). The owners corporation may waive interest in a particular case, and decisions to waive or not, with reasons, are reported to the AGM (s 29(3), (4)). Not confirmed: who decides a waiver, so none can be recorded in StrataVerze yet. Statutory payment plans (ss 32A to 32J) are enacted but not in force. This step is StrataVerze practice.",
+  COMMITTEE_REVIEW:
+    "Record the special resolution carried at a general meeting that decided to start proceedings (OCA s 18). An ordinary resolution is enough for an order for payment of no more than twice the total amount of the current annual fees (s 18(2)), but whether that total is the owners corporation's or the lot's is not confirmed, and neither is the financial year, so StrataVerze asks for a special resolution for every claim (decision D2). A committee resolution is never accepted: whether a committee may give this authority by delegation (s 11(3), (5)) is not confirmed. An interim special resolution counts only once it has taken effect as a special resolution. The meeting must have been held, and the resolution must take effect on or after the day the case was opened. Its subject is not checked. The case records the amount owing then, and proceedings cannot be recorded for a larger amount. No case is opened for a tier 5 owners corporation, which is exempt from s 18 (s 7A(1)(a), decision D6). If the owners corporation decides not to start proceedings, close the case instead of completing this step.",
+  LEGAL_REFERRAL:
+    "Refer the matter with the ledger, the fee notices, the final fee notice and the recorded resolution. The case cannot be marked as referred for legal recovery until this step is complete. VCAT may order the owner to pay the owners corporation's reasonable costs in recovering an unpaid amount, other than costs in the proceeding (OCA s 165(1)(ca), (4)). Not confirmed: costs in the proceeding (VCAT Act s 109, not read). StrataVerze's recovery step fees are charged to the owners corporation and never passed to the owner (decision D10).",
+  PROCEEDINGS:
+    "Apply to VCAT for an order for payment (OCA ss 162, 163), or claim the unpaid fees as a debt in any court of competent jurisdiction (s 30), and record which when this step is completed (decision D13). The notes name no particular court. An application to VCAT for payment can only be made if the amount is not paid within 28 days after the final notice (s 163(2)). StrataVerze applies the same wait to a claim in a court (decision D5), from day 29 after the day the final notice was recorded as given (decision D4). The amount owing must not be more than the amount recorded with the resolution to start proceedings. No monetary cap appears in OCA ss 162 to 169. Not confirmed: any limit in the VCAT Act (not read). No limit is applied. When the payment plan law commences (1 Dec 2027 at the latest) a request will pause the 28 days and stop a VCAT application while it is pending (new s 163(3), (4)), which StrataVerze does not support yet, so from then this step is refused (decision D14).",
+  ENFORCEMENT: "Enforcing an order or judgment is not covered by the research notes (not confirmed). Take legal advice.",
+  CLOSED: "Close the case once the debt is paid, settled or written off, and reconcile the lot ledger. This step is StrataVerze practice.",
+};
+
+/**
+ * StrataVerze fees never passed to an owner in Victoria (decision D10,
+ * 29 Oct 2026): every recovery step fee is charged to the owners corporation
+ * only. VCAT may order reasonable recovery costs (s 165(1)(ca), (4)), but
+ * whether StrataVerze's fees are such costs is not in the notes, so
+ * StrataVerze passes none on. No RECOVERY_COSTS_RECOVERABLE wording is set.
+ */
+export const NEVER_RECOVERABLE_FEE_VARIANTS: readonly FeeVariant[] = [
+  { code: "RECOVERY_STEP", variant: "REMINDER" },
+  { code: "RECOVERY_STEP", variant: "FINAL_NOTICE" },
+  { code: "RECOVERY_STEP", variant: "REFERRAL" },
+  { code: "RECOVERY_STEP", variant: "PAYMENT_PLAN" },
+];
 
 // ---------------------------------------------------------------------------
 // Pending: enacted or made but not commenced, and announced
@@ -2999,6 +3361,9 @@ export const NOT_CONFIRMED = [
   "How days are counted for the Act's periods (calendar or clear days), and when a posted or emailed notice is taken to be given: the notes do not say.",
   "What \"business day\" means for s 151 (certificate within 10 business days) and s 89B (payment 4 business days before a vote): the notes give no definition.",
   "Whether there is any deadline for sending ordinary AGM minutes: the notes give one only for interim resolutions (s 78) and interim special resolutions (s 97), each within 14 days.",
+  // Found while applying debt recovery (stage 2, PR 9c, 29 Oct 2026).
+  "What \"the total amount of the current annual fees\" in s 18(2) is: the owners corporation's total annual fees or the lot's. The notes do not say.",
+  "How the final fee notice's daily interest is rounded (s 32(2)(b)): the notes do not say.",
 ] as const;
 
 /**
@@ -3008,7 +3373,8 @@ export const NOT_CONFIRMED = [
 export const FOR_REVIEW = [
   {
     key: "S18_COMMITTEE_DELEGATION",
-    point: "Whether a committee may authorise proceedings under s 18(2) or (2A) by its default delegation (s 11(5)), given s 11(3). Until settled, authority to sue needs a recorded general meeting resolution of the right kind.",
+    point:
+      "Whether a committee may authorise proceedings under s 18(2) or (2A) by its default delegation (s 11(5)), given s 11(3). Since stage 2, PR 9c (Matthew Wrigley's StrataVerze decision D2 of 29 Oct 2026, DECISIONS) the Authority to Start Proceedings step (COMMITTEE_REVIEW, DEBT_RECOVERY.authorityToSue) accepts only a motion carried at a general meeting and recorded as a special resolution, never a committee motion and never the adviser alone (managerMayDecide false), whatever the amount. s 18 as substituted on 9 Sep 2026 is CONFIRMED. An interim special resolution (s 97) is accepted only through its pending resolution, once CARRIED, taking effect as a special resolution, on a day on or before the day the step is completed, and one still pending is refused. The meeting must have been held, the resolution must take effect on or after the day the case was opened, and its subject is not checked. Confirm, and say whether a committee may ever decide.",
     before: "any debt workflow that automates authority to sue",
     kind: "LEGAL",
   },
@@ -3291,8 +3657,79 @@ export const FOR_REVIEW = [
   },
   {
     key: "FINAL_FEE_NOTICE",
-    point: "The final fee notice (s 32) is a later PR (stage 2, PR 9). Its rules stay in FEE_NOTICES.finalNotice.",
+    point:
+      "The final fee notice (s 32, CONFIRMED) is applied since stage 2, PR 9c (DEBT_RECOVERY.finalNotice, from FEE_NOTICES.finalNotice unchanged). Matthew Wrigley's StrataVerze decision D3 of 29 Oct 2026 (DECISIONS): StrataVerze does not produce it until how the approved forms are used is settled (APPROVED_FORMS_USE), and the day the current form applied from is NOT_CONFIRMED, so completing the Final Notice step is refused, with those reasons. With FINAL_NOTICE_OUTSIDE, a Victorian case cannot pass the Final Notice step: it fails closed, so every later step (the decision to start proceedings, the referral, proceedings) is unreachable until both are settled. The amounts it would state (finalNoticeAmounts, src/lib/debt-recovery/final-notice-amounts.ts) are worked out from the overdue fee notices issued under this pack and LATE_CHARGE: with no interest (NONE) 0 to date and 0 a day, and with a resolved rate refused while LATE_CHARGE values are NOT_CONFIRMED. Rounding the daily amount once, half up, to the cent is a StrataVerze choice (dailyInterestRounding). Confirm.",
     before: "Victorian fee recovery is offered",
+    kind: "STRATAVERZE",
+  },
+  {
+    key: "FINAL_NOTICE_OUTSIDE",
+    point:
+      "Recording a final fee notice given outside StrataVerze (in the approved form, by the owners corporation or its manager) is refused for now (DEBT_RECOVERY.finalNotice.givenOutsideMayBeRecorded false, Matthew Wrigley's StrataVerze decision D3 of 29 Oct 2026). If it is allowed later, the adviser enters the day it was given (not after the building's day, and not before day 29 after the latest overdue fee notice was issued), a FINAL_NOTICE_GIVEN record is written with the step, and the s 163(2) wait is counted from that day. StrataVerze would not check that the notice was in the approved form or stated what s 32(2) requires. Decide whether, and on what evidence, such a notice may be recorded.",
+    before: "a Victorian case is to pass the Final Notice step",
+    kind: "STRATAVERZE",
+  },
+  {
+    key: "S18_ANNUAL_FEES_COMPARATOR",
+    point:
+      "s 18(2): an ordinary resolution suffices for an order for payment of no more than twice \"the total amount of the current annual fees\". The notes do not say whether that is the owners corporation's total annual fees or the lot's, and the Victorian financial year is NOT_CONFIRMED, so \"current\" cannot be worked out. DEBT_RECOVERY.authorityToSue.amountThreshold's comparator has no value, so StrataVerze always requires a special resolution at a general meeting (Matthew Wrigley's StrataVerze decision D2 of 29 Oct 2026). With a comparator, a claim of exactly twice the amount may be decided by an ordinary resolution and one cent more needs a special resolution, the claim being the lot's amount owing when the step is completed (its overdue fee notices with their interest). When proceedings are recorded, the amount owing must not be more than the amount recorded with the decision: a larger amount is refused, and the case cannot then go on (a completed step is not reopened), so it must be closed and a new case opened with a new resolution. Confirm the comparator, the financial year, and whether a larger amount should be refused or allowed for a special resolution.",
+    before: "an ordinary resolution is accepted for Victorian proceedings",
+    kind: "LEGAL",
+  },
+  {
+    key: "DAY_COUNTING_RECOVERY",
+    point:
+      "Day counting (Matthew Wrigley's StrataVerze decision D4 of 29 Oct 2026): a step \"after N days\" may be completed from day N + 1 after the day counted from, in the building's day (stepTiming earliest DAY_AFTER_PERIOD). s 32(1): the Final Notice step from day 29 after the day the latest overdue fee notice was issued (its issue day in the building's zone, read as the day of the fee notice). s 163(2): the Proceedings step from day 29 after the day the final notice was recorded as given. How days are counted (calendar or clear days) and when a posted or emailed notice is taken to be given are NOT_CONFIRMED. Confirm.",
+    before: "Victorian debt recovery is switched on",
+    kind: "LEGAL",
+  },
+  {
+    key: "VCAT_GATE_COURT",
+    point:
+      "s 163(2) says an owners corporation's application to VCAT for payment can only be made if the amount is not paid within 28 days after the final notice. StrataVerze applies the same wait to a claim in a court under s 30 (stepTiming forums VCAT and COURT, Matthew Wrigley's StrataVerze decision D5 of 29 Oct 2026), which is stricter than the provision read. Confirm.",
+    before: "Victorian debt recovery is switched on",
+    kind: "LEGAL",
+  },
+  {
+    key: "TIER_5_RECOVERY",
+    point:
+      "A tier 5 owners corporation (a 2-lot subdivision, or services only) is exempt from ss 18, 31 and 32 (ss 7A(1)(a), 8, CONFIRMED). StrataVerze refuses to open a recovery case for it (DEBT_RECOVERY.appliesWhen, tiers 1 to 4, Matthew Wrigley's StrataVerze decision D6 of 29 Oct 2026), and also where the tier cannot be worked out. The tier is checked only when a case is opened: a case opened before a building's facts change is not stopped. How a tier 5 owners corporation recovers fees (without ss 31 and 32) is not supported. Confirm.",
+    before: "Victorian debt recovery is switched on",
+    kind: "LEGAL",
+  },
+  {
+    key: "TAKEOVER_NOTICES_FINAL_NOTICE",
+    point:
+      "Only fee notices issued in StrataVerze under this pack (rule pack AU-VIC) count towards a final notice and its timing (Matthew Wrigley's StrataVerze decision D15 of 29 Oct 2026). A lot with an overdue notice brought across at takeover, or issued under other rules or before rule packs were recorded, is refused at the Final Notice step and by finalNoticeAmounts, as StrataVerze cannot tell that it was a fee notice under s 31. Every Victorian fee notice is refused today (NOTICE_RULES), so no Victorian notice is issued under the pack yet. Confirm how a takeover debt is to be recovered.",
+    before: "Victorian debt recovery is switched on",
+    kind: "STRATAVERZE",
+  },
+  {
+    key: "PAYMENT_PLAN_PAUSE_GUARD",
+    point:
+      "The payment plan pauses of new ss 32(3), 163(3) and (4) (CLAA 2026 Part 6 Div 2) are enacted but not in force, and commence by 1 Dec 2027 at the latest. StrataVerze does not support them yet, so the Final Notice and Proceedings steps are refused, saying the payment plan pause is not supported yet, once DATED_RULES.PAYMENT_PLANS records a value as commenced on or before the building's day, or its fixed or latest start date (1 Dec 2027) is on or before it (stepTiming pausedBy, Matthew Wrigley's StrataVerze decision D14 of 29 Oct 2026). Support the pause before then.",
+    before: "CLAA 2026 Part 6 Div 2 commences (1 Dec 2027 at the latest)",
+    kind: "STRATAVERZE",
+  },
+  {
+    key: "RECOVERY_FEES_NOT_PASSED",
+    point:
+      "Every StrataVerze recovery step fee (reminder, final notice, referral, payment plan) is charged to the owners corporation and never passed to the owner (NEVER_RECOVERABLE_FEE_VARIANTS, Matthew Wrigley's StrataVerze decision D10 of 29 Oct 2026). VCAT may order reasonable costs of recovering an unpaid amount (s 165(1)(ca), (4), CONFIRMED), but whether StrataVerze's fees are such costs is not in the notes, and CAV guidance allows only a lot-liability share of an overdue notice's actual cost. Confirm.",
+    before: "Victorian debt recovery is switched on",
+    kind: "STRATAVERZE",
+  },
+  {
+    key: "DEBT_RECOVERY_FORUM",
+    point:
+      "Where proceedings were started is recorded when the Proceedings step is completed (DEBT_RECOVERY.forum, Matthew Wrigley's StrataVerze decision D13 of 29 Oct 2026): VCAT (ss 162, 163, CONFIRMED) or any court of competent jurisdiction (s 30, CONFIRMED). The notes name no particular court, so none is named. No monetary cap appears in OCA ss 162 to 169 (CONFIRMED). Any VCAT Act limit is NOT_CONFIRMED (the VCAT Act was not read) and none is applied or shown to owners. Confirm, and whether a court should be named.",
+    before: "Victorian debt recovery is switched on",
+    kind: "LEGAL",
+  },
+  {
+    key: "DEBT_RECOVERY_STEPS",
+    point:
+      "The recovery steps (DEBT_RECOVERY_STEPS, Matthew Wrigley's StrataVerze decisions D11 and D12 of 29 Oct 2026): Ledger Verification, Initial Contact, Final Notice (s 32, notice type FINAL_FEE_NOTICE), Instalment or Waiver Request (StrataVerze practice), Authority to Start Proceedings (responsible party GENERAL_MEETING, s 18), Legal Referral, Proceedings (VCAT ss 162, 163(2), or a court under s 30), Enforcement (NOT_CONFIRMED) and Closed, using the NSW step types without the reminder notice, completed in order on the server. Owner-facing text states only CONFIRMED law and says StrataVerze practice where a step is StrataVerze's own. FEATURES.debtRecoverySteps is on, and the pack stays pending, so no building reaches it. Confirm.",
+    before: "Victorian debt recovery is switched on",
     kind: "STRATAVERZE",
   },
 ] as const;
@@ -3301,8 +3738,9 @@ export const FOR_REVIEW = [
  * StrataVerze choices this draft proposes. Matthew Wrigley has not reviewed
  * the draft, so `decidedBy` and `decidedOn` stay null on each, except the
  * payment order and the notice timing he decided on 28 Oct 2026, and the
- * quorum answer, interim resolutions, their grace before settling and the
- * committee notice not checked he decided on 29 Oct 2026.
+ * quorum answer, interim resolutions, their grace before settling, the
+ * committee notice not checked, proxy caps and debt recovery he decided on
+ * 29 Oct 2026.
  */
 export const DECISIONS: readonly { decision: string; proposedOn: string; decidedBy: string | null; decidedOn: string | null }[] = [
   { decision: "Support unlimited owners corporations first; limited owners corporations are listed but blocked (OWNERS_CORPORATION_TYPE).", proposedOn: "2026-10-27", decidedBy: null, decidedOn: null },
@@ -3360,6 +3798,13 @@ export const DECISIONS: readonly { decision: string; proposedOn: string; decided
     decidedBy: "Matthew Wrigley",
     decidedOn: "2026-10-29",
   },
+  {
+    decision:
+      "Debt recovery (DEBT_RECOVERY, DEBT_RECOVERY_STEPS and NEVER_RECOVERABLE_FEE_VARIANTS, stage 2, PR 9c). Matthew Wrigley's StrataVerze decisions of 29 Oct 2026, kept in FOR_REVIEW for legal confirmation. (D2) s 18 as substituted on 9 Sep 2026 is CONFIRMED, but whether its \"total amount of the current annual fees\" is the owners corporation's or the lot's, and the financial year, are NOT_CONFIRMED, so the comparator has no value and every proceeding needs a special resolution at a general meeting, never a committee and never the adviser alone. An interim special resolution counts only once carried and taken effect as a special resolution, on or before the day of the decision. (D3) StrataVerze does not produce the final fee notice (s 32) until the approved forms question is settled, and recording one given outside StrataVerze is refused for now, so a case cannot pass the Final Notice step. (D4) A step after N days may be completed from day N + 1 after the day counted from, in the building's day: s 32(1) day 29 after the fee notice's issue day, s 163(2) day 29 after the day the final notice was recorded as given. (D5) The s 163(2) wait applies to a claim in a court under s 30 too. (D6) No case is opened for a tier 5 owners corporation (s 7A(1)(a)), or where the tier cannot be worked out. (D10) Every recovery step fee is charged to the owners corporation, never passed to the owner. (D11) The steps are Ledger Verification, Initial Contact, Final Notice, Instalment or Waiver Request, Authority to Start Proceedings (general meeting), Legal Referral, Proceedings, Enforcement and Closed, with FEATURES.debtRecoverySteps on in this draft pack. (D12) The steps are completed in order. (D13) Where proceedings were started is VCAT (ss 162, 163) or any court of competent jurisdiction (s 30), no court named and no VCAT limit applied. (D14) The Final Notice and Proceedings steps are refused, the payment plan pause not being supported yet, once the pause of new ss 32(3), 163(3) and (4) is recorded as commenced or its latest start date (1 Dec 2027) has passed. (D15) Only fee notices issued under this pack count towards a final notice and its timing: takeover notices are refused.",
+    proposedOn: "2026-10-29",
+    decidedBy: "Matthew Wrigley",
+    decidedOn: "2026-10-29",
+  },
 ];
 
 /**
@@ -3369,7 +3814,8 @@ export const DECISIONS: readonly { decision: string; proposedOn: string; decided
  * above as data. Victoria has no basis for some at all: no committee training
  * duty, Strata Hub report, NSW capital works fund plan or key financial
  * information form was found in the notes. Payment plans are enacted but not
- * in force (PENDING_CHANGES).
+ * in force (PENDING_CHANGES). The debt recovery steps are on since stage 2,
+ * PR 9c (decision D11).
  */
 export const FEATURES: PackFeatures = {
   /** Enacted (ss 32A to 32J) but not in force; a different scheme from NSW (FOR_REVIEW). */
@@ -3386,6 +3832,10 @@ export const FEATURES: PackFeatures = {
   strataInformationCertificate: false,
   /** Victoria's records and register rules are their own (RECORDS). */
   recordsInspections: false,
-  /** Victoria's fee recovery is its own (FEE_RECOVERY, AUTHORITY_TO_SUE). */
-  debtRecoverySteps: false,
+  /**
+   * On since stage 2, PR 9c (decision D11): Victoria's own recovery rules (DEBT_RECOVERY, from FEE_RECOVERY,
+   * AUTHORITY_TO_SUE and FEE_NOTICES.finalNotice) apply to the steps. No building reaches this draft pack until it
+   * is switched on, and a case cannot pass the Final Notice step yet (D3).
+   */
+  debtRecoverySteps: true,
 };

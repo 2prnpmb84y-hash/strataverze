@@ -661,7 +661,30 @@ export const PENDING_RULE_PACKS = {
     // MINUTES_CONTENTS). The MEETING_RULES header and notes, the DATED_RULES note and FOR_REVIEW MEETING_RULES_PENDING
     // are rewritten, and MEETING_RULES_STATUS gains minutesContents. No legal value or status already recorded changed;
     // still a draft.
-    version: "2026.10.12",
+    // 2026.10.13 (30 Oct 2026): debt recovery (stage 2, PR 9c). DEBT_RECOVERY added in the shared DebtRecoveryRules shape,
+    // from FEE_RECOVERY, AUTHORITY_TO_SUE and FEE_NOTICES.finalNotice unchanged: authorityToSue (s 18 as substituted on
+    // 9 Sep 2026, CONFIRMED) accepts only a motion carried at a general meeting, never a committee (s 11 delegation
+    // NOT_CONFIRMED) or the adviser alone, recorded when COMMITTEE_REVIEW is completed, with amountThreshold (twice the
+    // current annual fees, s 18(2)) whose comparator has no value (whether the owners corporation's or the lot's total is
+    // NOT_CONFIRMED, and the financial year too), so every proceeding needs a special resolution (D2); forum: VCAT
+    // (ss 162, 163) or any court of competent jurisdiction (s 30), both CONFIRMED, no court named and no VCAT limit applied
+    // (D13); stepTiming: the Final Notice step from day 29 after the latest overdue fee notice's issue day (s 32(1)), only
+    // notices issued under this pack counting (D15), and the Proceedings step from day 29 after the final notice was
+    // recorded as given (s 163(2)), for VCAT and a court (D5), counted in the building's day (D4, STRATAVERZE), both
+    // refused once DATED_RULES.PAYMENT_PLANS is recorded as commenced or its latest start date has passed (D14);
+    // finalNotice (s 32, CONFIRMED): not produced by StrataVerze, and recording one given outside StrataVerze refused for
+    // now (D3), so a case cannot pass the Final Notice step, with the daily interest rounded to the cent (STRATAVERZE);
+    // appliesWhen: tiers 1 to 4 only, tier 5 being exempt from ss 18, 31 and 32 (s 7A(1)(a)), and an unknown tier
+    // refused (D6). DEBT_RECOVERY_STEPS (the NSW step types without the reminder notice, D11), DEBT_RECOVERY_STEP_LABELS
+    // and DEBT_RECOVERY_GUIDANCE added: owner-facing text states only CONFIRMED law and says StrataVerze practice where a
+    // step is StrataVerze's own. NEVER_RECOVERABLE_FEE_VARIANTS lists all four recovery step fees (D10), and
+    // FEATURES.debtRecoverySteps is on (D11). Matthew Wrigley's decisions D2 to D6 and D10 to D15 of 29 Oct 2026,
+    // recorded in DECISIONS and kept in FOR_REVIEW: FINAL_FEE_NOTICE and S18_COMMITTEE_DELEGATION are rewritten, and
+    // FINAL_NOTICE_OUTSIDE, S18_ANNUAL_FEES_COMPARATOR, DAY_COUNTING_RECOVERY, VCAT_GATE_COURT, TIER_5_RECOVERY,
+    // TAKEOVER_NOTICES_FINAL_NOTICE, PAYMENT_PLAN_PAUSE_GUARD, RECOVERY_FEES_NOT_PASSED, DEBT_RECOVERY_FORUM and
+    // DEBT_RECOVERY_STEPS added. NOT_CONFIRMED gains the s 18(2) comparator and the daily interest rounding. No legal
+    // value or status already recorded changed; still a draft.
+    version: "2026.10.13",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",
     reviewedOn: null,
