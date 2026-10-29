@@ -9,6 +9,9 @@
 import type { StatutoryRules } from "@/config/statutory";
 import { COMMITTEE_MEETING_TYPES, GENERAL_MEETING_TYPES, resolutionMeetings, type ResolutionMeeting } from "@/lib/finance/resolutions";
 import { auDate } from "@/lib/onboarding/property-onboarding";
+import { isHeldMeeting } from "@/lib/meetings/lifecycle";
+import { db } from "@/prisma/db";
+import { and } from "@prisma/orm-postgres/orm-client";
 import { forumWordsFor, recoveryStepNeeds, storedResolutionKind, type DebtAuthorityResolution } from "./recovery-gates";
 import { readRecoveryRecords, type RecoveryRecordRow } from "./recovery-records-repo";
 
@@ -55,7 +58,13 @@ export async function recoveryStepRequirements(
   if (accepted.length > 0) {
     const general = accepted.some((a) => a.meeting === "GENERAL") ? await resolutionMeetings(schemeId, GENERAL_MEETING_TYPES) : [];
     const committee = accepted.some((a) => a.meeting === "COMMITTEE") ? await resolutionMeetings(schemeId, COMMITTEE_MEETING_TYPES) : [];
-    const meetings = [...general, ...committee].map((m: ResolutionMeeting) => ({ id: m.id, label: m.label, motions: m.motions }));
+    // Only meetings that were held and not deleted (as authorityResolution checks; review M1).
+    const listed = [...general, ...committee];
+    const rows = listed.length
+      ? await db.orm.public.Meeting.where((m) => and(m.schemeId.eq(schemeId), m.id.in(listed.map((x) => x.id)))).limit(listed.length).all()
+      : [];
+    const held = new Set(rows.filter((m) => !m.deletedAt && isHeldMeeting(m.status)).map((m) => m.id));
+    const meetings = listed.filter((m) => held.has(m.id)).map((m: ResolutionMeeting) => ({ id: m.id, label: m.label, motions: m.motions }));
     for (const r of Object.values(out)) if (r.authority) r.authority.meetings = meetings;
   }
 

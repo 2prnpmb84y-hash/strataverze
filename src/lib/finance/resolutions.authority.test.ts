@@ -26,10 +26,14 @@ beforeEach(() => {
       { id: "s2", state: "WA", timeZone: "Australia/Perth" },
     ],
     Meeting: [
-      { id: "council", schemeId: "s1", meetingType: "COMMITTEE", title: "Council meeting", scheduledAt: "2026-10-20T02:00:00.000Z", timezone: null },
-      { id: "agm", schemeId: "s1", meetingType: "AGM", title: "AGM", scheduledAt: "2026-10-10T02:00:00.000Z", timezone: null },
-      { id: "other", schemeId: "s2", meetingType: "COMMITTEE", title: "Other council", scheduledAt: "2026-10-20T02:00:00.000Z", timezone: null },
-      { id: "odd", schemeId: "s1", meetingType: "WORKSHOP", title: "Workshop", scheduledAt: "2026-10-20T02:00:00.000Z", timezone: null },
+      { id: "council", schemeId: "s1", meetingType: "COMMITTEE", status: "MINUTES_DRAFT", title: "Council meeting", scheduledAt: "2026-10-20T02:00:00.000Z", timezone: null },
+      { id: "agm", schemeId: "s1", meetingType: "AGM", status: "PUBLISHED", title: "AGM", scheduledAt: "2026-10-10T02:00:00.000Z", timezone: null },
+      { id: "other", schemeId: "s2", meetingType: "COMMITTEE", status: "PUBLISHED", title: "Other council", scheduledAt: "2026-10-20T02:00:00.000Z", timezone: null },
+      { id: "odd", schemeId: "s1", meetingType: "WORKSHOP", status: "PUBLISHED", title: "Workshop", scheduledAt: "2026-10-20T02:00:00.000Z", timezone: null },
+      { id: "cancelled", schemeId: "s1", meetingType: "COMMITTEE", status: "CANCELLED", title: "Cancelled council", scheduledAt: "2026-10-21T02:00:00.000Z", timezone: null },
+      { id: "deleted", schemeId: "s1", meetingType: "COMMITTEE", status: "PUBLISHED", deletedAt: "2026-10-25T00:00:00.000Z", title: "Deleted council", scheduledAt: "2026-10-21T02:00:00.000Z", timezone: null },
+      { id: "adjourned", schemeId: "s1", meetingType: "AGM", status: "ADJOURNED", title: "Adjourned AGM", scheduledAt: "2026-10-21T02:00:00.000Z", timezone: null },
+      { id: "draft", schemeId: "s1", meetingType: "COMMITTEE", status: "NOTICE_ISSUED", title: "Next council", scheduledAt: "2026-10-21T02:00:00.000Z", timezone: null },
     ],
     AgendaItem: [
       { id: "c-carried", meetingId: "council", position: 1, title: "Start proceedings", status: "CARRIED", outcome: "RESOLVED", resolutionCategory: "ORDINARY" },
@@ -40,6 +44,7 @@ beforeEach(() => {
       { id: "g-period", meetingId: "agm", position: 4, title: "Voting period, carried", status: "CARRIED", outcome: "RESOLVED", resolutionCategory: "SPECIAL" },
       { id: "o-carried", meetingId: "other", position: 1, title: "Start proceedings", status: "CARRIED", outcome: "RESOLVED", resolutionCategory: "ORDINARY" },
       { id: "w-carried", meetingId: "odd", position: 1, title: "x", status: "CARRIED", outcome: "RESOLVED", resolutionCategory: null },
+      ...["cancelled", "deleted", "adjourned", "draft"].map((m) => ({ id: `${m}-carried`, meetingId: m, position: 1, title: "Start proceedings", status: "CARRIED", outcome: "RESOLVED", resolutionCategory: "ORDINARY" })),
     ],
     PendingResolution: [
       { id: "p-open", schemeId: "s1", meetingId: "agm", agendaItemId: "g-open", status: "PENDING", effectiveOn: null },
@@ -77,6 +82,13 @@ describe("Western Australia: a council or general meeting motion, never the stra
     expect(await authorityResolutionProblem("s1", "other", "o-carried", WA)).toBe("Choose a meeting of this scheme.");
     expect(await authorityResolutionProblem("s1", "missing", "c-carried", WA)).toBe("Choose a meeting of this scheme.");
     expect(await authorityResolutionProblem("s1", "odd", "w-carried", WA)).toBe("Choose a motion carried at a council meeting or a motion carried at a general meeting.");
+  });
+
+  it("refuses a motion of a cancelled, deleted, adjourned or not yet held meeting (review M1)", async () => {
+    expect(await authorityResolutionProblem("s1", "deleted", "deleted-carried", WA)).toBe("Choose a meeting of this scheme.");
+    for (const m of ["cancelled", "adjourned", "draft"]) {
+      expect(await authorityResolutionProblem("s1", m, `${m}-carried`, WA), m).toBe("That meeting has not been held, or was cancelled or adjourned, so its motions cannot be relied on.");
+    }
   });
 
   it("refuses everything when no resolution is accepted", async () => {

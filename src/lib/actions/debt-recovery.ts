@@ -45,7 +45,7 @@ import {
   type AuthorityFact,
   type RecoveryRecordToWrite,
 } from "@/lib/debt-recovery/recovery-gates";
-import { createRecoveryRecords, readRecoveryRecords, recordedFacts } from "@/lib/debt-recovery/recovery-records-repo";
+import { createRecoveryRecords, currentAmountOwing, readRecoveryRecords, recordedFacts } from "@/lib/debt-recovery/recovery-records-repo";
 
 type ActionResult = { error?: string; success?: boolean; id?: string };
 
@@ -337,7 +337,7 @@ export async function completeDebtRecoveryStepAction(
     // Queensland, which have none.
     let records: RecoveryRecordToWrite[] = [];
     if (recoveryGatesApply(rules)) {
-      const checked = await checkRecoveryStep(rules, { schemeId, caseId, stepType: step.stepType, formData, amountOwing: String(caseRow.totalOwed ?? "0") });
+      const checked = await checkRecoveryStep(rules, { schemeId, caseId, lotId: caseRow.lotId, openedAt: caseRow.createdAt, stepType: step.stepType, formData });
       if ("error" in checked) return { error: checked.error };
       records = checked.records;
     }
@@ -440,7 +440,7 @@ export async function closeDebtRecoveryCaseAction(
     if (reason.length > MAX_NOTE_LENGTH) return { error: "Reason is too long" };
     // A draft pack's recovery rules. The case's pack comes from the label it
     // was opened under, so nothing is read for an NSW or Queensland case.
-    const caseRules = rulesForCaseLabel(caseRow.rulePack);
+    const caseRules = await rulesForCaseLabel(caseRow.rulePack, schemeId);
     if (caseRules && recoveryGatesApply(caseRules)) {
       const gate = recoveryGateProblem(caseRules, { action: "CLOSE" });
       if (gate) return { error: gate };
@@ -474,16 +474,24 @@ export async function closeDebtRecoveryCaseAction(
 
 /**
  * The rules of the pack a case was opened under, from its label ("AU-WA
- * 2026.10.10"), without a read: the state's current pack (rulesForState,
- * which throws for a state with no pack). A case with no label was opened
- * before rule packs were recorded on cases, when only NSW existed, so it has
- * no recovery gates (null).
+ * 2026.10.10"), without a read: the state's current pack. A label that does
+ * not parse, or names a state with no pack, falls back to the building's
+ * pack (rulesForScheme, a read only in that case; review L2), so such a
+ * label never blocks closing a case. A case with no label was opened before
+ * rule packs were recorded on cases, when only NSW existed, so it has no
+ * recovery gates (null).
  */
-function rulesForCaseLabel(label: string | null | undefined): Pick<StatutoryRules, "DEBT_RECOVERY"> | null {
+async function rulesForCaseLabel(label: string | null | undefined, schemeId: string): Promise<Pick<StatutoryRules, "DEBT_RECOVERY"> | null> {
   if (!label) return null;
   const state = /^AU-([A-Z]+)\s/.exec(label)?.[1];
-  if (!state) throw new UnsupportedJurisdictionError(label);
-  return rulesForState(state).rules;
+  if (state) {
+    try {
+      return rulesForState(state).rules;
+    } catch (err) {
+      if (!(err instanceof UnsupportedJurisdictionError)) throw err;
+    }
+  }
+  return (await rulesForScheme(schemeId)).rules;
 }
 
 /**
@@ -494,7 +502,7 @@ function rulesForCaseLabel(label: string | null | undefined): Pick<StatutoryRule
  */
 async function checkRecoveryStep(
   rules: StatutoryRules,
-  input: { schemeId: string; caseId: string; stepType: string; formData: FormData; amountOwing: string },
+  input: { schemeId: string; caseId: string; lotId: string; openedAt: unknown; stepType: string; formData: FormData },
 ): Promise<{ error: string } | { records: RecoveryRecordToWrite[] }> {
   const needs = recoveryStepNeeds(rules, input.stepType);
   if (needs && "problem" in needs) return { error: needs.problem };
@@ -516,8 +524,22 @@ async function checkRecoveryStep(
     authority = await authorityResolution(input.schemeId, text("authorityMeetingId"), text("authorityItemId"), needs.authority.accepted);
   }
   const forum = needs?.forum ? text("forum") : null;
-  const { schemeToday } = await import("@/lib/jurisdiction/scheme-time");
-  const today = await schemeToday(input.schemeId);
+  const { schemeTimeZone } = await import("@/lib/jurisdiction/scheme-time");
+  const { storedDayIn, todayIn } = await import("@/lib/jurisdiction/time-zone");
+  const tz = await schemeTimeZone(input.schemeId);
+  const today = todayIn(tz);
+  // The day the case was opened, in the building's zone: a decision relied on must be on or after it (review L4).
+  const caseOpenedOn = input.openedAt ? storedDayIn(tz, input.openedAt) || null : null;
+  // The amount owing now, worked out as opening a case does (the lot's overdue notices, with their late charge; review L3).
+  let amountOwing: string | null = null;
+  if (needs?.authority && authority?.problem === null) {
+    try {
+      amountOwing = await currentAmountOwing(input.schemeId, input.lotId);
+    } catch (err) {
+      logError("Failed to read the lot's overdue notices:", err);
+      return { error: "Could not work out the amount owing. Nothing was saved." };
+    }
+  }
   const gate = recoveryGateProblem(rules, {
     action: "COMPLETE_STEP",
     stepType: input.stepType,
@@ -526,10 +548,11 @@ async function checkRecoveryStep(
     forum,
     recorded,
     today,
+    caseOpenedOn,
     labels: rules.DEBT_RECOVERY_STEP_LABELS,
   });
   if (gate) return { error: gate };
-  return { records: recoveryRecordsToWrite(rules, { stepType: input.stepType, authority, forum, today, amountOwing: input.amountOwing }) };
+  return { records: recoveryRecordsToWrite(rules, { stepType: input.stepType, authority, forum, today, amountOwing: amountOwing ?? "0.00" }) };
 }
 
 // ─── Record Instalment Payment ──────────────────────────────────

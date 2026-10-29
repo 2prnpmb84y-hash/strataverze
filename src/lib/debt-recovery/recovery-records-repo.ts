@@ -37,6 +37,22 @@ export function recordedFacts(rows: readonly Pick<RecoveryRecordRow, "kind" | "f
   };
 }
 
+/**
+ * The lot's amount owing now, as opening a case works it out (the overdue
+ * notices' balances plus their late charge), to two decimals. Throws when
+ * the notices cannot be read, so a failed read is never "nothing owing".
+ */
+export async function currentAmountOwing(schemeId: string, lotId: string, orm: Orm = db.orm): Promise<string> {
+  const notices = await orm.public.LevyNotice
+    .where((n) => n.schemeId.eq(schemeId))
+    .where((n) => n.lotId.eq(lotId))
+    .where((n) => n.status.eq("OVERDUE"))
+    .limit(5000)
+    .all();
+  const total = notices.reduce((sum, n) => sum + Number(n.balanceOutstanding) + Number(n.interestCharged || 0), 0);
+  return total.toFixed(2);
+}
+
 /** Write the step's records, in the step's transaction (`orm` is the transaction's). */
 export async function createRecoveryRecords(
   orm: Orm,

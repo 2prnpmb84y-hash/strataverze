@@ -18,7 +18,9 @@
 -- that records them. AUTHORITY_TO_SUE: the resolution that decided to start
 -- proceedings (the meeting, the agenda item and what kind of resolution it
 -- was accepted as: GENERAL_MEETING, ORDINARY, SPECIAL or COMMITTEE), the day
--- it took effect (decided_on) and the case's amount owing then (amount).
+-- it took effect (decided_on) and the lot's amount owing when the step was
+-- completed (amount: its overdue notices with their late charge, as opening a
+-- case works it out).
 -- PROCEEDINGS_STARTED: where proceedings were started (forum: VCAT, ACAT or
 -- COURT, from the pack's options; a pack's excluded forum, such as SAT in
 -- Western Australia, is refused by the app). From PR 9b and 9c:

@@ -39,6 +39,7 @@ const complete = (stepType: string, over: Partial<Extract<RecoveryGateInput, { a
   forum: null,
   recorded: NOTHING,
   today: "2026-11-02",
+  caseOpenedOn: "2026-10-01",
   labels: LABELS,
   ...over,
 });
@@ -127,6 +128,18 @@ describe("Western Australia", () => {
     expect(recoveryGateProblem(WA, complete("COMMITTEE_REVIEW", { authority: carried(GENERAL, "2026-11-03") }))).toBe("That resolution has not taken effect yet, so it cannot be relied on.");
     expect(recoveryGateProblem(WA, complete("COMMITTEE_REVIEW", { authority: carried(GENERAL, "2026-11-02") }))).toBeNull();
     expect(recoveryGateProblem(WA, complete("COMMITTEE_REVIEW", { authority: carried(GENERAL, "not a day") }))).toBe("That resolution has not taken effect yet, so it cannot be relied on.");
+  });
+
+  it("a resolution that took effect before the case was opened is refused, and an unknown opening day refuses (review L4)", () => {
+    expect(recoveryGateProblem(WA, complete("COMMITTEE_REVIEW", { authority: carried(GENERAL, "2026-09-30") }))).toBe(
+      "That resolution took effect before this case was opened, so it cannot be relied on for it. Choose the motion that decided to start proceedings for this case.",
+    );
+    expect(recoveryGateProblem(WA, complete("COMMITTEE_REVIEW", { authority: carried(GENERAL, "2026-10-01") }))).toBeNull();
+    expect(recoveryGateProblem(WA, complete("COMMITTEE_REVIEW", { authority: carried(GENERAL), caseOpenedOn: null }))).toBe(
+      "The day this case was opened is not known, so no resolution can be checked against it.",
+    );
+    // A step that records no decision does not need the opening day.
+    expect(recoveryGateProblem(WA, complete("LEDGER_VERIFICATION", { caseOpenedOn: null }))).toBeNull();
   });
 
   it("every step after the decision needs it recorded: the legal referral, proceedings, enforcement and closing", () => {

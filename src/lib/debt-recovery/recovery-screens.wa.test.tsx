@@ -68,13 +68,17 @@ function seed(current: string, records: Record<string, unknown>[] = []) {
     Scheme: [{ id: "wa-1", name: "Swan View", state: "WA", timeZone: "Australia/Perth" }],
     SchemeMembership: memberships.map(({ profile: _p, ...m }) => m),
     Meeting: [
-      { id: "council", schemeId: "wa-1", meetingType: "COMMITTEE", title: "Council meeting", scheduledAt: "2026-10-20T02:00:00.000Z", timezone: null },
-      { id: "agm", schemeId: "wa-1", meetingType: "AGM", title: "Annual general meeting", scheduledAt: "2026-10-10T02:00:00.000Z", timezone: null },
+      { id: "council", schemeId: "wa-1", meetingType: "COMMITTEE", status: "MINUTES_DRAFT", title: "Council meeting", scheduledAt: "2026-10-20T02:00:00.000Z", timezone: null },
+      { id: "agm", schemeId: "wa-1", meetingType: "AGM", status: "PUBLISHED", title: "Annual general meeting", scheduledAt: "2026-10-10T02:00:00.000Z", timezone: null },
+      { id: "cancelled", schemeId: "wa-1", meetingType: "COMMITTEE", status: "CANCELLED", title: "Cancelled council", scheduledAt: "2026-10-22T02:00:00.000Z", timezone: null },
+      { id: "deleted", schemeId: "wa-1", meetingType: "AGM", status: "PUBLISHED", deletedAt: "2026-10-25T00:00:00.000Z", title: "Deleted AGM", scheduledAt: "2026-10-22T02:00:00.000Z", timezone: null },
     ],
     AgendaItem: [
       { id: "c-carried", meetingId: "council", position: 1, title: "Start proceedings for lot 1", status: "CARRIED", outcome: "RESOLVED" },
       { id: "c-lost", meetingId: "council", position: 2, title: "Something else", status: "LOST", outcome: "MOTION_LOST" },
       { id: "g-carried", meetingId: "agm", position: 3, title: "Recover arrears", status: "CARRIED", outcome: "RESOLVED" },
+      { id: "x-carried", meetingId: "cancelled", position: 1, title: "Recover arrears", status: "CARRIED", outcome: "RESOLVED" },
+      { id: "d-carried", meetingId: "deleted", position: 1, title: "Recover arrears", status: "CARRIED", outcome: "RESOLVED" },
     ],
     DebtRecoveryCase: [
       { id: "case-1", schemeId: "wa-1", lotId: "lot-1", ownerId: "debtor", caseNumber: "DR-1", status: "IN_PROGRESS", priority: "NORMAL", currentStep: current, principalOwed: "1200", interestOwed: "35.50", costsOwed: "0", totalOwed: "1235.50", createdAt: "2026-10-01T02:00:00.000Z" },
@@ -100,6 +104,9 @@ describe("the WA adviser case page", () => {
     expect(html).toContain('id="authority-meeting-step-6"');
     expect(html).toContain("Annual general meeting (10 Oct 2026)");
     expect(html).toContain("Council meeting (20 Oct 2026)");
+    // A cancelled or deleted meeting is not offered (review M1).
+    expect(html).not.toContain("Cancelled council");
+    expect(html).not.toContain("Deleted AGM");
     // Motions appear once a meeting is chosen; none is offered before.
     expect(html).not.toContain("Start proceedings for lot 1</option>");
     expect(html).not.toContain('id="forum-');
@@ -129,6 +136,19 @@ describe("the WA adviser case page", () => {
 });
 
 describe("the WA owner case page", () => {
+  it("sends the committee to the adviser's case page for a step that records a decision or forum (review L5)", async () => {
+    state.profile = { id: "chair" };
+    seed("COMMITTEE_REVIEW");
+    const decision = renderToStaticMarkup((await OwnerCasePage({ params: Promise.resolve({ caseId: "case-1" }) })) as ReactElement);
+    expect(text(decision)).toContain("Complete this step from the adviser's case page.");
+    expect(decision).not.toContain("Mark Complete");
+    // A step that records nothing more is marked complete there as before.
+    seed("FINAL_NOTICE");
+    const notice = renderToStaticMarkup((await OwnerCasePage({ params: Promise.resolve({ caseId: "case-1" }) })) as ReactElement);
+    expect(notice).toContain("Mark Complete");
+    expect(notice).not.toContain("adviser&#x27;s case page");
+  });
+
   it("never names SAT or the Magistrates Court, and shows the court", async () => {
     state.profile = { id: "chair" };
     seed("PROCEEDINGS");

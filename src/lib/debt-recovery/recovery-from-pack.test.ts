@@ -321,3 +321,14 @@ describe("Western Australian debt recovery (draft, stage 2, PR 9a)", () => {
     for (const t of texts) expect(t).not.toMatch(/[;–—]| - /);
   });
 });
+
+describe("the draft packs' debt recovery switch (stage 2, PR 9a)", () => {
+  it("a draft pack has the recovery steps on only with DEBT_RECOVERY.authorityToSue (VIC stays off until PR 9c)", () => {
+    for (const pack of Object.values(PENDING_RULE_PACKS)) {
+      const rules = pack.rules as unknown as { FEATURES: { debtRecoverySteps: boolean }; DEBT_RECOVERY?: { authorityToSue?: unknown } };
+      if (rules.FEATURES.debtRecoverySteps) expect(rules.DEBT_RECOVERY?.authorityToSue, pack.code).toBeDefined();
+    }
+    expect(PENDING_RULE_PACKS.VIC.rules.FEATURES.debtRecoverySteps).toBe(false);
+    expect(PENDING_RULE_PACKS.WA.rules.FEATURES.debtRecoverySteps).toBe(true);
+  });
+});

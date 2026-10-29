@@ -6,6 +6,7 @@ import { db } from "@/prisma/db";
 import { formatDateIn, isTimeZone, storedDayIn } from "@/lib/jurisdiction/time-zone";
 import { schemeTimeZone } from "@/lib/jurisdiction/scheme-time";
 import { and } from "@prisma/orm-postgres/orm-client";
+import { isHeldMeeting } from "@/lib/meetings/lifecycle";
 
 export const GENERAL_MEETING_TYPES = ["AGM", "EGM", "SGM", "FIRST_AGM"];
 
@@ -132,7 +133,10 @@ export interface AuthorityResolutionKind {
  * carried at that meeting of the scheme, and only any kind is supported. The
  * day is resolutionDay's: a resolution still pending (a voting period) is
  * refused until it is carried and has taken effect. Read only for a pack with
- * DEBT_RECOVERY.authorityToSue; NSW and Queensland never reach it.
+ * DEBT_RECOVERY.authorityToSue; NSW and Queensland never reach it. The
+ * meeting must not be deleted and must have been held (isHeldMeeting: under
+ * way, minutes being prepared or published, or completed), so a motion of a
+ * cancelled, adjourned or not yet held meeting is refused (review M1).
  */
 export async function authorityResolution(
   schemeId: string,
@@ -144,7 +148,8 @@ export async function authorityResolution(
   if (accepted.length === 0) return { problem: "No resolution can decide this for this building." };
   if (!meetingId || !motionId) return { problem: `Choose the meeting and the motion carried at it: ${words}.` };
   const meeting = await db.orm.public.Meeting.where((m) => m.id.eq(meetingId)).first();
-  if (!meeting || meeting.schemeId !== schemeId) return { problem: "Choose a meeting of this scheme." };
+  if (!meeting || meeting.schemeId !== schemeId || meeting.deletedAt) return { problem: "Choose a meeting of this scheme." };
+  if (!isHeldMeeting(meeting.status)) return { problem: "That meeting has not been held, or was cancelled or adjourned, so its motions cannot be relied on." };
   const at = GENERAL_MEETING_TYPES.includes(meeting.meetingType) ? "GENERAL" : COMMITTEE_MEETING_TYPES.includes(meeting.meetingType) ? "COMMITTEE" : null;
   const candidates = accepted.filter((a) => a.meeting === at);
   if (candidates.length === 0) return { problem: `Choose ${words}.` };

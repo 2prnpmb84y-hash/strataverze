@@ -158,6 +158,8 @@ export type RecoveryGateInput =
       recorded: RecordedRecoveryFacts;
       /** The building's day (YYYY-MM-DD). */
       today: string;
+      /** The day the case was opened, in the building's zone (YYYY-MM-DD), or null where it is not known. */
+      caseOpenedOn: string | null;
       /** The building's step names. */
       labels?: Readonly<Record<string, string>>;
     }
@@ -205,6 +207,9 @@ export function recoveryGateProblem(rules: Rules, input: RecoveryGateInput): str
     if (fact.problem !== null) return fact.problem;
     if (!needs.authority.accepted.some((x) => sameResolution(x, fact.resolution))) return `Choose ${needs.authority.words}.`;
     if (!/^\d{4}-\d{2}-\d{2}$/.test(fact.decidedOn) || fact.decidedOn > input.today) return "That resolution has not taken effect yet, so it cannot be relied on.";
+    // A decision made before the case was opened is not taken to be about it (review L4; the motion's subject is not checked).
+    if (!input.caseOpenedOn) return "The day this case was opened is not known, so no resolution can be checked against it.";
+    if (fact.decidedOn < input.caseOpenedOn) return "That resolution took effect before this case was opened, so it cannot be relied on for it. Choose the motion that decided to start proceedings for this case.";
   }
   if (needs?.forum) {
     const chosen = (input.forum ?? "").trim();
@@ -236,7 +241,7 @@ export function storedResolutionKind(r: DebtAuthorityResolution): string {
 
 /**
  * The records completing the step writes, once recoveryGateProblem has passed
- * it: the authority (with the case's amount owing) and the forum. None for a
+ * it: the authority (with the lot's amount owing when the step is completed) and the forum. None for a
  * pack with no gate keys.
  */
 export function recoveryRecordsToWrite(

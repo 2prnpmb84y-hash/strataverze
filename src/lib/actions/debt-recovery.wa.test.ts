@@ -58,18 +58,19 @@ vi.mock("@/lib/jurisdiction/scheme-rules", async (orig) => {
   return {
     ...actual,
     rulesForState,
-    rulesForScheme: async (schemeId: string) => {
+    rulesForScheme: vi.fn(async (schemeId: string) => {
       const { sharedFake } = await import("@/test/fake-orm");
       const scheme = sharedFake.table("Scheme").find((s) => s.id === schemeId);
       if (!scheme) throw new actual.SchemeNotFoundError();
       return rulesForState(String(scheme.state));
-    },
+    }),
   };
 });
 
 const { sharedFake } = await import("@/test/fake-orm");
 const actions = await import("./debt-recovery");
 const { PENDING_RULE_PACKS, RULE_PACKS } = await import("@/config/statutory");
+const { rulesForScheme } = await import("@/lib/jurisdiction/scheme-rules");
 
 const SCHEME = "scheme-1";
 const WA_STEPS = PENDING_RULE_PACKS.WA.rules.DEBT_RECOVERY_STEPS;
@@ -84,7 +85,7 @@ beforeEach(() => {
 });
 
 /** A WA (or `st`) building with a case on lot 1, the steps before `currentOrder` complete; meetings and motions to choose from. */
-function seed(opts: { st?: "WA" | "NSW" | "QLD"; currentOrder?: number; records?: Record<string, unknown>[]; caseStatus?: string; noCase?: boolean } = {}) {
+function seed(opts: { st?: "WA" | "NSW" | "QLD"; currentOrder?: number; records?: Record<string, unknown>[]; caseStatus?: string; noCase?: boolean; openedAt?: string; rulePack?: string } = {}) {
   const st = opts.st ?? "WA";
   const steps = st === "WA" ? WA_STEPS : (RULE_PACKS[st].rules.DEBT_RECOVERY_STEPS ?? []);
   const current = opts.currentOrder ?? 1;
@@ -98,10 +99,13 @@ function seed(opts: { st?: "WA" | "NSW" | "QLD"; currentOrder?: number; records?
     LevyNotice: [{ id: "n-1", schemeId: SCHEME, lotId: "lot-1", status: "OVERDUE", dueDate: "2026-07-01", balanceOutstanding: "1200.00", interestCharged: "35.50" }],
     PaymentPlan: [],
     Meeting: [
-      { id: "council", schemeId: SCHEME, meetingType: "COMMITTEE", title: "Council meeting", scheduledAt: "2026-10-20T02:00:00.000Z", timezone: null },
-      { id: "agm", schemeId: SCHEME, meetingType: "AGM", title: "AGM", scheduledAt: "2026-10-10T02:00:00.000Z", timezone: null },
-      { id: "future", schemeId: SCHEME, meetingType: "COMMITTEE", title: "Next council meeting", scheduledAt: "2026-11-20T02:00:00.000Z", timezone: null },
-      { id: "elsewhere", schemeId: "scheme-2", meetingType: "COMMITTEE", title: "Another building's council", scheduledAt: "2026-10-20T02:00:00.000Z", timezone: null },
+      { id: "council", schemeId: SCHEME, meetingType: "COMMITTEE", status: "MINUTES_DRAFT", title: "Council meeting", scheduledAt: "2026-10-20T02:00:00.000Z", timezone: null },
+      { id: "agm", schemeId: SCHEME, meetingType: "AGM", status: "PUBLISHED", title: "AGM", scheduledAt: "2026-10-10T02:00:00.000Z", timezone: null },
+      // Held (in progress) but dated after the building's day: the decision has not taken effect.
+      { id: "future", schemeId: SCHEME, meetingType: "COMMITTEE", status: "IN_PROGRESS", title: "Next council meeting", scheduledAt: "2026-11-20T02:00:00.000Z", timezone: null },
+      { id: "elsewhere", schemeId: "scheme-2", meetingType: "COMMITTEE", status: "PUBLISHED", title: "Another building's council", scheduledAt: "2026-10-20T02:00:00.000Z", timezone: null },
+      { id: "cancelled", schemeId: SCHEME, meetingType: "COMMITTEE", status: "CANCELLED", title: "Cancelled council", scheduledAt: "2026-10-22T02:00:00.000Z", timezone: null },
+      { id: "deleted", schemeId: SCHEME, meetingType: "COMMITTEE", status: "PUBLISHED", deletedAt: "2026-10-25T00:00:00.000Z", title: "Deleted council", scheduledAt: "2026-10-22T02:00:00.000Z", timezone: null },
     ],
     AgendaItem: [
       { id: "c-carried", meetingId: "council", position: 1, title: "Start proceedings for lot 1", status: "CARRIED", outcome: "RESOLVED", resolutionCategory: "ORDINARY" },
@@ -109,6 +113,8 @@ function seed(opts: { st?: "WA" | "NSW" | "QLD"; currentOrder?: number; records?
       { id: "g-carried", meetingId: "agm", position: 1, title: "Start proceedings for lot 1", status: "CARRIED", outcome: "RESOLVED", resolutionCategory: "ORDINARY" },
       { id: "f-carried", meetingId: "future", position: 1, title: "Start proceedings for lot 1", status: "CARRIED", outcome: "RESOLVED", resolutionCategory: "ORDINARY" },
       { id: "e-carried", meetingId: "elsewhere", position: 1, title: "x", status: "CARRIED", outcome: "RESOLVED", resolutionCategory: "ORDINARY" },
+      { id: "x-carried", meetingId: "cancelled", position: 1, title: "Start proceedings for lot 1", status: "CARRIED", outcome: "RESOLVED", resolutionCategory: "ORDINARY" },
+      { id: "d-carried", meetingId: "deleted", position: 1, title: "Start proceedings for lot 1", status: "CARRIED", outcome: "RESOLVED", resolutionCategory: "ORDINARY" },
     ],
     PendingResolution: [],
     DebtRecoveryCase: opts.noCase
@@ -122,8 +128,10 @@ function seed(opts: { st?: "WA" | "NSW" | "QLD"; currentOrder?: number; records?
             caseNumber: "DR-2026-0001",
             status: opts.caseStatus ?? "IN_PROGRESS",
             currentStep: steps.find((s) => s.stepOrder === current)?.stepType ?? "CLOSED",
-            totalOwed: "1235.50",
-            rulePack: st === "WA" ? `AU-WA ${PENDING_RULE_PACKS.WA.version}` : `AU-${st} test`,
+            // The amount owing when the case was opened; the lot now owes 1235.50 (its overdue notice).
+            totalOwed: "1000.00",
+            createdAt: opts.openedAt ?? "2026-10-01T02:00:00.000Z",
+            rulePack: opts.rulePack ?? (st === "WA" ? `AU-WA ${PENDING_RULE_PACKS.WA.version}` : `AU-${st} test`),
           },
         ],
     DebtRecoveryStep: opts.noCase
@@ -178,7 +186,9 @@ describe("the Decision to Start Proceedings step (D9)", () => {
   it.each([
     ["a motion not carried", "council", "c-lost", "That motion was not carried, so it cannot be relied on."],
     ["another building's meeting", "elsewhere", "e-carried", "Choose a meeting of this scheme."],
-    ["a meeting not yet held", "future", "f-carried", "That resolution has not taken effect yet, so it cannot be relied on."],
+    ["a meeting dated after today", "future", "f-carried", "That resolution has not taken effect yet, so it cannot be relied on."],
+    ["a cancelled meeting", "cancelled", "x-carried", "That meeting has not been held, or was cancelled or adjourned, so its motions cannot be relied on."],
+    ["a deleted meeting", "deleted", "d-carried", "Choose a meeting of this scheme."],
   ])("refuses %s, with nothing written", async (_what, meeting, item, error) => {
     seed({ currentOrder: order("COMMITTEE_REVIEW") });
     expect(await complete("COMMITTEE_REVIEW", { authorityMeetingId: meeting, authorityItemId: item })).toEqual({ error });
@@ -189,7 +199,7 @@ describe("the Decision to Start Proceedings step (D9)", () => {
   it.each([
     ["a council motion", "council", "c-carried", "COMMITTEE", "2026-10-20"],
     ["a general meeting motion", "agm", "g-carried", "GENERAL_MEETING", "2026-10-10"],
-  ])("records %s with the step, and the amount owing", async (_what, meeting, item, kind, day) => {
+  ])("records %s with the step, and the amount owing now (not when the case was opened)", async (_what, meeting, item, kind, day) => {
     seed({ currentOrder: order("COMMITTEE_REVIEW") });
     expect(await complete("COMMITTEE_REVIEW", { authorityMeetingId: meeting, authorityItemId: item })).toEqual({ success: true });
     expect(step("COMMITTEE_REVIEW").status).toBe("COMPLETED");
@@ -209,6 +219,16 @@ describe("the Decision to Start Proceedings step (D9)", () => {
       rulePack: `AU-WA ${PENDING_RULE_PACKS.WA.version}`,
       recordedBy: "adviser",
     });
+  });
+
+  it("refuses a resolution that took effect before the case was opened (review L4)", async () => {
+    seed({ currentOrder: order("COMMITTEE_REVIEW"), openedAt: "2026-10-15T02:00:00.000Z" });
+    expect(await complete("COMMITTEE_REVIEW", { authorityMeetingId: "agm", authorityItemId: "g-carried" })).toEqual({
+      error: "That resolution took effect before this case was opened, so it cannot be relied on for it. Choose the motion that decided to start proceedings for this case.",
+    });
+    expectNothingWritten("COMMITTEE_REVIEW");
+    expect(records()).toEqual([]);
+    expect(await complete("COMMITTEE_REVIEW", { authorityMeetingId: "council", authorityItemId: "c-carried" })).toEqual({ success: true });
   });
 
   it("writes the record in the step's transaction: a failure later in it leaves neither", async () => {
@@ -298,9 +318,19 @@ describe("NSW and Queensland read and write no record", () => {
     });
   }
 
+  it.each(["not a label", "AU-XX 2026.10.1", "AU-NSW"])("a malformed or unknown pack label (%s) falls back to the building's pack, and the case closes (review L2)", async (label) => {
+    seed({ st: "NSW", currentOrder: 4, rulePack: label });
+    vi.mocked(rulesForScheme).mockClear();
+    expect(await actions.closeDebtRecoveryCaseAction("case-1", SCHEME, "Paid", "CLOSED_PAID")).toEqual({ success: true });
+    expect(vi.mocked(rulesForScheme)).toHaveBeenCalledWith(SCHEME);
+    expect(sharedFake.table("DebtRecoveryCase")[0].status).toBe("CLOSED_PAID");
+  });
+
   it("closing an NSW or Queensland case reads no building: the case's own pack label decides", async () => {
     seed({ st: "NSW", currentOrder: 4 });
+    vi.mocked(rulesForScheme).mockClear();
     expect(await actions.closeDebtRecoveryCaseAction("case-1", SCHEME, "Paid", "CLOSED_PAID")).toEqual({ success: true });
     expect(spy.tablesRead).not.toContain("Scheme");
+    expect(vi.mocked(rulesForScheme)).not.toHaveBeenCalled();
   });
 });

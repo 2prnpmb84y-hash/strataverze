@@ -705,7 +705,11 @@ export const PENDING_RULE_PACKS = {
     // only CONFIRMED law and says StrataVerze practice where a step is StrataVerze's own. NEVER_RECOVERABLE_FEE_VARIANTS
     // lists all four recovery step fees (D10), and FEATURES.debtRecoverySteps is on (D11). Matthew Wrigley's decisions
     // D1, D4 and D9 to D13 of 29 Oct 2026, recorded in DECISIONS and kept in FOR_REVIEW; the FOR_REVIEW forum point is
-    // rewritten. No legal value or status already recorded changed; still a draft.
+    // rewritten. After review (same day, same version): D12 reworded as accepted (step order enforced for the draft
+    // packs; NSW and Queensland fixed separately), and the COMMITTEE_REVIEW guidance and the FOR_REVIEW debt recovery
+    // point say the motion must be of a held meeting, take effect on or after the day the case was opened, and that its
+    // subject is not checked, and that the amount recorded is the amount owing when the step is completed. No legal
+    // value or status already recorded changed; still a draft.
     version: "2026.10.10",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",

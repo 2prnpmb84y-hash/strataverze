@@ -15,6 +15,7 @@ import { previewRecoveryFees } from "@/lib/billing/capture";
 import { feeWordingFor } from "@/lib/billing/disclosure";
 import { caseWordsFor } from "@/lib/jurisdiction/screen-words";
 import { needRule } from "@/config/statutory";
+import { recoveryGatesApply, recoveryStepNeeds } from "@/lib/debt-recovery/recovery-gates";
 
 export default async function OwnerCaseDetailPage({
   params,
@@ -134,6 +135,14 @@ export default async function OwnerCaseDetailPage({
   const serialised = isCommittee ? full : debtorCaseView(full);
 
   const terms = rules.TERMINOLOGY;
+  // A draft pack's steps that record a fact only the adviser's case page asks
+  // for (the decision to start proceedings, the forum). Worked out from the
+  // pack alone, and passed only where there are any, so NSW and Queensland
+  // pages are unchanged.
+  const adviserOnlyStepTypes = recoveryGatesApply(rules)
+    ? debtCase.steps.map((s) => s.stepType).filter((t) => recoveryStepNeeds(rules, t) != null)
+    : [];
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -148,6 +157,7 @@ export default async function OwnerCaseDetailPage({
       />
 
       <CaseDetailOwnerClient
+        {...(adviserOnlyStepTypes.length > 0 ? { adviserOnlyStepTypes } : {})}
         debtCase={serialised}
         isCommittee={isCommittee}
         recoveryFees={isCommittee ? await previewRecoveryFees({ state: pack.state, wording: feeWordingFor(rules) }) : {}}
