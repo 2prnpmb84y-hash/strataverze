@@ -598,11 +598,11 @@ describe("Western Australia pack (pending)", () => {
   const pack = PENDING_RULE_PACKS.WA;
   const wa = pack.rules;
 
-  it("is a draft, not yet signed off, with only the payment order, the notice timing, the 2-lot quorum, the voting period and council notice not checked decided", () => {
-    expect(pack.version).toBe("2026.10.10");
+  it("is a draft, not yet signed off, with only the payment order, the notice timing, the 2-lot quorum, the voting period, council notice not checked and debt recovery decided", () => {
+    expect(pack.version).toBe("2026.10.11");
     expect(pack.status).toBe("DRAFT");
     expect(pack.reviewedOn).toBeNull();
-    expect(wa.DECISIONS).toHaveLength(5);
+    expect(wa.DECISIONS).toHaveLength(6);
     for (const d of wa.DECISIONS.slice(0, 2)) expect(d).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-28" });
     expect(wa.DECISIONS[1].decision).toContain("NOTICE_RULES");
     // Stage 2, PR 8a-ii: the 2-lot quorum (29 Oct 2026).
@@ -625,6 +625,12 @@ describe("Western Australia pack (pending)", () => {
     expect(wa.DECISIONS[4]).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-29" });
     expect(wa.DECISIONS[4].decision).toContain("(D12)");
     expect(wa.FOR_REVIEW.some((p) => p.startsWith("Council meeting notice (stage 2, PR 8b-iii") && p.includes("D12"))).toBe(true);
+    // Stage 2, PR 9a: debt recovery (29 Oct 2026, the PR 9 decisions for WA and the shared engine), kept in FOR_REVIEW.
+    expect(wa.DECISIONS[5]).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-29" });
+    for (const d of ["D1", "D4", "D9", "D10", "D11", "D12", "D13"]) expect(wa.DECISIONS[5].decision).toContain(`(${d})`);
+    expect(wa.FOR_REVIEW.some((p) => p.startsWith("Debt recovery (stage 2, PR 9a") && ["D9", "D10", "D11", "D13"].every((d) => p.includes(d)))).toBe(true);
+    // Who decides is still not confirmed in law: the accepted resolutions are a StrataVerze reading.
+    expect(wa.NOT_CONFIRMED.some((p) => p.startsWith("Who decides, inside the strata company, to start debt recovery proceedings"))).toBe(true);
     expect(wa.NOT_CONFIRMED.length).toBeGreaterThan(0);
     expect(wa.FOR_REVIEW.length).toBeGreaterThan(0);
   });
@@ -692,11 +698,15 @@ describe("Western Australia pack (pending)", () => {
     expect(wa.DEBT_RECOVERY.forumKind).toBe("COURT");
     expect(wa.DEBT_RECOVERY.satMayDecide).toBe(false);
     expect(wa.DISPUTES.excludesLevyDebts).toBe(true);
+    // Stage 2, PR 9a: the forum the recovery gates read (D13).
+    expect(wa.DEBT_RECOVERY.forum.options.map((o) => [o.key, o.status])).toEqual([["COURT", "CONFIRMED"]]);
+    expect(wa.DEBT_RECOVERY.forum.excluded.map((x) => x.key)).toEqual(["SAT"]);
+    expect(wa.DEBT_RECOVERY.forumWords).toBe("a court of competent jurisdiction");
   });
 
-  it("switches every NSW workflow off", () => {
+  it("switches every NSW workflow off except the debt recovery steps (stage 2, PR 9a)", () => {
     expect(Object.keys(wa.FEATURES).sort()).toEqual(Object.keys(RULE_PACKS.NSW.rules.FEATURES).sort());
-    expect(Object.values(wa.FEATURES).every((on) => on === false)).toBe(true);
+    expect(Object.entries(wa.FEATURES).filter(([, on]) => on).map(([k]) => k)).toEqual(["debtRecoverySteps"]);
   });
 
   it("supports strata schemes only", () => {

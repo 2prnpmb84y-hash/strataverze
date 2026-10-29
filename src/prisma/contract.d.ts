@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'42f80370b0b3b87a4fc91cb08e4e537ea990ddf8ead1f3b6b3672d256c050662'>;
+  StorageHashBase<'5c9d684a48aef449b95203dc5bd8e6be9dfb58675a0a0c87288b925c21dee78d'>;
 export type ExecutionHash =
   ExecutionHashBase<'8c9cb0b046b1bd7cbabff3729749064a4319da7e3f83be98fb8c1e93574f50c8'>;
 export type ProfileHash =
@@ -1055,6 +1055,7 @@ export namespace Models {
     owner: public_Profile;
     paymentPlanRequests: public_PaymentPlanRequest[];
     paymentPlans: public_PaymentPlan[];
+    records: public_DebtRecoveryRecord[];
     scheme: public_Scheme;
     steps: public_DebtRecoveryStep[];
     readonly [RelationKeys]?:
@@ -1066,6 +1067,7 @@ export namespace Models {
       | 'owner'
       | 'paymentPlanRequests'
       | 'paymentPlans'
+      | 'records'
       | 'scheme'
       | 'steps';
   };
@@ -1084,6 +1086,27 @@ export namespace Models {
     updatedAt: FieldOutputTypes['public']['DebtRecoveryDocument']['updatedAt'];
     case: public_DebtRecoveryCase;
     readonly [RelationKeys]?: 'case';
+  };
+  export type public_DebtRecoveryRecord = {
+    amount: FieldOutputTypes['public']['DebtRecoveryRecord']['amount'];
+    caseId: FieldOutputTypes['public']['DebtRecoveryRecord']['caseId'];
+    decidedOn: FieldOutputTypes['public']['DebtRecoveryRecord']['decidedOn'];
+    forum: FieldOutputTypes['public']['DebtRecoveryRecord']['forum'];
+    id: FieldOutputTypes['public']['DebtRecoveryRecord']['id'];
+    kind: FieldOutputTypes['public']['DebtRecoveryRecord']['kind'];
+    lodgedOn: FieldOutputTypes['public']['DebtRecoveryRecord']['lodgedOn'];
+    notes: FieldOutputTypes['public']['DebtRecoveryRecord']['notes'];
+    recordedAt: FieldOutputTypes['public']['DebtRecoveryRecord']['recordedAt'];
+    recordedBy: FieldOutputTypes['public']['DebtRecoveryRecord']['recordedBy'];
+    resolutionItemId: FieldOutputTypes['public']['DebtRecoveryRecord']['resolutionItemId'];
+    resolutionKind: FieldOutputTypes['public']['DebtRecoveryRecord']['resolutionKind'];
+    resolutionMeetingId: FieldOutputTypes['public']['DebtRecoveryRecord']['resolutionMeetingId'];
+    rulePack: FieldOutputTypes['public']['DebtRecoveryRecord']['rulePack'];
+    schemeId: FieldOutputTypes['public']['DebtRecoveryRecord']['schemeId'];
+    state: FieldOutputTypes['public']['DebtRecoveryRecord']['state'];
+    debtCase: public_DebtRecoveryCase;
+    scheme: public_Scheme;
+    readonly [RelationKeys]?: 'debtCase' | 'scheme';
   };
   export type public_DebtRecoveryStep = {
     actionRequired: FieldOutputTypes['public']['DebtRecoveryStep']['actionRequired'];
@@ -2746,6 +2769,7 @@ export namespace Models {
     contacts: public_Contact[];
     debtRecoveryCases: public_DebtRecoveryCase[];
     debtRecoveryPaymentPlans: public_PaymentPlan[];
+    debtRecoveryRecords: public_DebtRecoveryRecord[];
     documents: public_Document[];
     financialDocuments: public_FinancialDocument[];
     financialPeriods: public_FinancialPeriod[];
@@ -2808,6 +2832,7 @@ export namespace Models {
       | 'contacts'
       | 'debtRecoveryCases'
       | 'debtRecoveryPaymentPlans'
+      | 'debtRecoveryRecords'
       | 'documents'
       | 'financialDocuments'
       | 'financialPeriods'
@@ -4313,6 +4338,7 @@ export declare const models: {
     DebtRecoveryActivity: Models.public_DebtRecoveryActivity;
     DebtRecoveryCase: Models.public_DebtRecoveryCase;
     DebtRecoveryDocument: Models.public_DebtRecoveryDocument;
+    DebtRecoveryRecord: Models.public_DebtRecoveryRecord;
     DebtRecoveryStep: Models.public_DebtRecoveryStep;
     Document: Models.public_Document;
     ElectronicBallot: Models.public_ElectronicBallot;
@@ -8409,6 +8435,153 @@ type ContractBase = Omit<
                   readonly target: {
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'debt_recovery_cases';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly debt_recovery_records: {
+              columns: {
+                readonly amount: {
+                  readonly dataType: 'pg/numeric';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 12; readonly scale: 2 };
+                  readonly many: false;
+                };
+                readonly case_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly decided_on: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly forum: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly kind: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly lodged_on: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly notes: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly recorded_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly recorded_by: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly resolution_item_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly resolution_kind: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly resolution_meeting_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly rule_pack: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly length: 40 };
+                  readonly many: false;
+                };
+                readonly scheme_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly state: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'debt_recovery_records_case_id_kind_idx';
+                  readonly columns: readonly ['case_id', 'kind'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'debt_recovery_records_scheme_id_idx';
+                  readonly columns: readonly ['scheme_id'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'debt_recovery_records';
+                    readonly columns: readonly ['case_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'debt_recovery_cases';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'debt_recovery_records';
+                    readonly columns: readonly ['scheme_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'schemes';
                     readonly columns: readonly ['id'];
                   };
                 },
@@ -27767,6 +27940,10 @@ type ContractBase = Omit<
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'DebtRecoveryDocument';
     };
+    readonly debt_recovery_records: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'DebtRecoveryRecord';
+    };
     readonly debt_recovery_steps: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'DebtRecoveryStep';
@@ -31869,6 +32046,17 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['caseId'];
                 };
               };
+              readonly records: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'DebtRecoveryRecord';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['caseId'];
+                };
+              };
               readonly scheme: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -32026,6 +32214,133 @@ type ContractBase = Omit<
                 readonly issuedAt: { readonly column: 'issued_at' };
                 readonly title: { readonly column: 'title' };
                 readonly updatedAt: { readonly column: 'updated_at' };
+              };
+            };
+          };
+          readonly DebtRecoveryRecord: {
+            readonly fields: {
+              readonly amount: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly typeParams: { readonly precision: 12; readonly scale: 2 };
+                };
+              };
+              readonly caseId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly decidedOn: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+              readonly forum: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly kind: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly lodgedOn: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+              readonly notes: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly recordedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly recordedBy: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly resolutionItemId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly resolutionKind: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly resolutionMeetingId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly rulePack: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 40 };
+                };
+              };
+              readonly schemeId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly state: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: {
+              readonly debtCase: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'DebtRecoveryCase';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['caseId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly scheme: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Scheme';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['schemeId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'debt_recovery_records';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly amount: { readonly column: 'amount' };
+                readonly caseId: { readonly column: 'case_id' };
+                readonly decidedOn: { readonly column: 'decided_on' };
+                readonly forum: { readonly column: 'forum' };
+                readonly id: { readonly column: 'id' };
+                readonly kind: { readonly column: 'kind' };
+                readonly lodgedOn: { readonly column: 'lodged_on' };
+                readonly notes: { readonly column: 'notes' };
+                readonly recordedAt: { readonly column: 'recorded_at' };
+                readonly recordedBy: { readonly column: 'recorded_by' };
+                readonly resolutionItemId: { readonly column: 'resolution_item_id' };
+                readonly resolutionKind: { readonly column: 'resolution_kind' };
+                readonly resolutionMeetingId: { readonly column: 'resolution_meeting_id' };
+                readonly rulePack: { readonly column: 'rule_pack' };
+                readonly schemeId: { readonly column: 'scheme_id' };
+                readonly state: { readonly column: 'state' };
               };
             };
           };
@@ -41852,6 +42167,17 @@ type ContractBase = Omit<
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
                   readonly model: 'PaymentPlan';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['schemeId'];
+                };
+              };
+              readonly debtRecoveryRecords: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'DebtRecoveryRecord';
                 };
                 readonly cardinality: '1:N';
                 readonly on: {

@@ -900,6 +900,138 @@ export interface DebtRecoveryRules {
     readonly headingPassed: string;
   };
   source: string;
+  /*
+   * The draft packs' recovery rules (VIC, ACT and WA stage 2, PR 9a,
+   * 29 Oct 2026), read by src/lib/debt-recovery/recovery-gates.ts. Every key
+   * is optional and NSW and Queensland set none, so nothing changes for them:
+   * the gates return null when a pack has none of these keys. Each value the
+   * gates rely on is a CheckedValue, and one with no value refuses its action.
+   * The order of the steps is enforced for every pack by the step order check
+   * (src/lib/auth/debt-recovery-access.ts), so there is no key for it.
+   */
+  /** Where proceedings may be brought, and where they may not, recorded when the step that starts them is completed. */
+  forum?: DebtForumRule;
+  /** Who in the owners corporation may decide to start proceedings, recorded when its step is completed. */
+  authorityToSue?: AuthorityToSueRule;
+  /** Steps that may be completed only some days after an earlier event (Victoria, PR 9c). Not applied in PR 9a: refused. */
+  stepTiming?: readonly DebtStepTimingRule[];
+  /** A final notice the law prescribes (Victoria s 32, PR 9c). Not applied in PR 9a: refused. */
+  finalNotice?: StatutoryFinalNoticeRule;
+  /** A statutory charge over the lot (the ACT, PR 9b). Not applied in PR 9a: refused. */
+  statutoryCharge?: StatutoryChargeRule;
+  /** The buildings a case may be opened for (Victoria tiers 1 to 4, PR 9c). Not applied in PR 9a: refused. */
+  appliesWhen?: SelectorCondition;
+}
+
+/** A place a debt claim may be brought (stage 2, PR 9a). */
+export type DebtForumKey = "VCAT" | "ACAT" | "COURT";
+
+/**
+ * One place proceedings may be brought. Only an option whose status is
+ * CONFIRMED or STRATAVERZE may be recorded; any other is shown to advisers as
+ * guidance, not confirmed. `limitCents` is never applied: a limit is shown to
+ * advisers only, and never in owner-facing text.
+ */
+export interface DebtForumOption {
+  key: DebtForumKey;
+  /** As the screens name it: "a court of competent jurisdiction". */
+  words: string;
+  status: RuleStatus;
+  limitCents: CheckedValue<number> | null;
+  source: string;
+}
+
+/** A place that may not hear the claim (Western Australia: SAT, STA s 197(3)(f)). Recording it is refused with `reason`. */
+export interface DebtForumExclusion {
+  key: string;
+  words: string;
+  reason: string;
+  status: RuleStatus;
+  source: string;
+}
+
+export interface DebtForumRule {
+  /** The step whose completion records where proceedings were brought (PROCEEDINGS). */
+  recordedAtStep: string;
+  options: readonly DebtForumOption[];
+  excluded: readonly DebtForumExclusion[];
+  source: string;
+}
+
+/**
+ * A resolution that may decide something on a recovery case: a motion carried
+ * at a general meeting (GENERAL) or a committee meeting (COMMITTEE; the WA
+ * council, the ACT executive committee), of any kind (ANY) or recorded as an
+ * ORDINARY or SPECIAL resolution. `words` is how the screens say it.
+ */
+export interface DebtAuthorityResolution {
+  meeting: "GENERAL" | "COMMITTEE";
+  kind: "ANY" | "ORDINARY" | "SPECIAL";
+  words: string;
+}
+
+/**
+ * Who may decide to start proceedings. The resolution is recorded when
+ * `recordedAtStep` is completed, and the legal referral needs it. `accepted`
+ * with no value refuses every referral. `managerMayDecide` false: the
+ * adviser (strata manager) can never decide alone; the engine always needs a
+ * recorded resolution. `amountThreshold` (Victoria s 18(2), PR 9c) is refused
+ * in PR 9a.
+ */
+export interface AuthorityToSueRule {
+  recordedAtStep: string;
+  accepted: CheckedValue<readonly DebtAuthorityResolution[]>;
+  amountThreshold?: {
+    multiple: number;
+    comparator: CheckedValue<"SCHEME_CURRENT_ANNUAL_FEES" | "LOT_CURRENT_ANNUAL_FEES">;
+    upTo: DebtAuthorityResolution;
+    above: DebtAuthorityResolution;
+    source: string;
+  };
+  managerMayDecide: CheckedValue<boolean>;
+  source: string;
+  status: RuleStatus;
+}
+
+/** A step that may be completed only `days` after an earlier event (Victoria ss 32(1), 163(2), PR 9c). */
+export interface DebtStepTimingRule {
+  stepType: string;
+  after: { kind: "EACH_OVERDUE_NOTICE_ISSUED" } | { kind: "STEP_NOTICE_SENT"; stepType: string };
+  days: CheckedValue<number>;
+  /** DAY_AFTER_PERIOD: the step may be completed from day N + 1 after the recorded day. */
+  earliest: CheckedValue<"DAY_AFTER_PERIOD">;
+  /** The forums the timing applies to; all where left out. */
+  forums?: readonly string[];
+  /** A DATED_RULES key whose commencement pauses the step. */
+  pausedBy?: string;
+  source: string;
+  status: RuleStatus;
+}
+
+/** A final notice the law prescribes (Victoria s 32, PR 9c). */
+export interface StatutoryFinalNoticeRule {
+  stepType: string;
+  noticeType: "FINAL_FEE_NOTICE";
+  contents: readonly { key: "PAY_IMMEDIATELY" | "INTEREST_TO_DATE_AND_DAILY" | "PART_11_ACTION"; words: string; status: RuleStatus; source: string }[];
+  form: NoticeFormRule;
+  givenOutsideMayBeRecorded: CheckedValue<boolean>;
+  dailyInterestRounding: CheckedValue<"CENT">;
+  source: string;
+}
+
+/** A statutory charge over the lot for the debt (the ACT ss 96, 97, PR 9b). */
+export interface StatutoryChargeRule {
+  stepType: "STATUTORY_CHARGE";
+  declaredBy: CheckedValue<readonly DebtAuthorityResolution[]>;
+  certifiedBy: string;
+  lodgedWith: string;
+  copiesTo: readonly string[];
+  securesInterest: true;
+  powerOfSale: false;
+  revocation: { required: CheckedValue<true>; withinDays: CheckedValue<number> };
+  closeBlockedUntilRevoked: CheckedValue<"ANY_CLOSE" | "PAID_OR_SETTLED">;
+  source: string;
+  status: RuleStatus;
 }
 
 /*

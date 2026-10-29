@@ -99,6 +99,19 @@ export function isFinishedMeeting(status: string): boolean {
   return status === "PUBLISHED" || status === "CANCELLED" || status === "COMPLETED";
 }
 
+/**
+ * Meetings that were held: under way, minutes being prepared, minutes
+ * published, or (old rows) completed (VIC, ACT and WA stage 2, PR 9a). A
+ * decision relied on for debt recovery must come from one of these, never a
+ * meeting not yet held, adjourned or cancelled.
+ */
+export const HELD_MEETING_STATUSES: readonly string[] = ["IN_PROGRESS", "MINUTES_DRAFT", "PUBLISHED", "COMPLETED"];
+
+/** Whether the meeting was held (HELD_MEETING_STATUSES). */
+export function isHeldMeeting(status: string | null | undefined): boolean {
+  return HELD_MEETING_STATUSES.includes(String(status ?? ""));
+}
+
 const STATUS_LABELS: Record<string, string> = {
   SCHEDULED: "Scheduled",
   DRAFT: "Notice not yet issued",

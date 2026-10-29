@@ -35,6 +35,18 @@ const PATTERNS = [
   /Owners Corporations Act/,
   /Owners corporation (final )?fee notice/,
   /not later than 28 days/,
+  // Debt recovery for the draft packs (stage 2, PR 9a): the ACT charge, the VIC and WA provisions, and where claims
+  // are heard come from the pack too. "registrar-general" is the ACT's lower-case term; the NSW certificate's
+  // "Registrar-General" (lib/records/certificate-draft.ts) is left as it is.
+  /registrar-general/,
+  /statutory charge/i,
+  /s 163\(2\)/,
+  /s 143\(5\)/,
+  /\bSAT\b/,
+  /State Administrative Tribunal/,
+  /\bVCAT\b/,
+  /\bACAT\b/,
+  /Magistrates Court/,
 ];
 
 /** Allowed, with the reason. */

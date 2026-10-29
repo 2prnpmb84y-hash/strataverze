@@ -1,0 +1,1451 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`the Queensland reminder run > each email and claim over a run of days (an NSW building is never emailed) 1`] = `
+{
+  "claims": [
+    {
+      "deadlineOn": "2026-04-28",
+      "lastSentOn": "2026-04-29",
+      "lastStage": "PASSED",
+      "lotId": "lot-7",
+      "oldestDueOn": "2024-02-29",
+      "schemeId": "qld-1",
+    },
+    {
+      "deadlineOn": "2026-12-27",
+      "lastSentOn": "2026-12-28",
+      "lastStage": "PASSED",
+      "lotId": "lot-4",
+      "oldestDueOn": "2024-10-27",
+      "schemeId": "qld-1",
+    },
+  ],
+  "runs": [
+    {
+      "count": 0,
+      "day": "2026-02-27",
+      "emails": [],
+    },
+    {
+      "count": 1,
+      "day": "2026-03-01",
+      "emails": [
+        {
+          "html": "<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>StrataVerze</title>
+</head>
+<body style="margin:0;padding:0;background-color:#F8FAFB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#F8FAFB;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
+          <!-- Header -->
+          <tr>
+            <td style="padding-bottom:24px;text-align:center;">
+              <span style="font-size:20px;font-weight:700;color:#1A202C;letter-spacing:-0.02em;">Strata<span style="color:#00D4BF;">Verze</span></span>
+            </td>
+          </tr>
+          <!-- Content Card -->
+          <tr>
+            <td style="background-color:#ffffff;border-radius:12px;padding:32px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+              
+    <h1 style="margin:0 0 8px;font-size:20px;font-weight:700;color:#1a1a2e;">StrataVerze date to start proceedings for lot 7</h1>
+    <p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">Lot 7: the oldest unpaid contribution (due 29/02/2024) has been outstanding for 2 years. The body corporate must start proceedings by 28/04/2026.</p><p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">StrataVerze counts the 2 years from the date for payment of the oldest unpaid contribution. This date is StrataVerze&#39;s reading of Standard Module s 166(2), so check it before relying on it.</p><p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">Once proceedings start, complete the proceedings step on the lot&#39;s debt recovery case or record the court file number. The reminders then stop.</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0 8px;">
+  <tr>
+    <td style="background-color:#00D4BF;border-radius:8px;">
+      <a href="https://app.example.test/adviser/schemes/qld-1/finance/debt-recovery" target="_blank" style="display:inline-block;padding:12px 24px;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:8px;">
+        Open debt recovery
+      </a>
+    </td>
+  </tr>
+</table>
+  
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="padding-top:24px;text-align:center;">
+              <p style="margin:0;font-size:12px;color:#64748B;line-height:1.5;">
+                This is an automated notification from StrataVerze.<br />
+                You are receiving this because you are a member of an Owners Corporation on StrataVerze.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>",
+          "subject": "StrataVerze date to start proceedings for lot 7: 28/04/2026, Riverside",
+          "to": "adviser@example.com",
+        },
+        {
+          "html": "<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>StrataVerze</title>
+</head>
+<body style="margin:0;padding:0;background-color:#F8FAFB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#F8FAFB;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
+          <!-- Header -->
+          <tr>
+            <td style="padding-bottom:24px;text-align:center;">
+              <span style="font-size:20px;font-weight:700;color:#1A202C;letter-spacing:-0.02em;">Strata<span style="color:#00D4BF;">Verze</span></span>
+            </td>
+          </tr>
+          <!-- Content Card -->
+          <tr>
+            <td style="background-color:#ffffff;border-radius:12px;padding:32px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+              
+    <h1 style="margin:0 0 8px;font-size:20px;font-weight:700;color:#1a1a2e;">StrataVerze date to start proceedings for lot 7</h1>
+    <p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">Lot 7: the oldest unpaid contribution (due 29/02/2024) has been outstanding for 2 years. The body corporate must start proceedings by 28/04/2026.</p><p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">StrataVerze counts the 2 years from the date for payment of the oldest unpaid contribution. This date is StrataVerze&#39;s reading of Standard Module s 166(2), so check it before relying on it.</p><p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">Once proceedings start and are recorded in StrataVerze, the reminders stop.</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0 8px;">
+  <tr>
+    <td style="background-color:#00D4BF;border-radius:8px;">
+      <a href="https://app.example.test/owner" target="_blank" style="display:inline-block;padding:12px 24px;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:8px;">
+        Open StrataVerze
+      </a>
+    </td>
+  </tr>
+</table>
+  
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="padding-top:24px;text-align:center;">
+              <p style="margin:0;font-size:12px;color:#64748B;line-height:1.5;">
+                This is an automated notification from StrataVerze.<br />
+                You are receiving this because you are a member of an Owners Corporation on StrataVerze.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>",
+          "subject": "StrataVerze date to start proceedings for lot 7: 28/04/2026, Riverside",
+          "to": "chair@example.com",
+        },
+        {
+          "html": "<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>StrataVerze</title>
+</head>
+<body style="margin:0;padding:0;background-color:#F8FAFB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#F8FAFB;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
+          <!-- Header -->
+          <tr>
+            <td style="padding-bottom:24px;text-align:center;">
+              <span style="font-size:20px;font-weight:700;color:#1A202C;letter-spacing:-0.02em;">Strata<span style="color:#00D4BF;">Verze</span></span>
+            </td>
+          </tr>
+          <!-- Content Card -->
+          <tr>
+            <td style="background-color:#ffffff;border-radius:12px;padding:32px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+              
+    <h1 style="margin:0 0 8px;font-size:20px;font-weight:700;color:#1a1a2e;">StrataVerze date to start proceedings for lot 7</h1>
+    <p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">Lot 7: the oldest unpaid contribution (due 29/02/2024) has been outstanding for 2 years. The body corporate must start proceedings by 28/04/2026.</p><p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">StrataVerze counts the 2 years from the date for payment of the oldest unpaid contribution. This date is StrataVerze&#39;s reading of Standard Module s 166(2), so check it before relying on it.</p><p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">Once proceedings start and are recorded in StrataVerze, the reminders stop.</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0 8px;">
+  <tr>
+    <td style="background-color:#00D4BF;border-radius:8px;">
+      <a href="https://app.example.test/owner" target="_blank" style="display:inline-block;padding:12px 24px;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:8px;">
+        Open StrataVerze
+      </a>
+    </td>
+  </tr>
+</table>
+  
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="padding-top:24px;text-align:center;">
+              <p style="margin:0;font-size:12px;color:#64748B;line-height:1.5;">
+                This is an automated notification from StrataVerze.<br />
+                You are receiving this because you are a member of an Owners Corporation on StrataVerze.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>",
+          "subject": "StrataVerze date to start proceedings for lot 7: 28/04/2026, Riverside",
+          "to": "debtor@example.com",
+        },
+      ],
+    },
+    {
+      "count": 1,
+      "day": "2026-04-29",
+      "emails": [
+        {
+          "html": "<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>StrataVerze</title>
+</head>
+<body style="margin:0;padding:0;background-color:#F8FAFB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#F8FAFB;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
+          <!-- Header -->
+          <tr>
+            <td style="padding-bottom:24px;text-align:center;">
+              <span style="font-size:20px;font-weight:700;color:#1A202C;letter-spacing:-0.02em;">Strata<span style="color:#00D4BF;">Verze</span></span>
+            </td>
+          </tr>
+          <!-- Content Card -->
+          <tr>
+            <td style="background-color:#ffffff;border-radius:12px;padding:32px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+              
+    <h1 style="margin:0 0 8px;font-size:20px;font-weight:700;color:#1a1a2e;">The StrataVerze date to start proceedings for lot 7 has passed</h1>
+    <p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">Lot 7: the oldest unpaid contribution (due 29/02/2024) has been outstanding for more than 2 years. The body corporate must start proceedings within 2 months after that, by 28/04/2026. That date has passed.</p><p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">StrataVerze counts the 2 years from the date for payment of the oldest unpaid contribution. This date is StrataVerze&#39;s reading of Standard Module s 166(2), so check it before relying on it.</p><p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">Once proceedings start, complete the proceedings step on the lot&#39;s debt recovery case or record the court file number. The reminders then stop.</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0 8px;">
+  <tr>
+    <td style="background-color:#00D4BF;border-radius:8px;">
+      <a href="https://app.example.test/adviser/schemes/qld-1/finance/debt-recovery" target="_blank" style="display:inline-block;padding:12px 24px;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:8px;">
+        Open debt recovery
+      </a>
+    </td>
+  </tr>
+</table>
+  
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="padding-top:24px;text-align:center;">
+              <p style="margin:0;font-size:12px;color:#64748B;line-height:1.5;">
+                This is an automated notification from StrataVerze.<br />
+                You are receiving this because you are a member of an Owners Corporation on StrataVerze.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>",
+          "subject": "Passed: StrataVerze date to start proceedings for lot 7 was 28/04/2026, Riverside",
+          "to": "adviser@example.com",
+        },
+        {
+          "html": "<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>StrataVerze</title>
+</head>
+<body style="margin:0;padding:0;background-color:#F8FAFB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#F8FAFB;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
+          <!-- Header -->
+          <tr>
+            <td style="padding-bottom:24px;text-align:center;">
+              <span style="font-size:20px;font-weight:700;color:#1A202C;letter-spacing:-0.02em;">Strata<span style="color:#00D4BF;">Verze</span></span>
+            </td>
+          </tr>
+          <!-- Content Card -->
+          <tr>
+            <td style="background-color:#ffffff;border-radius:12px;padding:32px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+              
+    <h1 style="margin:0 0 8px;font-size:20px;font-weight:700;color:#1a1a2e;">The StrataVerze date to start proceedings for lot 7 has passed</h1>
+    <p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">Lot 7: the oldest unpaid contribution (due 29/02/2024) has been outstanding for more than 2 years. The body corporate must start proceedings within 2 months after that, by 28/04/2026. That date has passed.</p><p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">StrataVerze counts the 2 years from the date for payment of the oldest unpaid contribution. This date is StrataVerze&#39;s reading of Standard Module s 166(2), so check it before relying on it.</p><p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">Once proceedings start and are recorded in StrataVerze, the reminders stop.</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0 8px;">
+  <tr>
+    <td style="background-color:#00D4BF;border-radius:8px;">
+      <a href="https://app.example.test/owner" target="_blank" style="display:inline-block;padding:12px 24px;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:8px;">
+        Open StrataVerze
+      </a>
+    </td>
+  </tr>
+</table>
+  
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="padding-top:24px;text-align:center;">
+              <p style="margin:0;font-size:12px;color:#64748B;line-height:1.5;">
+                This is an automated notification from StrataVerze.<br />
+                You are receiving this because you are a member of an Owners Corporation on StrataVerze.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>",
+          "subject": "Passed: StrataVerze date to start proceedings for lot 7 was 28/04/2026, Riverside",
+          "to": "chair@example.com",
+        },
+        {
+          "html": "<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>StrataVerze</title>
+</head>
+<body style="margin:0;padding:0;background-color:#F8FAFB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#F8FAFB;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
+          <!-- Header -->
+          <tr>
+            <td style="padding-bottom:24px;text-align:center;">
+              <span style="font-size:20px;font-weight:700;color:#1A202C;letter-spacing:-0.02em;">Strata<span style="color:#00D4BF;">Verze</span></span>
+            </td>
+          </tr>
+          <!-- Content Card -->
+          <tr>
+            <td style="background-color:#ffffff;border-radius:12px;padding:32px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+              
+    <h1 style="margin:0 0 8px;font-size:20px;font-weight:700;color:#1a1a2e;">The StrataVerze date to start proceedings for lot 7 has passed</h1>
+    <p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">Lot 7: the oldest unpaid contribution (due 29/02/2024) has been outstanding for more than 2 years. The body corporate must start proceedings within 2 months after that, by 28/04/2026. That date has passed.</p><p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">StrataVerze counts the 2 years from the date for payment of the oldest unpaid contribution. This date is StrataVerze&#39;s reading of Standard Module s 166(2), so check it before relying on it.</p><p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">Once proceedings start and are recorded in StrataVerze, the reminders stop.</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0 8px;">
+  <tr>
+    <td style="background-color:#00D4BF;border-radius:8px;">
+      <a href="https://app.example.test/owner" target="_blank" style="display:inline-block;padding:12px 24px;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:8px;">
+        Open StrataVerze
+      </a>
+    </td>
+  </tr>
+</table>
+  
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="padding-top:24px;text-align:center;">
+              <p style="margin:0;font-size:12px;color:#64748B;line-height:1.5;">
+                This is an automated notification from StrataVerze.<br />
+                You are receiving this because you are a member of an Owners Corporation on StrataVerze.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>",
+          "subject": "Passed: StrataVerze date to start proceedings for lot 7 was 28/04/2026, Riverside",
+          "to": "debtor@example.com",
+        },
+      ],
+    },
+    {
+      "count": 0,
+      "day": "2026-10-26",
+      "emails": [],
+    },
+    {
+      "count": 1,
+      "day": "2026-10-27",
+      "emails": [
+        {
+          "html": "<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>StrataVerze</title>
+</head>
+<body style="margin:0;padding:0;background-color:#F8FAFB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#F8FAFB;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
+          <!-- Header -->
+          <tr>
+            <td style="padding-bottom:24px;text-align:center;">
+              <span style="font-size:20px;font-weight:700;color:#1A202C;letter-spacing:-0.02em;">Strata<span style="color:#00D4BF;">Verze</span></span>
+            </td>
+          </tr>
+          <!-- Content Card -->
+          <tr>
+            <td style="background-color:#ffffff;border-radius:12px;padding:32px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+              
+    <h1 style="margin:0 0 8px;font-size:20px;font-weight:700;color:#1a1a2e;">StrataVerze date to start proceedings for lot 4</h1>
+    <p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">Lot 4: the oldest unpaid contribution (due 27/10/2024) has been outstanding for 2 years. The body corporate must start proceedings by 27/12/2026.</p><p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">StrataVerze counts the 2 years from the date for payment of the oldest unpaid contribution. This date is StrataVerze&#39;s reading of Standard Module s 166(2), so check it before relying on it.</p><p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">Once proceedings start, complete the proceedings step on the lot&#39;s debt recovery case or record the court file number. The reminders then stop.</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0 8px;">
+  <tr>
+    <td style="background-color:#00D4BF;border-radius:8px;">
+      <a href="https://app.example.test/adviser/schemes/qld-1/finance/debt-recovery" target="_blank" style="display:inline-block;padding:12px 24px;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:8px;">
+        Open debt recovery
+      </a>
+    </td>
+  </tr>
+</table>
+  
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="padding-top:24px;text-align:center;">
+              <p style="margin:0;font-size:12px;color:#64748B;line-height:1.5;">
+                This is an automated notification from StrataVerze.<br />
+                You are receiving this because you are a member of an Owners Corporation on StrataVerze.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>",
+          "subject": "StrataVerze date to start proceedings for lot 4: 27/12/2026, Riverside",
+          "to": "adviser@example.com",
+        },
+        {
+          "html": "<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>StrataVerze</title>
+</head>
+<body style="margin:0;padding:0;background-color:#F8FAFB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#F8FAFB;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
+          <!-- Header -->
+          <tr>
+            <td style="padding-bottom:24px;text-align:center;">
+              <span style="font-size:20px;font-weight:700;color:#1A202C;letter-spacing:-0.02em;">Strata<span style="color:#00D4BF;">Verze</span></span>
+            </td>
+          </tr>
+          <!-- Content Card -->
+          <tr>
+            <td style="background-color:#ffffff;border-radius:12px;padding:32px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+              
+    <h1 style="margin:0 0 8px;font-size:20px;font-weight:700;color:#1a1a2e;">StrataVerze date to start proceedings for lot 4</h1>
+    <p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">Lot 4: the oldest unpaid contribution (due 27/10/2024) has been outstanding for 2 years. The body corporate must start proceedings by 27/12/2026.</p><p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">StrataVerze counts the 2 years from the date for payment of the oldest unpaid contribution. This date is StrataVerze&#39;s reading of Standard Module s 166(2), so check it before relying on it.</p><p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">Once proceedings start and are recorded in StrataVerze, the reminders stop.</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0 8px;">
+  <tr>
+    <td style="background-color:#00D4BF;border-radius:8px;">
+      <a href="https://app.example.test/owner" target="_blank" style="display:inline-block;padding:12px 24px;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:8px;">
+        Open StrataVerze
+      </a>
+    </td>
+  </tr>
+</table>
+  
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="padding-top:24px;text-align:center;">
+              <p style="margin:0;font-size:12px;color:#64748B;line-height:1.5;">
+                This is an automated notification from StrataVerze.<br />
+                You are receiving this because you are a member of an Owners Corporation on StrataVerze.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>",
+          "subject": "StrataVerze date to start proceedings for lot 4: 27/12/2026, Riverside",
+          "to": "chair@example.com",
+        },
+      ],
+    },
+    {
+      "count": 1,
+      "day": "2026-11-27",
+      "emails": [
+        {
+          "html": "<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>StrataVerze</title>
+</head>
+<body style="margin:0;padding:0;background-color:#F8FAFB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#F8FAFB;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
+          <!-- Header -->
+          <tr>
+            <td style="padding-bottom:24px;text-align:center;">
+              <span style="font-size:20px;font-weight:700;color:#1A202C;letter-spacing:-0.02em;">Strata<span style="color:#00D4BF;">Verze</span></span>
+            </td>
+          </tr>
+          <!-- Content Card -->
+          <tr>
+            <td style="background-color:#ffffff;border-radius:12px;padding:32px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+              
+    <h1 style="margin:0 0 8px;font-size:20px;font-weight:700;color:#1a1a2e;">StrataVerze date to start proceedings for lot 4</h1>
+    <p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">Lot 4: the oldest unpaid contribution (due 27/10/2024) has been outstanding for 2 years. The body corporate must start proceedings by 27/12/2026.</p><p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">StrataVerze counts the 2 years from the date for payment of the oldest unpaid contribution. This date is StrataVerze&#39;s reading of Standard Module s 166(2), so check it before relying on it.</p><p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">Once proceedings start, complete the proceedings step on the lot&#39;s debt recovery case or record the court file number. The reminders then stop.</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0 8px;">
+  <tr>
+    <td style="background-color:#00D4BF;border-radius:8px;">
+      <a href="https://app.example.test/adviser/schemes/qld-1/finance/debt-recovery" target="_blank" style="display:inline-block;padding:12px 24px;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:8px;">
+        Open debt recovery
+      </a>
+    </td>
+  </tr>
+</table>
+  
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="padding-top:24px;text-align:center;">
+              <p style="margin:0;font-size:12px;color:#64748B;line-height:1.5;">
+                This is an automated notification from StrataVerze.<br />
+                You are receiving this because you are a member of an Owners Corporation on StrataVerze.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>",
+          "subject": "StrataVerze date to start proceedings for lot 4: 27/12/2026, Riverside",
+          "to": "adviser@example.com",
+        },
+        {
+          "html": "<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>StrataVerze</title>
+</head>
+<body style="margin:0;padding:0;background-color:#F8FAFB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#F8FAFB;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
+          <!-- Header -->
+          <tr>
+            <td style="padding-bottom:24px;text-align:center;">
+              <span style="font-size:20px;font-weight:700;color:#1A202C;letter-spacing:-0.02em;">Strata<span style="color:#00D4BF;">Verze</span></span>
+            </td>
+          </tr>
+          <!-- Content Card -->
+          <tr>
+            <td style="background-color:#ffffff;border-radius:12px;padding:32px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+              
+    <h1 style="margin:0 0 8px;font-size:20px;font-weight:700;color:#1a1a2e;">StrataVerze date to start proceedings for lot 4</h1>
+    <p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">Lot 4: the oldest unpaid contribution (due 27/10/2024) has been outstanding for 2 years. The body corporate must start proceedings by 27/12/2026.</p><p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">StrataVerze counts the 2 years from the date for payment of the oldest unpaid contribution. This date is StrataVerze&#39;s reading of Standard Module s 166(2), so check it before relying on it.</p><p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">Once proceedings start and are recorded in StrataVerze, the reminders stop.</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0 8px;">
+  <tr>
+    <td style="background-color:#00D4BF;border-radius:8px;">
+      <a href="https://app.example.test/owner" target="_blank" style="display:inline-block;padding:12px 24px;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:8px;">
+        Open StrataVerze
+      </a>
+    </td>
+  </tr>
+</table>
+  
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="padding-top:24px;text-align:center;">
+              <p style="margin:0;font-size:12px;color:#64748B;line-height:1.5;">
+                This is an automated notification from StrataVerze.<br />
+                You are receiving this because you are a member of an Owners Corporation on StrataVerze.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>",
+          "subject": "StrataVerze date to start proceedings for lot 4: 27/12/2026, Riverside",
+          "to": "chair@example.com",
+        },
+      ],
+    },
+    {
+      "count": 1,
+      "day": "2026-12-13",
+      "emails": [
+        {
+          "html": "<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>StrataVerze</title>
+</head>
+<body style="margin:0;padding:0;background-color:#F8FAFB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#F8FAFB;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
+          <!-- Header -->
+          <tr>
+            <td style="padding-bottom:24px;text-align:center;">
+              <span style="font-size:20px;font-weight:700;color:#1A202C;letter-spacing:-0.02em;">Strata<span style="color:#00D4BF;">Verze</span></span>
+            </td>
+          </tr>
+          <!-- Content Card -->
+          <tr>
+            <td style="background-color:#ffffff;border-radius:12px;padding:32px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+              
+    <h1 style="margin:0 0 8px;font-size:20px;font-weight:700;color:#1a1a2e;">StrataVerze date to start proceedings for lot 4</h1>
+    <p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">Lot 4: the oldest unpaid contribution (due 27/10/2024) has been outstanding for 2 years. The body corporate must start proceedings by 27/12/2026.</p><p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">StrataVerze counts the 2 years from the date for payment of the oldest unpaid contribution. This date is StrataVerze&#39;s reading of Standard Module s 166(2), so check it before relying on it.</p><p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">Once proceedings start, complete the proceedings step on the lot&#39;s debt recovery case or record the court file number. The reminders then stop.</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0 8px;">
+  <tr>
+    <td style="background-color:#00D4BF;border-radius:8px;">
+      <a href="https://app.example.test/adviser/schemes/qld-1/finance/debt-recovery" target="_blank" style="display:inline-block;padding:12px 24px;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:8px;">
+        Open debt recovery
+      </a>
+    </td>
+  </tr>
+</table>
+  
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="padding-top:24px;text-align:center;">
+              <p style="margin:0;font-size:12px;color:#64748B;line-height:1.5;">
+                This is an automated notification from StrataVerze.<br />
+                You are receiving this because you are a member of an Owners Corporation on StrataVerze.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>",
+          "subject": "StrataVerze date to start proceedings for lot 4: 27/12/2026, Riverside",
+          "to": "adviser@example.com",
+        },
+        {
+          "html": "<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>StrataVerze</title>
+</head>
+<body style="margin:0;padding:0;background-color:#F8FAFB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#F8FAFB;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
+          <!-- Header -->
+          <tr>
+            <td style="padding-bottom:24px;text-align:center;">
+              <span style="font-size:20px;font-weight:700;color:#1A202C;letter-spacing:-0.02em;">Strata<span style="color:#00D4BF;">Verze</span></span>
+            </td>
+          </tr>
+          <!-- Content Card -->
+          <tr>
+            <td style="background-color:#ffffff;border-radius:12px;padding:32px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+              
+    <h1 style="margin:0 0 8px;font-size:20px;font-weight:700;color:#1a1a2e;">StrataVerze date to start proceedings for lot 4</h1>
+    <p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">Lot 4: the oldest unpaid contribution (due 27/10/2024) has been outstanding for 2 years. The body corporate must start proceedings by 27/12/2026.</p><p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">StrataVerze counts the 2 years from the date for payment of the oldest unpaid contribution. This date is StrataVerze&#39;s reading of Standard Module s 166(2), so check it before relying on it.</p><p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">Once proceedings start and are recorded in StrataVerze, the reminders stop.</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0 8px;">
+  <tr>
+    <td style="background-color:#00D4BF;border-radius:8px;">
+      <a href="https://app.example.test/owner" target="_blank" style="display:inline-block;padding:12px 24px;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:8px;">
+        Open StrataVerze
+      </a>
+    </td>
+  </tr>
+</table>
+  
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="padding-top:24px;text-align:center;">
+              <p style="margin:0;font-size:12px;color:#64748B;line-height:1.5;">
+                This is an automated notification from StrataVerze.<br />
+                You are receiving this because you are a member of an Owners Corporation on StrataVerze.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>",
+          "subject": "StrataVerze date to start proceedings for lot 4: 27/12/2026, Riverside",
+          "to": "chair@example.com",
+        },
+      ],
+    },
+    {
+      "count": 1,
+      "day": "2026-12-20",
+      "emails": [
+        {
+          "html": "<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>StrataVerze</title>
+</head>
+<body style="margin:0;padding:0;background-color:#F8FAFB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#F8FAFB;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
+          <!-- Header -->
+          <tr>
+            <td style="padding-bottom:24px;text-align:center;">
+              <span style="font-size:20px;font-weight:700;color:#1A202C;letter-spacing:-0.02em;">Strata<span style="color:#00D4BF;">Verze</span></span>
+            </td>
+          </tr>
+          <!-- Content Card -->
+          <tr>
+            <td style="background-color:#ffffff;border-radius:12px;padding:32px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+              
+    <h1 style="margin:0 0 8px;font-size:20px;font-weight:700;color:#1a1a2e;">StrataVerze date to start proceedings for lot 4</h1>
+    <p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">Lot 4: the oldest unpaid contribution (due 27/10/2024) has been outstanding for 2 years. The body corporate must start proceedings by 27/12/2026.</p><p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">StrataVerze counts the 2 years from the date for payment of the oldest unpaid contribution. This date is StrataVerze&#39;s reading of Standard Module s 166(2), so check it before relying on it.</p><p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">Once proceedings start, complete the proceedings step on the lot&#39;s debt recovery case or record the court file number. The reminders then stop.</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0 8px;">
+  <tr>
+    <td style="background-color:#00D4BF;border-radius:8px;">
+      <a href="https://app.example.test/adviser/schemes/qld-1/finance/debt-recovery" target="_blank" style="display:inline-block;padding:12px 24px;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:8px;">
+        Open debt recovery
+      </a>
+    </td>
+  </tr>
+</table>
+  
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="padding-top:24px;text-align:center;">
+              <p style="margin:0;font-size:12px;color:#64748B;line-height:1.5;">
+                This is an automated notification from StrataVerze.<br />
+                You are receiving this because you are a member of an Owners Corporation on StrataVerze.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>",
+          "subject": "StrataVerze date to start proceedings for lot 4: 27/12/2026, Riverside",
+          "to": "adviser@example.com",
+        },
+        {
+          "html": "<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>StrataVerze</title>
+</head>
+<body style="margin:0;padding:0;background-color:#F8FAFB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#F8FAFB;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
+          <!-- Header -->
+          <tr>
+            <td style="padding-bottom:24px;text-align:center;">
+              <span style="font-size:20px;font-weight:700;color:#1A202C;letter-spacing:-0.02em;">Strata<span style="color:#00D4BF;">Verze</span></span>
+            </td>
+          </tr>
+          <!-- Content Card -->
+          <tr>
+            <td style="background-color:#ffffff;border-radius:12px;padding:32px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+              
+    <h1 style="margin:0 0 8px;font-size:20px;font-weight:700;color:#1a1a2e;">StrataVerze date to start proceedings for lot 4</h1>
+    <p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">Lot 4: the oldest unpaid contribution (due 27/10/2024) has been outstanding for 2 years. The body corporate must start proceedings by 27/12/2026.</p><p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">StrataVerze counts the 2 years from the date for payment of the oldest unpaid contribution. This date is StrataVerze&#39;s reading of Standard Module s 166(2), so check it before relying on it.</p><p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">Once proceedings start and are recorded in StrataVerze, the reminders stop.</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0 8px;">
+  <tr>
+    <td style="background-color:#00D4BF;border-radius:8px;">
+      <a href="https://app.example.test/owner" target="_blank" style="display:inline-block;padding:12px 24px;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:8px;">
+        Open StrataVerze
+      </a>
+    </td>
+  </tr>
+</table>
+  
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="padding-top:24px;text-align:center;">
+              <p style="margin:0;font-size:12px;color:#64748B;line-height:1.5;">
+                This is an automated notification from StrataVerze.<br />
+                You are receiving this because you are a member of an Owners Corporation on StrataVerze.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>",
+          "subject": "StrataVerze date to start proceedings for lot 4: 27/12/2026, Riverside",
+          "to": "chair@example.com",
+        },
+      ],
+    },
+    {
+      "count": 1,
+      "day": "2026-12-28",
+      "emails": [
+        {
+          "html": "<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>StrataVerze</title>
+</head>
+<body style="margin:0;padding:0;background-color:#F8FAFB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#F8FAFB;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
+          <!-- Header -->
+          <tr>
+            <td style="padding-bottom:24px;text-align:center;">
+              <span style="font-size:20px;font-weight:700;color:#1A202C;letter-spacing:-0.02em;">Strata<span style="color:#00D4BF;">Verze</span></span>
+            </td>
+          </tr>
+          <!-- Content Card -->
+          <tr>
+            <td style="background-color:#ffffff;border-radius:12px;padding:32px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+              
+    <h1 style="margin:0 0 8px;font-size:20px;font-weight:700;color:#1a1a2e;">The StrataVerze date to start proceedings for lot 4 has passed</h1>
+    <p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">Lot 4: the oldest unpaid contribution (due 27/10/2024) has been outstanding for more than 2 years. The body corporate must start proceedings within 2 months after that, by 27/12/2026. That date has passed.</p><p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">StrataVerze counts the 2 years from the date for payment of the oldest unpaid contribution. This date is StrataVerze&#39;s reading of Standard Module s 166(2), so check it before relying on it.</p><p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">Once proceedings start, complete the proceedings step on the lot&#39;s debt recovery case or record the court file number. The reminders then stop.</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0 8px;">
+  <tr>
+    <td style="background-color:#00D4BF;border-radius:8px;">
+      <a href="https://app.example.test/adviser/schemes/qld-1/finance/debt-recovery" target="_blank" style="display:inline-block;padding:12px 24px;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:8px;">
+        Open debt recovery
+      </a>
+    </td>
+  </tr>
+</table>
+  
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="padding-top:24px;text-align:center;">
+              <p style="margin:0;font-size:12px;color:#64748B;line-height:1.5;">
+                This is an automated notification from StrataVerze.<br />
+                You are receiving this because you are a member of an Owners Corporation on StrataVerze.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>",
+          "subject": "Passed: StrataVerze date to start proceedings for lot 4 was 27/12/2026, Riverside",
+          "to": "adviser@example.com",
+        },
+        {
+          "html": "<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>StrataVerze</title>
+</head>
+<body style="margin:0;padding:0;background-color:#F8FAFB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#F8FAFB;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
+          <!-- Header -->
+          <tr>
+            <td style="padding-bottom:24px;text-align:center;">
+              <span style="font-size:20px;font-weight:700;color:#1A202C;letter-spacing:-0.02em;">Strata<span style="color:#00D4BF;">Verze</span></span>
+            </td>
+          </tr>
+          <!-- Content Card -->
+          <tr>
+            <td style="background-color:#ffffff;border-radius:12px;padding:32px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+              
+    <h1 style="margin:0 0 8px;font-size:20px;font-weight:700;color:#1a1a2e;">The StrataVerze date to start proceedings for lot 4 has passed</h1>
+    <p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">Lot 4: the oldest unpaid contribution (due 27/10/2024) has been outstanding for more than 2 years. The body corporate must start proceedings within 2 months after that, by 27/12/2026. That date has passed.</p><p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">StrataVerze counts the 2 years from the date for payment of the oldest unpaid contribution. This date is StrataVerze&#39;s reading of Standard Module s 166(2), so check it before relying on it.</p><p style="margin:0 0 12px;font-size:15px;color:#1A202C;line-height:1.6;">Once proceedings start and are recorded in StrataVerze, the reminders stop.</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0 8px;">
+  <tr>
+    <td style="background-color:#00D4BF;border-radius:8px;">
+      <a href="https://app.example.test/owner" target="_blank" style="display:inline-block;padding:12px 24px;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:8px;">
+        Open StrataVerze
+      </a>
+    </td>
+  </tr>
+</table>
+  
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="padding-top:24px;text-align:center;">
+              <p style="margin:0;font-size:12px;color:#64748B;line-height:1.5;">
+                This is an automated notification from StrataVerze.<br />
+                You are receiving this because you are a member of an Owners Corporation on StrataVerze.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>",
+          "subject": "Passed: StrataVerze date to start proceedings for lot 4 was 27/12/2026, Riverside",
+          "to": "chair@example.com",
+        },
+      ],
+    },
+    {
+      "count": 0,
+      "day": "2027-01-28",
+      "emails": [],
+    },
+  ],
+}
+`;
+
+exports[`the proceedings deadline helpers > NSW: the rule, the flags and the warnings over a grid of days 1`] = `
+{
+  "grid": [
+    {
+      "flaggableDueOnOrBefore": null,
+      "flags": [],
+      "today": "2026-02-27",
+      "warnings": [],
+    },
+    {
+      "flaggableDueOnOrBefore": null,
+      "flags": [],
+      "today": "2026-02-28",
+      "warnings": [],
+    },
+    {
+      "flaggableDueOnOrBefore": null,
+      "flags": [],
+      "today": "2026-04-28",
+      "warnings": [],
+    },
+    {
+      "flaggableDueOnOrBefore": null,
+      "flags": [],
+      "today": "2026-04-29",
+      "warnings": [],
+    },
+    {
+      "flaggableDueOnOrBefore": null,
+      "flags": [],
+      "today": "2026-10-26",
+      "warnings": [],
+    },
+    {
+      "flaggableDueOnOrBefore": null,
+      "flags": [],
+      "today": "2026-10-27",
+      "warnings": [],
+    },
+    {
+      "flaggableDueOnOrBefore": null,
+      "flags": [],
+      "today": "2026-12-27",
+      "warnings": [],
+    },
+    {
+      "flaggableDueOnOrBefore": null,
+      "flags": [],
+      "today": "2026-12-28",
+      "warnings": [],
+    },
+    {
+      "flaggableDueOnOrBefore": null,
+      "flags": [],
+      "today": "2027-03-01",
+      "warnings": [],
+    },
+  ],
+  "rule": null,
+}
+`;
+
+exports[`the proceedings deadline helpers > QLD: the rule, the flags and the warnings over a grid of days 1`] = `
+{
+  "grid": [
+    {
+      "flaggableDueOnOrBefore": "2024-02-27",
+      "flags": [],
+      "today": "2026-02-27",
+      "warnings": [],
+    },
+    {
+      "flaggableDueOnOrBefore": "2024-02-28",
+      "flags": [
+        {
+          "deadline": "2026-04-28",
+          "lotId": "lot-1",
+          "lotNumber": "1",
+          "oldestUnpaidDueDate": "2024-02-29",
+          "outstandingSince": "2026-02-28",
+          "passed": false,
+        },
+      ],
+      "today": "2026-02-28",
+      "warnings": [
+        "Lot 1: the oldest unpaid contribution (due 29/02/2024) has been outstanding for 2 years. The body corporate must start proceedings by 28/04/2026.",
+      ],
+    },
+    {
+      "flaggableDueOnOrBefore": "2024-04-28",
+      "flags": [
+        {
+          "deadline": "2026-04-28",
+          "lotId": "lot-1",
+          "lotNumber": "1",
+          "oldestUnpaidDueDate": "2024-02-29",
+          "outstandingSince": "2026-02-28",
+          "passed": false,
+        },
+      ],
+      "today": "2026-04-28",
+      "warnings": [
+        "Lot 1: the oldest unpaid contribution (due 29/02/2024) has been outstanding for 2 years. The body corporate must start proceedings by 28/04/2026.",
+      ],
+    },
+    {
+      "flaggableDueOnOrBefore": "2024-04-29",
+      "flags": [
+        {
+          "deadline": "2026-04-28",
+          "lotId": "lot-1",
+          "lotNumber": "1",
+          "oldestUnpaidDueDate": "2024-02-29",
+          "outstandingSince": "2026-02-28",
+          "passed": true,
+        },
+      ],
+      "today": "2026-04-29",
+      "warnings": [
+        "Lot 1: the oldest unpaid contribution (due 29/02/2024) has been outstanding for more than 2 years. The body corporate must start proceedings within 2 months after that, by 28/04/2026. That date has passed.",
+      ],
+    },
+    {
+      "flaggableDueOnOrBefore": "2024-10-26",
+      "flags": [
+        {
+          "deadline": "2026-04-28",
+          "lotId": "lot-1",
+          "lotNumber": "1",
+          "oldestUnpaidDueDate": "2024-02-29",
+          "outstandingSince": "2026-02-28",
+          "passed": true,
+        },
+      ],
+      "today": "2026-10-26",
+      "warnings": [
+        "Lot 1: the oldest unpaid contribution (due 29/02/2024) has been outstanding for more than 2 years. The body corporate must start proceedings within 2 months after that, by 28/04/2026. That date has passed.",
+      ],
+    },
+    {
+      "flaggableDueOnOrBefore": "2024-10-27",
+      "flags": [
+        {
+          "deadline": "2026-04-28",
+          "lotId": "lot-1",
+          "lotNumber": "1",
+          "oldestUnpaidDueDate": "2024-02-29",
+          "outstandingSince": "2026-02-28",
+          "passed": true,
+        },
+        {
+          "deadline": "2026-12-27",
+          "lotId": "lot-2",
+          "lotNumber": "2",
+          "oldestUnpaidDueDate": "2024-10-27",
+          "outstandingSince": "2026-10-27",
+          "passed": false,
+        },
+      ],
+      "today": "2026-10-27",
+      "warnings": [
+        "Lot 1: the oldest unpaid contribution (due 29/02/2024) has been outstanding for more than 2 years. The body corporate must start proceedings within 2 months after that, by 28/04/2026. That date has passed.",
+        "Lot 2: the oldest unpaid contribution (due 27/10/2024) has been outstanding for 2 years. The body corporate must start proceedings by 27/12/2026.",
+      ],
+    },
+    {
+      "flaggableDueOnOrBefore": "2024-12-27",
+      "flags": [
+        {
+          "deadline": "2026-04-28",
+          "lotId": "lot-1",
+          "lotNumber": "1",
+          "oldestUnpaidDueDate": "2024-02-29",
+          "outstandingSince": "2026-02-28",
+          "passed": true,
+        },
+        {
+          "deadline": "2026-12-27",
+          "lotId": "lot-2",
+          "lotNumber": "2",
+          "oldestUnpaidDueDate": "2024-10-27",
+          "outstandingSince": "2026-10-27",
+          "passed": false,
+        },
+        {
+          "deadline": "2026-12-28",
+          "lotId": "lot-3",
+          "lotNumber": "3",
+          "oldestUnpaidDueDate": "2024-10-28",
+          "outstandingSince": "2026-10-28",
+          "passed": false,
+        },
+      ],
+      "today": "2026-12-27",
+      "warnings": [
+        "Lot 1: the oldest unpaid contribution (due 29/02/2024) has been outstanding for more than 2 years. The body corporate must start proceedings within 2 months after that, by 28/04/2026. That date has passed.",
+        "Lot 2: the oldest unpaid contribution (due 27/10/2024) has been outstanding for 2 years. The body corporate must start proceedings by 27/12/2026.",
+        "Lot 3: the oldest unpaid contribution (due 28/10/2024) has been outstanding for 2 years. The body corporate must start proceedings by 28/12/2026.",
+      ],
+    },
+    {
+      "flaggableDueOnOrBefore": "2024-12-28",
+      "flags": [
+        {
+          "deadline": "2026-04-28",
+          "lotId": "lot-1",
+          "lotNumber": "1",
+          "oldestUnpaidDueDate": "2024-02-29",
+          "outstandingSince": "2026-02-28",
+          "passed": true,
+        },
+        {
+          "deadline": "2026-12-27",
+          "lotId": "lot-2",
+          "lotNumber": "2",
+          "oldestUnpaidDueDate": "2024-10-27",
+          "outstandingSince": "2026-10-27",
+          "passed": true,
+        },
+        {
+          "deadline": "2026-12-28",
+          "lotId": "lot-3",
+          "lotNumber": "3",
+          "oldestUnpaidDueDate": "2024-10-28",
+          "outstandingSince": "2026-10-28",
+          "passed": false,
+        },
+      ],
+      "today": "2026-12-28",
+      "warnings": [
+        "Lot 1: the oldest unpaid contribution (due 29/02/2024) has been outstanding for more than 2 years. The body corporate must start proceedings within 2 months after that, by 28/04/2026. That date has passed.",
+        "Lot 2: the oldest unpaid contribution (due 27/10/2024) has been outstanding for more than 2 years. The body corporate must start proceedings within 2 months after that, by 27/12/2026. That date has passed.",
+        "Lot 3: the oldest unpaid contribution (due 28/10/2024) has been outstanding for 2 years. The body corporate must start proceedings by 28/12/2026.",
+      ],
+    },
+    {
+      "flaggableDueOnOrBefore": "2025-03-01",
+      "flags": [
+        {
+          "deadline": "2026-04-28",
+          "lotId": "lot-1",
+          "lotNumber": "1",
+          "oldestUnpaidDueDate": "2024-02-29",
+          "outstandingSince": "2026-02-28",
+          "passed": true,
+        },
+        {
+          "deadline": "2026-12-27",
+          "lotId": "lot-2",
+          "lotNumber": "2",
+          "oldestUnpaidDueDate": "2024-10-27",
+          "outstandingSince": "2026-10-27",
+          "passed": true,
+        },
+        {
+          "deadline": "2026-12-28",
+          "lotId": "lot-3",
+          "lotNumber": "3",
+          "oldestUnpaidDueDate": "2024-10-28",
+          "outstandingSince": "2026-10-28",
+          "passed": true,
+        },
+        {
+          "deadline": "2027-02-28",
+          "lotId": "lot-4",
+          "lotNumber": "4",
+          "oldestUnpaidDueDate": "2024-12-31",
+          "outstandingSince": "2026-12-31",
+          "passed": true,
+        },
+        {
+          "deadline": "2027-03-27",
+          "lotId": "lot-5",
+          "lotNumber": "5",
+          "oldestUnpaidDueDate": "2025-01-27",
+          "outstandingSince": "2027-01-27",
+          "passed": false,
+        },
+      ],
+      "today": "2027-03-01",
+      "warnings": [
+        "Lot 1: the oldest unpaid contribution (due 29/02/2024) has been outstanding for more than 2 years. The body corporate must start proceedings within 2 months after that, by 28/04/2026. That date has passed.",
+        "Lot 2: the oldest unpaid contribution (due 27/10/2024) has been outstanding for more than 2 years. The body corporate must start proceedings within 2 months after that, by 27/12/2026. That date has passed.",
+        "Lot 3: the oldest unpaid contribution (due 28/10/2024) has been outstanding for more than 2 years. The body corporate must start proceedings within 2 months after that, by 28/12/2026. That date has passed.",
+        "Lot 4: the oldest unpaid contribution (due 31/12/2024) has been outstanding for more than 2 years. The body corporate must start proceedings within 2 months after that, by 28/02/2027. That date has passed.",
+        "Lot 5: the oldest unpaid contribution (due 27/01/2025) has been outstanding for 2 years. The body corporate must start proceedings by 27/03/2027.",
+      ],
+    },
+  ],
+  "rule": {
+    "citation": "Standard Module s 166(2)",
+    "overdueYears": 2,
+    "withinMonths": 2,
+  },
+}
+`;
+
+exports[`the recovery fees and case words > caseWordsFor 1`] = `
+{
+  "NSW": {
+    "hardshipRequest": "Hardship Request",
+    "paymentPlan": "Payment Plan",
+  },
+  "QLD": {
+    "hardshipRequest": "Waiver Request",
+    "paymentPlan": "Payment Arrangement",
+  },
+}
+`;
+
+exports[`the recovery fees and case words > neverRecoverableFor 1`] = `
+{
+  "NSW": [
+    {
+      "code": "RECOVERY_STEP",
+      "variant": "PAYMENT_PLAN",
+    },
+  ],
+  "QLD": [],
+  "none": "undefined",
+}
+`;
+
+exports[`the recovery fees and case words > previewRecoveryFees with feeWordingFor (fixed price book, capture on) 1`] = `
+{
+  "NSW": {
+    "fees": {
+      "FINAL_NOTICE": {
+        "code": "RECOVERY_STEP",
+        "description": "Debt recovery step: final notice",
+        "exGstCents": 3000,
+        "explanation": "StrataVerze charges a flat fee for this debt recovery step. The owners corporation may recover it from the owner in arrears.",
+        "gstCents": 300,
+        "payerLabel": "Charged to the owners corporation and recoverable from the owner in arrears (SSMA s 86)",
+        "recoverableFromOwner": true,
+        "totalCents": 3300,
+        "variant": "FINAL_NOTICE",
+      },
+      "PAYMENT_PLAN": {
+        "code": "RECOVERY_STEP",
+        "description": "Debt recovery: payment plan set-up",
+        "exGstCents": 4500,
+        "explanation": "StrataVerze charges a flat fee for setting up a payment plan. It is charged to the owners corporation and cannot be passed to the owner.",
+        "gstCents": 450,
+        "payerLabel": "Charged to the owners corporation",
+        "recoverableFromOwner": false,
+        "totalCents": 4950,
+        "variant": "PAYMENT_PLAN",
+      },
+      "REFERRAL": {
+        "code": "RECOVERY_STEP",
+        "description": "Debt recovery: referral",
+        "exGstCents": 6000,
+        "explanation": "StrataVerze charges a flat fee for this debt recovery step. The owners corporation may recover it from the owner in arrears.",
+        "gstCents": 600,
+        "payerLabel": "Charged to the owners corporation and recoverable from the owner in arrears (SSMA s 86)",
+        "recoverableFromOwner": true,
+        "totalCents": 6600,
+        "variant": "REFERRAL",
+      },
+      "REMINDER": {
+        "code": "RECOVERY_STEP",
+        "description": "Debt recovery: reminder",
+        "exGstCents": 1500,
+        "explanation": "StrataVerze charges a flat fee for this debt recovery step. The owners corporation may recover it from the owner in arrears.",
+        "gstCents": 150,
+        "payerLabel": "Charged to the owners corporation and recoverable from the owner in arrears (SSMA s 86)",
+        "recoverableFromOwner": true,
+        "totalCents": 1650,
+        "variant": "REMINDER",
+      },
+    },
+    "wording": {
+      "levies": "levies",
+      "levy": "levy",
+      "ownersCorporation": "owners corporation",
+      "recoverable": null,
+    },
+  },
+  "QLD": {
+    "fees": {
+      "FINAL_NOTICE": {
+        "code": "RECOVERY_STEP",
+        "description": "Debt recovery step: final notice",
+        "exGstCents": 3000,
+        "explanation": "StrataVerze charges a flat fee for this debt recovery step. It may be recoverable from the owner if reasonably incurred (Standard Module s 166(1)(c)).",
+        "gstCents": 300,
+        "payerLabel": "Charged to the body corporate and may be recoverable from the owner if reasonably incurred (Standard Module s 166(1)(c))",
+        "recoverableFromOwner": true,
+        "totalCents": 3300,
+        "variant": "FINAL_NOTICE",
+      },
+      "PAYMENT_PLAN": {
+        "code": "RECOVERY_STEP",
+        "description": "Debt recovery: payment plan set-up",
+        "exGstCents": 4500,
+        "explanation": "StrataVerze charges a flat fee for setting up a payment plan. It may be recoverable from the owner if reasonably incurred (Standard Module s 166(1)(c)).",
+        "gstCents": 450,
+        "payerLabel": "Charged to the body corporate and may be recoverable from the owner if reasonably incurred (Standard Module s 166(1)(c))",
+        "recoverableFromOwner": true,
+        "totalCents": 4950,
+        "variant": "PAYMENT_PLAN",
+      },
+      "REFERRAL": {
+        "code": "RECOVERY_STEP",
+        "description": "Debt recovery: referral",
+        "exGstCents": 6000,
+        "explanation": "StrataVerze charges a flat fee for this debt recovery step. It may be recoverable from the owner if reasonably incurred (Standard Module s 166(1)(c)).",
+        "gstCents": 600,
+        "payerLabel": "Charged to the body corporate and may be recoverable from the owner if reasonably incurred (Standard Module s 166(1)(c))",
+        "recoverableFromOwner": true,
+        "totalCents": 6600,
+        "variant": "REFERRAL",
+      },
+      "REMINDER": {
+        "code": "RECOVERY_STEP",
+        "description": "Debt recovery: reminder",
+        "exGstCents": 1500,
+        "explanation": "StrataVerze charges a flat fee for this debt recovery step. It may be recoverable from the owner if reasonably incurred (Standard Module s 166(1)(c)).",
+        "gstCents": 150,
+        "payerLabel": "Charged to the body corporate and may be recoverable from the owner if reasonably incurred (Standard Module s 166(1)(c))",
+        "recoverableFromOwner": true,
+        "totalCents": 1650,
+        "variant": "REMINDER",
+      },
+    },
+    "wording": {
+      "levies": "contributions",
+      "levy": "contribution",
+      "ownersCorporation": "body corporate",
+      "recoverable": "may be recoverable from the owner if reasonably incurred (Standard Module s 166(1)(c))",
+    },
+  },
+  "captureOff": {
+    "FINAL_NOTICE": null,
+    "PAYMENT_PLAN": null,
+    "REFERRAL": null,
+    "REMINDER": null,
+  },
+  "noBuilding": {
+    "FINAL_NOTICE": {
+      "code": "RECOVERY_STEP",
+      "description": "Debt recovery step: final notice",
+      "exGstCents": 3000,
+      "explanation": "StrataVerze charges a flat fee for this debt recovery step. The owners corporation may recover it from the owner in arrears.",
+      "gstCents": 300,
+      "payerLabel": "Charged to the owners corporation and recoverable from the owner in arrears (SSMA s 86)",
+      "recoverableFromOwner": true,
+      "totalCents": 3300,
+      "variant": "FINAL_NOTICE",
+    },
+    "PAYMENT_PLAN": {
+      "code": "RECOVERY_STEP",
+      "description": "Debt recovery: payment plan set-up",
+      "exGstCents": 4500,
+      "explanation": "StrataVerze charges a flat fee for setting up a payment plan. It is charged to the owners corporation and cannot be passed to the owner.",
+      "gstCents": 450,
+      "payerLabel": "Charged to the owners corporation",
+      "recoverableFromOwner": false,
+      "totalCents": 4950,
+      "variant": "PAYMENT_PLAN",
+    },
+    "REFERRAL": {
+      "code": "RECOVERY_STEP",
+      "description": "Debt recovery: referral",
+      "exGstCents": 6000,
+      "explanation": "StrataVerze charges a flat fee for this debt recovery step. The owners corporation may recover it from the owner in arrears.",
+      "gstCents": 600,
+      "payerLabel": "Charged to the owners corporation and recoverable from the owner in arrears (SSMA s 86)",
+      "recoverableFromOwner": true,
+      "totalCents": 6600,
+      "variant": "REFERRAL",
+    },
+    "REMINDER": {
+      "code": "RECOVERY_STEP",
+      "description": "Debt recovery: reminder",
+      "exGstCents": 1500,
+      "explanation": "StrataVerze charges a flat fee for this debt recovery step. The owners corporation may recover it from the owner in arrears.",
+      "gstCents": 150,
+      "payerLabel": "Charged to the owners corporation and recoverable from the owner in arrears (SSMA s 86)",
+      "recoverableFromOwner": true,
+      "totalCents": 1650,
+      "variant": "REMINDER",
+    },
+  },
+}
+`;

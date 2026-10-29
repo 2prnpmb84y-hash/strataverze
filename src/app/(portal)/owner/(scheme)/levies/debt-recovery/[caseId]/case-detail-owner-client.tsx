@@ -154,7 +154,14 @@ export function CaseDetailOwnerClient({
   stepLabels,
   lateChargeLabel,
   caseWords,
+  adviserOnlyStepTypes,
 }: {
+  /**
+   * The steps that record a fact only the adviser's case page asks for (a
+   * draft pack's recovery rules, VIC, ACT and WA stage 2, PR 9a). Given only
+   * for such a pack, so an NSW or Queensland case shows nothing different.
+   */
+  adviserOnlyStepTypes?: readonly string[];
   /** The building's case words (caseWordsFor): the hardship or waiver request badge, and the payment plan. */
   caseWords: CaseWords;
   /** The building's late charge heading: "Interest" (NSW), "Penalty" (Queensland). */
@@ -446,7 +453,9 @@ export function CaseDetailOwnerClient({
                     )}
 
                     {/* Committee can complete the active step, until it is complete */}
-                    {isCommittee && isActive && !isClosed && step.status !== "COMPLETED" && (
+                    {isCommittee && isActive && !isClosed && step.status !== "COMPLETED" && (adviserOnlyStepTypes?.includes(step.stepType) ? (
+                      <p className="mt-2 text-xs text-ink-muted">Complete this step from the adviser&apos;s case page.</p>
+                    ) : (
                       <div className="mt-2 space-y-2">
                         {feeStepId === step.id && (
                           <FeeDisclosure
@@ -465,7 +474,7 @@ export function CaseDetailOwnerClient({
                           {isPending ? "Processing..." : "Mark Complete"}
                         </Button>
                       </div>
-                    )}
+                    ))}
                   </div>
                 </li>
               );

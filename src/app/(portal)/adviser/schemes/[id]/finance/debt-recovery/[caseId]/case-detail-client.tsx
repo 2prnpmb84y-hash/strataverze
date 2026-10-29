@@ -98,6 +98,20 @@ type Activity = {
   createdAt: string;
 };
 
+/**
+ * A step's extra fields under a draft pack's recovery rules (VIC, ACT and WA
+ * stage 2, PR 9a), as the server page works them out (plain data, no pack):
+ * why it cannot be completed, the meeting and motion that decided to start
+ * proceedings, where proceedings were started, and what the case records.
+ * Given only for such a pack, so an NSW or Queensland case shows nothing more.
+ */
+type StepRequirement = {
+  problem?: string;
+  authority?: { words: string; meetings: { id: string; label: string; motions: { id: string; label: string }[] }[] };
+  forum?: { options: { key: string; words: string }[]; notes: string[] };
+  recorded?: string[];
+};
+
 // ─── Helpers ────────────────────────────────────────────────────
 
 const STATUS_MAP: Record<string, { label: string; variant: ChipStatus }> = {
@@ -160,7 +174,10 @@ export function CaseDetailClient({
   paymentPlans,
   paymentPlanLabel,
   timeZone,
+  stepRequirements,
 }: {
+  /** Each step's extra fields under a draft pack's recovery rules, by step type; left out for NSW and Queensland. */
+  stepRequirements?: Readonly<Record<string, StepRequirement>>;
   /** The building's time zone (schemes.time_zone), for the dates and times of the case's events. */
   timeZone: string;
   /** The PAYMENT_PLAN status, as the building's pack has it ("Payment Plan", "Payment Arrangement"; caseWordsFor). */
@@ -367,6 +384,7 @@ export function CaseDetailClient({
               stepLabels={stepLabels}
               fee={recoveryFees[recoveryFeeVariant(activeStep.stepType) ?? ""] ?? null}
               timeZone={timeZone}
+              requirement={stepRequirements?.[activeStep.stepType]}
             />
           )}
 
@@ -677,7 +695,10 @@ function WizardStepContent({
   guidance,
   stepLabels,
   timeZone,
+  requirement,
 }: {
+  /** The step's extra fields under a draft pack's recovery rules; none for NSW and Queensland. */
+  requirement?: StepRequirement;
   /** The building's time zone, for when the step was completed and its notice sent. */
   timeZone: string;
   /** The building's guidance for this step. */
@@ -702,6 +723,9 @@ function WizardStepContent({
   const [outcome, setOutcome] = useState("");
   const [evidenceNotes, setEvidenceNotes] = useState("");
   const [noticeMethod, setNoticeMethod] = useState("");
+  const [authorityMeetingId, setAuthorityMeetingId] = useState("");
+  const [authorityItemId, setAuthorityItemId] = useState("");
+  const [forum, setForum] = useState("");
   const feeConfirmation = useFeeConfirmation(fee);
 
   const isCompleted = step.status === "COMPLETED";
@@ -717,6 +741,11 @@ function WizardStepContent({
     if (feeConfirmation.confirmedCents != null) {
       formData.set("feeConfirmedCents", String(feeConfirmation.confirmedCents));
     }
+    if (requirement?.authority) {
+      formData.set("authorityMeetingId", authorityMeetingId);
+      formData.set("authorityItemId", authorityItemId);
+    }
+    if (requirement?.forum) formData.set("forum", forum);
 
     startTransition(async () => {
       const result = await completeDebtRecoveryStepAction(
@@ -877,6 +906,11 @@ function WizardStepContent({
                 {step.noticeSentAt ? ` on ${fmtDate(step.noticeSentAt, timeZone)}` : ""}
               </p>
             )}
+            {requirement?.recorded?.map((line) => (
+              <p key={line} className="text-xs text-emerald-700">
+                {line}
+              </p>
+            ))}
           </div>
         )}
 
@@ -928,6 +962,21 @@ function WizardStepContent({
                 className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-turquoise focus:outline-none focus:ring-1 focus:ring-turquoise"
               />
             </div>
+            {requirement && (
+              <RequirementFields
+                requirement={requirement}
+                stepId={step.id}
+                authorityMeetingId={authorityMeetingId}
+                authorityItemId={authorityItemId}
+                forum={forum}
+                onMeeting={(id) => {
+                  setAuthorityMeetingId(id);
+                  setAuthorityItemId("");
+                }}
+                onItem={setAuthorityItemId}
+                onForum={setForum}
+              />
+            )}
             <FeeDisclosure
               fee={fee}
               scheduleHref={`/adviser/schemes/${schemeId}/finance/platform-fees#fee-schedule`}
@@ -939,7 +988,7 @@ function WizardStepContent({
               <Button
                 variant="primary"
                 onClick={handleCompleteStep}
-                disabled={isPending || !feeConfirmation.ready}
+                disabled={isPending || !feeConfirmation.ready || !!requirement?.problem}
               >
                 {isPending
                   ? "Saving..."
@@ -960,6 +1009,110 @@ function WizardStepContent({
         )}
       </div>
     </Card>
+  );
+}
+
+// ─── Draft pack step fields ─────────────────────────────────────
+
+/**
+ * The extra fields a step records under a draft pack's recovery rules: the
+ * meeting and the motion carried at it that decided to start proceedings,
+ * and where proceedings were started, with the notes advisers are shown
+ * (guidance, never applied). The server checks every value again.
+ */
+function RequirementFields({
+  requirement,
+  stepId,
+  authorityMeetingId,
+  authorityItemId,
+  forum,
+  onMeeting,
+  onItem,
+  onForum,
+}: {
+  requirement: StepRequirement;
+  stepId: string;
+  authorityMeetingId: string;
+  authorityItemId: string;
+  forum: string;
+  onMeeting: (id: string) => void;
+  onItem: (id: string) => void;
+  onForum: (key: string) => void;
+}) {
+  const select =
+    "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-turquoise focus:outline-none focus:ring-1 focus:ring-turquoise";
+  const meeting = requirement.authority?.meetings.find((m) => m.id === authorityMeetingId);
+  return (
+    <div className="space-y-3">
+      {requirement.problem && (
+        <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+          {requirement.problem}
+        </p>
+      )}
+      {requirement.authority && (
+        <div className="space-y-2">
+          <p className="text-sm text-gray-700">
+            The decision to start proceedings: {requirement.authority.words}.
+          </p>
+          {requirement.authority.meetings.length === 0 ? (
+            <p className="text-sm text-amber-700">No meeting of this scheme has such a motion carried yet.</p>
+          ) : (
+            <>
+              <div>
+                <label htmlFor={`authority-meeting-${stepId}`} className="mb-1 block text-sm font-medium text-gray-700">
+                  Meeting
+                </label>
+                <select id={`authority-meeting-${stepId}`} value={authorityMeetingId} onChange={(e) => onMeeting(e.target.value)} className={select}>
+                  <option value="">Select the meeting...</option>
+                  {requirement.authority.meetings.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor={`authority-motion-${stepId}`} className="mb-1 block text-sm font-medium text-gray-700">
+                  Motion carried
+                </label>
+                <select id={`authority-motion-${stepId}`} value={authorityItemId} onChange={(e) => onItem(e.target.value)} className={select} disabled={!meeting}>
+                  <option value="">Select the motion...</option>
+                  {meeting?.motions.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+      {requirement.forum && (
+        <div className="space-y-2">
+          <div>
+            <label htmlFor={`forum-${stepId}`} className="mb-1 block text-sm font-medium text-gray-700">
+              Proceedings started in
+            </label>
+            <select id={`forum-${stepId}`} value={forum} onChange={(e) => onForum(e.target.value)} className={select}>
+              <option value="">Select where...</option>
+              {requirement.forum.options.map((o) => (
+                <option key={o.key} value={o.key}>
+                  {o.words}
+                </option>
+              ))}
+            </select>
+          </div>
+          {requirement.forum.notes.length > 0 && (
+            <ul className="list-disc space-y-1 pl-5 text-xs text-gray-500">
+              {requirement.forum.notes.map((n) => (
+                <li key={n}>{n}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 

@@ -7,6 +7,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { PENDING_RULE_PACKS, QLD_RULE_PACK, RULE_PACKS, statutoryRulesFor, type NswRules } from "@/config/statutory";
+import type { DebtRecoveryRules } from "@/config/statutory/types";
 import { flaggableDueOnOrBefore, lotDebtsFrom, proceedingsDeadlineFlags, proceedingsDeadlineRule, proceedingsDeadlineWarning, type LotDebt } from "./proceedings-deadline";
 import { NEVER_RECOVERABLE_FROM_OWNER, usageFee } from "@/lib/billing/fee-engine";
 import { feeWordingFor, toFeeView } from "@/lib/billing/disclosure";
@@ -239,5 +240,95 @@ describe("fees never passed to an owner, by pack", () => {
     const ocOnly = toFeeView({ ...quote(QLD.NEVER_RECOVERABLE_FEE_VARIANTS), payerType: "OC", recoverableFromOwner: false }, feeWordingFor(QLD));
     expect(ocOnly.explanation).toBe("StrataVerze charges a flat fee for setting up a payment plan. It is charged to the body corporate and cannot be passed to the owner.");
     expect(ocOnly.payerLabel).toBe("Charged to the body corporate");
+  });
+});
+
+describe("Western Australian debt recovery (draft, stage 2, PR 9a)", () => {
+  const wa = PENDING_RULE_PACKS.WA.rules;
+  const steps = wa.DEBT_RECOVERY_STEPS;
+  // Compile-time: the pack's DEBT_RECOVERY follows the shared shape, its own fields kept.
+  const shared: DebtRecoveryRules = wa.DEBT_RECOVERY;
+  const ownerText = steps.flatMap((s) => [s.actionRequired, s.legalBasis ?? "", s.triggerCondition, wa.DEBT_RECOVERY_STEP_LABELS[s.stepType] ?? ""]);
+
+  it("follows the shared DebtRecoveryRules shape, with the authority and the forum", () => {
+    expect(shared.source.length).toBeGreaterThan(10);
+    expect(shared.authorityToSue?.recordedAtStep).toBe("COMMITTEE_REVIEW");
+    expect(shared.forum?.recordedAtStep).toBe("PROCEEDINGS");
+    // No key StrataVerze does not apply yet, and none written as undefined.
+    for (const k of ["stepTiming", "finalNotice", "statutoryCharge", "appliesWhen"]) expect(k in wa.DEBT_RECOVERY, k).toBe(false);
+    expect("amountThreshold" in wa.DEBT_RECOVERY.authorityToSue).toBe(false);
+  });
+
+  it("uses the NSW step types, in order, each with a label and guidance, and the steps are on", () => {
+    const nswTypes = NSW.DEBT_RECOVERY_STEPS.map((s) => s.stepType);
+    expect(steps.map((s) => s.stepType)).toEqual(nswTypes);
+    expect(steps.map((s) => s.stepOrder)).toEqual(steps.map((_, i) => i + 1));
+    for (const s of steps) {
+      expect(wa.DEBT_RECOVERY_STEP_LABELS[s.stepType], s.stepType).toBeTruthy();
+      expect(wa.DEBT_RECOVERY_GUIDANCE[s.stepType], s.stepType).toBeTruthy();
+    }
+    expect(wa.FEATURES.debtRecoverySteps).toBe(true);
+  });
+
+  it("charges every recovery step fee to the strata company, never the owner (D10)", () => {
+    expect(wa.NEVER_RECOVERABLE_FEE_VARIANTS.map((v) => `${v.code}:${v.variant}`).sort()).toEqual(
+      ["RECOVERY_STEP:FINAL_NOTICE", "RECOVERY_STEP:PAYMENT_PLAN", "RECOVERY_STEP:REFERRAL", "RECOVERY_STEP:REMINDER"],
+    );
+    expect("RECOVERY_COSTS_RECOVERABLE" in wa).toBe(false);
+    for (const variant of ["REMINDER", "FINAL_NOTICE", "REFERRAL", "PAYMENT_PLAN"]) {
+      const quote = usageFee({ code: "RECOVERY_STEP", variant, priceBook: book, date: "2026-11-01", neverRecoverableFromOwner: wa.NEVER_RECOVERABLE_FEE_VARIANTS });
+      if (quote) expect(quote.recoverableFromOwner, variant).toBe(false);
+    }
+  });
+
+  it("owner text never names SAT, the Magistrates Court or a limit, and never says levy", () => {
+    for (const t of ownerText) {
+      expect(t).not.toMatch(/\bSAT\b|State Administrative Tribunal|Magistrates|\$\d|tribunal/i);
+      expect(t).not.toMatch(/\blev(y|ies)\b/i);
+    }
+    expect(steps.find((s) => s.stepType === "PROCEEDINGS")?.actionRequired).toContain("a court of competent jurisdiction");
+    expect(steps.find((s) => s.stepType === "COMMITTEE_REVIEW")?.legalBasis).toContain("s 143(5)(e)");
+  });
+
+  it("states only CONFIRMED law to owners, and says StrataVerze practice where a step is StrataVerze's own", () => {
+    for (const s of steps) {
+      expect(s.status, s.stepType).toBeDefined();
+      if (s.status === "STRATAVERZE") expect(s.legalBasis, s.stepType).toMatch(/^StrataVerze practice/);
+      if (s.status === "NOT_CONFIRMED") expect(s.legalBasis, s.stepType).toBeUndefined();
+    }
+    expect(steps.filter((s) => s.status === "CONFIRMED").map((s) => s.stepType)).toEqual(["PROCEEDINGS"]);
+    // The guidance (advisers only) keeps the points not confirmed and the forum.
+    expect(wa.DEBT_RECOVERY_GUIDANCE.COMMITTEE_REVIEW).toMatch(/Not confirmed: who within the strata company decides/);
+    expect(wa.DEBT_RECOVERY_GUIDANCE.PROCEEDINGS).toMatch(/never SAT/);
+    expect(wa.DEBT_RECOVERY_GUIDANCE.PROCEEDINGS).toMatch(/Guidance, not confirmed: the Magistrates Court/);
+    expect(wa.DEBT_RECOVERY_GUIDANCE.LEGAL_REFERRAL).toMatch(/Not confirmed: whether legal and collection costs/);
+  });
+
+  it("holds a value only where it is CONFIRMED or STRATAVERZE, and SAT only as excluded", () => {
+    const checked = [wa.DEBT_RECOVERY.authorityToSue.accepted, wa.DEBT_RECOVERY.authorityToSue.managerMayDecide, ...wa.DEBT_RECOVERY.forum.options.flatMap((o) => (o.limitCents ? [o.limitCents] : []))];
+    for (const v of checked) {
+      if (v.value != null) expect(["CONFIRMED", "STRATAVERZE"]).toContain(v.status);
+      else expect(v.note.length).toBeGreaterThan(10);
+    }
+    expect(wa.DEBT_RECOVERY.authorityToSue.managerMayDecide.value).toBe(false);
+    expect(wa.DEBT_RECOVERY.forum.options.map((o) => o.key)).toEqual(["COURT"]);
+    expect(wa.DEBT_RECOVERY.forum.options[0].limitCents?.value).toBeNull();
+    expect(wa.DEBT_RECOVERY.forum.excluded.map((x) => [x.key, x.status])).toEqual([["SAT", "CONFIRMED"]]);
+  });
+
+  it("have no dashes or semicolons in their text", () => {
+    const texts = [...ownerText, ...Object.values(wa.DEBT_RECOVERY_GUIDANCE)];
+    for (const t of texts) expect(t).not.toMatch(/[;–—]| - /);
+  });
+});
+
+describe("the draft packs' debt recovery switch (stage 2, PR 9a)", () => {
+  it("a draft pack has the recovery steps on only with DEBT_RECOVERY.authorityToSue (VIC stays off until PR 9c)", () => {
+    for (const pack of Object.values(PENDING_RULE_PACKS)) {
+      const rules = pack.rules as unknown as { FEATURES: { debtRecoverySteps: boolean }; DEBT_RECOVERY?: { authorityToSue?: unknown } };
+      if (rules.FEATURES.debtRecoverySteps) expect(rules.DEBT_RECOVERY?.authorityToSue, pack.code).toBeDefined();
+    }
+    expect(PENDING_RULE_PACKS.VIC.rules.FEATURES.debtRecoverySteps).toBe(false);
+    expect(PENDING_RULE_PACKS.WA.rules.FEATURES.debtRecoverySteps).toBe(true);
   });
 });
