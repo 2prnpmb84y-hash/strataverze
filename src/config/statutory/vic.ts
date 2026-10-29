@@ -72,6 +72,7 @@ import type {
   NoticeRules,
   PackFeatures,
   PaymentAllocationPart,
+  ProxyRules,
   RecordedBuildingSelector,
   RecordedFactKey,
   RuleStatus,
@@ -2534,7 +2535,8 @@ function pendingValue<T>(change: PendingChange, value: T, source: string = chang
  * commenced. The payment order records NO_STATUTORY_RULE before s 32I. Once a
  * change's fixed or latest start date passes without a recorded commencement,
  * the reader refuses the rule until the pack is checked and bumped
- * (FOR_REVIEW FIXED_DATE_COMMENCEMENT). No consumer reads these yet.
+ * (FOR_REVIEW FIXED_DATE_COMMENCEMENT). Only PROXY_LIMIT is read so far, by the
+ * proxy caps (PROXY_RULES, stage 2, PR 8b-iv), on the meeting's day.
  */
 export const DATED_RULES = {
   /**
@@ -2640,6 +2642,36 @@ export const DATED_RULES = {
   },
 } as const satisfies DatedRules;
 
+/**
+ * Proxy caps (stage 2, PR 8b-iv, 29 Oct 2026), warned only, never refused
+ * (Matthew Wrigley's decisions D15 to D17 of 29 Oct 2026, DECISIONS, kept in
+ * FOR_REVIEW PROXY_CAPS). The s 89D limit is read on the meeting's day (or
+ * today where the proxy has no meeting date) from DATED_RULES.PROXY_LIMIT:
+ * 1 lot owner where there are 20 or fewer occupiable lots, otherwise no more
+ * than 5% of the lot owners (D16: the distinct owners recorded, or the lots
+ * where any lot has no owner recorded), and 1 lot owner always once CLAA 2026
+ * Part 6 Div 2 is recorded as commenced. Where the reader refuses (its latest
+ * start date has passed with no commencement recorded) the warning says the
+ * limit cannot be told. How 5% is rounded is NOT_CONFIRMED (D15), and where
+ * 5% is less than 1 proxy no floor is applied (s 89D sets none; review M2,
+ * FOR_REVIEW PROXY_CAPS). An owner in
+ * arrears may not act as a proxy (s 89C(10)): a holder whose email matches an
+ * owner of a lot owing money on the day is warned of (D17).
+ */
+export const PROXY_RULES: ProxyRules = {
+  datedLimit: DATED_RULES.PROXY_LIMIT,
+  shareOf: "LOT_OWNERS",
+  exceptWords: `to ${PROXIES.limit.exceptions.slice(0, -1).join(", ")} or ${PROXIES.limit.exceptions[PROXIES.limit.exceptions.length - 1]} (${OCR} reg 8A)`,
+  roundingStatus: PROXIES.limit.roundingStatus,
+  holderInArrears: {
+    words: `An owner in arrears may not act as a proxy (${OCA} s 89C(10)).`,
+    source: `${OCA} s 89C(10)`,
+    status: "STRATAVERZE",
+  },
+  source: `${OCA} ss 89C(10), 89D; ${OCR} reg 8A`,
+  status: "STRATAVERZE",
+};
+
 /*
  * The meeting rules in the shared shape (VIC, ACT and WA stage 2, PR 8a-i,
  * 28 Oct 2026), from MEETINGS, RESOLUTIONS, ARREARS and RECORDS. Each
@@ -2703,6 +2735,13 @@ export const DATED_RULES = {
  * compliant with no period (noticeNotCheckedFor) and shown as "Notice period
  * not checked", never as met. The 4 business days of s 89B (a payment other
  * than cash) stay not applied for the same reason.
+ * Since stage 2, PR 8b-iv (29 Oct 2026, Matthew Wrigley's decision D18,
+ * DECISIONS): the minutes give the votes counted at each item from the count
+ * recorded at the meeting (s 81: "voting"), and for an item decided later
+ * what it is, the day its period ends, the day it took or may take effect and
+ * where it stands (minutesContents). The attendance parts of s 81 (owners
+ * present, owners who gave proxies, proxies present) wait for attendance to
+ * be recorded (Stage C).
  */
 
 /** Days of grace before the daily run records a period's end (Matthew Wrigley's decision of 29 Oct 2026, review M1). */
@@ -2870,8 +2909,15 @@ export const MEETING_RULES: MeetingRuleSet = {
   noticeNotCheckedFor: {
     COMMITTEE: `A committee meeting needs at least ${COMMITTEE.meetingNoticeBusinessDays} business days' notice, or the notice the owners corporation decides (${OCA} s 109), and StrataVerze does not count business days yet`,
   },
+  // Stage 2, PR 8b-iv (29 Oct 2026, Matthew Wrigley's decision D18): the votes per item and the later effect in the minutes.
+  minutesContents: {
+    voting: true,
+    laterEffect: true,
+    source: `${OCA} ss 78(2), 81, 97(2)`,
+    status: "STRATAVERZE",
+  },
   notes:
-    "Draft, from the Victorian pack (not signed off), VIC, ACT and WA stage 2, PR 8a-i, 8a-ii, 8b-i and 8b-iii. Quorum is the chair's answer for each item; tier 5 is not counted. Interim resolutions are recorded as pending and decided later. A committee meeting's notice period is not checked. Ballots and the minutes deadline are not applied yet.",
+    "Draft, from the Victorian pack (not signed off), VIC, ACT and WA stage 2, PR 8a-i, 8a-ii, 8b-i, 8b-iii and 8b-iv. Quorum is the chair's answer for each item; tier 5 is not counted. Interim resolutions are recorded as pending and decided later. A committee meeting's notice period is not checked. The minutes give the votes per item and the later effect of an interim resolution; attendance waits for Stage C. Ballots and the minutes deadline are not applied yet.",
 };
 
 /** How far each part of MEETING_RULES not carrying its own status is checked. */
@@ -2890,6 +2936,11 @@ export const MEETING_RULES_STATUS = {
     status: "NOT_CONFIRMED" as RuleStatus,
     source: `${OCA} ss 78, 81, 97`,
     note: "No deadline for sending ordinary minutes was found. Interim resolutions have one (14 days, ss 78(2), 97(2)): since stage 2, PR 8b-i it is held on each pending resolution (pendingResolutions.noticeWithinDays) and its notice must be recorded as given before it takes effect. The minutes themselves are not checked against it.",
+  },
+  minutesContents: {
+    status: "STRATAVERZE" as RuleStatus,
+    source: `${OCA} ss 78(2), 81, 97(2)`,
+    note: "What the minutes contain (s 81) is CONFIRMED. Since stage 2, PR 8b-iv the votes counted at each item come from the count recorded at the meeting (Matthew Wrigley's decision D18 of 29 Oct 2026), and an interim resolution's later effect is given as at the day the minutes are assembled. The attendance parts wait for attendance to be recorded (Stage C, FOR_REVIEW MINUTES_CONTENTS).",
   },
   pendingResolutions: {
     status: "STRATAVERZE" as RuleStatus,
@@ -3110,7 +3161,7 @@ export const FOR_REVIEW = [
   {
     key: "MEETING_RULES_PENDING",
     point:
-      "Interim resolutions (stage 2, PR 8b-i, 29 Oct 2026), by Matthew Wrigley's StrataVerze decisions of 29 Oct 2026 (DECISIONS), each kept here for legal confirmation. (D1) A petition, notice or special general meeting notice may arrive up to and including the 29th day after the resolution was made, and it takes effect the next day: the Interpretation of Legislation Act 1984 was not read, so whether \"29 days after\" counts this way is NOT_CONFIRMED. (D2) It is made on the later of the meeting's day and the day the chair records it, in the building's time zone. (D3) It takes effect only once its 14-day notice (ss 78(2), 97(2)) is recorded as given; a notice given late is flagged, not moved, and a notice given after the period ends makes it take effect on that day, not before. (D4) A valid s 97(5) petition, signed for more than 25% of all lots (the lots entered, common property left out, refused where they do not match the building's number of lots), means the motion did not become a special resolution, recorded as lost; what follows a petition is not in the notes. (D7) Where notice of a special general meeting is given within the 29 days (s 78(4)), the meeting must be linked when the notice is recorded; it takes effect if that meeting was not opened within the 28 days, and never on its own if it was held but its decision is not recorded. A confirmation needs that meeting's item recorded as carried (confirmed) or lost (not confirmed), with the resolution's notice recorded. For both, the meeting is held on the day it was opened in StrataVerze, on or after the day its notice was given and by the day it must be held by (since the review of 29 Oct 2026), and a confirmation takes effect on that day. (D10) A pending item cannot be recorded again, deferred or deleted. (Review M1, Matthew Wrigley's decision of 29 Oct 2026) The daily run records it as having taken effect at the end of its period only after 7 days of grace (settleAfterGraceDays), counted from the last day of the 29 days, or, after a special general meeting notice, from the day that meeting must be held by: during the grace a petition or special general meeting notice received within the 29 days can still be recorded, and the day it takes effect does not move. A confirmation or a petition decides it at once. Whether 7 days is long enough for the secretary to pass a petition on is NOT_CONFIRMED. Manager interim resolutions (s 78(1A) to (1C)) and committee interim resolutions (s 112(6), (7)) are not handled. The minutes do not state the later effect yet (stage 2, PR 8b-iv). Confirm each.",
+      "Interim resolutions (stage 2, PR 8b-i, 29 Oct 2026), by Matthew Wrigley's StrataVerze decisions of 29 Oct 2026 (DECISIONS), each kept here for legal confirmation. (D1) A petition, notice or special general meeting notice may arrive up to and including the 29th day after the resolution was made, and it takes effect the next day: the Interpretation of Legislation Act 1984 was not read, so whether \"29 days after\" counts this way is NOT_CONFIRMED. (D2) It is made on the later of the meeting's day and the day the chair records it, in the building's time zone. (D3) It takes effect only once its 14-day notice (ss 78(2), 97(2)) is recorded as given; a notice given late is flagged, not moved, and a notice given after the period ends makes it take effect on that day, not before. (D4) A valid s 97(5) petition, signed for more than 25% of all lots (the lots entered, common property left out, refused where they do not match the building's number of lots), means the motion did not become a special resolution, recorded as lost; what follows a petition is not in the notes. (D7) Where notice of a special general meeting is given within the 29 days (s 78(4)), the meeting must be linked when the notice is recorded; it takes effect if that meeting was not opened within the 28 days, and never on its own if it was held but its decision is not recorded. A confirmation needs that meeting's item recorded as carried (confirmed) or lost (not confirmed), with the resolution's notice recorded. For both, the meeting is held on the day it was opened in StrataVerze, on or after the day its notice was given and by the day it must be held by (since the review of 29 Oct 2026), and a confirmation takes effect on that day. (D10) A pending item cannot be recorded again, deferred or deleted. (Review M1, Matthew Wrigley's decision of 29 Oct 2026) The daily run records it as having taken effect at the end of its period only after 7 days of grace (settleAfterGraceDays), counted from the last day of the 29 days, or, after a special general meeting notice, from the day that meeting must be held by: during the grace a petition or special general meeting notice received within the 29 days can still be recorded, and the day it takes effect does not move. A confirmation or a petition decides it at once. Whether 7 days is long enough for the secretary to pass a petition on is NOT_CONFIRMED. Manager interim resolutions (s 78(1A) to (1C)) and committee interim resolutions (s 112(6), (7)) are not handled. Since stage 2, PR 8b-iv the minutes state each interim resolution's later effect as at the day they are assembled, and name an item stored as INTERIM \"Decided later\" (MINUTES_CONTENTS). Confirm each.",
     before: "Victorian meetings are run",
     kind: "LEGAL",
   },
@@ -3118,6 +3169,20 @@ export const FOR_REVIEW = [
     key: "MEETING_RULES_NOTICE_AND_MINUTES",
     point:
       "Committee meeting notice (at least 3 business days, or as the owners corporation decides, s 109) is not checked, and no deadline for ordinary minutes is checked, as none was found. Since stage 2, PR 8b-iii (29 Oct 2026), by Matthew Wrigley's StrataVerze decisions of 29 Oct 2026 (DECISIONS), each kept here for confirmation: (D12) a notice whose period StrataVerze cannot check is stored as not compliant with no period, with no database change (a notice with no period was always stored as compliant before), and shown as \"Notice period not checked\", never as met; the notice can still be issued. (D14) Business days (the s 109 committee notice and the 4 business days of s 89B) stay not checked until what \"business day\" means and a source of Victorian public holidays are decided: the notes do not define it, and counting Monday to Friday would overstate the business days around a public holiday, which is the unsafe direction. Whether a notice determined by the owners corporation (s 109) should be recorded per building is for the same decision. Confirm each.",
+    before: "Victorian meetings are run",
+    kind: "STRATAVERZE",
+  },
+  {
+    key: "MINUTES_CONTENTS",
+    point:
+      "The minutes (s 81, stage 2, PR 8b-iv, 29 Oct 2026), by Matthew Wrigley's StrataVerze decision D18 of 29 Oct 2026 (DECISIONS), kept here for confirmation. The minutes give the text of each resolution and, for each item, the votes counted at the meeting from the latest count recorded for it (for, against and abstaining, the lot entitlement on a poll, and the votes not counted for money owed); an item with no count recorded (such as one deferred, or one with no resolution category) shows none. An item decided later (s 78 or s 97) is named \"Decided later\" and its later effect is given as at the day the minutes are assembled: what it is, the day its period ends, the day it took effect or the earliest day it may, and where it stands. Minutes assembled before it is decided are not changed when it is, so a later version must be assembled to show it. The attendance parts of s 81 (the owners present, the owners who gave proxies and the proxies present) wait for attendance to be recorded (meeting management, Stage C). Confirm.",
+    before: "Victorian meetings are run",
+    kind: "STRATAVERZE",
+  },
+  {
+    key: "PROXY_CAPS",
+    point:
+      "Proxy caps (s 89D, stage 2, PR 8b-iv, 29 Oct 2026), by Matthew Wrigley's StrataVerze decisions of 29 Oct 2026 (DECISIONS), each kept here for confirmation. (D15) Every cap warns only and never stops a proxy being saved, the 1 lot owner cap at 20 or fewer occupiable lots included, as the exceptions (family members and the OCR reg 8A cases) cannot be told from the records. Where the 5% share is not a whole number, a holder above it rounded down is warned that it \"may be over\" and above it rounded up that it is over, and the warning says the rounding is not confirmed. Where not every lot's occupiable answer is recorded, more than 1 proxy is warned of as perhaps over. The limit is read on the meeting's day (today where the proxy has no meeting date) from DATED_RULES.PROXY_LIMIT, so the CLAA 2026 limit of 1 lot owner applies only once a pack version records its commencement; where the reader refuses (its latest start date, 1 Dec 2027, has passed with no commencement recorded) the warning says the limit cannot be told. (D16) The 5% is of the distinct lot owners recorded on the building's lots; where any lot has no owner recorded the lots are counted instead and the warning says so. A holder is matched by email (any case), or by name where there is no email, and a proxy belongs to the meeting on its meeting date; one with no meeting date is counted for every meeting. Proxies are counted by the lots they are for, so one owner's several lots count separately (which reg 8A exempts). (D17) An owner in arrears may not act as a proxy (s 89C(10)): a holder whose email matches an owner of a lot owing money on the day is warned of, warn only. The warnings show on the meeting page of a general meeting, in its proxy limits panel. An action that checks a proxy before it is saved (checkProxyCapsAction) exists for a proxy form, which no screen has yet, and saving a proxy itself is unchanged and checks nothing. Where 5% of the lot owners is less than 1 proxy (more than 20 occupiable lots, fewer than 20 owners recorded), no floor is applied, as s 89D sets none: any proxy is warned of as \"may be over\", and the warning says whether at least 1 is allowed is not confirmed (if Matthew Wrigley decides at least 1 is allowed, the limit can be the larger of 1 and the share rounded down). Joint owners of a lot are each counted as a lot owner, which raises the 5% and so may warn less than it should; whether joint owners count as one lot owner is not confirmed. The in-force limit is read from 9 Sep 2026 only, the start of the OCA version the notes read (Version 024): the notes give no earlier start for s 89D in its current form, so a meeting before then is warned that the limit cannot be told; an earlier start can be recorded once it is confirmed. Confirm each.",
     before: "Victorian meetings are run",
     kind: "STRATAVERZE",
   },
@@ -3284,6 +3349,13 @@ export const DECISIONS: readonly { decision: string; proposedOn: string; decided
   {
     decision:
       "Notice not checked (MEETING_RULES.noticeNotCheckedFor, stage 2, PR 8b-iii): (D12) a notice whose period StrataVerze cannot check, a committee meeting's, is stored as not compliant with no period, with no database change, and shown as \"Notice period not checked\", never as met; (D14) business days (the s 109 committee notice of at least 3 business days and the 4 business days of s 89B for a payment other than cash) stay not checked until what \"business day\" means and a public holiday source are decided. Matthew Wrigley's StrataVerze decisions of 29 Oct 2026, kept for confirmation (FOR_REVIEW MEETING_RULES_NOTICE_AND_MINUTES).",
+    proposedOn: "2026-10-29",
+    decidedBy: "Matthew Wrigley",
+    decidedOn: "2026-10-29",
+  },
+  {
+    decision:
+      "Proxy caps and minutes (PROXY_RULES and MEETING_RULES.minutesContents, stage 2, PR 8b-iv): (D15) every proxy cap warns only and never stops a proxy being saved, including the 1 lot owner cap at 20 or fewer occupiable lots (the exceptions, family members and the OCR reg 8A cases, cannot be told from the records); where the 5% share is not whole, a holder above it rounded down \"may be over\" and above it rounded up is over, and the warning says the rounding is not confirmed; (D16) the 5% is of the distinct lot owners recorded, falling back to the number of lots, with a note, where any lot has no owner recorded; (D17) a proxy holder in arrears (s 89C(10)) is matched by email to an owner of a lot owing money on the day, warn only; (D18) the minutes show the votes counted for each item, and the attendance parts wait for attendance to be recorded (Stage C). Matthew Wrigley's StrataVerze decisions of 29 Oct 2026, kept for confirmation (FOR_REVIEW PROXY_CAPS and MINUTES_CONTENTS).",
     proposedOn: "2026-10-29",
     decidedBy: "Matthew Wrigley",
     decidedOn: "2026-10-29",

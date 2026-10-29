@@ -492,7 +492,31 @@ export interface MeetingRuleSet {
    * D12), shown as "Notice period not checked", never as met.
    */
   noticeNotCheckedFor?: Partial<Record<MeetingType, string>>;
+  /*
+   * The key below is the draft packs' (VIC, ACT and WA stage 2, PR 8b-iv,
+   * 29 Oct 2026). It is optional and seed-only, and NSW and Queensland do not
+   * have it, so their minutes are assembled exactly as before.
+   */
+  /** Where the pack records it: what the minutes give for each item beyond its title, text and outcome. */
+  minutesContents?: MinutesContentsRule;
   notes?: string;
+}
+
+/**
+ * What the minutes give for each agenda item beyond its title, text and
+ * outcome (VIC, ACT and WA stage 2, PR 8b-iv, 29 Oct 2026). Each part is read
+ * only where the pack asks for it. Attendance (who was present, the proxies
+ * and absentee votes) waits for attendance to be recorded (Stage C).
+ */
+export interface MinutesContentsRule {
+  /** The categories whose kind the minutes state (the ACT: special, unopposed and unanimous resolutions, sch 2 s 2.1(1)(c)). */
+  kindFor?: readonly ResolutionCategory[];
+  /** The votes counted at each item, from the count recorded at the meeting (Victoria s 81, decision D18). */
+  voting?: true;
+  /** For an item decided later, what it is, when its period ends, when it takes effect and where it stands. */
+  laterEffect?: true;
+  source: string;
+  status: ResolutionRuleStatus;
 }
 
 // The NSW meeting rules live with the other NSW statutory rules in

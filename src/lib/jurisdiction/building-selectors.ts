@@ -299,7 +299,7 @@ const lower = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
 const factWord = (rules: SelectorRules, key: RecordedFactKey, fallback: string) => lower(rules.BUILDING_FACTS?.[key]?.label ?? fallback);
 
 /** Why a fact is missing, in a clause after "because". */
-function gapWords(rules: SelectorRules, ref: FactRef, facts: BuildingFacts): string {
+export function gapWords(rules: SelectorRules, ref: FactRef, facts: BuildingFacts): string {
   if (ref.startsWith("selector:")) {
     const key = ref.slice("selector:".length);
     const selector = buildingSelectors(rules).find((s) => s.key === key);

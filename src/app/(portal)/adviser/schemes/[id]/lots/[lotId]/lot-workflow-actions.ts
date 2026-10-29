@@ -5,6 +5,11 @@ import { AuthorisationError } from "@/lib/auth/require-membership";
 import { requireSchemeAccess } from "@/lib/auth/require-access";
 import { assertInScheme } from "@/lib/auth/scheme-scope";
 import { getLotInScheme } from "@/lib/queries/lots";
+import { getSchemeById } from "@/lib/queries/schemes";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
+import { isCalendarDay } from "@/lib/jurisdiction/time-zone";
+import { proxyWarningsForNewProxy } from "@/lib/meetings/proxy-caps-repo";
 import { logActivity } from "@/lib/queries/activity-log";
 import {
   upsertLotDetail,
@@ -310,6 +315,50 @@ export async function createProxyAction(
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to add proxy." };
+  }
+}
+
+/**
+ * The proxy caps for a proxy about to be recorded on the lot (VIC, ACT and WA
+ * stage 2, PR 8b-iv, 29 Oct 2026): warnings only, never a refusal, so a
+ * proxy is always saved by createProxyAction whatever this says (decision
+ * D15). Its holder's proxies for its meeting are counted with it. A building
+ * whose pack has no proxy caps (NSW, Queensland, Western Australia) gets
+ * none. Kept apart from createProxyAction, which reads nothing that names
+ * the building's state, so that it reads and writes exactly as before.
+ */
+export async function checkProxyCapsAction(
+  schemeId: string,
+  lotId: string,
+  formData: FormData,
+): Promise<{ warnings?: string[]; error?: string }> {
+  try {
+    await authoriseLot(schemeId, lotId);
+    const scheme = await getSchemeById(schemeId);
+    if (!scheme) return { error: "Building not found." };
+    const pack = rulesForState(scheme.state).rules;
+    if (!pack.PROXY_RULES) return { warnings: [] };
+    const meetingDate = String(formData.get("meetingDate") ?? "").trim();
+    if (meetingDate && !isCalendarDay(meetingDate)) return { error: "Enter the meeting date as a date." };
+    const warnings = await proxyWarningsForNewProxy(
+      pack,
+      {
+        id: scheme.id,
+        timeZone: timeZoneOf(scheme),
+        totalLots: scheme.totalLots ?? null,
+        lots: scheme.lots.map((l) => ({ id: l.id, lotNumber: String(l.lotNumber), lotType: l.lotType, occupiable: l.occupiable ?? null })),
+        memberships: scheme.memberships.map((m) => ({ role: String(m.role), isActive: m.isActive, lotId: m.lotId ?? null, profileId: m.profileId, profile: { email: m.profile?.email ?? null } })),
+      },
+      {
+        proxyName: (formData.get("proxyName") as string) || "",
+        proxyEmail: (formData.get("proxyEmail") as string) || null,
+        meetingDate: meetingDate || null,
+      },
+    );
+    return { warnings };
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
+    return { error: "The proxy limit could not be checked." };
   }
 }
 

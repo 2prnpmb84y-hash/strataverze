@@ -14,7 +14,23 @@ const OUTCOME_LABELS: Record<string, string> = {
   RESOLVED: "Resolved",
   MOTION_LOST: "Motion lost",
   DEFERRED: "Deferred",
+  // Stored only under the draft packs (VIC, ACT and WA stage 2, PR 8b-iv): an item decided later. NSW and Queensland
+  // never store these, so their minutes read as before.
+  INTERIM: "Decided later",
+  OPEN: "Voting open",
 };
+
+interface MinutesItem {
+  position: number;
+  title: string;
+  resolutionText: string | null;
+  outcome: string | null;
+  /* The draft packs only (PR 8b-iv): left out of every other building's minutes. */
+  kind?: string;
+  /** The votes counted, with their words worked out on the server (review L5). */
+  voting?: { words?: string };
+  laterEffect?: { words: string };
+}
 
 interface MinutesContent {
   heading?: string;
@@ -23,12 +39,7 @@ interface MinutesContent {
     openedAt?: string | null;
     closedAt?: string | null;
   };
-  items?: {
-    position: number;
-    title: string;
-    resolutionText: string | null;
-    outcome: string | null;
-  }[];
+  items?: MinutesItem[];
 }
 
 export interface MinutesView {
@@ -172,6 +183,9 @@ export function MinutesSection({
                       {item.resolutionText}
                     </p>
                   )}
+                  {item.kind && <p className="mt-1 text-xs text-ink-muted">{item.kind}</p>}
+                  {item.voting?.words && <p className="mt-1 text-xs text-ink-muted">{item.voting.words}</p>}
+                  {item.laterEffect?.words && <p className="mt-1 text-xs text-ink-muted">{item.laterEffect.words}</p>}
                 </li>
               ))}
             </ol>

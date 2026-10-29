@@ -712,6 +712,11 @@ exports[`Australian Capital Territory pack (pending) > is the rules recorded for
       "decidedOn": "2026-10-29",
       "decision": "Notice by motion (MEETING_RULES.categoryNoticeDays, stage 2, PR 8b-iii): (D13) a unanimous resolution goes on a general meeting agenda, and a meeting with an unopposed or unanimous resolution on its agenda needs 21 days' notice (sch 3 s 3.6(2)), checked with the agenda's categories when the notice is issued. A unanimous resolution cannot be added once the notice is issued, and is refused as resolved at the meeting unless the latest notice issued is recorded as compliant with a period of 21 days or more. An unopposed resolution stays refused (its member scope is NOT_CONFIRMED). Matthew Wrigley's StrataVerze decision of 29 Oct 2026, kept for legal confirmation (FOR_REVIEW).",
     },
+    {
+      "decidedBy": "Matthew Wrigley",
+      "decidedOn": "2026-10-29",
+      "decision": "Proxy caps (PROXY_RULES, stage 2, PR 8b-iv): (D15) every proxy cap warns only and never stops a proxy being saved, including the 1 proxy cap at 20 units or fewer (the chair is exempt and must exercise any excess, sch 3 s 3.26(4), which the records cannot tell); where 5% of the units is not whole, a holder above it rounded down "may be over" and above it rounded up is over, and the warning says the rounding is not confirmed. Matthew Wrigley's StrataVerze decision of 29 Oct 2026, kept for confirmation (FOR_REVIEW).",
+    },
   ],
   "DISCOUNTS": {
     "by": "ORDINARY",
@@ -917,10 +922,12 @@ exports[`Australian Capital Territory pack (pending) > is the rules recorded for
     "A unanimous resolution (s 3.18(1)) needs a vote or an abstention recorded for every unit: a unit with nothing recorded refuses the count, since StrataVerze cannot tell whether its voter was present. Confirm.",
     "FOR LEGAL REVIEW: the debtor rule (sch 3 s 3.20(3): with 3 or more members a unit cannot vote on an ordinary or special resolution while an amount is unpaid) is applied since stage 2, PR 8a-ii (29 Oct 2026), in the same change as the chair's quorum answer: a unit owing an amount is not counted at the meeting and cannot vote online on such a motion, and with 1 or 2 members it is not barred. An unpaid amount is read as a contribution notice issued, past its due date and not paid in full on the meeting's date, as for Queensland (a StrataVerze reading: s 3.20(3) says "all amounts payable", which may be wider). With no number of members recorded the rule applies. Confirm.",
     "Quorum (sch 3 ss 3.9 to 3.11) is counted for each motion, and a decision with a reduced quorum takes effect 28 days later unless disallowed. Since stage 2, PR 8a-ii (29 Oct 2026) whether there was a standard quorum (people entitled to vote for at least half of the units) is the chair's answer for each motion, kept with the outcome in the meeting record with who recorded it (Matthew Wrigley's decision of 29 Oct 2026, DECISIONS). It is never filled in for the chair, and a motion not answered is refused. StrataVerze does not record attendance yet, so it does not work the quorum out, and nothing checks the answer against the votes: absentee votes are entered like any other vote but do not count toward the quorum (s 3.31(4)), and a unit barred for money owed does not either. With 1 or 2 members everyone entitled to vote must be present (s 3.12): the chair's answer covers that too. Since stage 2, PR 8b-i (29 Oct 2026) "No" is followed by the chair's answer whether a reduced quorum was present: a reduced quorum decision is recorded as pending and decided later (the reduced quorum point below). When attendance is recorded (meeting management, Stage C) the quorum will be worked out from it instead. A resolution recorded as carried from the count can also be relied on wherever a carried general meeting motion is asked for: budget adoption, capital works plan approval and statutory pack adoption, as for any carried motion. Confirm.",
-    "Reduced quorum decisions (sch 3 ss 3.9 to 3.11; stage 2, PR 8b-i, 29 Oct 2026), by Matthew Wrigley's StrataVerze decisions of 29 Oct 2026 (DECISIONS), each kept here for legal confirmation. (D6) After the chair answers No to the standard quorum, the chair answers whether a reduced quorum (2 or more people present and entitled to vote) was present; with Yes a count that passes is recorded as pending and one that fails is recorded as lost at once (whether a failed count at a reduced quorum is simply lost is NOT_CONFIRMED); with No the count is refused (the meeting is adjourned, s 3.9(4)). The answer is never worked out or assumed. (D1) A petition or notice may arrive up to and including the 28th day after the decision was made, and it takes effect the next day: the Legislation Act 2001 s 151 was not read, so this day counting is NOT_CONFIRMED. (D2) It is made on the later of the meeting's day and the day the chair records it, in the building's time zone. (D3) It takes effect only once its 14-day notice (s 3.10) is recorded as given; a late notice is flagged, not moved, and a notice given after the 28 days makes it take effect on that day, not before. (D5) A petition disallows it when signed for more than half of the units entitled to vote on the day it is received, leaving out units barred for an unpaid amount (where the debtor rule applies): whether the Act's "majority of people entitled to vote" counts units or people, and whether a barred unit is entitled to vote on a petition, are NOT_CONFIRMED; counting the barred units out is the direction that disallows more readily. A confirmation needs a later meeting's motion recorded as carried with a standard quorum answered Yes, held after the decision was made and within the 28 days, with the notice recorded; it takes effect on that meeting's day. Which motion confirms which decision is the adviser's choice. (D10) A pending item cannot be recorded again, deferred or deleted. (Review M1, Matthew Wrigley's decision of 29 Oct 2026) The daily run records it as having taken effect at the end of its period only after 7 days of grace (settleAfterGraceDays) after the last of the 28 days: during the grace a petition received within the 28 days can still be recorded, and the day it takes effect does not move. A confirmation or a petition decides it at once. Whether 7 days is long enough for a petition to reach the corporation is NOT_CONFIRMED. A petition is counted only where the units entered match the building's number of units, as in Victoria. The minutes do not state the later effect yet (stage 2, PR 8b-iv). The pending Bill (no petition, effect the day after) is NOT LAW and never applied. Confirm each.",
+    "Reduced quorum decisions (sch 3 ss 3.9 to 3.11; stage 2, PR 8b-i, 29 Oct 2026), by Matthew Wrigley's StrataVerze decisions of 29 Oct 2026 (DECISIONS), each kept here for legal confirmation. (D6) After the chair answers No to the standard quorum, the chair answers whether a reduced quorum (2 or more people present and entitled to vote) was present; with Yes a count that passes is recorded as pending and one that fails is recorded as lost at once (whether a failed count at a reduced quorum is simply lost is NOT_CONFIRMED); with No the count is refused (the meeting is adjourned, s 3.9(4)). The answer is never worked out or assumed. (D1) A petition or notice may arrive up to and including the 28th day after the decision was made, and it takes effect the next day: the Legislation Act 2001 s 151 was not read, so this day counting is NOT_CONFIRMED. (D2) It is made on the later of the meeting's day and the day the chair records it, in the building's time zone. (D3) It takes effect only once its 14-day notice (s 3.10) is recorded as given; a late notice is flagged, not moved, and a notice given after the 28 days makes it take effect on that day, not before. (D5) A petition disallows it when signed for more than half of the units entitled to vote on the day it is received, leaving out units barred for an unpaid amount (where the debtor rule applies): whether the Act's "majority of people entitled to vote" counts units or people, and whether a barred unit is entitled to vote on a petition, are NOT_CONFIRMED; counting the barred units out is the direction that disallows more readily. A confirmation needs a later meeting's motion recorded as carried with a standard quorum answered Yes, held after the decision was made and within the 28 days, with the notice recorded; it takes effect on that meeting's day. Which motion confirms which decision is the adviser's choice. (D10) A pending item cannot be recorded again, deferred or deleted. (Review M1, Matthew Wrigley's decision of 29 Oct 2026) The daily run records it as having taken effect at the end of its period only after 7 days of grace (settleAfterGraceDays) after the last of the 28 days: during the grace a petition received within the 28 days can still be recorded, and the day it takes effect does not move. A confirmation or a petition decides it at once. Whether 7 days is long enough for a petition to reach the corporation is NOT_CONFIRMED. A petition is counted only where the units entered match the building's number of units, as in Victoria. Since stage 2, PR 8b-iv the minutes state each reduced quorum decision's later effect as at the day they are assembled, and name an item stored as INTERIM "Decided later". The pending Bill (no petition, effect the day after) is NOT LAW and never applied. Confirm each.",
     "Notice by motion (sch 3 ss 3.6(2), 3.7(1); stage 2, PR 8b-iii, 29 Oct 2026), by Matthew Wrigley's StrataVerze decision D13 of 29 Oct 2026 (DECISIONS), kept here for legal confirmation. A general meeting with an unopposed or unanimous resolution on its agenda needs 21 days' notice, not 14 (categoryNoticeDays). The period is checked when the notice is issued, with the categories then on the agenda, in whole days in the meeting's time zone from the day it is issued: "reasonably expected to be received" is not tested, so a notice posted or emailed on the day is taken to be received that day (NOT_CONFIRMED). A unanimous resolution can be added to a general meeting agenda only before the notice is issued, and is recorded as resolved only where the latest notice issued is recorded as compliant with a period of 21 days or more: otherwise it is refused and can be deferred. A notice issued again (a revised notice) is checked again and replaces the earlier one for this. An unopposed resolution stays refused for its member scope (s 3.17) and off the agenda. The motions list does not offer a unanimous resolution, because a motion there is not part of the notice and is never counted. Whether the notice states the full text and kind of the motion (s 3.7(1)) is not checked: the notice gives each item's text and category as entered. Confirm each.",
     "Notice by motion, a revised notice that fails (stage 2, PR 8b-iii review): issuing a revised notice marks every earlier notice superseded before the meeting is updated, so if the meeting changed meanwhile and the revised notice is set aside, the meeting has no notice recorded as issued. An ACT unanimous resolution is then refused as resolved at the meeting, saying that no notice is recorded as issued and the notice must be issued again (it fails closed). Whether issuing a revised notice should keep the earlier notice in force until the revised one is issued is for review.",
     "Pre-meeting electronic voting is not offered for this draft (preMeetingEvoting is null). Before it is, closing a ballot must apply what the count at the meeting applies: the debtor condition (debtorRuleAppliesWhen), judged lot by lot as an owner's own vote is (debtorVoteCheck), the quorum answer, and any refusal of the whole count (Victoria's tier 5, Western Australia's 2-lot quorum). closeBallotAction applies none of these yet (stage 2, PR 8a-ii review). Since stage 2, PR 8b-iii it must also apply the longer notice of some categories (categoryNoticeDays: a unanimous resolution recorded as resolved only where the latest notice issued gave 21 days or more), which closing a ballot does not check either. Confirm before any ACT ballot is offered.",
+    "Minutes (sch 2 s 2.1(1)(c); stage 2, PR 8b-iv, 29 Oct 2026): the minutes state the kind of each special, unopposed and unanimous resolution item (whatever its outcome), and a reduced quorum decision is named "Decided later" with its later effect as at the day the minutes are assembled (what it is, the day its 28 days end, the day it took effect or the earliest day it may, and where it stands). Minutes assembled before it is decided are not changed when it is, so a later version must be assembled to show it. The members present (remote attendees included) and the proxy and absentee vote details wait for attendance to be recorded (meeting management, Stage C). Confirm.",
+    "Proxy caps (sch 3 s 3.26(3), (4); stage 2, PR 8b-iv, 29 Oct 2026), by Matthew Wrigley's StrataVerze decision D15 of 29 Oct 2026 (DECISIONS), kept here for confirmation. Every cap warns only and never stops a proxy being saved, the 1 proxy cap at 20 units or fewer included, since the chair is exempt (s 3.26(4)) and who chairs is not recorded. With more than 20 units the limit is 5% of the units, and how it is rounded is NOT_CONFIRMED: a holder above the share rounded down is warned that it "may be over", and above it rounded up that it is over. The band is worked out from the units recorded (PROXY_LIMIT_BAND), and where it cannot be, more than 1 proxy is warned of as not checked. A holder is matched by email (any case), or by name where there is no email, and a proxy belongs to the meeting on its meeting date; one with no meeting date is counted for every meeting. The warnings show on the meeting page of a general meeting, in its proxy limits panel. An action that checks a proxy before it is saved (checkProxyCapsAction) exists for a proxy form, which no screen has yet, and saving a proxy itself is unchanged and checks nothing. Where 5% of the units is less than 1 proxy no floor is applied (the band gives 5% only above 20 units, so this does not arise with the units recorded). Confirm.",
   ],
   "FUND_CATALOGUE": [
     {
@@ -1410,6 +1417,16 @@ exports[`Australian Capital Territory pack (pending) > is the rules recorded for
       "UNANIMOUS",
     ],
     "memberBandSelector": "memberBand",
+    "minutesContents": {
+      "kindFor": [
+        "SPECIAL",
+        "UNOPPOSED",
+        "UNANIMOUS",
+      ],
+      "laterEffect": true,
+      "source": "Unit Titles (Management) Act 2011 (ACT) sch 2 s 2.1(1)(c); sch 3 ss 3.10, 3.11",
+      "status": "STRATAVERZE",
+    },
     "minutesDeadlines": {
       "AGM": 14,
       "COMMITTEE": 14,
@@ -1420,7 +1437,7 @@ exports[`Australian Capital Territory pack (pending) > is the rules recorded for
       "ORDINARY",
       "SPECIAL",
     ],
-    "notes": "Draft, from the ACT pack (not signed off), VIC, ACT and WA stage 2, PR 8a-i, 8a-ii, 8b-i and 8b-iii. Standard quorum is the chair's answer for each motion and the units present for a special resolution are the chair's count. After No, the chair answers whether a reduced quorum was present: a reduced quorum decision is recorded as pending and decided later. A unanimous resolution can go on a general meeting agenda, with its 21 days' notice checked.",
+    "notes": "Draft, from the ACT pack (not signed off), VIC, ACT and WA stage 2, PR 8a-i, 8a-ii, 8b-i, 8b-iii and 8b-iv. Standard quorum is the chair's answer for each motion and the units present for a special resolution are the chair's count. After No, the chair answers whether a reduced quorum was present: a reduced quorum decision is recorded as pending and decided later. A unanimous resolution can go on a general meeting agenda, with its 21 days' notice checked. The minutes give the kind of each special, unopposed and unanimous resolution and the later effect of a reduced quorum decision; attendance waits for Stage C.",
     "noticePeriods": {
       "AGM": 14,
       "COMMITTEE": 7,
@@ -1663,6 +1680,11 @@ exports[`Australian Capital Territory pack (pending) > is the rules recorded for
     "labelsAndLists": {
       "note": "The names, the categories each meeting and the motions list offer, pre-meeting voting not offered and common property rows not counted are StrataVerze choices (FOR_REVIEW).",
       "source": "StrataVerze",
+      "status": "STRATAVERZE",
+    },
+    "minutesContents": {
+      "note": "What the minutes contain (sch 2 s 2.1(1)(c)) is CONFIRMED. Since stage 2, PR 8b-iv each special, unopposed and unanimous resolution item states its kind, and a reduced quorum decision's later effect is given as at the day the minutes are assembled. The members present and the proxy and absentee vote details wait for attendance to be recorded (Stage C).",
+      "source": "Unit Titles (Management) Act 2011 (ACT) sch 2 s 2.1(1)(c); sch 3 ss 3.10, 3.11",
       "status": "STRATAVERZE",
     },
     "minutesDeadlines": {
@@ -1978,6 +2000,70 @@ exports[`Australian Capital Territory pack (pending) > is the rules recorded for
     ],
     "source": "Unit Titles (Management) Act 2011 (ACT) sch 3 s 3.26(3)",
     "status": "CONFIRMED",
+  },
+  "PROXY_RULES": {
+    "band": {
+      "limits": [
+        {
+          "max": {
+            "proxies": 1,
+          },
+          "value": "ONE_PROXY",
+        },
+        {
+          "max": {
+            "percentOfUnits": 5,
+          },
+          "value": "FIVE_PERCENT_OF_UNITS",
+        },
+      ],
+      "selector": {
+        "held": "DERIVED",
+        "help": "Worked out from the number of units. With more than 20 units a proxy holder may exercise proxies for no more than 5% of the total number of units. With 20 units or fewer the limit is 1 proxy.",
+        "key": "proxyLimit",
+        "label": "Proxy limit",
+        "noRuleFits": "The proxy limit could not be worked out from the units recorded.",
+        "options": [
+          {
+            "label": "1 proxy",
+            "supported": true,
+            "value": "ONE_PROXY",
+          },
+          {
+            "label": "No more than 5% of the units",
+            "supported": true,
+            "value": "FIVE_PERCENT_OF_UNITS",
+          },
+        ],
+        "rules": [
+          {
+            "provision": "Unit Titles (Management) Act 2011 (ACT) sch 3 s 3.26(3)",
+            "status": "CONFIRMED",
+            "value": "FIVE_PERCENT_OF_UNITS",
+            "when": {
+              "moreThan": 20,
+              "number": "LOT_COUNT",
+            },
+          },
+          {
+            "provision": "Unit Titles (Management) Act 2011 (ACT) sch 3 s 3.26(3)",
+            "status": "CONFIRMED",
+            "value": "ONE_PROXY",
+            "when": {
+              "atMost": 20,
+              "number": "LOT_COUNT",
+            },
+          },
+        ],
+        "source": "Unit Titles (Management) Act 2011 (ACT) sch 3 s 3.26(3)",
+        "status": "CONFIRMED",
+      },
+    },
+    "exceptWords": "to the chair of the meeting, who must exercise any proxies over the limit",
+    "roundingStatus": "NOT_CONFIRMED",
+    "shareOf": "UNITS",
+    "source": "Unit Titles (Management) Act 2011 (ACT) sch 3 s 3.26(3), (4)",
+    "status": "STRATAVERZE",
   },
   "RECORDS": {
     "copiesToAnyMemberOnRequest": true,
@@ -4584,6 +4670,12 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
       "decision": "Notice not checked (MEETING_RULES.noticeNotCheckedFor, stage 2, PR 8b-iii): (D12) a notice whose period StrataVerze cannot check, a committee meeting's, is stored as not compliant with no period, with no database change, and shown as "Notice period not checked", never as met; (D14) business days (the s 109 committee notice of at least 3 business days and the 4 business days of s 89B for a payment other than cash) stay not checked until what "business day" means and a public holiday source are decided. Matthew Wrigley's StrataVerze decisions of 29 Oct 2026, kept for confirmation (FOR_REVIEW MEETING_RULES_NOTICE_AND_MINUTES).",
       "proposedOn": "2026-10-29",
     },
+    {
+      "decidedBy": "Matthew Wrigley",
+      "decidedOn": "2026-10-29",
+      "decision": "Proxy caps and minutes (PROXY_RULES and MEETING_RULES.minutesContents, stage 2, PR 8b-iv): (D15) every proxy cap warns only and never stops a proxy being saved, including the 1 lot owner cap at 20 or fewer occupiable lots (the exceptions, family members and the OCR reg 8A cases, cannot be told from the records); where the 5% share is not whole, a holder above it rounded down "may be over" and above it rounded up is over, and the warning says the rounding is not confirmed; (D16) the 5% is of the distinct lot owners recorded, falling back to the number of lots, with a note, where any lot has no owner recorded; (D17) a proxy holder in arrears (s 89C(10)) is matched by email to an owner of a lot owing money on the day, warn only; (D18) the minutes show the votes counted for each item, and the attendance parts wait for attendance to be recorded (Stage C). Matthew Wrigley's StrataVerze decisions of 29 Oct 2026, kept for confirmation (FOR_REVIEW PROXY_CAPS and MINUTES_CONTENTS).",
+      "proposedOn": "2026-10-29",
+    },
   ],
   "DEFERRED_SHARED_SHAPES": [],
   "DISPUTES": {
@@ -5226,13 +5318,25 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
       "before": "Victorian meetings are run",
       "key": "MEETING_RULES_PENDING",
       "kind": "LEGAL",
-      "point": "Interim resolutions (stage 2, PR 8b-i, 29 Oct 2026), by Matthew Wrigley's StrataVerze decisions of 29 Oct 2026 (DECISIONS), each kept here for legal confirmation. (D1) A petition, notice or special general meeting notice may arrive up to and including the 29th day after the resolution was made, and it takes effect the next day: the Interpretation of Legislation Act 1984 was not read, so whether "29 days after" counts this way is NOT_CONFIRMED. (D2) It is made on the later of the meeting's day and the day the chair records it, in the building's time zone. (D3) It takes effect only once its 14-day notice (ss 78(2), 97(2)) is recorded as given; a notice given late is flagged, not moved, and a notice given after the period ends makes it take effect on that day, not before. (D4) A valid s 97(5) petition, signed for more than 25% of all lots (the lots entered, common property left out, refused where they do not match the building's number of lots), means the motion did not become a special resolution, recorded as lost; what follows a petition is not in the notes. (D7) Where notice of a special general meeting is given within the 29 days (s 78(4)), the meeting must be linked when the notice is recorded; it takes effect if that meeting was not opened within the 28 days, and never on its own if it was held but its decision is not recorded. A confirmation needs that meeting's item recorded as carried (confirmed) or lost (not confirmed), with the resolution's notice recorded. For both, the meeting is held on the day it was opened in StrataVerze, on or after the day its notice was given and by the day it must be held by (since the review of 29 Oct 2026), and a confirmation takes effect on that day. (D10) A pending item cannot be recorded again, deferred or deleted. (Review M1, Matthew Wrigley's decision of 29 Oct 2026) The daily run records it as having taken effect at the end of its period only after 7 days of grace (settleAfterGraceDays), counted from the last day of the 29 days, or, after a special general meeting notice, from the day that meeting must be held by: during the grace a petition or special general meeting notice received within the 29 days can still be recorded, and the day it takes effect does not move. A confirmation or a petition decides it at once. Whether 7 days is long enough for the secretary to pass a petition on is NOT_CONFIRMED. Manager interim resolutions (s 78(1A) to (1C)) and committee interim resolutions (s 112(6), (7)) are not handled. The minutes do not state the later effect yet (stage 2, PR 8b-iv). Confirm each.",
+      "point": "Interim resolutions (stage 2, PR 8b-i, 29 Oct 2026), by Matthew Wrigley's StrataVerze decisions of 29 Oct 2026 (DECISIONS), each kept here for legal confirmation. (D1) A petition, notice or special general meeting notice may arrive up to and including the 29th day after the resolution was made, and it takes effect the next day: the Interpretation of Legislation Act 1984 was not read, so whether "29 days after" counts this way is NOT_CONFIRMED. (D2) It is made on the later of the meeting's day and the day the chair records it, in the building's time zone. (D3) It takes effect only once its 14-day notice (ss 78(2), 97(2)) is recorded as given; a notice given late is flagged, not moved, and a notice given after the period ends makes it take effect on that day, not before. (D4) A valid s 97(5) petition, signed for more than 25% of all lots (the lots entered, common property left out, refused where they do not match the building's number of lots), means the motion did not become a special resolution, recorded as lost; what follows a petition is not in the notes. (D7) Where notice of a special general meeting is given within the 29 days (s 78(4)), the meeting must be linked when the notice is recorded; it takes effect if that meeting was not opened within the 28 days, and never on its own if it was held but its decision is not recorded. A confirmation needs that meeting's item recorded as carried (confirmed) or lost (not confirmed), with the resolution's notice recorded. For both, the meeting is held on the day it was opened in StrataVerze, on or after the day its notice was given and by the day it must be held by (since the review of 29 Oct 2026), and a confirmation takes effect on that day. (D10) A pending item cannot be recorded again, deferred or deleted. (Review M1, Matthew Wrigley's decision of 29 Oct 2026) The daily run records it as having taken effect at the end of its period only after 7 days of grace (settleAfterGraceDays), counted from the last day of the 29 days, or, after a special general meeting notice, from the day that meeting must be held by: during the grace a petition or special general meeting notice received within the 29 days can still be recorded, and the day it takes effect does not move. A confirmation or a petition decides it at once. Whether 7 days is long enough for the secretary to pass a petition on is NOT_CONFIRMED. Manager interim resolutions (s 78(1A) to (1C)) and committee interim resolutions (s 112(6), (7)) are not handled. Since stage 2, PR 8b-iv the minutes state each interim resolution's later effect as at the day they are assembled, and name an item stored as INTERIM "Decided later" (MINUTES_CONTENTS). Confirm each.",
     },
     {
       "before": "Victorian meetings are run",
       "key": "MEETING_RULES_NOTICE_AND_MINUTES",
       "kind": "STRATAVERZE",
       "point": "Committee meeting notice (at least 3 business days, or as the owners corporation decides, s 109) is not checked, and no deadline for ordinary minutes is checked, as none was found. Since stage 2, PR 8b-iii (29 Oct 2026), by Matthew Wrigley's StrataVerze decisions of 29 Oct 2026 (DECISIONS), each kept here for confirmation: (D12) a notice whose period StrataVerze cannot check is stored as not compliant with no period, with no database change (a notice with no period was always stored as compliant before), and shown as "Notice period not checked", never as met; the notice can still be issued. (D14) Business days (the s 109 committee notice and the 4 business days of s 89B) stay not checked until what "business day" means and a source of Victorian public holidays are decided: the notes do not define it, and counting Monday to Friday would overstate the business days around a public holiday, which is the unsafe direction. Whether a notice determined by the owners corporation (s 109) should be recorded per building is for the same decision. Confirm each.",
+    },
+    {
+      "before": "Victorian meetings are run",
+      "key": "MINUTES_CONTENTS",
+      "kind": "STRATAVERZE",
+      "point": "The minutes (s 81, stage 2, PR 8b-iv, 29 Oct 2026), by Matthew Wrigley's StrataVerze decision D18 of 29 Oct 2026 (DECISIONS), kept here for confirmation. The minutes give the text of each resolution and, for each item, the votes counted at the meeting from the latest count recorded for it (for, against and abstaining, the lot entitlement on a poll, and the votes not counted for money owed); an item with no count recorded (such as one deferred, or one with no resolution category) shows none. An item decided later (s 78 or s 97) is named "Decided later" and its later effect is given as at the day the minutes are assembled: what it is, the day its period ends, the day it took effect or the earliest day it may, and where it stands. Minutes assembled before it is decided are not changed when it is, so a later version must be assembled to show it. The attendance parts of s 81 (the owners present, the owners who gave proxies and the proxies present) wait for attendance to be recorded (meeting management, Stage C). Confirm.",
+    },
+    {
+      "before": "Victorian meetings are run",
+      "key": "PROXY_CAPS",
+      "kind": "STRATAVERZE",
+      "point": "Proxy caps (s 89D, stage 2, PR 8b-iv, 29 Oct 2026), by Matthew Wrigley's StrataVerze decisions of 29 Oct 2026 (DECISIONS), each kept here for confirmation. (D15) Every cap warns only and never stops a proxy being saved, the 1 lot owner cap at 20 or fewer occupiable lots included, as the exceptions (family members and the OCR reg 8A cases) cannot be told from the records. Where the 5% share is not a whole number, a holder above it rounded down is warned that it "may be over" and above it rounded up that it is over, and the warning says the rounding is not confirmed. Where not every lot's occupiable answer is recorded, more than 1 proxy is warned of as perhaps over. The limit is read on the meeting's day (today where the proxy has no meeting date) from DATED_RULES.PROXY_LIMIT, so the CLAA 2026 limit of 1 lot owner applies only once a pack version records its commencement; where the reader refuses (its latest start date, 1 Dec 2027, has passed with no commencement recorded) the warning says the limit cannot be told. (D16) The 5% is of the distinct lot owners recorded on the building's lots; where any lot has no owner recorded the lots are counted instead and the warning says so. A holder is matched by email (any case), or by name where there is no email, and a proxy belongs to the meeting on its meeting date; one with no meeting date is counted for every meeting. Proxies are counted by the lots they are for, so one owner's several lots count separately (which reg 8A exempts). (D17) An owner in arrears may not act as a proxy (s 89C(10)): a holder whose email matches an owner of a lot owing money on the day is warned of, warn only. The warnings show on the meeting page of a general meeting, in its proxy limits panel. An action that checks a proxy before it is saved (checkProxyCapsAction) exists for a proxy form, which no screen has yet, and saving a proxy itself is unchanged and checks nothing. Where 5% of the lot owners is less than 1 proxy (more than 20 occupiable lots, fewer than 20 owners recorded), no floor is applied, as s 89D sets none: any proxy is warned of as "may be over", and the warning says whether at least 1 is allowed is not confirmed (if Matthew Wrigley decides at least 1 is allowed, the limit can be the larger of 1 and the share rounded down). Joint owners of a lot are each counted as a lot owner, which raises the 5% and so may warn less than it should; whether joint owners count as one lot owner is not confirmed. The in-force limit is read from 9 Sep 2026 only, the start of the OCA version the notes read (Version 024): the notes give no earlier start for s 89D in its current form, so a meeting before then is warned that the limit cannot be told; an earlier start can be recorded once it is confirmed. Confirm each.",
     },
     {
       "before": "sign-off",
@@ -6030,13 +6134,19 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
       "SPECIAL",
       "UNANIMOUS",
     ],
+    "minutesContents": {
+      "laterEffect": true,
+      "source": "Owners Corporations Act 2006 (Vic) ss 78(2), 81, 97(2)",
+      "status": "STRATAVERZE",
+      "voting": true,
+    },
     "minutesDeadlines": {},
     "motionCategories": [
       "ORDINARY",
       "SPECIAL",
       "UNANIMOUS",
     ],
-    "notes": "Draft, from the Victorian pack (not signed off), VIC, ACT and WA stage 2, PR 8a-i, 8a-ii, 8b-i and 8b-iii. Quorum is the chair's answer for each item; tier 5 is not counted. Interim resolutions are recorded as pending and decided later. A committee meeting's notice period is not checked. Ballots and the minutes deadline are not applied yet.",
+    "notes": "Draft, from the Victorian pack (not signed off), VIC, ACT and WA stage 2, PR 8a-i, 8a-ii, 8b-i, 8b-iii and 8b-iv. Quorum is the chair's answer for each item; tier 5 is not counted. Interim resolutions are recorded as pending and decided later. A committee meeting's notice period is not checked. The minutes give the votes per item and the later effect of an interim resolution; attendance waits for Stage C. Ballots and the minutes deadline are not applied yet.",
     "noticeNotCheckedFor": {
       "COMMITTEE": "A committee meeting needs at least 3 business days' notice, or the notice the owners corporation decides (Owners Corporations Act 2006 (Vic) s 109), and StrataVerze does not count business days yet",
     },
@@ -6212,6 +6322,11 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
     "labelsAndLists": {
       "note": "The names, the categories each meeting and the motions list offer, the poll categories, pre-meeting voting not offered and common property rows not counted are StrataVerze choices (FOR_REVIEW MEETING_RULES).",
       "source": "StrataVerze",
+      "status": "STRATAVERZE",
+    },
+    "minutesContents": {
+      "note": "What the minutes contain (s 81) is CONFIRMED. Since stage 2, PR 8b-iv the votes counted at each item come from the count recorded at the meeting (Matthew Wrigley's decision D18 of 29 Oct 2026), and an interim resolution's later effect is given as at the day the minutes are assembled. The attendance parts wait for attendance to be recorded (Stage C, FOR_REVIEW MINUTES_CONTENTS).",
+      "source": "Owners Corporations Act 2006 (Vic) ss 78(2), 81, 97(2)",
       "status": "STRATAVERZE",
     },
     "minutesDeadlines": {
@@ -6775,6 +6890,65 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
     "source": "Owners Corporations Act 2006 (Vic) ss 89C, 89D, 89E, 89F, 89G; Owners Corporations Regulations 2018 (Vic) regs 8, 8A, Sch 1",
     "status": "CONFIRMED",
     "transferable": false,
+  },
+  "PROXY_RULES": {
+    "datedLimit": {
+      "note": "maxLotOwners is the limit for every meeting, or at or below the occupiable lots threshold where aboveThreshold is given.",
+      "title": "Proxy limit",
+      "versions": [
+        {
+          "from": "2026-09-09",
+          "legalStatus": "IN_FORCE",
+          "source": "Owners Corporations Act 2006 (Vic) s 89D (Version 024, in force 9 Sep 2026); Owners Corporations Regulations 2018 (Vic) reg 8A",
+          "status": "CONFIRMED",
+          "value": {
+            "aboveThreshold": {
+              "counts": "occupiable lots",
+              "maxPercentOfLotOwners": 5,
+              "occupiableLotsMoreThan": 20,
+              "roundingStatus": "NOT_CONFIRMED",
+            },
+            "exceptions": [
+              "family members",
+              "one owner with multiple lots (prescribed)",
+              "owners corporations managing commercial, retail or industrial common property (prescribed)",
+            ],
+            "exceptionsStatus": "CONFIRMED",
+            "maxLotOwners": 1,
+          },
+        },
+        {
+          "commencedOn": null,
+          "commencement": "on proclamation, or 1 Dec 2027 if not proclaimed earlier (No. 36/2026 s 2(3), (6))",
+          "fixedStartDate": null,
+          "latestStartDate": "2027-12-01",
+          "legalStatus": "ENACTED_NOT_COMMENCED",
+          "pendingChange": "CLAA_2026_PROXY_LIMIT",
+          "source": "Consumer Legislation Amendment Act 2026 (Vic) (No. 36/2026), as made s 43A (new OCA s 89D(1))",
+          "status": "CONFIRMED",
+          "value": {
+            "aboveThreshold": null,
+            "exceptions": [
+              "family members",
+              "one owner with multiple lots (prescribed)",
+              "owners corporations managing commercial, retail or industrial common property (prescribed)",
+            ],
+            "exceptionsStatus": "NOT_CONFIRMED",
+            "maxLotOwners": 1,
+          },
+        },
+      ],
+    },
+    "exceptWords": "to family members, one owner with multiple lots (prescribed) or owners corporations managing commercial, retail or industrial common property (prescribed) (Owners Corporations Regulations 2018 (Vic) reg 8A)",
+    "holderInArrears": {
+      "source": "Owners Corporations Act 2006 (Vic) s 89C(10)",
+      "status": "STRATAVERZE",
+      "words": "An owner in arrears may not act as a proxy (Owners Corporations Act 2006 (Vic) s 89C(10)).",
+    },
+    "roundingStatus": "NOT_CONFIRMED",
+    "shareOf": "LOT_OWNERS",
+    "source": "Owners Corporations Act 2006 (Vic) ss 89C(10), 89D; Owners Corporations Regulations 2018 (Vic) reg 8A",
+    "status": "STRATAVERZE",
   },
   "RECORDS": {
     "copiesCapped": true,
@@ -8241,7 +8415,7 @@ exports[`Western Australia pack (pending) > is the rules recorded for review 1`]
     "NOTICE_RULES: one notice for each instalment as it falls due is a StrataVerze choice (the STA and STGR set no notice rule). Scheme by-laws were not checked: one may set a notice form, content or period, or an early payment discount. Confirm.",
     "NOTICE_RULES, notices that cannot go out because their due date cannot move: the daily job logs them as held (LEVY_NOTICES_HELD) again on every run until the planned notices are stopped, and when the Adviser sends overdue notices they are held while the others go out. When a schedule is first planned, one such instalment refuses the whole schedule (nothing is planned). Decide whether to keep both.",
     "MEETING_RULES (stage 2, PR 8a-i) is StrataVerze's mapping of MEETINGS, RESOLUTIONS and SIZE_CLASSES to the shared shape. StrataVerze choices: the names (Ordinary, Special, Unanimous Resolution and Resolution without Dissent); a general meeting and the motions list offer all four, and a council meeting ordinary resolutions only; pre-meeting voting and voting outside a meeting (s 120(3)) are not offered; common property rows are not counted as lots; a poll means unit entitlement counting demanded on an ordinary resolution (s 122); an item with no resolution category (such as an election) cannot be recorded as resolved at a general meeting, because every outcome there comes from the count and such an item has no test to count it by (it can be recorded as lost, or deferred). Confirm each.",
-    "Voting period (stage 2, PR 8b-ii, 29 Oct 2026, Matthew Wrigley's decisions D1, D2 and D8 to D11, DECISIONS): special, without dissent and unanimous resolutions stay open for 28 days after the meeting (s 121), and owners with no-one present may still vote by written notice (s 121(2)). The meeting records the votes cast and the item stays open: the chair's only choices are Record the votes and Deferred, a count missing a fact is still refused, and closing a ballot never records one. Points to confirm: day counting (D1: up to and including the 28th day after the day it is made, decided as at the next day; the Interpretation Act 1984 s 61 was not read); the day it is made (D2: the later of the meeting's day and the day it is recorded, in the building's time zone); who had no-one present (D8: attendance is not recorded, so the lots with nothing entered at the item, counted or not counted for money owed, are taken as those owners, and a lot with an abstention entered was present); written votes for or against only, one per lot, and a debt judged on the day the vote is received, a lot owing money on that day refused and nothing stored (it may be recorded again if the debt is shown paid by then); the outcome notice (D8: no deadline was found, so it is required before the close is decided whenever such a lot exists, and one given after the close is flagged, not refused); no early decision (D9: even if every lot has voted, it is decided only at the close); the 7 days of grace before the daily run records the decision (the day it is decided stays the day after the close); and the count at the close by the test for the building's size as it was at the meeting, the number of lots and total unit entitlement as at the meeting and each written vote weighed by its lot's unit entitlement when it is counted. After review (29 Oct 2026): only the building's lots at the meeting, kept with the resolution, may vote in writing (a lot added or entered again since may not, and the close is refused if a written vote is from any other lot or the lots voting are more than the lots then); the debtor rule a written vote is judged by is the one the pack held at the meeting, kept with the resolution; an outcome notice given after the voting period closed is flagged in its record and to the adviser. Not yet done: the minutes show an open item's stored outcome as it is (OPEN, and INTERIM for Victoria and the ACT) until the minutes content is done (stage 2, PR 8b-iv). Confirm each.",
+    "Voting period (stage 2, PR 8b-ii, 29 Oct 2026, Matthew Wrigley's decisions D1, D2 and D8 to D11, DECISIONS): special, without dissent and unanimous resolutions stay open for 28 days after the meeting (s 121), and owners with no-one present may still vote by written notice (s 121(2)). The meeting records the votes cast and the item stays open: the chair's only choices are Record the votes and Deferred, a count missing a fact is still refused, and closing a ballot never records one. Points to confirm: day counting (D1: up to and including the 28th day after the day it is made, decided as at the next day; the Interpretation Act 1984 s 61 was not read); the day it is made (D2: the later of the meeting's day and the day it is recorded, in the building's time zone); who had no-one present (D8: attendance is not recorded, so the lots with nothing entered at the item, counted or not counted for money owed, are taken as those owners, and a lot with an abstention entered was present); written votes for or against only, one per lot, and a debt judged on the day the vote is received, a lot owing money on that day refused and nothing stored (it may be recorded again if the debt is shown paid by then); the outcome notice (D8: no deadline was found, so it is required before the close is decided whenever such a lot exists, and one given after the close is flagged, not refused); no early decision (D9: even if every lot has voted, it is decided only at the close); the 7 days of grace before the daily run records the decision (the day it is decided stays the day after the close); and the count at the close by the test for the building's size as it was at the meeting, the number of lots and total unit entitlement as at the meeting and each written vote weighed by its lot's unit entitlement when it is counted. After review (29 Oct 2026): only the building's lots at the meeting, kept with the resolution, may vote in writing (a lot added or entered again since may not, and the close is refused if a written vote is from any other lot or the lots voting are more than the lots then); the debtor rule a written vote is judged by is the one the pack held at the meeting, kept with the resolution; an outcome notice given after the voting period closed is flagged in its record and to the adviser. Since stage 2, PR 8b-iv (29 Oct 2026) the minutes name an open item "Voting open" in place of its stored outcome (OPEN), and give its later effect as at the day they are assembled: the day voting closes, the day it is decided as at, and once decided whether it was carried or lost. Minutes assembled while it is open are not changed when it is decided, so a later version must be assembled to show it. Confirm each.",
     "A 2-lot special resolution and resolution without dissent are counted as unanimous: every lot for (s 123(3), (5)). Below 2 lots no test fits and the count is refused. The 3 to 5-lot special resolution is read as at least 50% of the total unit entitlement for (s 123(6) says "unit entitlement"). Confirm.",
     "A resolution without dissent with no vote cast at all passes the test (no vote against, s 123(2)). Since stage 2, PR 8b-ii these resolutions are recorded, so one with no vote at the meeting and no written vote is carried at the close. Confirm that reading.",
     "An unfinancial owner (s 120(2)) is read as a lot with a levy notice issued, past its due date and not paid in full on the meeting's date, as for Queensland. A special resolution is measured against all lots, so a lot whose vote is not counted for money owed still counts in the total. Confirm.",
@@ -8679,6 +8853,11 @@ exports[`Western Australia pack (pending) > is the rules recorded for review 1`]
       "WITHOUT_DISSENT",
       "UNANIMOUS",
     ],
+    "minutesContents": {
+      "laterEffect": true,
+      "source": "Strata Titles Act 1985 (WA) ss 104(1)(b), 121",
+      "status": "STRATAVERZE",
+    },
     "minutesDeadlines": {},
     "motionCategories": [
       "ORDINARY",
@@ -8686,7 +8865,7 @@ exports[`Western Australia pack (pending) > is the rules recorded for review 1`]
       "WITHOUT_DISSENT",
       "UNANIMOUS",
     ],
-    "notes": "Draft, from the Western Australian pack (not signed off), VIC, ACT and WA stage 2, PR 8a-i, 8a-ii, 8b-ii and 8b-iii. A council meeting's notice period is not checked. Special, without dissent and unanimous resolutions stay open for their 28-day voting period: the meeting records the votes, written votes are recorded after it, and the resolution is decided when the period closes. A 2-lot scheme's count needs both lots recorded at the item.",
+    "notes": "Draft, from the Western Australian pack (not signed off), VIC, ACT and WA stage 2, PR 8a-i, 8a-ii, 8b-ii, 8b-iii and 8b-iv. A council meeting's notice period is not checked. The minutes give the later effect of a resolution with a voting period. Special, without dissent and unanimous resolutions stay open for their 28-day voting period: the meeting records the votes, written votes are recorded after it, and the resolution is decided when the period closes. A 2-lot scheme's count needs both lots recorded at the item.",
     "noticeNotCheckedFor": {
       "COMMITTEE": "A council meeting's notice is set by the scheme's by-laws, 7 days by default (Strata Titles Act 1985 (WA) Sch 1 by-law 8(2)(a)), and StrataVerze does not hold the scheme's by-laws",
     },
@@ -8902,6 +9081,11 @@ exports[`Western Australia pack (pending) > is the rules recorded for review 1`]
     "labelsAndLists": {
       "note": "The names, the categories each meeting and the motions list offer, the poll categories, pre-meeting voting not offered and common property rows not counted are StrataVerze choices (FOR_REVIEW).",
       "source": "StrataVerze",
+      "status": "STRATAVERZE",
+    },
+    "minutesContents": {
+      "note": "No content for the minutes is prescribed in the STA or STGR read. Since stage 2, PR 8b-iv a resolution with a voting period (s 121) is named "Voting open" while it is open, and its later effect is given as at the day the minutes are assembled (a StrataVerze choice, FOR_REVIEW).",
+      "source": "Strata Titles Act 1985 (WA) ss 104(1)(b), 121",
       "status": "STRATAVERZE",
     },
     "minutesDeadlines": {
