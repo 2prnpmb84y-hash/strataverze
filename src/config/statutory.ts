@@ -479,7 +479,17 @@ export const PENDING_RULE_PACKS = {
     // building's number of units. The quorum help, notes, MEETING_RULES_STATUS and the FOR_REVIEW quorum and
     // LATE_CHARGE points are rewritten, and FOR_REVIEW gains the reduced quorum point. No legal value or status
     // already recorded changed; still a draft.
-    version: "2026.10.10",
+    // 2026.10.11 (29 Oct 2026): notice by motion (stage 2, PR 8b-iii). MEETING_RULES gains categoryNoticeDays: 21 days'
+    // notice where an unopposed or unanimous resolution is to be moved, against 14 generally (sch 3 s 3.6(2),
+    // CONFIRMED), checked with the agenda's categories when the notice is issued. A unanimous resolution joins
+    // generalMeetingCategories (not motionCategories): it cannot be added once the notice is issued, and it is refused as
+    // resolved at the meeting unless the latest notice issued is recorded as compliant with a period of 21 days or more
+    // (how it is applied STRATAVERZE, Matthew Wrigley's decision D13 of 29 Oct 2026, recorded in DECISIONS and kept in
+    // FOR_REVIEW for legal confirmation). An unopposed resolution stays refused and off the agenda. The file header, the
+    // MEETING_RULES header and notes, the category comments and MEETING_RULES_STATUS.noticePeriods are rewritten,
+    // MEETING_RULES_STATUS gains categoryNoticeDays, FOR_REVIEW's MEETING_RULES point is rewritten and it gains the
+    // notice by motion point. No legal value or status already recorded changed; still a draft.
+    version: "2026.10.11",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",
     reviewedOn: null,
@@ -593,7 +603,16 @@ export const PENDING_RULE_PACKS = {
     // MEETING_RULES_STATUS (minutesDeadlines note, pendingResolutions) are rewritten, and FOR_REVIEW
     // MEETING_RULES_INTERIM and MEETING_RULES_ORDINARY are rewritten. No legal value or status already recorded
     // changed; still a draft.
-    version: "2026.10.10",
+    // 2026.10.11 (29 Oct 2026): committee notice not checked (stage 2, PR 8b-iii). MEETING_RULES gains
+    // noticeNotCheckedFor COMMITTEE: a committee meeting's notice (at least 3 business days, or as the owners
+    // corporation decides, s 109, CONFIRMED) is not checked, and such a notice is stored as not compliant with no period
+    // and shown as "Notice period not checked" (Matthew Wrigley's decision D12 of 29 Oct 2026); business days, s 109 and
+    // the 4 business days of s 89B, stay not checked until "business day" and a public holiday source are decided
+    // (decision D14). Both are recorded in DECISIONS and kept in FOR_REVIEW. The MEETING_RULES header, the noticePeriods
+    // comment and notes are rewritten, MEETING_RULES_STATUS gains noticeNotCheckedFor, and FOR_REVIEW
+    // MEETING_RULES_NOTICE_AND_MINUTES and MEETING_RULES_ARREARS are rewritten. No legal value or status already
+    // recorded changed; still a draft.
+    version: "2026.10.11",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",
     reviewedOn: null,
@@ -661,7 +680,15 @@ export const PENDING_RULE_PACKS = {
     // 29 Oct 2026, recorded in DECISIONS and kept in FOR_REVIEW for legal confirmation. The 2-lot quorum still applies at
     // the meeting. The MEETING_RULES header and notes are rewritten, and FOR_REVIEW's voting period and without dissent
     // points. No legal value or status already recorded changed; still a draft.
-    version: "2026.10.8",
+    // 2026.10.9 (29 Oct 2026): council notice not checked (stage 2, PR 8b-iii). MEETING_RULES gains
+    // noticeNotCheckedFor COMMITTEE: a council meeting's notice (7 days by default, Sch 1 by-law 8(2)(a), a default
+    // by-law a scheme may have changed) is not checked, and such a notice is stored as not compliant with no period and
+    // shown as "Notice period not checked" (Matthew Wrigley's decision D12 of 29 Oct 2026, recorded in DECISIONS and kept
+    // in FOR_REVIEW). The MEETING_RULES header, the noticePeriods comment and notes are rewritten,
+    // MEETING_RULES_STATUS gains noticeNotCheckedFor and its noticePeriods note cites by-law 8(2)(a) (the notice) in
+    // place of 8(1) (the decisions), as COUNCIL.meetings and the notes give it, and FOR_REVIEW gains the council notice
+    // point. No legal value or status already recorded changed; still a draft.
+    version: "2026.10.9",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",
     reviewedOn: null,

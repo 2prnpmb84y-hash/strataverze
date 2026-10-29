@@ -50,6 +50,9 @@
  * quorum is the chair's answer for each motion, the units present for a
  * special resolution are the chair's count, and the debtor rule (sch 3
  * s 3.20(3)) is applied with 3 or more members (see MEETING_RULES).
+ * Since stage 2, PR 8b-iii (29 Oct 2026) a unanimous resolution can go on a
+ * general meeting agenda, with its 21 days' notice (sch 3 s 3.6(2)) checked
+ * (MEETING_RULES.categoryNoticeDays, Matthew Wrigley's decision D13).
  * LATE_CHARGE is given from INTEREST (stage 2, PR 5).
  * PAYMENT_ALLOCATION_ORDER is a StrataVerze choice Matthew Wrigley made on
  * 28 Oct 2026 (contribution first, as NSW): the notes record no order.
@@ -1500,7 +1503,17 @@ export const RECORDS = {
  *   present). There is no casting vote (s 3.30), and none is needed: any
  *   vote against fails the test;
  * - an unopposed resolution (s 3.17, its member scope NOT_CONFIRMED) is
- *   refused;
+ *   refused, and is still never offered on an agenda;
+ * - notice by motion (sch 3 s 3.6(2)), since stage 2, PR 8b-iii (29 Oct
+ *   2026, Matthew Wrigley's decision D13, DECISIONS): a meeting with an
+ *   unopposed or unanimous resolution on its agenda needs 21 days' notice,
+ *   not 14 (categoryNoticeDays). The notice period is checked with the
+ *   agenda's categories when the notice is issued, so a unanimous resolution
+ *   can go on a general meeting agenda: it cannot be added once the notice is
+ *   issued, and it cannot be recorded as resolved unless the latest notice
+ *   issued is recorded as compliant with a period of 21 days or more. The
+ *   check counts whole days from the day the notice is issued, which does not
+ *   test "reasonably expected to be received" (FOR_REVIEW);
  * - a poll on an ordinary or special resolution only (s 3.29);
  * - common property rows are not counted as units;
  * - an item with no resolution category cannot be recorded as resolved at a
@@ -1624,7 +1637,7 @@ export const MEETING_RULES: MeetingRuleSet = {
       source: RESOLUTIONS.SPECIAL.source,
       status: "CONFIRMED",
     },
-    // Never on an agenda: its member scope is NOT_CONFIRMED (and its 21 days' notice is not checked).
+    // Never on an agenda: its member scope is NOT_CONFIRMED. Its 21 days' notice is held (categoryNoticeDays) since stage 2, PR 8b-iii.
     UNOPPOSED: {
       basis: "NONE_AGAINST_AT_LEAST_ONE_FOR",
       refusedBecause: ACT_UNOPPOSED,
@@ -1632,7 +1645,8 @@ export const MEETING_RULES: MeetingRuleSet = {
       source: RESOLUTIONS.UNOPPOSED.source,
       status: RESOLUTIONS.UNOPPOSED.memberScopeStatus,
     },
-    // Not on an agenda either: its 21 days' notice (sch 3 s 3.6(2)) is not checked.
+    // On a general meeting agenda since stage 2, PR 8b-iii (29 Oct 2026, decision D13): its 21 days' notice (sch 3 s 3.6(2))
+    // is checked when the notice is issued, and it is recorded as resolved only where the notice issued gave it (categoryNoticeDays).
     UNANIMOUS: {
       basis: "BY_VARIANT",
       withoutQuorum: "DECIDED_LATER",
@@ -1663,7 +1677,9 @@ export const MEETING_RULES: MeetingRuleSet = {
     UNOPPOSED: { short: "Unopposed", full: "Unopposed Resolution" },
     UNANIMOUS: { short: "Unanimous", full: "Unanimous Resolution" },
   },
-  generalMeetingCategories: ["ORDINARY", "SPECIAL"],
+  // A unanimous resolution since stage 2, PR 8b-iii (29 Oct 2026, decision D13), with its 21 days' notice checked. Not
+  // on the motions list, which is not part of the notice and is never counted (FOR_REVIEW).
+  generalMeetingCategories: ["ORDINARY", "SPECIAL", "UNANIMOUS"],
   committeeCategories: ["ORDINARY"],
   committeeCategoryRefusal:
     "Only an ordinary resolution can go on an executive committee meeting agenda. Put this motion on a general meeting agenda instead.",
@@ -1716,8 +1732,14 @@ export const MEETING_RULES: MeetingRuleSet = {
       status: "STRATAVERZE",
     },
   },
+  // Stage 2, PR 8b-iii (29 Oct 2026, Matthew Wrigley's decision D13): 21 days' notice where an unopposed or unanimous
+  // resolution is to be moved, against 14 generally (sch 3 s 3.6(2)).
+  categoryNoticeDays: {
+    UNOPPOSED: { days: MEETINGS.noticeDaysForUnopposedOrUnanimous, source: `${UTMA} sch 3 s 3.6(2)`, status: "CONFIRMED" },
+    UNANIMOUS: { days: MEETINGS.noticeDaysForUnopposedOrUnanimous, source: `${UTMA} sch 3 s 3.6(2)`, status: "CONFIRMED" },
+  },
   notes:
-    "Draft, from the ACT pack (not signed off), VIC, ACT and WA stage 2, PR 8a-i, 8a-ii and 8b-i. Standard quorum is the chair's answer for each motion and the units present for a special resolution are the chair's count. After No, the chair answers whether a reduced quorum was present: a reduced quorum decision is recorded as pending and decided later.",
+    "Draft, from the ACT pack (not signed off), VIC, ACT and WA stage 2, PR 8a-i, 8a-ii, 8b-i and 8b-iii. Standard quorum is the chair's answer for each motion and the units present for a special resolution are the chair's count. After No, the chair answers whether a reduced quorum was present: a reduced quorum decision is recorded as pending and decided later. A unanimous resolution can go on a general meeting agenda, with its 21 days' notice checked.",
 };
 
 /** How far each part of MEETING_RULES not carrying its own status is checked. */
@@ -1725,7 +1747,12 @@ export const MEETING_RULES_STATUS = {
   noticePeriods: {
     status: "CONFIRMED" as RuleStatus,
     source: `${UTMA} sch 2 s 2.8(2); sch 3 s 3.6(2)`,
-    note: "14 days for a general meeting and 7 days for an executive committee meeting. A general meeting's notice must reasonably be expected to be received 14 days before, which the whole-day check does not test, and 21 days where an unopposed or unanimous resolution is moved, neither of which is offered on an agenda.",
+    note: "14 days for a general meeting and 7 days for an executive committee meeting, and 21 days where an unopposed or unanimous resolution is to be moved (categoryNoticeDays, since stage 2, PR 8b-iii). A general meeting's notice must reasonably be expected to be received that many days before, which the whole-day check from the day the notice is issued does not test (FOR_REVIEW).",
+  },
+  categoryNoticeDays: {
+    status: "STRATAVERZE" as RuleStatus,
+    source: `${UTMA} sch 3 ss 3.6(2), 3.7(1)`,
+    note: "The 21 days is CONFIRMED. How it is applied is StrataVerze's reading, by Matthew Wrigley's decision D13 of 29 Oct 2026 (DECISIONS): the period is checked with the agenda's categories when the notice is issued, a unanimous resolution is offered on a general meeting agenda and cannot be added once the notice is issued, and it is recorded as resolved only where the latest notice issued is recorded as compliant with 21 days or more. An unopposed resolution stays refused for its member scope (FOR_REVIEW).",
   },
   minutesDeadlines: { status: "CONFIRMED" as RuleStatus, source: `${UTMA} sch 2 s 2.1(2)`, note: "A copy to each member within 14 days, general and executive committee meetings." },
   quorumRules: {
@@ -2076,7 +2103,7 @@ export const FOR_REVIEW = [
   "Each unit's contribution, the fund total and the proportion are read from the data as it is when a notice is checked, emailed or its PDF downloaded, and checked again each time: an issued notice that can no longer state them all is not emailed (the building's activity records LEVY_NOTICES_NOT_EMAILED with the reason) and its PDF is refused with the reason, rather than given without them. A PDF is rebuilt from the data on each download; keeping the content as it was on the day of issue needs a database change and is not done yet. Confirm.",
   "Form 1 (AF2012-112) was not read, so whether ACT contribution notices must be in an approved form is not recorded (NOTICE_RULES.checked.form is null). Check it before any ACT notice is issued.",
   "A notice that goes out late states a later due date, 14 days after it goes out and within the 28 days: StrataVerze's reading of UTMA ss 80, 91 (the notes say only that a contribution is payable on the date stated in the notice), recorded as STRATAVERZE, not CONFIRMED. Confirm.",
-  "MEETING_RULES (stage 2, PR 8a-i) is StrataVerze's mapping of MEETINGS and RESOLUTIONS to the shared shape. StrataVerze choices: the names (Ordinary, Special, Unopposed and Unanimous Resolution); a general meeting and the motions list offer ordinary and special resolutions, and an executive committee ordinary resolutions only; unopposed and unanimous resolutions are not offered on an agenda (their 21 days' notice, sch 3 s 3.6(2), is not checked); pre-meeting electronic voting (sch 3 s 3.31A) is not offered; common property rows are not counted as units; an item with no resolution category (such as an election) cannot be recorded as resolved at a general meeting, because every outcome there comes from the count and such an item has no test to count it by (it can be recorded as lost, or deferred). Confirm each.",
+  "MEETING_RULES (stage 2, PR 8a-i) is StrataVerze's mapping of MEETINGS and RESOLUTIONS to the shared shape. StrataVerze choices: the names (Ordinary, Special, Unopposed and Unanimous Resolution); a general meeting offers ordinary, special and (since stage 2, PR 8b-iii) unanimous resolutions, the motions list ordinary and special resolutions, and an executive committee ordinary resolutions only; an unopposed resolution is not offered on an agenda (its member scope is NOT_CONFIRMED); pre-meeting electronic voting (sch 3 s 3.31A) is not offered; common property rows are not counted as units; an item with no resolution category (such as an election) cannot be recorded as resolved at a general meeting, because every outcome there comes from the count and such an item has no test to count it by (it can be recorded as lost, or deferred). Confirm each.",
   "The number of members (MEMBER_BAND: 1 or 2, 3, or 4 or more) is recorded by the adviser or StrataVerze in the Building rules section, because members are not units (s 10: each part-owner is a member). It can go out of date when the owners change, and nothing checks it against the roll. 1 or 2 members and 4 or more members are marked supported (1 or 2 since stage 2, PR 8a-ii); 3 members is not, as its special resolution test is not confirmed. With none recorded, or a value not known, every count is refused. Since stage 2, PR 8a-ii (29 Oct 2026) it also decides whether the debtor rule applies (s 3.20(3): 3 or more members), so a stale band changes both the test chosen and whether a unit owing money votes; with none recorded the debtor rule applies. A 3-member building's ordinary resolution is counted from this PR too, as 3 and 4 or more members share the ordinary resolution test (s 3.15(1)); only its special resolution stays refused. Confirm who records it and when it is checked.",
   "Votes present (sch 3 s 3.16(1), \"the total votes that can be cast by people present, including proxy votes\"): since stage 2, PR 8a-ii (29 Oct 2026) the chair gives, for each special resolution, the units present or represented (in person, by proxy or by an absentee vote, s 3.31(4), including those that do not vote). The count is refused unless that number equals the units with a vote or an abstention entered, so a unit present that did not vote must be entered as abstaining and is never left out of the votes present. The votes present are then the units entered, less a unit barred for money owed, which is present but cannot cast a vote. The chair's count and the check are StrataVerze's, until attendance is recorded. With 1 or 2 members the number is asked too, though their test does not use it. Confirm.",
   "Refused at a meeting until confirmed: the 3-member special resolution test (s 3.16(2): against less than 1/3, of what is NOT_CONFIRMED); an unopposed resolution (s 3.17: its member scope is NOT_CONFIRMED; confirming it would let it be counted). With 1 or 2 members a resolution is counted since stage 2, PR 8a-ii (29 Oct 2026, Matthew Wrigley's decision, DECISIONS): no vote against and at least 1 vote for (ss 3.15(2), 3.16(3), 3.18(2)), the quorum of s 3.12 (everyone entitled to vote present) being the chair's answer, no debtor bar (s 3.20(3) applies from 3 members) and no casting vote (s 3.30). The units present are asked on a special resolution with 1 or 2 members too, though their test does not use them. Equal votes on an ordinary or special resolution are refused, because whether the chair has a casting vote with more than 2 members is not in the notes (with 2 members there is none, s 3.30) and StrataVerze does not record one. A 3-member ordinary resolution is counted since stage 2, PR 8a-ii (29 Oct 2026), by the same test as 4 or more members (s 3.15(1)).",
@@ -2084,6 +2111,7 @@ export const FOR_REVIEW = [
   "FOR LEGAL REVIEW: the debtor rule (sch 3 s 3.20(3): with 3 or more members a unit cannot vote on an ordinary or special resolution while an amount is unpaid) is applied since stage 2, PR 8a-ii (29 Oct 2026), in the same change as the chair's quorum answer: a unit owing an amount is not counted at the meeting and cannot vote online on such a motion, and with 1 or 2 members it is not barred. An unpaid amount is read as a contribution notice issued, past its due date and not paid in full on the meeting's date, as for Queensland (a StrataVerze reading: s 3.20(3) says \"all amounts payable\", which may be wider). With no number of members recorded the rule applies. Confirm.",
   "Quorum (sch 3 ss 3.9 to 3.11) is counted for each motion, and a decision with a reduced quorum takes effect 28 days later unless disallowed. Since stage 2, PR 8a-ii (29 Oct 2026) whether there was a standard quorum (people entitled to vote for at least half of the units) is the chair's answer for each motion, kept with the outcome in the meeting record with who recorded it (Matthew Wrigley's decision of 29 Oct 2026, DECISIONS). It is never filled in for the chair, and a motion not answered is refused. StrataVerze does not record attendance yet, so it does not work the quorum out, and nothing checks the answer against the votes: absentee votes are entered like any other vote but do not count toward the quorum (s 3.31(4)), and a unit barred for money owed does not either. With 1 or 2 members everyone entitled to vote must be present (s 3.12): the chair's answer covers that too. Since stage 2, PR 8b-i (29 Oct 2026) \"No\" is followed by the chair's answer whether a reduced quorum was present: a reduced quorum decision is recorded as pending and decided later (the reduced quorum point below). When attendance is recorded (meeting management, Stage C) the quorum will be worked out from it instead. A resolution recorded as carried from the count can also be relied on wherever a carried general meeting motion is asked for: budget adoption, capital works plan approval and statutory pack adoption, as for any carried motion. Confirm.",
   "Reduced quorum decisions (sch 3 ss 3.9 to 3.11; stage 2, PR 8b-i, 29 Oct 2026), by Matthew Wrigley's StrataVerze decisions of 29 Oct 2026 (DECISIONS), each kept here for legal confirmation. (D6) After the chair answers No to the standard quorum, the chair answers whether a reduced quorum (2 or more people present and entitled to vote) was present; with Yes a count that passes is recorded as pending and one that fails is recorded as lost at once (whether a failed count at a reduced quorum is simply lost is NOT_CONFIRMED); with No the count is refused (the meeting is adjourned, s 3.9(4)). The answer is never worked out or assumed. (D1) A petition or notice may arrive up to and including the 28th day after the decision was made, and it takes effect the next day: the Legislation Act 2001 s 151 was not read, so this day counting is NOT_CONFIRMED. (D2) It is made on the later of the meeting's day and the day the chair records it, in the building's time zone. (D3) It takes effect only once its 14-day notice (s 3.10) is recorded as given; a late notice is flagged, not moved, and a notice given after the 28 days makes it take effect on that day, not before. (D5) A petition disallows it when signed for more than half of the units entitled to vote on the day it is received, leaving out units barred for an unpaid amount (where the debtor rule applies): whether the Act's \"majority of people entitled to vote\" counts units or people, and whether a barred unit is entitled to vote on a petition, are NOT_CONFIRMED; counting the barred units out is the direction that disallows more readily. A confirmation needs a later meeting's motion recorded as carried with a standard quorum answered Yes, held after the decision was made and within the 28 days, with the notice recorded; it takes effect on that meeting's day. Which motion confirms which decision is the adviser's choice. (D10) A pending item cannot be recorded again, deferred or deleted. (Review M1, Matthew Wrigley's decision of 29 Oct 2026) The daily run records it as having taken effect at the end of its period only after 7 days of grace (settleAfterGraceDays) after the last of the 28 days: during the grace a petition received within the 28 days can still be recorded, and the day it takes effect does not move. A confirmation or a petition decides it at once. Whether 7 days is long enough for a petition to reach the corporation is NOT_CONFIRMED. A petition is counted only where the units entered match the building's number of units, as in Victoria. The minutes do not state the later effect yet (stage 2, PR 8b-iv). The pending Bill (no petition, effect the day after) is NOT LAW and never applied. Confirm each.",
+  "Notice by motion (sch 3 ss 3.6(2), 3.7(1); stage 2, PR 8b-iii, 29 Oct 2026), by Matthew Wrigley's StrataVerze decision D13 of 29 Oct 2026 (DECISIONS), kept here for legal confirmation. A general meeting with an unopposed or unanimous resolution on its agenda needs 21 days' notice, not 14 (categoryNoticeDays). The period is checked when the notice is issued, with the categories then on the agenda, in whole days in the meeting's time zone from the day it is issued: \"reasonably expected to be received\" is not tested, so a notice posted or emailed on the day is taken to be received that day (NOT_CONFIRMED). A unanimous resolution can be added to a general meeting agenda only before the notice is issued, and is recorded as resolved only where the latest notice issued is recorded as compliant with a period of 21 days or more: otherwise it is refused and can be deferred. A notice issued again (a revised notice) is checked again and replaces the earlier one for this. An unopposed resolution stays refused for its member scope (s 3.17) and off the agenda. The motions list does not offer a unanimous resolution, because a motion there is not part of the notice and is never counted. Whether the notice states the full text and kind of the motion (s 3.7(1)) is not checked: the notice gives each item's text and category as entered. Confirm each.",
   "Pre-meeting electronic voting is not offered for this draft (preMeetingEvoting is null). Before it is, closing a ballot must apply what the count at the meeting applies: the debtor condition (debtorRuleAppliesWhen), judged lot by lot as an owner's own vote is (debtorVoteCheck), the quorum answer, and any refusal of the whole count (Victoria's tier 5, Western Australia's 2-lot quorum). closeBallotAction applies none of these yet (stage 2, PR 8a-ii review). Confirm before any ACT ballot is offered.",
 ] as const;
 
@@ -2091,7 +2119,7 @@ export const FOR_REVIEW = [
  * StrataVerze's decisions. Matthew Wrigley has not reviewed this draft as a
  * whole; the decisions so far are the payment order and the notice timing
  * (28 Oct 2026), and the quorum answer, 1 or 2 members, reduced quorum
- * decisions and their grace before settling (29 Oct 2026). Points for the review are in FOR_REVIEW and marked "FOR
+ * decisions, their grace before settling and notice by motion (29 Oct 2026). Points for the review are in FOR_REVIEW and marked "FOR
  * REVIEW" and "FOR LEGAL REVIEW" above.
  */
 export const DECISIONS: readonly { decision: string; decidedBy: string; decidedOn: string }[] = [
@@ -2127,6 +2155,12 @@ export const DECISIONS: readonly { decision: string; decidedBy: string; decidedO
   {
     decision:
       "Reduced quorum decisions settle after a grace (MEETING_RULES.pendingResolutions.settleAfterGraceDays, stage 2, PR 8b-i review M1): the daily run records a reduced quorum decision as having taken effect at the end of its period (PERIOD_ENDED) only once 7 days have passed after the last of the 28 days. During those 7 days a petition received within the 28 days can still be recorded (its day is still checked against the 28 days). The day it takes effect stays the day after the 28 days end. A confirmation or a petition is not delayed. Matthew Wrigley's StrataVerze decision of 29 Oct 2026, kept for legal confirmation (FOR_REVIEW).",
+    decidedBy: "Matthew Wrigley",
+    decidedOn: "2026-10-29",
+  },
+  {
+    decision:
+      "Notice by motion (MEETING_RULES.categoryNoticeDays, stage 2, PR 8b-iii): (D13) a unanimous resolution goes on a general meeting agenda, and a meeting with an unopposed or unanimous resolution on its agenda needs 21 days' notice (sch 3 s 3.6(2)), checked with the agenda's categories when the notice is issued. A unanimous resolution cannot be added once the notice is issued, and is refused as resolved at the meeting unless the latest notice issued is recorded as compliant with a period of 21 days or more. An unopposed resolution stays refused (its member scope is NOT_CONFIRMED). Matthew Wrigley's StrataVerze decision of 29 Oct 2026, kept for legal confirmation (FOR_REVIEW).",
     decidedBy: "Matthew Wrigley",
     decidedOn: "2026-10-29",
   },

@@ -193,14 +193,14 @@ describe("Australian Capital Territory pack (pending)", () => {
   const pack = PENDING_RULE_PACKS.ACT;
   const act = pack.rules;
 
-  it("is a draft for review, not signed off, with only the payment order, the notice timing, the quorum answer, 1 or 2 members and reduced quorum decisions decided", () => {
+  it("is a draft for review, not signed off, with only the payment order, the notice timing, the quorum answer, 1 or 2 members, reduced quorum decisions and notice by motion decided", () => {
     expect(pack.code).toBe("AU-ACT");
     expect(pack.state).toBe("ACT");
-    expect(pack.version).toBe("2026.10.10");
+    expect(pack.version).toBe("2026.10.11");
     expect(pack.status).toBe("DRAFT");
     expect(pack.reviewedOn).toBeNull();
     expect(pack.reviewer).toBe("Matthew Wrigley");
-    expect(act.DECISIONS).toHaveLength(6);
+    expect(act.DECISIONS).toHaveLength(7);
     for (const d of act.DECISIONS.slice(0, 2)) expect(d).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-28" });
     expect(act.DECISIONS[0].decision).toContain("PAYMENT_ALLOCATION_ORDER");
     expect(act.DECISIONS[1].decision).toContain("NOTICE_RULES");
@@ -218,6 +218,13 @@ describe("Australian Capital Territory pack (pending)", () => {
     expect(act.DECISIONS[5].decision).toContain("settleAfterGraceDays");
     expect(act.MEETING_RULES.pendingResolutions?.REDUCED_QUORUM?.settleAfterGraceDays).toBe(7);
     expect(act.FOR_REVIEW.some((p) => p.startsWith("Reduced quorum decisions") && p.includes("(Review M1") && p.includes("settleAfterGraceDays"))).toBe(true);
+    // Stage 2, PR 8b-iii: notice by motion (29 Oct 2026, decision D13), kept in FOR_REVIEW for legal confirmation.
+    expect(act.DECISIONS[6]).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-29" });
+    expect(act.DECISIONS[6].decision).toContain("(D13)");
+    expect(act.DECISIONS[6].decision).toContain("categoryNoticeDays");
+    expect(act.FOR_REVIEW.some((p) => p.startsWith("Notice by motion") && p.includes("D13") && p.includes("reasonably expected to be received"))).toBe(true);
+    // The point it replaces, that unanimous resolutions are not offered for want of the 21 days, is gone.
+    expect(act.FOR_REVIEW.some((p) => p.includes("unopposed and unanimous resolutions are not offered on an agenda"))).toBe(false);
   });
 
   it("holds exactly one entitlement schedule on each lot: unit entitlement", () => {
@@ -317,7 +324,7 @@ describe("Victorian pack (pending)", () => {
   it("is a draft, not signed off, and never given to a building", () => {
     expect(pack.code).toBe("AU-VIC");
     expect(pack.state).toBe("VIC");
-    expect(pack.version).toBe("2026.10.10");
+    expect(pack.version).toBe("2026.10.11");
     expect(pack.status).toBe("DRAFT");
     expect(pack.reviewedOn).toBeNull();
     expect(rulePackFor("VIC")).toBeNull();
@@ -332,21 +339,27 @@ describe("Victorian pack (pending)", () => {
     expect(packs.map(([code]) => code)).toContain("AU-VIC");
   });
 
-  it("has proposed decisions, none decided but the payment order and the notice timing (Matthew Wrigley, 28 Oct 2026), the quorum answer and interim resolutions (29 Oct 2026)", () => {
+  it("has proposed decisions, none decided but the payment order and the notice timing (Matthew Wrigley, 28 Oct 2026), the quorum answer, interim resolutions and the committee notice not checked (29 Oct 2026)", () => {
     expect(vic.DECISIONS.length).toBeGreaterThan(1);
     for (const d of vic.DECISIONS) {
       if (d.decision.includes("PAYMENT_ALLOCATION_ORDER") || d.decision.includes("NOTICE_RULES")) {
         expect(d).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-28" });
         continue;
       }
-      if (d.decision.includes("quorumAttestation") || d.decision.includes("pendingResolutions")) {
+      if (d.decision.includes("quorumAttestation") || d.decision.includes("pendingResolutions") || d.decision.includes("noticeNotCheckedFor")) {
         expect(d).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-29", proposedOn: "2026-10-29" });
         continue;
       }
       expect(d.decidedBy).toBeNull();
       expect(d.decidedOn).toBeNull();
     }
-    expect(vic.DECISIONS.filter((d) => d.decidedBy != null)).toHaveLength(5);
+    expect(vic.DECISIONS.filter((d) => d.decidedBy != null)).toHaveLength(6);
+    // Stage 2, PR 8b-iii: the committee notice not checked (D12) and business days (D14), kept in FOR_REVIEW.
+    const notChecked = vic.DECISIONS.find((d) => d.decision.includes("noticeNotCheckedFor"))!;
+    for (const id of ["D12", "D14"]) expect(notChecked.decision).toContain(`(${id})`);
+    const noticePoint = vic.FOR_REVIEW.find((p) => p.key === "MEETING_RULES_NOTICE_AND_MINUTES")?.point;
+    for (const id of ["D12", "D14"]) expect(noticePoint).toContain(`(${id})`);
+    expect(vic.FOR_REVIEW.find((p) => p.key === "MEETING_RULES_ARREARS")?.point).toContain("decision D14");
     // The grace before the end of a period is recorded (review M1, 29 Oct 2026), in the rules and kept in FOR_REVIEW.
     expect(vic.DECISIONS.some((d) => d.decision.includes("settleAfterGraceDays") && d.decidedOn === "2026-10-29")).toBe(true);
     expect(vic.MEETING_RULES.pendingResolutions?.INTERIM_SPECIAL?.settleAfterGraceDays).toBe(7);
@@ -566,10 +579,10 @@ describe("Western Australia pack (pending)", () => {
   const wa = pack.rules;
 
   it("is a draft, not yet signed off, with only the payment order, the notice timing, the 2-lot quorum and the voting period decided", () => {
-    expect(pack.version).toBe("2026.10.8");
+    expect(pack.version).toBe("2026.10.9");
     expect(pack.status).toBe("DRAFT");
     expect(pack.reviewedOn).toBeNull();
-    expect(wa.DECISIONS).toHaveLength(4);
+    expect(wa.DECISIONS).toHaveLength(5);
     for (const d of wa.DECISIONS.slice(0, 2)) expect(d).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-28" });
     expect(wa.DECISIONS[1].decision).toContain("NOTICE_RULES");
     // Stage 2, PR 8a-ii: the 2-lot quorum (29 Oct 2026).
@@ -585,6 +598,10 @@ describe("Western Australia pack (pending)", () => {
     expect(point).toContain("7 days of grace");
     // The point it replaces, that the meeting cannot record these resolutions, is gone.
     expect(wa.FOR_REVIEW.some((p) => p.includes("Until the voting period is tracked"))).toBe(false);
+    // Stage 2, PR 8b-iii: council notice not checked (29 Oct 2026, decision D12), kept in FOR_REVIEW.
+    expect(wa.DECISIONS[4]).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-29" });
+    expect(wa.DECISIONS[4].decision).toContain("(D12)");
+    expect(wa.FOR_REVIEW.some((p) => p.startsWith("Council meeting notice (stage 2, PR 8b-iii") && p.includes("D12"))).toBe(true);
     expect(wa.NOT_CONFIRMED.length).toBeGreaterThan(0);
     expect(wa.FOR_REVIEW.length).toBeGreaterThan(0);
   });
