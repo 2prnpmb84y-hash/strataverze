@@ -390,14 +390,21 @@ export interface TimingNotice {
 export interface ClaimNotice extends TimingNotice {
   /** The day it fell due (the last day to pay: it is overdue from the next day), or null where none is recorded. */
   dueOn: string | null;
-  /** What it owes now in whole cents (its balance plus the interest charged on it), or null where that cannot be read. */
+  /**
+   * What it owes now in whole cents: its balance, which already includes its late charge (C1, "Balance only",
+   * 30 Oct 2026; never balance plus interest charged). overdueNoticesForClaim reads it strictly and throws where it
+   * cannot be read (UnreadableNoticeError), so it never gives null; null is still refused (claimAmount).
+   */
   owingCents: number | null;
 }
 
 /**
  * The amount owing on the claim notices (PR 9c, review of 30 Oct 2026), two
- * decimals: each notice's balance plus its interest. Null where any notice's
- * amount cannot be read, so it is never taken as smaller than it is.
+ * decimals: the sum of their balances (owingCents), each already including
+ * its late charge (C1, "Balance only", 30 Oct 2026), so the same total as
+ * currentAmountOwing and the case amount (caseAmountCents) for the same
+ * notices. Null where any notice's amount is not a whole number of cents, so
+ * it is never taken as smaller than it is.
  */
 export function claimAmount(notices: readonly Pick<ClaimNotice, "owingCents">[]): string | null {
   let cents = 0;
@@ -818,9 +825,10 @@ function pauseProblem(rules: Rules, key: string, today: string, label: string): 
  * lot's overdue notices, each issued under the building's pack (a takeover
  * notice or another pack's refuses), or the day the final notice was recorded
  * as given. At the final notice step the notices are the claim notices (every
- * notice of the lot overdue on the building's day, stored as overdue or issued
- * with a balance and past its due day; overdueNoticesForClaim), and at any
- * other step the notices stored as overdue (overdueNoticesForTiming). The day
+ * notice of the lot overdue on the building's day; overdueNoticesForClaim),
+ * and at any other step the same notices (overdueNoticesForTiming), both by
+ * the one definition of overdue (isOverdueOn: issued, part paid or stored as
+ * overdue, past the due day, with a balance). The day
  * checked is the building's day, or for the final notice step the day the
  * notice was given; that step then also needs every claim notice past its due
  * day on that day (finalNoticeStepCoverageProblem).

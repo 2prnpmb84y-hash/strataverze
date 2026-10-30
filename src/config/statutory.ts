@@ -695,8 +695,12 @@ export const PENDING_RULE_PACKS = {
     // rewritten. After its review (same day, same version): the Final Notice step uses the same definition of the
     // notices covered (a day given on or before a lot's overdue fee notice's due day is refused), the s 18(2) amount is
     // that of the same notices, the claim limit is marked as StrataVerze practice (FINAL_NOTICE_OUTSIDE and the
-    // PROCEEDINGS guidance rewritten), and PROCEEDINGS_CLAIM_LIMIT is due before debt recovery is switched on. No
-    // migration. No legal value or status already recorded changed; still a draft.
+    // PROCEEDINGS guidance rewritten), and PROCEEDINGS_CLAIM_LIMIT is due before debt recovery is switched on. With
+    // the overdue notices fix (#143, same day, same version): the s 18(2) amount is the balances of those notices, each
+    // already including the interest charged on it (Matthew Wrigley's decision of 30 Oct 2026, "Balance only"), and a
+    // notice is overdue by the one definition (past its due day with a balance, a notice stored as overdue too);
+    // S18_ANNUAL_FEES_COMPARATOR and PROCEEDINGS_CLAIM_LIMIT say so. No migration. No legal value or status already
+    // recorded changed; still a draft.
     version: "2026.10.13",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",

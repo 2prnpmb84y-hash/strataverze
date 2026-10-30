@@ -9,9 +9,10 @@ import type { Numeric } from "@prisma/orm-postgres/target/codec-types";
 import type { StatutoryRules } from "@/config/statutory";
 import { db } from "@/prisma/db";
 import { schemeToday } from "@/lib/jurisdiction/scheme-time";
+import { toIsoDay } from "@/lib/levies/notice-plan";
 import { noticeCents, OVERDUE_NOTICE_STATUSES, overdueOn } from "@/lib/levies/overdue";
 import { balancesCents } from "./case-amount";
-import { amountCents, type ClaimNotice, type RecordedRecoveryFacts, type RecoveryRecordToWrite, type TimingNotice } from "./recovery-gates";
+import type { ClaimNotice, RecordedRecoveryFacts, RecoveryRecordToWrite, TimingNotice } from "./recovery-gates";
 
 type Orm = typeof db.orm;
 
@@ -91,20 +92,35 @@ export async function currentAmountOwing(schemeId: string, lotId: string, orm: O
 }
 
 /**
- * The lot's overdue notices as a step counted from their issue days reads
- * them (PR 9c): the number, the day issued in the building's zone `tz`, the
- * pack it was issued under and whether it was brought across at takeover.
- * Throws when they cannot be read, so a failed read is never "none overdue".
+ * The lot's notices overdue on the building's day `today` (YYYY-MM-DD), by the
+ * one definition debt recovery reads (isOverdueOn, overdue notices fix of
+ * 30 Oct 2026: ISSUED, PARTIALLY_PAID or OVERDUE, past the due day, with a
+ * balance; a notice stored as OVERDUE is asked the same). The same notices as
+ * currentAmountOwing and opening a case read. Throws when they cannot be read,
+ * and UnreadableNoticeError when a notice's due day or balance cannot be read,
+ * so a failed read is never "none overdue".
  */
-export async function overdueNoticesForTiming(schemeId: string, lotId: string, tz: string, orm: Orm = db.orm): Promise<TimingNotice[]> {
-  const { storedDayIn } = await import("@/lib/jurisdiction/time-zone");
+async function overdueLevyNotices(schemeId: string, lotId: string, today: string, orm: Orm) {
   const notices = await orm.public.LevyNotice
     .where((n) => n.schemeId.eq(schemeId))
     .where((n) => n.lotId.eq(lotId))
-    .where((n) => n.status.eq("OVERDUE"))
+    .where((n) => n.status.in([...OVERDUE_NOTICE_STATUSES]))
     .limit(5000)
     .all();
-  return notices.map((n) => ({
+  return overdueOn(notices, today);
+}
+
+/**
+ * The lot's notices overdue on the building's day `today`, as a step counted
+ * from their issue days reads them (PR 9c): the number, the day issued in the
+ * building's zone `tz`, the pack it was issued under and whether it was
+ * brought across at takeover. The same notices as overdueNoticesForClaim
+ * (overdueLevyNotices, one definition of overdue). Throws as that does, so a
+ * failed read is never "none overdue".
+ */
+export async function overdueNoticesForTiming(schemeId: string, lotId: string, tz: string, today: string, orm: Orm = db.orm): Promise<TimingNotice[]> {
+  const { storedDayIn } = await import("@/lib/jurisdiction/time-zone");
+  return (await overdueLevyNotices(schemeId, lotId, today, orm)).map((n) => ({
     number: String(n.noticeNumber ?? n.id),
     issuedOn: n.issuedAt ? storedDayIn(tz, n.issuedAt) || null : null,
     rulePack: n.rulePack == null ? null : String(n.rulePack),
@@ -116,40 +132,32 @@ export async function overdueNoticesForTiming(schemeId: string, lotId: string, t
  * The lot's notices overdue on the building's day `today`, as the step that
  * starts proceedings, the final notice step and the amount owing read them
  * for a pack with a final notice or an amount threshold (PR 9c, Matthew
- * Wrigley's decision of 30 Oct 2026): every notice stored as OVERDUE, and
- * every issued or part-paid notice with a balance whose due day is before
- * `today` (shown as overdue, effectiveStatus; nothing in the app stores
- * OVERDUE), each with its number, the day issued in the building's zone `tz`,
- * the day it fell due, the pack it was issued under, whether it was brought
- * across at takeover and what it owes (balance plus interest charged, null
- * where either cannot be read). Throws when they cannot be read, so a failed
- * read is never "none overdue".
+ * Wrigley's decision of 30 Oct 2026): the one definition of overdue
+ * (overdueLevyNotices, isOverdueOn), so a notice stored as OVERDUE counts only
+ * when it is past its due day with a balance, as any other. Each with its
+ * number, the day issued in the building's zone `tz`, the day it fell due,
+ * the pack it was issued under, whether it was brought across at takeover and
+ * what it owes: its balance in cents, which already includes its late charge
+ * (C1, "Balance only", 30 Oct 2026; the case amount's total for the same
+ * notices). Fail closed as currentAmountOwing: throws when the notices cannot
+ * be read, and UnreadableNoticeError when a notice's due day, balance or late
+ * charge cannot be read, so a notice is never counted, or left out, without
+ * anyone knowing.
  */
 export async function overdueNoticesForClaim(schemeId: string, lotId: string, tz: string, today: string, orm: Orm = db.orm): Promise<ClaimNotice[]> {
   const { storedDayIn } = await import("@/lib/jurisdiction/time-zone");
-  const notices = await orm.public.LevyNotice
-    .where((n) => n.schemeId.eq(schemeId))
-    .where((n) => n.lotId.eq(lotId))
-    .where((n) => n.status.in(["ISSUED", "PARTIALLY_PAID", "OVERDUE"]))
-    .limit(5000)
-    .all();
-  return notices
-    .filter((n) => String(n.status) === "OVERDUE" || (Number(n.balanceOutstanding) > 0 && n.dueDate != null && isoDay(n.dueDate) < today))
-    .map((n) => ({
+  return (await overdueLevyNotices(schemeId, lotId, today, orm)).map((n) => {
+    // The late charge is read as opening a case and currentAmountOwing read it: one that cannot be read refuses.
+    noticeCents(n, "interestCharged");
+    return {
       number: String(n.noticeNumber ?? n.id),
       issuedOn: n.issuedAt ? storedDayIn(tz, n.issuedAt) || null : null,
-      dueOn: n.dueDate == null ? null : isoDay(n.dueDate) || null,
+      dueOn: toIsoDay(n.dueDate) || null,
       rulePack: n.rulePack == null ? null : String(n.rulePack),
       takeover: n.migrationBatchId != null,
-      owingCents: owingCents(n.balanceOutstanding, n.interestCharged),
-    }));
-}
-
-/** A notice's balance plus its interest charged, in whole cents, or null where either is not an amount. */
-function owingCents(balance: unknown, interest: unknown): number | null {
-  const b = amountCents(balance == null ? null : String(balance));
-  const i = interest == null ? 0 : amountCents(String(interest));
-  return b == null || i == null ? null : b + i;
+      owingCents: balancesCents([n]),
+    };
+  });
 }
 
 /** Write the step's records, in the step's transaction (`orm` is the transaction's). */

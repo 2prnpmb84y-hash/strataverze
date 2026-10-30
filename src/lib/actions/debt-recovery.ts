@@ -692,22 +692,32 @@ async function checkRecoveryStep(
   const recovery = rules.DEBT_RECOVERY;
   const threshold = !!recovery?.authorityToSue?.amountThreshold;
   const startsProceedings = input.stepType === proceedingsStepType(rules);
-  // The lot's notices overdue today (VIC, decision of 30 Oct 2026; stored as overdue, or issued with a balance and past
-  // their due day): at the final notice step and where proceedings are started under a pack with a final notice, one
-  // definition of the notices the final notice covers. Nothing is read for any other step or pack.
+  // The lot's notices overdue today (VIC, decision of 30 Oct 2026), by the one definition debt recovery reads (isOverdueOn:
+  // issued, part paid or stored as overdue, past the due day, with a balance): at the final notice step and where
+  // proceedings are started under a pack with a final notice, one definition of the notices the final notice covers.
+  // Nothing is read for any other step or pack.
   const finalNoticeStep = !!recovery?.finalNotice && input.stepType === recovery.finalNotice.stepType;
   const claimStep = !!recovery?.finalNotice && (startsProceedings || finalNoticeStep);
   // The amount owing now: needed where the decision is recorded, and (PR 9c) where proceedings are started under an amount
   // threshold, to check the decision again. For a pack with a final notice or an amount threshold (VIC, review of
-  // 30 Oct 2026) it is the claim notices' amount (balance plus interest charged); for any other pack it is worked out
-  // as opening a case does (review L3), unchanged.
+  // 30 Oct 2026) it is the claim notices' amount: their balances, which already include their late charge (C1,
+  // "Balance only", 30 Oct 2026), so the same total as currentAmountOwing and the case amount for the same notices; for
+  // any other pack it is currentAmountOwing (review L3), unchanged.
   const needAmount = (needs?.authority && authority?.problem === null) || (threshold && startsProceedings);
   const amountFromClaim = !!recovery?.finalNotice || threshold;
+  // A notice whose due day, balance or late charge cannot be read (UnreadableNoticeError) is never counted, or left
+  // out, silently: the step is refused, saying so, and nothing is written.
+  const unreadableNotice = (what: string) =>
+    `A ${rules.TERMINOLOGY.levy} notice for this lot could not be read, so ${what} cannot be worked out and this step cannot be completed. Nothing was saved.`;
   let claimNotices: ClaimNotice[] | undefined;
   if (claimStep || (needAmount && amountFromClaim)) {
     try {
       claimNotices = await overdueNoticesForClaim(input.schemeId, input.lotId, tz, today);
     } catch (err) {
+      if (err instanceof UnreadableNoticeError) {
+        logError("A levy notice could not be read when completing a debt recovery step:", err);
+        return { error: unreadableNotice(claimStep ? "which of its notices are overdue" : "the amount owing") };
+      }
       logError("Failed to read the lot's overdue notices:", err);
       return { error: claimStep ? "Could not check the lot's notices. Nothing was saved." : "Could not work out the amount owing. Nothing was saved." };
     }
@@ -725,15 +735,20 @@ async function checkRecoveryStep(
       return { error: "Could not work out the amount owing. Nothing was saved." };
     }
   }
-  // A step counted from the lot's overdue notices' issue days (PR 9c): the notices, read only for such a step. At the
-  // final notice step the claim notices above are counted instead (decision of 30 Oct 2026).
+  // A step counted from the lot's overdue notices' issue days (PR 9c): the notices overdue today, by the same definition,
+  // read only for such a step (no pack has one yet). At the final notice step the claim notices above are counted
+  // instead (decision of 30 Oct 2026).
   const countsFromNotices =
     !finalNoticeStep && (recovery?.stepTiming ?? []).some((t) => t.stepType === input.stepType && t.after.kind === "EACH_OVERDUE_NOTICE_ISSUED");
   let notices: TimingNotice[] | undefined;
   if (countsFromNotices) {
     try {
-      notices = await overdueNoticesForTiming(input.schemeId, input.lotId, tz);
+      notices = await overdueNoticesForTiming(input.schemeId, input.lotId, tz, today);
     } catch (err) {
+      if (err instanceof UnreadableNoticeError) {
+        logError("A levy notice could not be read when completing a debt recovery step:", err);
+        return { error: unreadableNotice("which of its notices are overdue") };
+      }
       logError("Failed to read the lot's overdue notices:", err);
       return { error: "Could not check the lot's notices. Nothing was saved." };
     }

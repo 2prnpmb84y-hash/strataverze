@@ -457,7 +457,7 @@ describe("one definition of the notices a final notice covers, at the Final Noti
 });
 
 describe("the claim amount (review of 30 Oct 2026)", () => {
-  it("adds each claim notice's balance and interest, to the cent, and is not known where any amount is not", () => {
+  it("adds each claim notice's owing amount (its balance, interest already in it: C1, 30 Oct 2026), to the cent, and is not known where any amount is not", () => {
     expect(claimAmount([])).toBe("0.00");
     expect(claimAmount([{ owingCents: 120_000 }, { owingCents: 30_505 }])).toBe("1505.05");
     expect(claimAmount([{ owingCents: 7 }])).toBe("0.07");

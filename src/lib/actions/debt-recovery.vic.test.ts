@@ -10,8 +10,12 @@
  * amount owing since the decision, an ordinary one is checked again (refused
  * while the comparator has no value), and a notice the final notice did not
  * cover refuses. The amount owing is that of every notice overdue today
- * (review of 30 Oct 2026). Every record written passes the checks of migration
- * 20261125, and nothing is written on any refusal.
+ * (review of 30 Oct 2026): since the overdue notices fix (#143) by its one
+ * definition (past the due day with a balance, a notice stored as overdue
+ * too), and the sum of their balances, each already including its interest
+ * (C1, "Balance only"). Every fixture's balance is its amount due plus its
+ * interest less what was paid. Every record written passes the checks of
+ * migration 20261125, and nothing is written on any refusal.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -229,19 +233,39 @@ describe("the Authority to Start Proceedings step (D2)", () => {
     expectRecordsValid();
   });
 
-  it("records the amount owing on every notice overdue today, an issued one past its due day too, with its interest (review of 30 Oct 2026)", async () => {
-    const issued = { id: "n-2", schemeId: SCHEME, lotId: "lot-1", noticeNumber: "F-2", status: "ISSUED", dueDate: "2026-10-01", issuedAt: "2026-09-01T00:00:00.000Z", balanceOutstanding: "300.00", interestCharged: "5.05", rulePack: LABEL, migrationBatchId: null };
-    const notYetDue = { ...issued, id: "n-3", noticeNumber: "F-3", dueDate: "2026-11-30", interestCharged: "0" };
-    seed({ currentOrder: order("COMMITTEE_REVIEW"), notices: [{ id: "n-1", schemeId: SCHEME, lotId: "lot-1", noticeNumber: "F-1", status: "OVERDUE", dueDate: "2026-07-01", issuedAt: "2026-06-01T00:00:00.000Z", balanceOutstanding: "1200.00", interestCharged: "0", rulePack: LABEL, migrationBatchId: null }, issued, notYetDue] });
+  it("records the amount owing on every notice overdue today, an issued one past its due day too, with its interest in its balance (review of 30 Oct 2026)", async () => {
+    // F-2's 5.05 of interest is in its balance (300.00 + 5.05), counted once (C1, "Balance only").
+    const issued = { id: "n-2", schemeId: SCHEME, lotId: "lot-1", noticeNumber: "F-2", status: "ISSUED", dueDate: "2026-10-01", issuedAt: "2026-09-01T00:00:00.000Z", amountDue: "300.00", amountPaid: "0.00", balanceOutstanding: "305.05", interestCharged: "5.05", rulePack: LABEL, migrationBatchId: null };
+    const notYetDue = { ...issued, id: "n-3", noticeNumber: "F-3", dueDate: "2026-11-30", balanceOutstanding: "300.00", interestCharged: "0" };
+    seed({ currentOrder: order("COMMITTEE_REVIEW"), notices: [{ id: "n-1", schemeId: SCHEME, lotId: "lot-1", noticeNumber: "F-1", status: "OVERDUE", dueDate: "2026-07-01", issuedAt: "2026-06-01T00:00:00.000Z", amountDue: "1200.00", amountPaid: "0.00", balanceOutstanding: "1200.00", interestCharged: "0", rulePack: LABEL, migrationBatchId: null }, issued, notYetDue] });
     expect(await complete("COMMITTEE_REVIEW", { authorityMeetingId: "agm", authorityItemId: "g-special" })).toEqual({ success: true });
     expect(records()).toEqual([expect.objectContaining({ kind: "AUTHORITY_TO_SUE", amount: "1505.05" })]);
     expectRecordsValid();
   });
 
   it("refuses where a notice's amount cannot be read, never recording a smaller amount, with nothing written", async () => {
-    seed({ currentOrder: order("COMMITTEE_REVIEW"), notices: [{ id: "n-1", schemeId: SCHEME, lotId: "lot-1", noticeNumber: "F-1", status: "OVERDUE", dueDate: "2026-07-01", issuedAt: "2026-06-01T00:00:00.000Z", balanceOutstanding: "not money", interestCharged: "0", rulePack: LABEL, migrationBatchId: null }] });
-    expect(await complete("COMMITTEE_REVIEW", { authorityMeetingId: "agm", authorityItemId: "g-special" })).toEqual({ error: "Could not work out the amount owing. Nothing was saved." });
+    seed({ currentOrder: order("COMMITTEE_REVIEW"), notices: [{ id: "n-1", schemeId: SCHEME, lotId: "lot-1", noticeNumber: "F-1", status: "OVERDUE", dueDate: "2026-07-01", issuedAt: "2026-06-01T00:00:00.000Z", amountDue: "1200.00", amountPaid: "0.00", balanceOutstanding: "not money", interestCharged: "0", rulePack: LABEL, migrationBatchId: null }] });
+    expect(await complete("COMMITTEE_REVIEW", { authorityMeetingId: "agm", authorityItemId: "g-special" })).toEqual({
+      error: "A fee notice for this lot could not be read, so the amount owing cannot be worked out and this step cannot be completed. Nothing was saved.",
+    });
     expectNothingWritten("COMMITTEE_REVIEW", 0);
+  });
+
+  it("records the balance only: a 50.00 interest charge in a 550.50 balance gives 550.50, never 600.50 (C1, 30 Oct 2026)", async () => {
+    seed({
+      currentOrder: order("COMMITTEE_REVIEW"),
+      notices: [{ id: "n-1", schemeId: SCHEME, lotId: "lot-1", noticeNumber: "F-1", status: "ISSUED", dueDate: "2026-10-01", issuedAt: "2026-09-01T00:00:00.000Z", amountDue: "500.50", amountPaid: "0.00", interestCharged: "50.00", balanceOutstanding: "550.50", rulePack: LABEL, migrationBatchId: null }],
+    });
+    expect(await complete("COMMITTEE_REVIEW", { authorityMeetingId: "agm", authorityItemId: "g-special" })).toEqual({ success: true });
+    expect(records()).toEqual([expect.objectContaining({ kind: "AUTHORITY_TO_SUE", amount: "550.50" })]);
+    expectRecordsValid();
+  });
+
+  it("leaves out a notice stored as overdue that is not yet due, by the one definition of overdue", async () => {
+    const storedNotYetDue = { id: "n-2", schemeId: SCHEME, lotId: "lot-1", noticeNumber: "F-2", status: "OVERDUE", dueDate: "2026-11-30", issuedAt: "2026-10-26T00:00:00.000Z", amountDue: "300.00", amountPaid: "0.00", balanceOutstanding: "300.00", interestCharged: "0", rulePack: LABEL, migrationBatchId: null };
+    seed({ currentOrder: order("COMMITTEE_REVIEW"), notices: [{ ...storedNotYetDue, id: "n-1", noticeNumber: "F-1", dueDate: "2026-07-01", issuedAt: "2026-06-01T00:00:00.000Z", amountDue: "1200.00", balanceOutstanding: "1200.00" }, storedNotYetDue] });
+    expect(await complete("COMMITTEE_REVIEW", { authorityMeetingId: "agm", authorityItemId: "g-special" })).toEqual({ success: true });
+    expect(records()).toEqual([expect.objectContaining({ kind: "AUTHORITY_TO_SUE", amount: "1200.00" })]);
   });
 
   it("records an interim special resolution once carried and taken effect, as of the day it took effect", async () => {
@@ -299,17 +323,19 @@ describe("the Proceedings step (D4, D5, D13)", () => {
     status: "OVERDUE",
     dueDate,
     issuedAt,
+    amountDue: "300.00",
+    amountPaid: "0.00",
     balanceOutstanding: "300.00",
     interestCharged: "0",
     rulePack: LABEL,
     migrationBatchId: null,
     ...over,
   });
-  const F1 = overdue("f-1", "2026-07-01", "2026-06-01T00:00:00.000Z", { balanceOutstanding: "1200.00" });
+  const F1 = overdue("f-1", "2026-07-01", "2026-06-01T00:00:00.000Z", { amountDue: "1200.00", balanceOutstanding: "1200.00" });
 
   it("a special resolution: a larger amount owing since the decision (interest on the notice the final notice covered) is no longer refused", async () => {
-    // 1,235.00 owing now; 1,200.00 was recorded with the decision.
-    seed({ currentOrder: order("PROCEEDINGS"), records: [finalNoticeRecord("2026-10-01"), AUTHORITY_RECORD], notices: [{ ...F1, interestCharged: "35.00" }] });
+    // 1,235.00 owing now (1,200.00 + 35.00 of interest, in the balance); 1,200.00 was recorded with the decision.
+    seed({ currentOrder: order("PROCEEDINGS"), records: [finalNoticeRecord("2026-10-01"), AUTHORITY_RECORD], notices: [{ ...F1, interestCharged: "35.00", balanceOutstanding: "1235.00" }] });
     expect(await complete("PROCEEDINGS", { forum: "VCAT" })).toEqual({ success: true });
     expect(records().map((r) => [r.kind, r.forum, r.amount])).toEqual([
       ["FINAL_NOTICE_GIVEN", null, null],
@@ -342,13 +368,28 @@ describe("the Proceedings step (D4, D5, D13)", () => {
     const notices = [
       F1,
       overdue("f-3", "2026-10-15", "2026-09-10T00:00:00.000Z", { status: "ISSUED" }),
-      overdue("f-4", "2026-10-16", "2026-09-11T00:00:00.000Z", { status: "PARTIALLY_PAID", balanceOutstanding: "0.00" }),
+      overdue("f-4", "2026-10-16", "2026-09-11T00:00:00.000Z", { status: "PARTIALLY_PAID", amountPaid: "300.00", balanceOutstanding: "0.00" }),
       overdue("f-5", "2026-11-30", "2026-10-26T00:00:00.000Z", { status: "ISSUED" }),
-      overdue("f-6", "2026-10-15", "2026-09-10T00:00:00.000Z", { status: "PAID", balanceOutstanding: "0.00" }),
+      overdue("f-6", "2026-10-15", "2026-09-10T00:00:00.000Z", { status: "PAID", amountPaid: "300.00", balanceOutstanding: "0.00" }),
       overdue("f-7", "2026-10-15", "2026-09-10T00:00:00.000Z", { lotId: "lot-2" }),
     ];
     seed({ currentOrder: order("PROCEEDINGS"), records: [finalNoticeRecord("2026-10-01"), AUTHORITY_RECORD], notices });
     expect(await complete("PROCEEDINGS", { forum: "VCAT" })).toEqual({ error: expect.stringMatching(/^Notice F-3 was not yet overdue on the day the final fee notice was recorded as given \(01\/10\/2026\)/) });
+    expectNothingWritten("PROCEEDINGS", 2);
+  });
+
+  it("counts a notice stored as overdue only once it is past its due day with a balance: one not yet due does not refuse", async () => {
+    // F-8 is stored as OVERDUE but falls due on 30 Nov 2026, so it is not overdue on the building's day (2 Nov).
+    seed({ currentOrder: order("PROCEEDINGS"), records: [finalNoticeRecord("2026-10-01"), AUTHORITY_RECORD], notices: [F1, overdue("f-8", "2026-11-30", "2026-10-26T00:00:00.000Z")] });
+    expect(await complete("PROCEEDINGS", { forum: "VCAT" })).toEqual({ success: true });
+    expectRecordsValid();
+  });
+
+  it("refuses where a notice's due day cannot be read, saying so, with nothing written", async () => {
+    seed({ currentOrder: order("PROCEEDINGS"), records: [finalNoticeRecord("2026-10-01"), AUTHORITY_RECORD], notices: [F1, overdue("f-9", "", "2026-09-10T00:00:00.000Z", { status: "ISSUED", dueDate: null })] });
+    expect(await complete("PROCEEDINGS", { forum: "VCAT" })).toEqual({
+      error: "A fee notice for this lot could not be read, so which of its notices are overdue cannot be worked out and this step cannot be completed. Nothing was saved.",
+    });
     expectNothingWritten("PROCEEDINGS", 2);
   });
 
