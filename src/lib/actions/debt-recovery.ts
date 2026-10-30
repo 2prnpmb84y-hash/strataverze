@@ -41,6 +41,8 @@ import {
   chargeCloseProblem,
   chargeFacts,
   chargeRevocationProblem,
+  claimAmount,
+  proceedingsStepType,
   recoveryGateProblem,
   recoveryGatesApply,
   recoveryRecordsToWrite,
@@ -49,9 +51,19 @@ import {
   statutoryChargeApplies,
   type AuthorityFact,
   type ChargeChoice,
+  type ClaimNotice,
   type RecoveryRecordToWrite,
+  type TimingNotice,
 } from "@/lib/debt-recovery/recovery-gates";
-import { createRecoveryRecords, currentAmountOwing, readRecoveryRecords, recordedFacts } from "@/lib/debt-recovery/recovery-records-repo";
+import {
+  createRecoveryRecords,
+  currentAmountOwing,
+  overdueNoticesForClaim,
+  overdueNoticesForTiming,
+  readRecoveryRecords,
+  recordedFacts,
+  recordedFactsFor,
+} from "@/lib/debt-recovery/recovery-records-repo";
 import { UnreadableNoticeError } from "@/lib/levies/overdue";
 import { caseAmountCents, NoticeFiguresDisagreeError } from "@/lib/debt-recovery/case-amount";
 import { auDate } from "@/lib/onboarding/property-onboarding";
@@ -145,7 +157,11 @@ export async function initiateDebtRecoveryAction(
     const steps = needRule(rules, "DEBT_RECOVERY_STEPS");
     // The draft packs' recovery rules, before anything is written: refused where
     // StrataVerze cannot apply them. Null at once for NSW and Queensland.
-    const gate = recoveryGateProblem(rules, { action: "INITIATE" });
+    // Where the pack says which buildings they apply to (Victoria's tiers 1 to
+    // 4, PR 9c), the building is read and the condition worked out; nothing is
+    // read for any other pack.
+    const appliesWhen = rules.DEBT_RECOVERY?.appliesWhen;
+    const gate = recoveryGateProblem(rules, { action: "INITIATE", ...(appliesWhen ? { applies: await recoveryAppliesTo(rules, schemeId) } : {}) });
     if (gate) return { error: gate };
 
     // What is owed, in cents: the notices' balances, which already include
@@ -374,7 +390,7 @@ export async function completeDebtRecoveryStepAction(
     // Queensland, which have none.
     let records: RecoveryRecordToWrite[] = [];
     if (recoveryGatesApply(rules)) {
-      const checked = await checkRecoveryStep(rules, { schemeId, caseId, lotId: caseRow.lotId, openedAt: caseRow.createdAt, stepType: step.stepType, formData });
+      const checked = await checkRecoveryStep(rules, { schemeId, caseId, lotId: caseRow.lotId, openedAt: caseRow.createdAt, stepType: step.stepType, formData, packCode: pack.code });
       if ("error" in checked) return { error: checked.error };
       records = checked.records;
     }
@@ -604,14 +620,38 @@ async function rulesForCaseLabel(label: string | null | undefined, schemeId: str
 }
 
 /**
+ * Whether the pack's appliesWhen holds for the building (PR 9c): true or
+ * false, or null where it cannot be worked out (no building, a fact missing,
+ * or a read that failed), which the gate refuses.
+ */
+async function recoveryAppliesTo(rules: StatutoryRules, schemeId: string): Promise<boolean | null> {
+  const appliesWhen = rules.DEBT_RECOVERY?.appliesWhen;
+  if (!appliesWhen || typeof appliesWhen.when !== "object" || appliesWhen.when == null) return null;
+  try {
+    const { selectorBuildingFor } = await import("@/lib/queries/building-selectors");
+    const { conditionHolds } = await import("@/lib/jurisdiction/building-selectors");
+    const building = await selectorBuildingFor(schemeId);
+    return building ? conditionHolds(rules, appliesWhen.when, building).holds : null;
+  } catch (err) {
+    logError("Failed to work out whether the recovery rules apply to the building:", err);
+    return null;
+  }
+}
+
+/**
  * What completing a step under a draft pack's recovery rules records, or why
  * it is refused (nothing written): the chosen resolution (authorityResolution)
  * and forum from the form, against the case's records and steps and the
- * building's day.
+ * building's day. Since PR 9c also: the day a final notice given outside
+ * StrataVerze was given, the lot's overdue notices for a step counted from
+ * their issue days, and the amount owing for a pack with an amount threshold.
+ * Since Matthew Wrigley's decision of 30 Oct 2026, where proceedings are
+ * started under a pack with a final notice, the lot's notices overdue on the
+ * building's day too (the claim is limited to those the final notice covered).
  */
 async function checkRecoveryStep(
   rules: StatutoryRules,
-  input: { schemeId: string; caseId: string; lotId: string; openedAt: unknown; stepType: string; formData: FormData },
+  input: { schemeId: string; caseId: string; lotId: string; openedAt: unknown; stepType: string; formData: FormData; packCode: string },
 ): Promise<{ error: string } | { records: RecoveryRecordToWrite[] }> {
   const needs = recoveryStepNeeds(rules, input.stepType);
   if (needs && "problem" in needs) return { error: needs.problem };
@@ -649,9 +689,48 @@ async function checkRecoveryStep(
   const today = todayIn(tz);
   // The day the case was opened, in the building's zone: a decision relied on must be on or after it (review L4).
   const caseOpenedOn = input.openedAt ? storedDayIn(tz, input.openedAt) || null : null;
-  // The amount owing now, worked out as opening a case does: the lot's overdue notices' balances, which already include their late charge (review L3; C1, 30 Oct 2026).
+  const recovery = rules.DEBT_RECOVERY;
+  const threshold = !!recovery?.authorityToSue?.amountThreshold;
+  const startsProceedings = input.stepType === proceedingsStepType(rules);
+  // The lot's notices overdue today (VIC, decision of 30 Oct 2026), by the one definition debt recovery reads (isOverdueOn:
+  // issued, part paid or stored as overdue, past the due day, with a balance): at the final notice step and where
+  // proceedings are started under a pack with a final notice, one definition of the notices the final notice covers.
+  // Nothing is read for any other step or pack.
+  const finalNoticeStep = !!recovery?.finalNotice && input.stepType === recovery.finalNotice.stepType;
+  const claimStep = !!recovery?.finalNotice && (startsProceedings || finalNoticeStep);
+  // The amount owing now: needed where the decision is recorded, and (PR 9c) where proceedings are started under an amount
+  // threshold, to check the decision again. For a pack with a final notice or an amount threshold (VIC, review of
+  // 30 Oct 2026) it is the claim notices' amount: their balances, which already include their late charge (C1,
+  // "Balance only", 30 Oct 2026), so the same total as currentAmountOwing and the case amount for the same notices; for
+  // any other pack it is currentAmountOwing (review L3), unchanged.
+  const needAmount = (needs?.authority && authority?.problem === null) || (threshold && startsProceedings);
+  const amountFromClaim = !!recovery?.finalNotice || threshold;
+  // A notice whose due day, balance or late charge cannot be read (UnreadableNoticeError) is never counted, or left
+  // out, silently: the step is refused, saying so, and nothing is written.
+  const unreadableNotice = (what: string) =>
+    `A ${rules.TERMINOLOGY.levy} notice for this lot could not be read, so ${what} cannot be worked out and this step cannot be completed. Nothing was saved.`;
+  let claimNotices: ClaimNotice[] | undefined;
+  if (claimStep || (needAmount && amountFromClaim)) {
+    try {
+      claimNotices = await overdueNoticesForClaim(input.schemeId, input.lotId, tz, today);
+    } catch (err) {
+      if (err instanceof UnreadableNoticeError) {
+        logError("A levy notice could not be read when completing a debt recovery step:", err);
+        // A due day or balance that cannot be read leaves which notices are overdue unknown (at a claim step); a late
+        // charge that cannot be read, only the amount owing.
+        const overdueUnknown = claimStep && (err.field === "dueDate" || err.field === "balanceOutstanding");
+        return { error: unreadableNotice(overdueUnknown ? "which of its notices are overdue" : "the amount owing") };
+      }
+      logError("Failed to read the lot's overdue notices:", err);
+      return { error: claimStep ? "Could not check the lot's notices. Nothing was saved." : "Could not work out the amount owing. Nothing was saved." };
+    }
+  }
   let amountOwing: string | null = null;
-  if (needs?.authority && authority?.problem === null) {
+  if (needAmount && amountFromClaim) {
+    amountOwing = claimAmount(claimNotices ?? []);
+    // An amount that cannot be read is never taken as smaller, nor recorded as 0.
+    if (amountOwing == null) return { error: "Could not work out the amount owing. Nothing was saved." };
+  } else if (needAmount) {
     try {
       amountOwing = await currentAmountOwing(input.schemeId, input.lotId, db.orm, today);
     } catch (err) {
@@ -659,7 +738,32 @@ async function checkRecoveryStep(
       return { error: "Could not work out the amount owing. Nothing was saved." };
     }
   }
-  const recorded = recordedFacts(rows);
+  // A step counted from the lot's overdue notices' issue days (PR 9c): the notices overdue today, by the same definition,
+  // read only for such a step (no pack has one yet). At the final notice step the claim notices above are counted
+  // instead (decision of 30 Oct 2026).
+  const countsFromNotices =
+    !finalNoticeStep && (recovery?.stepTiming ?? []).some((t) => t.stepType === input.stepType && t.after.kind === "EACH_OVERDUE_NOTICE_ISSUED");
+  let notices: TimingNotice[] | undefined;
+  if (countsFromNotices) {
+    try {
+      notices = await overdueNoticesForTiming(input.schemeId, input.lotId, tz, today);
+    } catch (err) {
+      if (err instanceof UnreadableNoticeError) {
+        logError("A levy notice could not be read when completing a debt recovery step:", err);
+        return { error: unreadableNotice("which of its notices are overdue") };
+      }
+      logError("Failed to read the lot's overdue notices:", err);
+      return { error: "Could not check the lot's notices. Nothing was saved." };
+    }
+  }
+  // Where the pack says which buildings its rules apply to (Victoria's tiers 1 to 4), the steps that decide and start
+  // proceedings check the building again (review L4); nothing is read for any other step or pack.
+  const appliesStep = !!recovery?.appliesWhen && (input.stepType === recovery.authorityToSue?.recordedAtStep || input.stepType === recovery.forum?.recordedAtStep);
+  const applies = appliesStep ? await recoveryAppliesTo(rules, input.schemeId) : undefined;
+  // The day a final notice given outside StrataVerze was given (PR 9c), where the pack lets one be recorded.
+  const finalNoticeGivenOn = needs?.finalNotice ? text("finalNoticeGivenOn") : null;
+  // The facts recorded: for a pack with a final notice or an amount threshold, also the day given and the resolution decided by.
+  const recorded = recordedFactsFor(rules, rows);
   const gate = recoveryGateProblem(rules, {
     action: "COMPLETE_STEP",
     stepType: input.stepType,
@@ -673,9 +777,26 @@ async function checkRecoveryStep(
     caseOpenedOn,
     labels: rules.DEBT_RECOVERY_STEP_LABELS,
     ...(needs?.charge ? { charge } : {}),
+    // PR 9c, each only where the pack has the rule: the final notice's day, the notices and the amounts.
+    ...(needs?.finalNotice ? { finalNoticeGivenOn } : {}),
+    ...(countsFromNotices ? { notices, packCode: input.packCode } : {}),
+    ...(claimStep ? { claimNotices, packCode: input.packCode } : {}),
+    // StrataVerze does not work out the comparator's amount (the current annual fees) yet, so none is passed.
+    ...(threshold ? { amountOwing, comparatorCents: null } : {}),
+    ...(appliesStep ? { applies } : {}),
   });
   if (gate) return { error: gate };
-  return { records: recoveryRecordsToWrite(rules, { stepType: input.stepType, authority, forum, today, amountOwing: amountOwing ?? "0.00", ...(needs?.charge ? { charge } : {}) }) };
+  return {
+    records: recoveryRecordsToWrite(rules, {
+      stepType: input.stepType,
+      authority,
+      forum,
+      today,
+      amountOwing: amountOwing ?? "0.00",
+      ...(needs?.charge ? { charge } : {}),
+      ...(needs?.finalNotice ? { finalNoticeGivenOn } : {}),
+    }),
+  };
 }
 
 // ─── Record Instalment Payment ──────────────────────────────────

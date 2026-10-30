@@ -47,6 +47,13 @@ const PATTERNS = [
   /\bVCAT\b/,
   /\bACAT\b/,
   /Magistrates Court/,
+  // Victorian debt recovery (stage 2, PR 9c): the s 18 comparator, the final fee notice and its provisions come from the pack too.
+  /current annual fees/,
+  /final fee notice/i,
+  /s 32\(/,
+  /s 18\(/,
+  /\bPart 11\b/,
+  /s 7A\(/,
 ];
 
 /** Allowed, with the reason. */

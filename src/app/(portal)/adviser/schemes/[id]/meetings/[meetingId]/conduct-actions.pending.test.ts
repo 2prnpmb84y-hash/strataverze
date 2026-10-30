@@ -50,6 +50,9 @@ vi.mock("@/prisma/db", async () => ({ db: (await import("@/test/fake-orm")).shar
 
 const { sharedFake } = await import("@/test/fake-orm");
 const { recordAgendaOutcomeAction } = await import("./conduct-actions");
+const { PENDING_RULE_PACKS } = await import("@/config/statutory");
+/** The label rows are recorded under: the VIC pack's code and version (PR 9c review L8). */
+const VIC_LABEL = `${PENDING_RULE_PACKS.VIC.code} ${PENDING_RULE_PACKS.VIC.version}`;
 const { deleteAgendaItemAction } = await import("./agenda-actions");
 
 const lots = [
@@ -122,7 +125,7 @@ describe("Victoria s 97: an interim special resolution", () => {
       madeOn: "2026-11-02",
       windowClosesOn: "2026-12-01",
       noticeDueOn: "2026-11-16",
-      rulePack: "AU-VIC 2026.10.12",
+      rulePack: VIC_LABEL,
       recordedBy: "chair",
     });
     const snapshot = rows()[0].rule as { pending: { label: string; windowDays: number }; resolution: { basis: string } };

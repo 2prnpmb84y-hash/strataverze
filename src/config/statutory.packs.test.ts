@@ -343,7 +343,7 @@ describe("Victorian pack (pending)", () => {
   it("is a draft, not signed off, and never given to a building", () => {
     expect(pack.code).toBe("AU-VIC");
     expect(pack.state).toBe("VIC");
-    expect(pack.version).toBe("2026.10.12");
+    expect(pack.version).toBe("2026.10.13");
     expect(pack.status).toBe("DRAFT");
     expect(pack.reviewedOn).toBeNull();
     expect(rulePackFor("VIC")).toBeNull();
@@ -358,21 +358,80 @@ describe("Victorian pack (pending)", () => {
     expect(packs.map(([code]) => code)).toContain("AU-VIC");
   });
 
-  it("has proposed decisions, none decided but the payment order and the notice timing (Matthew Wrigley, 28 Oct 2026), the quorum answer, interim resolutions and the committee notice not checked (29 Oct 2026)", () => {
+  it("has proposed decisions, none decided but the payment order and the notice timing (Matthew Wrigley, 28 Oct 2026), the quorum answer, interim resolutions, the committee notice not checked, proxy caps and debt recovery (29 Oct 2026), and the amount when proceedings are started (30 Oct 2026)", () => {
     expect(vic.DECISIONS.length).toBeGreaterThan(1);
     for (const d of vic.DECISIONS) {
+      if (d.decision.includes("PROCEEDINGS_CLAIM_LIMIT")) {
+        expect(d).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-30", proposedOn: "2026-10-30" });
+        continue;
+      }
       if (d.decision.includes("PAYMENT_ALLOCATION_ORDER") || d.decision.includes("NOTICE_RULES")) {
         expect(d).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-28" });
         continue;
       }
-      if (d.decision.includes("quorumAttestation") || d.decision.includes("pendingResolutions") || d.decision.includes("noticeNotCheckedFor") || d.decision.includes("PROXY_RULES")) {
+      if (
+        d.decision.includes("quorumAttestation") ||
+        d.decision.includes("pendingResolutions") ||
+        d.decision.includes("noticeNotCheckedFor") ||
+        d.decision.includes("PROXY_RULES") ||
+        d.decision.includes("DEBT_RECOVERY_STEPS")
+      ) {
         expect(d).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-29", proposedOn: "2026-10-29" });
         continue;
       }
       expect(d.decidedBy).toBeNull();
       expect(d.decidedOn).toBeNull();
     }
-    expect(vic.DECISIONS.filter((d) => d.decidedBy != null)).toHaveLength(7);
+    expect(vic.DECISIONS.filter((d) => d.decidedBy != null)).toHaveLength(9);
+    // Stage 2, PR 9c: debt recovery (D2 to D6, D10 to D15), each kept in FOR_REVIEW for legal confirmation.
+    const debt = vic.DECISIONS.find((d) => d.decision.includes("DEBT_RECOVERY_STEPS"))!;
+    const ids = ["D2", "D3", "D4", "D5", "D6", "D10", "D11", "D12", "D13", "D14", "D15"];
+    for (const id of ids) expect(debt.decision).toContain(`(${id})`);
+    const review = (key: string) => vic.FOR_REVIEW.find((p) => p.key === key)?.point ?? "";
+    const debtKeys = [
+      "S18_COMMITTEE_DELEGATION",
+      "S18_BALLOT_RESOLUTION",
+      "FINAL_FEE_NOTICE",
+      "FINAL_NOTICE_OUTSIDE",
+      "S18_ANNUAL_FEES_COMPARATOR",
+      "DAY_COUNTING_RECOVERY",
+      "VCAT_GATE_COURT",
+      "TIER_5_RECOVERY",
+      "TAKEOVER_NOTICES_FINAL_NOTICE",
+      "PAYMENT_PLAN_PAUSE_GUARD",
+      "RECOVERY_FEES_NOT_PASSED",
+      "DEBT_RECOVERY_FORUM",
+      "DEBT_RECOVERY_STEPS",
+    ];
+    for (const key of debtKeys) expect(review(key), key).toMatch(/decisions? D\d+/);
+    const reviewed = debtKeys.map(review).join(" ");
+    for (const id of ids) expect(reviewed, id).toMatch(new RegExp(`\\b${id}\\b`));
+    expect(review("FINAL_FEE_NOTICE")).not.toContain("is a later PR");
+    expect(review("PAYMENT_PLAN_PAUSE_GUARD")).toContain("the payment plan pause is not supported yet");
+    // Review (30 Oct 2026): the tier checked again, and a ballot resolution cannot be chosen.
+    expect(review("TIER_5_RECOVERY")).toContain("checked again");
+    expect(review("S18_BALLOT_RESOLUTION")).toContain("cannot be chosen");
+    // Matthew Wrigley's decision of 30 Oct 2026 (review M1): ceiling for ordinary only, and the claim limited to the
+    // notices the final notice covered, kept in FOR_REVIEW.
+    const claimLimit = review("PROCEEDINGS_CLAIM_LIMIT");
+    for (const words of ["decision of 30 Oct 2026", "ceiling for ordinary only", "special resolution covers a larger amount", "checked again against s 18(2)", "the final fee notice covered"]) {
+      expect(claimLimit, words).toContain(words);
+    }
+    expect(review("S18_ANNUAL_FEES_COMPARATOR")).toContain("PROCEEDINGS_CLAIM_LIMIT");
+    expect(review("S18_ANNUAL_FEES_COMPARATOR")).not.toContain("a larger amount is refused");
+    // Its review (30 Oct 2026): due before debt recovery is switched on, the claim limit is StrataVerze practice, the
+    // adviser waits or opens a new case (never a new final notice on this case), and one definition at both steps.
+    expect(vic.FOR_REVIEW.find((p) => p.key === "PROCEEDINGS_CLAIM_LIMIT")?.before).toBe("Victorian debt recovery is switched on");
+    for (const words of ["the notes record no amount limit in s 18(1)", "The Final Notice step uses the same definition", "close the case and open a new one"]) {
+      expect(claimLimit, words).toContain(words);
+    }
+    expect(claimLimit).not.toContain("s 18(1) states no amount limit");
+    expect(claimLimit).not.toContain("or a new one is needed");
+    const proceedingsGuidance = vic.DEBT_RECOVERY_GUIDANCE.PROCEEDINGS;
+    expect(proceedingsGuidance).toContain("StrataVerze practice (decision of 30 Oct 2026)");
+    expect(proceedingsGuidance).toContain("Wait until those fee notices are paid, or close the case and open a new one.");
+    expect(proceedingsGuidance).not.toMatch(/new final (fee )?notice/);
+    expect(vic.NOT_CONFIRMED.some((p) => p.startsWith("What \"the total amount of the current annual fees\" in s 18(2) is"))).toBe(true);
     // Stage 2, PR 8b-iv: proxy caps (D15 to D17) and the minutes (D18), kept in FOR_REVIEW PROXY_CAPS and MINUTES_CONTENTS.
     const proxies = vic.DECISIONS.find((d) => d.decision.includes("PROXY_RULES"))!;
     for (const id of ["D15", "D16", "D17", "D18"]) expect(proxies.decision).toContain(`(${id})`);
@@ -401,9 +460,9 @@ describe("Victorian pack (pending)", () => {
     expect(vic.FOR_REVIEW.find((p) => p.key === "MEETING_RULES_PENDING")?.kind).toBe("LEGAL");
   });
 
-  it("switches every NSW workflow off, with the same keys", () => {
+  it("switches every NSW workflow off except the debt recovery steps (stage 2, PR 9c), with the same keys", () => {
     expect(Object.keys(vic.FEATURES).sort()).toEqual(Object.keys(RULE_PACKS.NSW.rules.FEATURES).sort());
-    expect(Object.values(vic.FEATURES).every((on) => on === false)).toBe(true);
+    expect(Object.entries(vic.FEATURES).filter(([, on]) => on).map(([k]) => k)).toEqual(["debtRecoverySteps"]);
   });
 
   it("holds the maintenance fund in the ledger's capital works fund, and marks the administrative fund a StrataVerze choice", () => {

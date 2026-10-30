@@ -136,7 +136,10 @@ export interface AuthorityResolutionKind {
  * DEBT_RECOVERY.authorityToSue; NSW and Queensland never reach it. The
  * meeting must not be deleted and must have been held (isHeldMeeting: under
  * way, minutes being prepared or published, or completed), so a motion of a
- * cancelled, adjourned or not yet held meeting is refused (review M1).
+ * cancelled, adjourned or not yet held meeting is refused (review M1). A
+ * special resolution decided later (Victoria's interim special resolution,
+ * PR 9c) counts only once carried and taken effect as a special resolution,
+ * on or before the building's day (interimSpecialProblem).
  */
 export async function authorityResolution(
   schemeId: string,
@@ -163,7 +166,11 @@ export async function authorityResolution(
         const motion = await db.orm.public.AgendaItem.where((a) => a.id.eq(motionId)).first();
         const kindWords = c.words.replace(/^an? /, "");
         const article = /^[aeiou]/i.test(kindWords) ? "an" : "a";
-        if (motion?.resolutionCategory !== c.kind) problem = `That motion is not recorded as ${article} ${kindWords}. Choose a motion carried as ${article} ${kindWords}.`;
+        const category = motion?.resolutionCategory;
+        // A special resolution decided later (Victoria's interim special resolution, PR 9c) counts only through its pending resolution.
+        const interim = c.kind === "SPECIAL" && category === "INTERIM_SPECIAL";
+        if (category !== c.kind && !interim) problem = `That motion is not recorded as ${article} ${kindWords}. Choose a motion carried as ${article} ${kindWords}.`;
+        else if (c.kind === "SPECIAL") problem = await interimSpecialProblem(schemeId, motionId, interim);
       }
     } else if (c.kind !== "ANY") {
       problem = "A committee resolution of a particular kind cannot be checked yet, so it cannot be relied on.";
@@ -179,6 +186,27 @@ export async function authorityResolution(
     first ??= problem;
   }
   return { problem: first ?? `Choose ${words}.` };
+}
+
+/**
+ * Why a motion relied on as a special resolution is refused for being decided
+ * later and not yet taken effect as one (VIC stage 2, PR 9c; review L3), or
+ * null. A motion with a pending resolution of any kind counts as special only
+ * once that is CARRIED, takes effect as SPECIAL and took effect on or before
+ * the building's day (the day of the decision). A motion recorded as an
+ * interim special resolution with no pending resolution is refused. Read only
+ * for a pack that accepts a special resolution for a debt recovery decision
+ * (Victoria); the ACT and Western Australia accept none, and NSW and
+ * Queensland never come here.
+ */
+async function interimSpecialProblem(schemeId: string, motionId: string, recordedInterim: boolean): Promise<string | null> {
+  const pending = await db.orm.public.PendingResolution.where((p) => p.agendaItemId.eq(motionId)).first();
+  const refused = "That motion was decided later and has not taken effect as a special resolution, so it cannot be relied on.";
+  if (!pending) return recordedInterim ? refused : null;
+  const effectiveOn = pending.effectiveOn ? String(pending.effectiveOn).slice(0, 10) : "";
+  if (pending.status !== "CARRIED" || pending.takesEffectAs !== "SPECIAL" || !/^\d{4}-\d{2}-\d{2}$/.test(effectiveOn)) return refused;
+  const { schemeToday } = await import("@/lib/jurisdiction/scheme-time");
+  return effectiveOn <= (await schemeToday(schemeId)) ? null : "That resolution has not taken effect yet, so it cannot be relied on.";
 }
 
 /** Null when the chosen meeting and motion are a resolution among `accepted` that has taken effect; otherwise why not. */
