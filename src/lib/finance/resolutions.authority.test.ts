@@ -119,3 +119,34 @@ describe("fixtures for the other draft packs", () => {
     expect(await authorityResolutionProblem("s1", "agm", "g-open", [ordinary, special])).toBe("That motion was not carried, so it cannot be relied on.");
   });
 });
+
+describe("ACT-style fixtures (stage 2, PR 9b): the decision to start proceedings and the charge's declaration", () => {
+  const EXECUTIVE: Kind = { meeting: "COMMITTEE", kind: "ANY", words: "a motion carried at an executive committee meeting" };
+  const ORDINARY: Kind = { meeting: "GENERAL", kind: "ORDINARY", words: "an ordinary resolution at a general meeting" };
+  const GENERAL_ANY: Kind = { meeting: "GENERAL", kind: "ANY", words: "a motion carried at a general meeting" };
+  const AUTHORITY = [EXECUTIVE, ORDINARY];
+  const DECLARATION = [EXECUTIVE, GENERAL_ANY];
+
+  it("the decision: a committee meeting motion, or a general meeting motion recorded as an ordinary resolution", async () => {
+    expect(await authorityResolution("s1", "council", "c-carried", AUTHORITY)).toEqual({ problem: null, resolution: EXECUTIVE, decidedOn: "2026-10-20", meetingId: "council", itemId: "c-carried" });
+    expect(await authorityResolution("s1", "agm", "g-carried", AUTHORITY)).toEqual({ problem: null, resolution: ORDINARY, decidedOn: "2026-10-10", meetingId: "agm", itemId: "g-carried" });
+    // A general meeting motion recorded as a special resolution is not an ordinary one ("an", not "a").
+    expect(await authorityResolutionProblem("s1", "agm", "g-special", AUTHORITY)).toBe(
+      "That motion is not recorded as an ordinary resolution at a general meeting. Choose a motion carried as an ordinary resolution at a general meeting.",
+    );
+    expect(await authorityResolutionProblem("s1", "council", "c-lost", AUTHORITY)).toBe("That motion was not carried, so it cannot be relied on.");
+    expect(await authorityResolutionProblem("s1", null, null, AUTHORITY)).toBe(
+      "Choose the meeting and the motion carried at it: a motion carried at an executive committee meeting or an ordinary resolution at a general meeting.",
+    );
+  });
+
+  it("the declaration: a committee meeting motion or a general meeting motion of any kind", async () => {
+    expect(await authorityResolution("s1", "council", "c-carried", DECLARATION)).toMatchObject({ problem: null, resolution: EXECUTIVE, decidedOn: "2026-10-20" });
+    expect(await authorityResolution("s1", "agm", "g-carried", DECLARATION)).toMatchObject({ problem: null, resolution: GENERAL_ANY, decidedOn: "2026-10-10" });
+    expect(await authorityResolution("s1", "agm", "g-special", DECLARATION)).toMatchObject({ problem: null, resolution: GENERAL_ANY });
+    // Still a held meeting of this scheme, and a decision taken later only once carried.
+    expect(await authorityResolutionProblem("s1", "cancelled", "cancelled-carried", DECLARATION)).toBe("That meeting has not been held, or was cancelled or adjourned, so its motions cannot be relied on.");
+    expect(await authorityResolutionProblem("s1", "other", "o-carried", DECLARATION)).toBe("Choose a meeting of this scheme.");
+    expect(await authorityResolutionProblem("s1", "agm", "g-open", DECLARATION)).toBe("That motion was not carried, so it cannot be relied on.");
+  });
+});

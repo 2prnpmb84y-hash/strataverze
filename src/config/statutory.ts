@@ -508,7 +508,24 @@ export const PENDING_RULE_PACKS = {
     // StrataVerze choice kept in FOR_REVIEW (the minutes point), not a decision. The MEETING_RULES header
     // and notes and FOR_REVIEW's reduced quorum point are rewritten, MEETING_RULES_STATUS gains minutesContents, and
     // FOR_REVIEW gains the minutes and proxy caps points. No legal value or status already recorded changed; still a draft.
-    version: "2026.10.12",
+    // 2026.10.13 (29 Oct 2026): debt recovery and the statutory charge (stage 2, PR 9b). DEBT_RECOVERY follows the
+    // shared DebtRecoveryRules shape, its other fields kept (its forum guidance moves to forumGuidance and its charge
+    // facts to statutoryChargeFacts, unchanged), and gains authorityToSue: a motion carried at an executive committee
+    // meeting (sch 2 s 2.5(2)(a), CONFIRMED) or an ordinary resolution at a general meeting (STRATAVERZE), never the
+    // adviser alone, recorded when COMMITTEE_REVIEW is completed (D7); forum: a court, which includes ACAT (UTMA
+    // dictionary, CONFIRMED; recovery as a debt, s 95(1), CONFIRMED), the only option that may be recorded, ACAT's civil
+    // jurisdiction, its $25,000 limit and the Magistrates Court guidance only, never applied (D13); and statutoryCharge
+    // (ss 96, 97, CONFIRMED): declared by a motion carried at an executive committee or general meeting (STRATAVERZE,
+    // the notes do not say who declares it) and lodged with the registrar-general, recorded when the new STATUTORY_CHARGE
+    // step is completed, revoked by a recorded revocation (no deadline: the notes give none), and a case with a lodged
+    // charge not revoked cannot be closed in any status (ANY_CLOSE, STRATAVERZE) (D8). DEBT_RECOVERY_STEPS (the NSW step
+    // types with STATUTORY_CHARGE after COMMITTEE_REVIEW, D11), DEBT_RECOVERY_STEP_LABELS and DEBT_RECOVERY_GUIDANCE
+    // added: owner-facing text states only CONFIRMED law and says StrataVerze practice where a step is StrataVerze's own.
+    // NEVER_RECOVERABLE_FEE_VARIANTS lists all four recovery step fees (D10), the charge step is unpriced, and
+    // FEATURES.debtRecoverySteps is on (D11). Matthew Wrigley's decisions D7, D8 and D10 to D13 of 29 Oct 2026, recorded
+    // in DECISIONS and kept in FOR_REVIEW; NOT_CONFIRMED gains the charge's declarer, form, fee and period, and the
+    // manager delegation point. No legal value or status already recorded changed; still a draft.
+    version: "2026.10.13",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",
     reviewedOn: null,

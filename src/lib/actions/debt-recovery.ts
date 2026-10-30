@@ -38,19 +38,29 @@ import { UnsupportedJurisdictionError, needRule, type StatutoryRules } from "@/c
 import { stepPausedByPlan } from "@/lib/debt-recovery/payment-plans";
 import { lotOwnerIds } from "@/lib/debt-recovery/lot-owners";
 import {
+  chargeCloseProblem,
+  chargeFacts,
+  chargeRevocationProblem,
   recoveryGateProblem,
   recoveryGatesApply,
   recoveryRecordsToWrite,
   recoveryStepNeeds,
+  revocationRecord,
+  statutoryChargeApplies,
   type AuthorityFact,
+  type ChargeChoice,
   type RecoveryRecordToWrite,
 } from "@/lib/debt-recovery/recovery-gates";
 import { createRecoveryRecords, currentAmountOwing, readRecoveryRecords, recordedFacts } from "@/lib/debt-recovery/recovery-records-repo";
+import { auDate } from "@/lib/onboarding/property-onboarding";
 
 type ActionResult = { error?: string; success?: boolean; id?: string };
 
 /** A step completion refused under the case lock: its message is shown, and nothing is written. */
 class StepCompletionRefused extends Error {}
+
+/** A close or a charge revocation refused under the case lock (PR 9b): its message is shown, and nothing is written. */
+class CaseActionRefused extends Error {}
 
 /**
  * Authorise an action on an existing case: the caller must be an adviser or
@@ -358,6 +368,15 @@ export async function completeDebtRecoveryStepAction(
         ? stepCompletionProblem(lockedCase, caseSteps, stepId, rules.DEBT_RECOVERY_STEP_LABELS)
         : "Step not found";
       if (problem) throw new StepCompletionRefused(problem);
+      // The Closed step under a pack with a statutory charge (the ACT, PR 9b
+      // review M2): the case's charge is read again under the lock, so a
+      // revocation or charge recorded since the check above is seen. Never
+      // reached for NSW, Queensland or Western Australia.
+      if (step.stepType === "CLOSED" && statutoryChargeApplies(rules)) {
+        const charge = chargeFacts(await readRecoveryRecords(caseId, tx.orm));
+        const chargeProblem = chargeCloseProblem(rules, { charge });
+        if (chargeProblem) throw new StepCompletionRefused(chargeProblem);
+      }
 
       await updateDebtRecoveryStep(
         stepId,
@@ -441,17 +460,30 @@ export async function closeDebtRecoveryCaseAction(
     // A draft pack's recovery rules. The case's pack comes from the label it
     // was opened under, so nothing is read for an NSW or Queensland case.
     const caseRules = await rulesForCaseLabel(caseRow.rulePack, schemeId);
-    if (caseRules && recoveryGatesApply(caseRules)) {
-      const gate = recoveryGateProblem(caseRules, { action: "CLOSE" });
-      if (gate) return { error: gate };
-    }
+    const closing = { status, closedAt: new Date().toISOString(), closedReason: reason, currentStep: "CLOSED" };
+    if (caseRules && statutoryChargeApplies(caseRules)) {
+      // A pack with a statutory charge (the ACT, PR 9b): under the case lock,
+      // as recording a charge or its revocation is, the case's charge is read
+      // and a lodged charge not yet revoked refuses the close. Nothing is
+      // written before the check. NSW, Queensland and Western Australia have
+      // no charge, so they never come here.
+      await db.transaction(async (tx) => {
+        const locked = await tx.orm.public.DebtRecoveryCase.where((c) => c.id.eq(caseId)).forNoKeyUpdate().first();
+        if (!locked) throw new CaseActionRefused("Case not found");
+        if (isCaseClosed(locked)) throw new CaseActionRefused("This case is already closed");
+        const charge = chargeFacts(await readRecoveryRecords(caseId, tx.orm));
+        const gate = recoveryGateProblem(caseRules, { action: "CLOSE", status, charge });
+        if (gate) throw new CaseActionRefused(gate);
+        await updateDebtRecoveryCase(caseId, closing, tx.orm);
+      });
+    } else {
+      if (caseRules && recoveryGatesApply(caseRules)) {
+        const gate = recoveryGateProblem(caseRules, { action: "CLOSE" });
+        if (gate) return { error: gate };
+      }
 
-    await updateDebtRecoveryCase(caseId, {
-      status,
-      closedAt: new Date().toISOString(),
-      closedReason: reason,
-      currentStep: "CLOSED",
-    });
+      await updateDebtRecoveryCase(caseId, closing);
+    }
 
     await logDebtRecoveryActivity({
       caseId,
@@ -465,10 +497,60 @@ export async function closeDebtRecoveryCaseAction(
 
     return { success: true };
   } catch (err) {
+    if (err instanceof CaseActionRefused) return { error: err.message };
     if (err instanceof AuthorisationError) return { error: err.message };
     if (err instanceof UnsupportedJurisdictionError) return { error: err.message };
     logError("Failed to close case:", err);
     return { error: "Failed to close case" };
+  }
+}
+
+// ─── Record a Charge's Revocation ───────────────────────────────
+
+/**
+ * Record that the revocation of the case's statutory charge was lodged on
+ * `lodgedOn` (the ACT, stage 2, PR 9b), which lets the case be closed. Under
+ * the case lock: refused, with nothing written, for a building whose pack has
+ * no statutory charge, a case with no charge lodged or whose revocation is
+ * already recorded (so a second request records nothing), and a day that is
+ * after the building's day or before the charge was lodged. The case may be
+ * open. Who revoked it and when is not recorded: the day recorded as decided
+ * is the day lodged.
+ */
+export async function recordChargeRevocationAction(caseId: string, schemeId: string, lodgedOn: string): Promise<ActionResult> {
+  try {
+    const { profile } = await authoriseCaseAction(caseId, schemeId);
+    const { rules, pack, label: rulePack } = await rulesForScheme(schemeId);
+    if (!statutoryChargeApplies(rules)) return { error: "This is not available for this building." };
+    const { schemeToday } = await import("@/lib/jurisdiction/scheme-time");
+    const today = await schemeToday(schemeId);
+    const day = typeof lodgedOn === "string" ? lodgedOn.trim() : "";
+
+    await db.transaction(async (tx) => {
+      const locked = await tx.orm.public.DebtRecoveryCase.where((c) => c.id.eq(caseId)).forNoKeyUpdate().first();
+      if (!locked) throw new CaseActionRefused("Case not found");
+      const charge = chargeFacts(await readRecoveryRecords(caseId, tx.orm));
+      const problem = chargeRevocationProblem(rules, { charge, lodgedOn: day, today });
+      if (problem) throw new CaseActionRefused(problem);
+      await createRecoveryRecords(tx.orm, { caseId, schemeId, state: pack.state, rulePack, recordedBy: profile.id }, [revocationRecord(day)]);
+    });
+
+    await logDebtRecoveryActivity({
+      caseId,
+      activityType: "CHARGE_REVOKED",
+      description: `Revocation of the charge recorded as lodged on ${auDate(day)}`,
+      performedBy: profile.id,
+    });
+
+    revalidatePath(`/adviser/schemes/${schemeId}`);
+
+    return { success: true };
+  } catch (err) {
+    if (err instanceof CaseActionRefused) return { error: err.message };
+    if (err instanceof AuthorisationError) return { error: err.message };
+    if (err instanceof UnsupportedJurisdictionError) return { error: err.message };
+    logError("Failed to record the revocation:", err);
+    return { error: "Failed to record the revocation" };
   }
 }
 
@@ -506,10 +588,10 @@ async function checkRecoveryStep(
 ): Promise<{ error: string } | { records: RecoveryRecordToWrite[] }> {
   const needs = recoveryStepNeeds(rules, input.stepType);
   if (needs && "problem" in needs) return { error: needs.problem };
-  let recorded: ReturnType<typeof recordedFacts>;
+  let rows: Awaited<ReturnType<typeof readRecoveryRecords>>;
   let caseSteps: Awaited<ReturnType<typeof readDebtRecoverySteps>>;
   try {
-    [recorded, caseSteps] = await Promise.all([readRecoveryRecords(input.caseId).then(recordedFacts), readDebtRecoverySteps(input.caseId)]);
+    [rows, caseSteps] = await Promise.all([readRecoveryRecords(input.caseId), readDebtRecoverySteps(input.caseId)]);
   } catch (err) {
     logError("Failed to read the case's recovery records:", err);
     return { error: "Could not check the case's records. Nothing was saved." };
@@ -524,6 +606,16 @@ async function checkRecoveryStep(
     authority = await authorityResolution(input.schemeId, text("authorityMeetingId"), text("authorityItemId"), needs.authority.accepted);
   }
   const forum = needs?.forum ? text("forum") : null;
+  // The charge step (PR 9b): no charge declared, or the resolution that declared it and the day it was lodged.
+  let charge: ChargeChoice | null = null;
+  if (needs?.charge) {
+    const declared = text("chargeDeclared");
+    if (declared === "NO") charge = { declared: false };
+    else if (declared === "YES") {
+      const { authorityResolution } = await import("@/lib/finance/resolutions");
+      charge = { declared: true, resolution: await authorityResolution(input.schemeId, text("chargeMeetingId"), text("chargeItemId"), needs.charge.declaredBy), lodgedOn: text("chargeLodgedOn") };
+    }
+  }
   const { schemeTimeZone } = await import("@/lib/jurisdiction/scheme-time");
   const { storedDayIn, todayIn } = await import("@/lib/jurisdiction/time-zone");
   const tz = await schemeTimeZone(input.schemeId);
@@ -540,6 +632,7 @@ async function checkRecoveryStep(
       return { error: "Could not work out the amount owing. Nothing was saved." };
     }
   }
+  const recorded = recordedFacts(rows);
   const gate = recoveryGateProblem(rules, {
     action: "COMPLETE_STEP",
     stepType: input.stepType,
@@ -547,12 +640,15 @@ async function checkRecoveryStep(
     authority,
     forum,
     recorded,
+    // The case's charge, for a pack with a statutory charge (the ACT, PR 9b): its Closed step needs the revocation recorded.
+    ...(statutoryChargeApplies(rules) ? { chargeOnCase: chargeFacts(rows) } : {}),
     today,
     caseOpenedOn,
     labels: rules.DEBT_RECOVERY_STEP_LABELS,
+    ...(needs?.charge ? { charge } : {}),
   });
   if (gate) return { error: gate };
-  return { records: recoveryRecordsToWrite(rules, { stepType: input.stepType, authority, forum, today, amountOwing: amountOwing ?? "0.00" }) };
+  return { records: recoveryRecordsToWrite(rules, { stepType: input.stepType, authority, forum, today, amountOwing: amountOwing ?? "0.00", ...(needs?.charge ? { charge } : {}) }) };
 }
 
 // ─── Record Instalment Payment ──────────────────────────────────
