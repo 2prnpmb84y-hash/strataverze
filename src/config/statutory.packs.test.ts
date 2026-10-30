@@ -193,14 +193,14 @@ describe("Australian Capital Territory pack (pending)", () => {
   const pack = PENDING_RULE_PACKS.ACT;
   const act = pack.rules;
 
-  it("is a draft for review, not signed off, with only the payment order, the notice timing, the quorum answer, 1 or 2 members, reduced quorum decisions, notice by motion and proxy caps decided", () => {
+  it("is a draft for review, not signed off, with only the payment order, the notice timing, the quorum answer, 1 or 2 members, reduced quorum decisions, notice by motion, proxy caps and debt recovery decided", () => {
     expect(pack.code).toBe("AU-ACT");
     expect(pack.state).toBe("ACT");
-    expect(pack.version).toBe("2026.10.12");
+    expect(pack.version).toBe("2026.10.13");
     expect(pack.status).toBe("DRAFT");
     expect(pack.reviewedOn).toBeNull();
     expect(pack.reviewer).toBe("Matthew Wrigley");
-    expect(act.DECISIONS).toHaveLength(8);
+    expect(act.DECISIONS).toHaveLength(9);
     for (const d of act.DECISIONS.slice(0, 2)) expect(d).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-28" });
     expect(act.DECISIONS[0].decision).toContain("PAYMENT_ALLOCATION_ORDER");
     expect(act.DECISIONS[1].decision).toContain("NOTICE_RULES");
@@ -234,6 +234,16 @@ describe("Australian Capital Territory pack (pending)", () => {
     expect(act.FOR_REVIEW.some((p) => p.startsWith("Minutes (sch 2 s 2.1(1)(c)") && p.includes("Stage C"))).toBe(true);
     // The minutes now state the later effect, so the point saying they do not is gone.
     expect(act.FOR_REVIEW.some((p) => p.includes("The minutes do not state the later effect yet"))).toBe(false);
+    // Stage 2, PR 9b: debt recovery and the statutory charge (29 Oct 2026, decisions D7, D8 and D10 to D13), kept in FOR_REVIEW.
+    expect(act.DECISIONS[8]).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-29" });
+    for (const d of ["D7", "D8", "D10", "D11", "D12", "D13"]) expect(act.DECISIONS[8].decision).toContain(`(${d})`);
+    const debt = act.FOR_REVIEW.filter((p) => p.startsWith("Debt recovery (stage 2, PR 9b"));
+    expect(debt).toHaveLength(6);
+    for (const d of ["D7", "D8", "D10", "D11", "D12", "D13"]) expect(debt.some((p) => p.includes(d)), d).toBe(true);
+    expect(debt.some((p) => p.includes("withinDays") && p.includes("never blocked"))).toBe(true);
+    expect(debt.some((p) => p.includes("completePlan"))).toBe(true);
+    expect(act.NOT_CONFIRMED.some((p) => p.startsWith("The statutory charge (UTMA ss 96, 97): who declares it"))).toBe(true);
+    expect(act.NOT_CONFIRMED.some((p) => p.startsWith("Whether a delegation to the manager"))).toBe(true);
   });
 
   it("holds exactly one entitlement schedule on each lot: unit entitlement", () => {
@@ -244,9 +254,9 @@ describe("Australian Capital Territory pack (pending)", () => {
     expect(act.SCHEME_TYPE.options.filter((o) => o.supported).map((o) => o.value)).toEqual(["UNITS_PLAN"]);
   });
 
-  it("switches every NSW workflow off", () => {
+  it("switches every NSW workflow off except the debt recovery steps (stage 2, PR 9b)", () => {
     expect(Object.keys(act.FEATURES).sort()).toEqual(Object.keys(RULE_PACKS.NSW.rules.FEATURES).sort());
-    expect(Object.values(act.FEATURES).every((on) => on === false)).toBe(true);
+    expect(Object.entries(act.FEATURES).filter(([, on]) => on).map(([k]) => k)).toEqual(["debtRecoverySteps"]);
   });
 
   it("gives every shared term", () => {

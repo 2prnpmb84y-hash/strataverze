@@ -7,8 +7,8 @@
  * DRAFT, FOR STRATAVERZE TO REVIEW (27 Oct 2026). Not signed off and not
  * applied to any building: `rulePackFor` returns active packs only, and the
  * ACT is not in SUPPORTED_SCHEME_STATES or the database's state check. The
- * StrataVerze decisions so far are the payment order and the notice timing
- * (DECISIONS, 28 Oct 2026).
+ * StrataVerze decisions so far are in DECISIONS (from 28 Oct 2026, the latest
+ * debt recovery on 29 Oct 2026).
  *
  * Every value comes from the research notes of 27 Oct 2026 prepared for
  * Matthew Wrigley ("ACT unit titles: research notes for the StrataVerze ACT
@@ -62,14 +62,23 @@
  * each unit's contribution, the fund and its totals, and the unit's proportion
  * by unit entitlement; they are still refused for the instalment dates, any
  * discount and the interest (FOR_REVIEW).
+ * Since stage 2, PR 9b (29 Oct 2026) DEBT_RECOVERY follows the shared
+ * DebtRecoveryRules shape: who decides to start proceedings, where they go
+ * and the statutory charge (ss 96, 97) are recorded on each case, with the
+ * steps, labels and guidance (Matthew Wrigley's decisions D7, D8 and D10 to
+ * D13, DECISIONS, kept in FOR_REVIEW).
  */
 
 import type { MeetingRuleSet } from "@/lib/meetings/rules";
 import type {
+  AuthorityToSueRule,
   BuildingSelector,
   DatedRules,
+  DebtForumRule,
+  DebtRecoveryStepRule,
   DerivedBuildingSelector,
   EntitlementScheduleDefinition,
+  FeeVariant,
   FundDefinition,
   LateChargeRules,
   NoticeContentRequirement,
@@ -80,6 +89,7 @@ import type {
   RecordedBuildingSelector,
   RuleStatus,
   SharedTerminology,
+  StatutoryChargeRule,
 } from "./types";
 
 const UTMA = "Unit Titles (Management) Act 2011 (ACT)";
@@ -853,7 +863,133 @@ export const LATE_CHARGE: LateChargeRules = {
  */
 export const PAYMENT_ALLOCATION_ORDER: readonly PaymentAllocationPart[] = ["LEVY", "INTEREST", "RECOVERY_COSTS"];
 
-/** Recovering unpaid contributions (notes section D). */
+/** Who decided how the ACT recovery rules are applied, as DECISIONS records it (stage 2, PR 9b). */
+const DEBT_DECISION = "Matthew Wrigley's StrataVerze decisions of 29 Oct 2026 (DECISIONS)";
+
+/**
+ * Who may decide to start proceedings (stage 2, PR 9b, decision D7),
+ * recorded when COMMITTEE_REVIEW is completed and needed before the legal
+ * referral. The executive committee may take legal action about payment of a
+ * contribution without an ordinary resolution (sch 2 s 2.5(2)(a), CONFIRMED),
+ * so a motion carried at an executive committee meeting decides. An ordinary
+ * resolution at a general meeting is accepted too: a StrataVerze reading. The
+ * adviser can never decide alone: the step needs the meeting and the motion.
+ */
+const ACT_AUTHORITY_TO_SUE: AuthorityToSueRule = {
+  recordedAtStep: "COMMITTEE_REVIEW",
+  accepted: {
+    value: [
+      { meeting: "COMMITTEE", kind: "ANY", words: "a motion carried at an executive committee meeting" },
+      { meeting: "GENERAL", kind: "ORDINARY", words: "an ordinary resolution at a general meeting" },
+    ],
+    status: "STRATAVERZE",
+    source: `${UTMA} sch 2 s 2.5(2)(a); ${DEBT_DECISION}, D7`,
+    note: "A motion carried at an executive committee meeting is CONFIRMED (sch 2 s 2.5(2)(a): the committee may take legal action about payment of a contribution without an ordinary resolution). That an ordinary resolution at a general meeting may also decide is a StrataVerze reading.",
+  },
+  managerMayDecide: {
+    value: false,
+    status: "STRATAVERZE",
+    source: `${UTMA} ss 44, 58; ${DEBT_DECISION}, D7`,
+    note: "The owners corporation or the executive committee may delegate to the manager in writing (ss 44, 58, CONFIRMED). Whether a delegation may include deciding to start proceedings is not in the notes, so StrataVerze never lets the adviser decide alone.",
+  },
+  source: `${UTMA} sch 2 s 2.5(2)(a)`,
+  status: "STRATAVERZE",
+};
+
+/**
+ * Where proceedings go (stage 2, PR 9b, decision D13), recorded when
+ * PROCEEDINGS is completed. An unpaid amount may be recovered as a debt with
+ * s 94 interest (s 95(1), CONFIRMED), and "court" includes the ACAT (UTMA
+ * dictionary, CONFIRMED), so the one option that may be recorded is a court,
+ * which covers ACAT. ACAT's civil jurisdiction as the forum for levy debts,
+ * its $25,000 limit and the Magistrates Court above it are ACAT guidance only
+ * (the ACAT Act not read): shown to advisers as notes, never recorded as a
+ * forum of their own, never applied and never in owner-facing text.
+ */
+const ACT_DEBT_FORUM: DebtForumRule = {
+  recordedAtStep: "PROCEEDINGS",
+  options: [
+    {
+      key: "COURT",
+      words: "a court, which includes ACAT (UTMA dictionary)",
+      status: "CONFIRMED",
+      limitCents: null,
+      source: `${UTMA} s 95(1); dictionary "court"`,
+    },
+    {
+      key: "ACAT",
+      words: "ACAT's civil jurisdiction (ACAT's website says levies \"may be recovered as a debt\" there, recorded as a court)",
+      status: "GUIDANCE",
+      limitCents: {
+        value: null,
+        status: "GUIDANCE",
+        guidance: 2_500_000,
+        note: "ACAT hears a civil claim up to $25,000 (more with the parties' written agreement, or the excess abandoned), and the Magistrates Court above that (ACAT's website only, the ACAT Act not read).",
+        source: ACAT_CIVIL,
+      },
+      source: ACAT_UNIT_TITLES,
+    },
+  ],
+  excluded: [],
+  source: `${UTMA} s 95(1); dictionary "court"`,
+};
+
+/**
+ * The statutory charge over the unit lease (ss 96, 97, CONFIRMED; stage 2,
+ * PR 9b, decision D8). The owners corporation may declare it; a copy
+ * certified by the executive committee is lodged with the registrar-general
+ * and copies go to the owner and interest holders; it secures the amount and
+ * interest and gives no power of sale; once paid it must be revoked and the
+ * revocation lodged. Not in the notes: who declares it (what resolution), any
+ * form or fee, and any period for the revocation. StrataVerze accepts a
+ * motion carried at an executive committee meeting or a general meeting (a
+ * reading), records no deadline for the revocation, and refuses closing a
+ * case in any status while a lodged charge's revocation is not recorded.
+ */
+const ACT_STATUTORY_CHARGE: StatutoryChargeRule = {
+  stepType: "STATUTORY_CHARGE",
+  words: "a statutory charge over the unit lease",
+  declaredBy: {
+    value: [
+      { meeting: "COMMITTEE", kind: "ANY", words: "a motion carried at an executive committee meeting" },
+      { meeting: "GENERAL", kind: "ANY", words: "a motion carried at a general meeting" },
+    ],
+    status: "STRATAVERZE",
+    source: `${UTMA} ss 96, 97; ${DEBT_DECISION}, D8`,
+    note: "The notes say the owners corporation may declare the charge, not by what resolution. Accepting a motion carried at an executive committee meeting or a general meeting is a StrataVerze reading.",
+  },
+  certifiedBy: "the executive committee",
+  lodgedWith: "the registrar-general",
+  copiesTo: ["the unit owner", "each interest holder"],
+  securesInterest: true,
+  powerOfSale: false,
+  revocation: {
+    required: { value: true, status: "CONFIRMED", source: `${UTMA} ss 96, 97` },
+    withinDays: {
+      value: null,
+      status: "NOT_CONFIRMED",
+      source: `${UTMA} ss 96, 97`,
+      note: "The notes give no period within which the charge must be revoked or the revocation lodged once the amount is paid. No deadline is checked, and recording the revocation is never blocked for it.",
+    },
+  },
+  closeBlockedUntilRevoked: {
+    value: "ANY_CLOSE",
+    status: "STRATAVERZE",
+    source: `${DEBT_DECISION}, D8`,
+    note: "The law requires the revocation once the amount is paid. StrataVerze refuses closing a case in any status (paid, settled or written off) until the revocation is recorded as lodged.",
+  },
+  source: `${UTMA} ss 96, 97`,
+  status: "CONFIRMED",
+};
+
+/**
+ * Recovering unpaid contributions (notes section D), in the shared
+ * DebtRecoveryRules shape from stage 2, PR 9b (29 Oct 2026):
+ * `authorityToSue`, `forum` and `statutoryCharge` are read by the recovery
+ * gates; the other fields are kept for the review. Before PR 9b `forum` held
+ * the forum guidance, now `forumGuidance`, and `statutoryCharge` the charge's
+ * facts, now `statutoryChargeFacts`, both unchanged.
+ */
 export const DEBT_RECOVERY = {
   /** An unpaid amount may be recovered as a debt from the unit owner, with s 94 interest (s 95(1)). */
   recoverableAsDebtWithInterest: true,
@@ -867,11 +1003,15 @@ export const DEBT_RECOVERY = {
    * interest; gives no power of sale; revoked once paid, with the revocation
    * lodged.
    */
-  statutoryCharge: { available: true, securesInterest: true, powerOfSale: false, revokeAndLodgeWhenPaid: true },
+  statutoryChargeFacts: { available: true, securesInterest: true, powerOfSale: false, revokeAndLodgeWhenPaid: true },
+  /** The statutory charge the recovery gates apply (stage 2, PR 9b; decision D8). */
+  statutoryCharge: ACT_STATUTORY_CHARGE,
   /** No statutory pre-action notice or demand (whole UTMA and UTMR read: absent). */
   noticeRequiredBeforeAction: false,
   /** The executive committee may take legal action about payment of a contribution without an ordinary resolution (sch 2 s 2.5(2)(a)). */
   contributionRecoveryNeedsResolution: false,
+  /** Who may decide to start proceedings, recorded on the case (stage 2, PR 9b; decision D7). */
+  authorityToSue: ACT_AUTHORITY_TO_SUE,
   /**
    * Other legal action needs an ordinary resolution unless it is urgent or
    * its estimated costs are within the prescribed amount: the lesser of $750
@@ -891,7 +1031,9 @@ export const DEBT_RECOVERY = {
    * civil jurisdiction" (GUIDANCE). The UTMA dictionary says "court includes
    * the ACAT" (CONFIRMED).
    */
-  forum: { tribunal: "ACAT", jurisdiction: "civil", status: "GUIDANCE" as RuleStatus, courtIncludesAcat: true, courtIncludesAcatStatus: "CONFIRMED" as RuleStatus, source: `${ACAT_UNIT_TITLES}; ${UTMA} dictionary "court"` },
+  forumGuidance: { tribunal: "ACAT", jurisdiction: "civil", status: "GUIDANCE" as RuleStatus, courtIncludesAcat: true, courtIncludesAcatStatus: "CONFIRMED" as RuleStatus, source: `${ACAT_UNIT_TITLES}; ${UTMA} dictionary "court"` },
+  /** Where proceedings go, recorded on the case (stage 2, PR 9b; decision D13). */
+  forum: ACT_DEBT_FORUM,
   /**
    * ACAT civil limit: up to $25,000; more needs the parties' written agreement,
    * or the excess can be abandoned; above that, the Magistrates Court. From
@@ -919,6 +1061,190 @@ export const DEBT_RECOVERY = {
   source: `${UTMA} ss 31(4), 94 to 98; sch 2 ss 2.5, 2.6; sch 3 s 3.20(3); ${UTMR} s 9`,
   status: "CONFIRMED" as RuleStatus,
 } as const;
+
+/**
+ * The recovery steps copied onto each new case (stage 2, PR 9b, 29 Oct 2026;
+ * decision D11): the NSW step types, so the case engine, fees and screens work
+ * unchanged, with STATUTORY_CHARGE (unpriced) right after COMMITTEE_REVIEW.
+ * Each step's `status` says how far it was checked: owners see
+ * `actionRequired` and `legalBasis`, which state only CONFIRMED law, and say
+ * "StrataVerze practice" where a step is StrataVerze's own. The law sets no
+ * notice before action (CONFIRMED absent from the UTMA and UTMR), so the
+ * contact, reminder and final notice steps are StrataVerze practice. ACAT's
+ * civil jurisdiction, its limit and the Magistrates Court are guidance, in
+ * DEBT_RECOVERY_GUIDANCE (advisers only).
+ */
+export const DEBT_RECOVERY_STEPS: readonly DebtRecoveryStepRule[] = [
+  {
+    stepType: "LEDGER_VERIFICATION",
+    stepOrder: 1,
+    actionRequired: "Check each unpaid contribution was levied and its notice given, and that payments were applied to contributions first, then interest, then recovery costs",
+    legalBasis: "StrataVerze practice",
+    responsibleParty: "ADVISER",
+    approvalRequired: false,
+    triggerCondition: "Case opened",
+    status: "STRATAVERZE",
+  },
+  {
+    stepType: "INITIAL_CONTACT",
+    stepOrder: 2,
+    actionRequired: "Contact the owner about the unpaid contributions and the amount owing, including any interest",
+    legalBasis: "StrataVerze practice",
+    responsibleParty: "ADVISER",
+    approvalRequired: false,
+    triggerCondition: "Ledger verified",
+    noticeType: "REMINDER",
+    status: "STRATAVERZE",
+  },
+  {
+    stepType: "REMINDER_NOTICE",
+    stepOrder: 3,
+    actionRequired: "Send a written reminder showing the unpaid contributions, any interest and any recovery costs separately",
+    legalBasis: "StrataVerze practice. Interest on an unpaid contribution: UTMA s 94",
+    responsibleParty: "ADVISER",
+    approvalRequired: false,
+    triggerCondition: "No payment after initial contact (period set by the building)",
+    noticeType: "DEMAND",
+    status: "STRATAVERZE",
+  },
+  {
+    stepType: "FINAL_NOTICE",
+    stepOrder: 4,
+    actionRequired: "Tell the owner in writing that the owners corporation may start proceedings to recover the unpaid contributions and interest as a debt",
+    legalBasis: "StrataVerze practice. Recovery as a debt: UTMA s 95(1)",
+    responsibleParty: "ADVISER",
+    approvalRequired: false,
+    triggerCondition: "Reminder unpaid",
+    noticeType: "FINAL_DEMAND",
+    status: "STRATAVERZE",
+  },
+  {
+    stepType: "HARDSHIP_REVIEW",
+    stepOrder: 5,
+    actionRequired: "If the owner asks, decide whether to agree to payment by instalments. A request can arrive at any step",
+    legalBasis: "StrataVerze practice",
+    responsibleParty: "COMMITTEE",
+    approvalRequired: true,
+    triggerCondition: "Owner asks to pay by instalments",
+    status: "STRATAVERZE",
+  },
+  {
+    stepType: "COMMITTEE_REVIEW",
+    stepOrder: 6,
+    actionRequired: "Decide whether to start proceedings to recover the debt, by a motion carried at an executive committee meeting or an ordinary resolution at a general meeting",
+    legalBasis: "StrataVerze practice (an ordinary resolution at a general meeting may also decide). Executive committee: UTMA sch 2 s 2.5(2)(a)",
+    responsibleParty: "COMMITTEE",
+    approvalRequired: true,
+    triggerCondition: "Final notice unpaid",
+    status: "STRATAVERZE",
+  },
+  {
+    stepType: "STATUTORY_CHARGE",
+    stepOrder: 7,
+    actionRequired:
+      "Decide whether to declare a charge over the unit lease for the unpaid amount. If one is declared, lodge a copy certified by the executive committee with the registrar-general and give copies to the owner and each interest holder. The charge secures the amount and interest and gives no power of sale. Once the amount is paid it must be revoked and the revocation lodged",
+    legalBasis: "UTMA ss 96, 97",
+    responsibleParty: "COMMITTEE",
+    approvalRequired: true,
+    triggerCondition: "Decision on proceedings recorded",
+    status: "CONFIRMED",
+  },
+  {
+    stepType: "LEGAL_REFERRAL",
+    stepOrder: 8,
+    actionRequired: "Refer the matter to a solicitor, or prepare the claim, with the ledger, the contribution notices and the owners corporation's decision",
+    legalBasis: "StrataVerze practice",
+    responsibleParty: "ADVISER",
+    approvalRequired: true,
+    triggerCondition: "Proceedings decided by the owners corporation",
+    status: "STRATAVERZE",
+  },
+  {
+    stepType: "PROCEEDINGS",
+    stepOrder: 9,
+    actionRequired: "Start proceedings in a court, which includes ACAT (UTMA dictionary), to recover the unpaid contributions and interest as a debt",
+    legalBasis: "UTMA s 95(1), dictionary (court)",
+    responsibleParty: "SOLICITOR",
+    approvalRequired: false,
+    triggerCondition: "Legal referral accepted",
+    status: "CONFIRMED",
+  },
+  {
+    stepType: "ENFORCEMENT",
+    stepOrder: 10,
+    actionRequired: "Enforce the judgment",
+    responsibleParty: "SOLICITOR",
+    approvalRequired: false,
+    triggerCondition: "Judgment obtained and unpaid",
+    status: "NOT_CONFIRMED",
+  },
+  {
+    stepType: "CLOSED",
+    stepOrder: 11,
+    actionRequired: "Close the case and reconcile the unit ledger. If a charge was lodged, its revocation must be recorded as lodged first",
+    legalBasis: "StrataVerze practice. Revoking a charge once paid: UTMA ss 96, 97",
+    responsibleParty: "ADVISER",
+    approvalRequired: false,
+    triggerCondition: "Debt paid, settled or written off",
+    status: "STRATAVERZE",
+  },
+];
+
+/** DRAFT, FOR STRATAVERZE TO REVIEW: the name the screens show for each step type (stage 2, PR 9b). */
+export const DEBT_RECOVERY_STEP_LABELS: Readonly<Record<string, string>> = {
+  LEDGER_VERIFICATION: "Ledger Verification",
+  INITIAL_CONTACT: "Initial Contact",
+  REMINDER_NOTICE: "Reminder Notice",
+  FINAL_NOTICE: "Final Notice",
+  HARDSHIP_REVIEW: "Instalment Request",
+  COMMITTEE_REVIEW: "Decision to Start Proceedings",
+  STATUTORY_CHARGE: "Statutory Charge",
+  LEGAL_REFERRAL: "Legal Referral",
+  PROCEEDINGS: "Proceedings",
+  ENFORCEMENT: "Enforcement",
+  CLOSED: "Closed",
+};
+
+/** Adviser-only guidance for each step, with the points not confirmed (stage 2, PR 9b). */
+export const DEBT_RECOVERY_GUIDANCE: Readonly<Record<string, string>> = {
+  LEDGER_VERIFICATION:
+    "Check each unpaid contribution was levied by the owners corporation and its notice given, and that payments were applied to contributions first, then interest, then recovery costs. That order is a StrataVerze choice, as the notes record none. This check, and showing contributions, interest and costs separately, is StrataVerze practice.",
+  INITIAL_CONTACT:
+    "Contact the owner informally about the unpaid contributions and the amount owing. ACT law has no statutory payment plan and no hardship statement. With 3 or more members, a unit cannot vote on an ordinary or special resolution while an amount is unpaid (UTMA sch 3 s 3.20(3)). This contact is StrataVerze practice.",
+  REMINDER_NOTICE:
+    "Send a written reminder showing the unpaid contributions, any interest and any recovery costs separately. Interest is 10% a year simple by default, or a rate from 0 to 20% set by special resolution (UTMA s 94(1)). What the opening words of s 94(1) (\"unless otherwise decided by ordinary resolution\") allow is for legal review. This reminder is StrataVerze practice.",
+  FINAL_NOTICE:
+    "Tell the owner in writing that the owners corporation may start proceedings. The UTMA and UTMR set no notice before action (read in full), so this notice is StrataVerze practice.",
+  HARDSHIP_REVIEW:
+    "There is no statutory payment plan or hardship scheme. Instalments exist only as a contribution notice option (UTMA ss 79(2)(f), 90(2)(f)). Not confirmed: who within the owners corporation decides an instalment request. This step is StrataVerze practice.",
+  COMMITTEE_REVIEW:
+    "Record the motion that decided to start proceedings: a motion carried at an executive committee meeting, which may take legal action about payment of a contribution without an ordinary resolution (UTMA sch 2 s 2.5(2)(a)), or an ordinary resolution at a general meeting. The case records the meeting, the motion and the amount owing. The meeting must have been held, and the motion must take effect on or after the day the case was opened. Its subject is not checked. Accepting a general meeting ordinary resolution, and never the adviser alone, is Matthew Wrigley's StrataVerze decision D7 of 29 Oct 2026, for legal review. The $750 a unit or $10,000 threshold is for other legal action and is not a cap on recoverable costs (UTMR s 9). If the owners corporation decides not to start proceedings, close the case instead of completing this step.",
+  STATUTORY_CHARGE:
+    "Record whether a statutory charge over the unit lease was declared and lodged (UTMA ss 96, 97). If it was, record the motion that declared it (a motion carried at an executive committee meeting or a general meeting, Matthew Wrigley's StrataVerze decision D8 of 29 Oct 2026, as the notes do not say by what resolution) and the day a copy certified by the executive committee was lodged with the registrar-general. Copies go to the owner and each interest holder. StrataVerze does not record the certification or the copies. The charge secures the amount and interest and gives no power of sale. Once the amount is paid it must be revoked and the revocation lodged: record the day the revocation was lodged on this case, and the case cannot be closed in any status until it is. Not confirmed: any form or fee for the charge or its revocation, and any period for the revocation (no deadline is checked).",
+  LEGAL_REFERRAL:
+    "Refer the matter with the ledger, the contribution notices and the recorded decision. The case cannot be marked as referred for legal recovery until this step is complete. Guidance, not confirmed: ACAT says some costs of recovering levies (for example letters of demand) may be recoverable as a debt. StrataVerze's recovery step fees are charged to the owners corporation and never passed to the owner (decision D10).",
+  PROCEEDINGS:
+    "Proceedings go to a court, which includes ACAT (UTMA dictionary), to recover the unpaid amount as a debt with s 94 interest (UTMA s 95(1)). Record where proceedings were started as a court. Guidance, not confirmed: ACAT says levies may be recovered as a debt in its civil jurisdiction, up to $25,000 (more with the parties' written agreement, or the excess abandoned), and the Magistrates Court above that (the ACAT Act not read). The limit is never applied.",
+  ENFORCEMENT:
+    "Enforcing a judgment is not covered by the research notes (not confirmed). A statutory charge gives no power of sale (UTMA ss 96, 97). Take legal advice.",
+  CLOSED:
+    "Close the case once the debt is paid, settled or written off, and reconcile the unit ledger. If a charge was lodged, record the day its revocation was lodged first: the case cannot be closed in any status until it is (decision D8). This step is StrataVerze practice.",
+};
+
+/**
+ * StrataVerze fees never passed to an owner in the ACT (decision D10,
+ * 29 Oct 2026): every recovery step fee is charged to the owners corporation
+ * only. Whether the costs of recovering contributions are recoverable from the
+ * owner is GUIDANCE only (DEBT_RECOVERY.recoveryCosts, NOT_CONFIRMED), so
+ * StrataVerze passes none on. No RECOVERY_COSTS_RECOVERABLE wording is set.
+ * The STATUTORY_CHARGE step has no fee.
+ */
+export const NEVER_RECOVERABLE_FEE_VARIANTS: readonly FeeVariant[] = [
+  { code: "RECOVERY_STEP", variant: "REMINDER" },
+  { code: "RECOVERY_STEP", variant: "FINAL_NOTICE" },
+  { code: "RECOVERY_STEP", variant: "REFERRAL" },
+  { code: "RECOVERY_STEP", variant: "PAYMENT_PLAN" },
+];
 
 /**
  * General meetings and executive committee meetings (notes section E), as
@@ -2126,6 +2452,9 @@ export const NOT_CONFIRMED = [
   "What the 1/3 in the 3-member special resolution test (UTMA sch 3 s 3.16(2)) is measured against: the notes say only \"less than 1/3\".",
   "The member-count scope of an unopposed resolution (UTMA sch 3 s 3.17): the notes give the test with no member-count limit.",
   "When the 2025-26 maximum certificate fees started: the notes give the amounts but not the start date.",
+  // Found while applying debt recovery (stage 2, PR 9b, 29 Oct 2026).
+  "The statutory charge (UTMA ss 96, 97): who declares it for the owners corporation and by what resolution, any form or fee for lodging the charge or its revocation, and any period within which the revocation must be made or lodged once the amount is paid: the notes do not say.",
+  "Whether a delegation to the manager (UTMA ss 44, 58) may include deciding to start proceedings to recover a contribution: the notes do not say.",
 ] as const;
 
 /** Points for Matthew Wrigley's review of this draft. */
@@ -2160,6 +2489,12 @@ export const FOR_REVIEW = [
   "Notice by motion, a revised notice that fails (stage 2, PR 8b-iii review): issuing a revised notice marks every earlier notice superseded before the meeting is updated, so if the meeting changed meanwhile and the revised notice is set aside, the meeting has no notice recorded as issued. An ACT unanimous resolution is then refused as resolved at the meeting, saying that no notice is recorded as issued and the notice must be issued again (it fails closed). Whether issuing a revised notice should keep the earlier notice in force until the revised one is issued is for review.",
   "Pre-meeting electronic voting is not offered for this draft (preMeetingEvoting is null). Before it is, closing a ballot must apply what the count at the meeting applies: the debtor condition (debtorRuleAppliesWhen), judged lot by lot as an owner's own vote is (debtorVoteCheck), the quorum answer, and any refusal of the whole count (Victoria's tier 5, Western Australia's 2-lot quorum). closeBallotAction applies none of these yet (stage 2, PR 8a-ii review). Since stage 2, PR 8b-iii it must also apply the longer notice of some categories (categoryNoticeDays: a unanimous resolution recorded as resolved only where the latest notice issued gave 21 days or more), which closing a ballot does not check either. Confirm before any ACT ballot is offered.",
   "Minutes (sch 2 s 2.1(1)(c); stage 2, PR 8b-iv, 29 Oct 2026): the minutes state the kind of each special, unopposed and unanimous resolution item (whatever its outcome), and a reduced quorum decision is named \"Decided later\" with its later effect as at the day the minutes are assembled (what it is, the day its 28 days end, the day it took effect or the earliest day it may, and where it stands). Minutes assembled before it is decided are not changed when it is, so a later version must be assembled to show it. The members present (remote attendees included) and the proxy and absentee vote details wait for attendance to be recorded (meeting management, Stage C). Confirm.",
+  "Debt recovery (stage 2, PR 9b, 29 Oct 2026), who decides to start proceedings (Matthew Wrigley's StrataVerze decision D7 of 29 Oct 2026, DECISIONS), to confirm: a motion carried at an executive committee meeting (UTMA sch 2 s 2.5(2)(a), CONFIRMED) or an ordinary resolution at a general meeting (a StrataVerze reading), recorded on the Decision to Start Proceedings step (COMMITTEE_REVIEW) with the meeting, the motion, the day it took effect and the amount owing then. A general meeting motion must be recorded as an ordinary resolution (its resolution category), so one recorded as a special resolution is refused: confirm whether a special resolution should also be accepted. The meeting must have been held and not deleted, the resolution must have taken effect on or after the day the case was opened (a resolution decided later, such as one at a reduced quorum, is refused until it is carried), and its subject is not checked, so one decision may be chosen for several cases. The adviser (manager) can never decide alone: whether a written delegation to the manager (ss 44, 58) may cover this is not in the notes. The legal referral, the steps after the decision and marking the case as referred for legal recovery all need the decision recorded. The committee's owner case page cannot record it: the step is completed from the adviser's case page.",
+  "Debt recovery (stage 2, PR 9b, 29 Oct 2026), the statutory charge (UTMA ss 96, 97; Matthew Wrigley's StrataVerze decision D8 of 29 Oct 2026, DECISIONS), to confirm: (1) who declares it. The notes say the owners corporation may declare it, not by what resolution. StrataVerze accepts a motion carried at an executive committee meeting or at a general meeting (any kind), carried at a held, undeleted meeting of the building and taken effect by the building's day. Unlike the decision to start proceedings, a declaration that took effect before the case was opened is accepted (review M1: D8 sets no date limit, and a charge declared and lodged before the case was opened must still be recorded so that it blocks closing). The motion's subject is not checked. (2) The Statutory Charge step comes after the decision to start proceedings, as the step order puts it (D11). The law does not tie the charge to that decision, and the days are not compared. The day lodged with the registrar-general must not be before the declaring resolution took effect or after the building's day. (3) Recorded: the resolution, the day it took effect and the day lodged. Not recorded: the executive committee's certification of the copy, the copies to the owner and interest holders, and the amount the charge secures (the record table holds an amount for the decision to start proceedings only). (4) A charge declared after the step was completed cannot be recorded, because a completed step is not reopened. (5) No form or fee is recorded: none is in the notes.",
+  "Debt recovery (stage 2, PR 9b, 29 Oct 2026), the revocation of a statutory charge, to confirm: the law requires the charge to be revoked once the amount is paid and the revocation lodged (UTMA ss 96, 97). The notes give no period for it, so the statutoryCharge revocation deadline (withinDays) has no value: no deadline is checked, and recording the revocation is never blocked for it. The adviser records the day the revocation was lodged, on the case (open or closed): refused where no charge is lodged, where its revocation is already recorded (so a second request records nothing), for a day after the building's day, and for a day before the charge was lodged. That the amount was paid is not checked, so a charge can be revoked and the case closed as settled or written off: whether a charge may be revoked before the amount is paid is not in the notes. Who revoked it and when is not recorded: the day recorded as decided is the day lodged.",
+  "Debt recovery (stage 2, PR 9b, 29 Oct 2026), closing a case with a statutory charge (Matthew Wrigley's StrataVerze decision D8, closeBlockedUntilRevoked ANY_CLOSE), to confirm: while a lodged charge's revocation is not recorded, the case cannot be closed in any status (paid, settled or written off), checked under the case lock, and its Closed step cannot be completed (a StrataVerze choice, as the step says the case is closed). A case closed by a payment plan's last instalment (completePlan) does not check the charge: that cannot happen in the ACT today, because the pack has no statutory payment plan (FEATURES.statutoryPaymentPlans off), and must be checked before it ever has one.",
+  "Debt recovery (stage 2, PR 9b, 29 Oct 2026), where proceedings go (Matthew Wrigley's decision D13 of 29 Oct 2026, DECISIONS), to confirm: recorded when the Proceedings step is completed, from one option, a court, which includes ACAT (UTMA dictionary \"court\", CONFIRMED), as the unpaid amount is recoverable as a debt with s 94 interest (s 95(1), CONFIRMED). ACAT is not a forum of its own that can be recorded: that levies may be recovered in ACAT's civil jurisdiction is ACAT guidance only (the ACAT Act not read), so a claim in ACAT is recorded as a court, which the CONFIRMED dictionary supports. If the ACAT Act is read and confirms the jurisdiction, a later pack version may make ACAT its own option. The $25,000 ACAT limit and the Magistrates Court above it are shown to advisers as guidance, never applied, and never in owner-facing text.",
+  "Debt recovery (stage 2, PR 9b, 29 Oct 2026), the steps and fees (Matthew Wrigley's decisions D10 to D12 of 29 Oct 2026, DECISIONS), to confirm: the NSW step types with a Statutory Charge step (unpriced) after the Decision to Start Proceedings, completed in order on the server. The contact, reminder and final notice are StrataVerze practice, as the law sets no notice before action (CONFIRMED absent). The Instalment Request step is StrataVerze practice (no statutory payment plan). Enforcement is not confirmed. Every StrataVerze recovery step fee is charged to the owners corporation and never passed to the owner, as whether the costs of recovering contributions are recoverable is ACAT guidance only (s 31(4) covers fault and rule breach expenses only).",
   "Proxy caps (sch 3 s 3.26(3), (4); stage 2, PR 8b-iv, 29 Oct 2026), by Matthew Wrigley's StrataVerze decision D15 of 29 Oct 2026 (DECISIONS), kept here for confirmation. Every cap warns only and never stops a proxy being saved, the 1 proxy cap at 20 units or fewer included, since the chair is exempt (s 3.26(4)) and who chairs is not recorded. With more than 20 units the limit is 5% of the units, and how it is rounded is NOT_CONFIRMED: a holder above the share rounded down is warned that it \"may be over\", and above it rounded up that it is over. The band is worked out from the units recorded (PROXY_LIMIT_BAND), and where it cannot be, more than 1 proxy is warned of as not checked. A holder is matched by email (any case), or by name where there is no email, and a proxy belongs to the meeting on its meeting date; one with no meeting date is counted for every meeting. The warnings show on the meeting page of a general meeting, in its proxy limits panel. An action that checks a proxy before it is saved (checkProxyCapsAction) exists for a proxy form, which no screen has yet, and saving a proxy itself is unchanged and checks nothing. Where 5% of the units is less than 1 proxy no floor is applied (the band gives 5% only above 20 units, so this does not arise with the units recorded). Confirm.",
 ] as const;
 
@@ -2167,7 +2502,8 @@ export const FOR_REVIEW = [
  * StrataVerze's decisions. Matthew Wrigley has not reviewed this draft as a
  * whole; the decisions so far are the payment order and the notice timing
  * (28 Oct 2026), and the quorum answer, 1 or 2 members, reduced quorum
- * decisions, their grace before settling, notice by motion and proxy caps (29 Oct 2026). Points for the review are in FOR_REVIEW and marked "FOR
+ * decisions, their grace before settling, notice by motion, proxy caps and
+ * debt recovery (29 Oct 2026). Points for the review are in FOR_REVIEW and marked "FOR
  * REVIEW" and "FOR LEGAL REVIEW" above.
  */
 export const DECISIONS: readonly { decision: string; decidedBy: string; decidedOn: string }[] = [
@@ -2218,15 +2554,23 @@ export const DECISIONS: readonly { decision: string; decidedBy: string; decidedO
     decidedBy: "Matthew Wrigley",
     decidedOn: "2026-10-29",
   },
+  {
+    decision:
+      "Debt recovery (stage 2, PR 9, the PR 9 decisions as they apply to the ACT). Matthew Wrigley's StrataVerze decisions of 29 Oct 2026, kept in FOR_REVIEW for legal confirmation. (D7) The decision to start proceedings is a motion carried at an executive committee meeting (UTMA sch 2 s 2.5(2)(a), CONFIRMED) or an ordinary resolution at a general meeting (a StrataVerze reading), recorded when the Decision to Start Proceedings step (COMMITTEE_REVIEW) is completed (DEBT_RECOVERY.authorityToSue), on a held meeting, taking effect on or after the day the case was opened, a resolution decided later refused until carried, never the adviser alone. (D8) A statutory charge over the unit lease (UTMA ss 96, 97, CONFIRMED) is recorded when the Statutory Charge step is completed: either declared by a motion carried at an executive committee meeting or a general meeting (a StrataVerze reading, as the notes do not say who declares it) and lodged with the registrar-general on a day, or not declared (DEBT_RECOVERY.statutoryCharge). A case with a lodged charge cannot be closed in any status until the revocation is recorded as lodged (closeBlockedUntilRevoked ANY_CLOSE). No deadline for the revocation is checked, as the notes give none. (D10) Every StrataVerze recovery step fee is charged to the owners corporation only, never passed to the owner (NEVER_RECOVERABLE_FEE_VARIANTS lists all four), and the Statutory Charge step is unpriced. (D11) The NSW step types are used with the Statutory Charge step right after COMMITTEE_REVIEW (DEBT_RECOVERY_STEPS), and FEATURES.debtRecoverySteps is on in this draft pack, which no building reaches until it is switched on. (D12) The steps are completed in order, on the server, by the step order check every pack has. (D13) Where proceedings were started is recorded when the Proceedings step is completed (DEBT_RECOVERY.forum): a court, which includes ACAT (UTMA dictionary, CONFIRMED), the only option that may be recorded. ACAT's civil jurisdiction, its $25,000 limit and the Magistrates Court are guidance, shown to advisers only, never applied and never in owner-facing text.",
+    decidedBy: "Matthew Wrigley",
+    decidedOn: "2026-10-29",
+  },
 ];
 
 /**
  * None of the NSW workflows applies in the ACT: there is no statutory payment
  * plan or hardship statement, committee training, Strata Hub report, NSW
  * capital works fund plan (the ACT's sinking fund plan is its own) or key
- * financial information form. Certificates, records inspection and debt
- * recovery follow the ACT's own rules above, which have no workflow yet, so
- * those switches are off too (see FOR_REVIEW).
+ * financial information form. Certificates and records inspection follow the
+ * ACT's own rules above, which have no workflow yet, so those switches are off
+ * too (see FOR_REVIEW). The debt recovery steps are on since stage 2, PR 9b
+ * (decision D11): the ACT recovery rules (DEBT_RECOVERY) apply to them, and no
+ * building reaches this draft pack until it is switched on.
  */
 export const FEATURES: PackFeatures = {
   statutoryPaymentPlans: false,
@@ -2236,5 +2580,5 @@ export const FEATURES: PackFeatures = {
   keyFinancialInformation: false,
   strataInformationCertificate: false,
   recordsInspections: false,
-  debtRecoverySteps: false,
+  debtRecoverySteps: true,
 };

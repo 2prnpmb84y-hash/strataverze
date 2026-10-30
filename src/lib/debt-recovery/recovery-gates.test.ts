@@ -194,7 +194,8 @@ describe("failing closed", () => {
     expect(recoveryStepNeeds(withRecovery({ authorityToSue: authority({ value: [], status: "STRATAVERZE", source: "s" }) }), "COMMITTEE_REVIEW")).toMatchObject({ problem: expect.stringMatching(/not confirmed/) });
   });
 
-  it.each(["stepTiming", "finalNotice", "statutoryCharge", "appliesWhen"])("a key StrataVerze does not apply yet (%s) refuses every action", (key) => {
+  // statutoryCharge is applied since PR 9b (recovery-gates.charge.test.ts): only the keys still not applied are here.
+  it.each(["stepTiming", "finalNotice", "appliesWhen"])("a key StrataVerze does not apply yet (%s) refuses every action", (key) => {
     const rules = withRecovery({ [key]: { anything: true } });
     expect(recoveryGatesApply(rules)).toBe(true);
     const refusal = "Debt recovery for this building needs rules StrataVerze does not apply yet, so this is refused. Nothing was saved.";
@@ -209,16 +210,18 @@ describe("failing closed", () => {
     expect(recoveryGateProblem(rules, { action: "INITIATE" })).toMatch(/does not apply yet/);
   });
 
-  it("a key written as undefined, or not in the shared shape (the ACT pack's own forum and charge, until PR 9b), refuses", () => {
+  it("a key written as undefined, or not in the shared shape (such as the ACT pack's own forum and charge fields before PR 9b), refuses", () => {
     const shape = "This building's debt recovery rules are not in the shape StrataVerze applies, so this is refused. Nothing was saved.";
     expect(recoveryGateProblem(withRecovery({ forum: undefined }), { action: "INITIATE" })).toBe(shape);
     expect(recoveryGateProblem(withRecovery({ forum: { tribunal: "ACAT", status: "GUIDANCE" } }), { action: "INITIATE" })).toBe(shape);
     expect(recoveryGateProblem(withRecovery({ authorityToSue: authority({ value: [{ meeting: "OWNER", kind: "ANY", words: "x" }], status: "STRATAVERZE", source: "s" }) }), { action: "INITIATE" })).toBe(shape);
     expect(recoveryGateProblem(withRecovery({ authorityToSue: { recordedAtStep: "X" } }), { action: "INITIATE" })).toBe(shape);
-    // The ACT draft pack as it stands: its DEBT_RECOVERY has the old forum and statutoryCharge, so every gate refuses.
+    // The ACT pack's DEBT_RECOVERY before PR 9b (its own forum and charge fields): every gate refused it.
+    expect(recoveryGateProblem(withRecovery({ statutoryCharge: { available: true, securesInterest: true, powerOfSale: false, revokeAndLodgeWhenPaid: true } }), { action: "INITIATE" })).toBe(shape);
+    // Since PR 9b the ACT pack's DEBT_RECOVERY is in the shared shape, so opening a case passes.
     const act = PENDING_RULE_PACKS.ACT.rules as unknown as Rules;
     expect(recoveryGatesApply(act)).toBe(true);
-    expect(recoveryGateProblem(act, { action: "INITIATE" })).not.toBeNull();
+    expect(recoveryGateProblem(act, { action: "INITIATE" })).toBeNull();
   });
 
   it("a forum option that is only guidance is shown as a note and cannot be recorded", () => {
