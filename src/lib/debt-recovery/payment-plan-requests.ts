@@ -28,7 +28,7 @@ import {
   type TermsInput,
 } from "./payment-plans";
 import { needRule } from "@/config/statutory";
-import { allocatePayment, lateChargeFirst, type PaymentAllocationOrder } from "@/lib/finance/statutory-interest";
+import { lateChargeFirst, noticeOwingSplit, type PaymentAllocationOrder } from "@/lib/finance/statutory-interest";
 
 export class PaymentPlanError extends Error {
   constructor(message: string, readonly fieldErrors: Record<string, string> = {}) {
@@ -102,18 +102,18 @@ async function openCaseFor(schemeId: string, lotId: string) {
  */
 export async function lotArrears(schemeId: string, lotId: string, today: string, order?: PaymentAllocationOrder) {
   const notices = await db.orm.public.LevyNotice.where((n) => and(n.schemeId.eq(schemeId), n.lotId.eq(lotId), n.status.neq("DRAFT"), n.status.neq("WRITTEN_OFF"))).limit(2000).all();
-  if (lateChargeFirst(order)) return lotArrearsLateChargeFirst(notices.filter((n) => day(n.dueDate) < today));
+  if (lateChargeFirst(order)) return lotArrearsLateChargeFirst(notices.filter((n) => day(n.dueDate) < today), order);
   let leviesCents = 0;
   let interestCents = 0;
   for (const n of notices) {
     if (day(n.dueDate) >= today) continue;
-    const due = toCents(String(n.amountDue));
-    const paid = toCents(String(n.amountPaid ?? 0));
-    const interest = toCents(String(n.interestCharged ?? 0));
     // A notice with a negative levy (a credit) adds it to what is paid, as before.
-    const applied = allocatePayment(paid - Math.min(0, due), { levyCents: Math.max(0, due), interestCents: interest, recoveryCostsCents: 0 }, order);
-    leviesCents += Math.max(0, due - applied.levyCents);
-    interestCents += Math.max(0, interest - applied.interestCents);
+    const owing = noticeOwingSplit(
+      { dueCents: toCents(String(n.amountDue)), paidCents: toCents(String(n.amountPaid ?? 0)), chargedCents: toCents(String(n.interestCharged ?? 0)) },
+      order,
+    );
+    leviesCents += owing.levyCents;
+    interestCents += owing.lateChargeCents;
   }
   return { leviesCents, interestCents };
 }
@@ -121,6 +121,7 @@ export async function lotArrears(schemeId: string, lotId: string, today: string,
 /** lotArrears for a building that applies payments to the late charge first. */
 async function lotArrearsLateChargeFirst(
   notices: Array<{ id: string; amountDue: unknown; amountPaid?: unknown; interestCharged?: unknown }>,
+  order: PaymentAllocationOrder | undefined,
 ) {
   if (notices.length === 0) return { leviesCents: 0, interestCents: 0 };
   const { noticeLateChargePaid } = await import("@/lib/finance/interest-setting");
@@ -130,14 +131,18 @@ async function lotArrearsLateChargeFirst(
   let leviesCents = 0;
   let interestCents = 0;
   for (const n of notices) {
-    const due = toCents(String(n.amountDue));
-    const paid = toCents(String(n.amountPaid ?? 0));
-    const interest = toCents(String(n.interestCharged ?? 0));
-    const chargePaid = noticeLateChargePaid(n, payments);
     // A notice with a negative levy (a credit) adds it to what is paid, as before.
-    const levyPaid = paid - Math.min(0, due) - chargePaid;
-    leviesCents += Math.max(0, Math.max(0, due) - levyPaid);
-    interestCents += Math.max(0, interest - chargePaid);
+    const owing = noticeOwingSplit(
+      {
+        dueCents: toCents(String(n.amountDue)),
+        paidCents: toCents(String(n.amountPaid ?? 0)),
+        chargedCents: toCents(String(n.interestCharged ?? 0)),
+        chargePaidCents: noticeLateChargePaid(n, payments),
+      },
+      order,
+    );
+    leviesCents += owing.levyCents;
+    interestCents += owing.lateChargeCents;
   }
   return { leviesCents, interestCents };
 }

@@ -96,7 +96,10 @@ function seed(opts: { st?: "WA" | "NSW" | "QLD"; currentOrder?: number; records?
       { id: "m-owner", schemeId: SCHEME, lotId: "lot-1", profileId: "debtor", role: "OWNER", isActive: true, endDate: null },
       { id: "m-adviser", schemeId: SCHEME, lotId: null, profileId: "adviser", role: "ADVISER", isActive: true, endDate: null },
     ],
-    LevyNotice: [{ id: "n-1", schemeId: SCHEME, lotId: "lot-1", status: "OVERDUE", dueDate: "2026-07-01", balanceOutstanding: "1200.00", interestCharged: "35.50" }],
+    // The balance includes the late charge (amount due + late charge - amount paid), as every writer keeps it
+    // (fixture corrected 30 Oct 2026, review C1: it was 1200.00 with a 35.50 late charge, and the amount owing
+    // added the late charge to it; the lot owes 1235.50 either way, and before the fix this fixture gives 1271.00).
+    LevyNotice: [{ id: "n-1", schemeId: SCHEME, lotId: "lot-1", status: "OVERDUE", dueDate: "2026-07-01", amountDue: "1200.00", amountPaid: "0.00", balanceOutstanding: "1235.50", interestCharged: "35.50" }],
     PaymentPlan: [],
     Meeting: [
       { id: "council", schemeId: SCHEME, meetingType: "COMMITTEE", status: "MINUTES_DRAFT", title: "Council meeting", scheduledAt: "2026-10-20T02:00:00.000Z", timezone: null },
@@ -223,20 +226,23 @@ describe("the Decision to Start Proceedings step (D9)", () => {
 
   // Overdue notices fix (30 Oct 2026): nothing stores a notice as OVERDUE, so
   // the amount owing counts every notice past its due day on the building's
-  // day with a balance. On 5191ec9 this recorded "0.00".
+  // day with a balance. On 5191ec9 this recorded "0.00". The amount is the
+  // balances (review C1, "Balance only"), which include the late charge:
+  // before C1 it added the 35.50 late charge again (1571.00).
   it("records the amount owing from ISSUED and PARTIALLY_PAID notices past their due day in Perth", async () => {
     seed({ currentOrder: order("COMMITTEE_REVIEW") });
-    const base = { schemeId: SCHEME, lotId: "lot-1", interestCharged: null };
+    // Each balance includes its late charge (amount due + late charge - amount paid).
+    const base = { schemeId: SCHEME, lotId: "lot-1", amountPaid: "0.00", interestCharged: "0.00" };
     sharedFake.table("LevyNotice").splice(
       0,
       1,
-      { ...base, id: "n-1", status: "ISSUED", dueDate: "2026-07-01", balanceOutstanding: "1200.00", interestCharged: "35.50" },
+      { ...base, id: "n-1", status: "ISSUED", dueDate: "2026-07-01", amountDue: "1200.00", balanceOutstanding: "1235.50", interestCharged: "35.50" },
       // Due 1 Nov: 09:00 on 2 Nov in Perth, so overdue.
-      { ...base, id: "n-2", status: "PARTIALLY_PAID", dueDate: "2026-11-01", balanceOutstanding: "300.00" },
+      { ...base, id: "n-2", status: "PARTIALLY_PAID", dueDate: "2026-11-01", amountDue: "500.00", amountPaid: "200.00", balanceOutstanding: "300.00" },
       // Due today in Perth, paid, and another lot's: none counted.
-      { ...base, id: "n-3", status: "ISSUED", dueDate: "2026-11-02", balanceOutstanding: "999.00" },
-      { ...base, id: "n-4", status: "PAID", dueDate: "2026-07-01", balanceOutstanding: "0.00" },
-      { ...base, id: "n-5", lotId: "lot-2", status: "ISSUED", dueDate: "2026-07-01", balanceOutstanding: "50.00" },
+      { ...base, id: "n-3", status: "ISSUED", dueDate: "2026-11-02", amountDue: "999.00", balanceOutstanding: "999.00" },
+      { ...base, id: "n-4", status: "PAID", dueDate: "2026-07-01", amountDue: "100.00", amountPaid: "100.00", balanceOutstanding: "0.00" },
+      { ...base, id: "n-5", lotId: "lot-2", status: "ISSUED", dueDate: "2026-07-01", amountDue: "50.00", balanceOutstanding: "50.00" },
     );
     expect(await complete("COMMITTEE_REVIEW", { authorityMeetingId: "council", authorityItemId: "c-carried" })).toEqual({ success: true });
     expect(records()).toHaveLength(1);
@@ -245,7 +251,7 @@ describe("the Decision to Start Proceedings step (D9)", () => {
 
   it("refuses, with nothing written, when a past-due notice's balance cannot be read (fail closed)", async () => {
     seed({ currentOrder: order("COMMITTEE_REVIEW") });
-    sharedFake.table("LevyNotice").splice(0, 1, { id: "n-1", schemeId: SCHEME, lotId: "lot-1", status: "ISSUED", dueDate: "2026-07-01", balanceOutstanding: "not a number", interestCharged: null });
+    sharedFake.table("LevyNotice").splice(0, 1, { id: "n-1", schemeId: SCHEME, lotId: "lot-1", status: "ISSUED", dueDate: "2026-07-01", amountDue: "1200.00", amountPaid: "0.00", balanceOutstanding: "not a number", interestCharged: "0.00" });
     expect(await complete("COMMITTEE_REVIEW", { authorityMeetingId: "council", authorityItemId: "c-carried" })).toEqual({ error: "Could not work out the amount owing. Nothing was saved." });
     expectNothingWritten("COMMITTEE_REVIEW");
     expect(records()).toEqual([]);

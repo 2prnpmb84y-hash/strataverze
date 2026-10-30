@@ -8,6 +8,7 @@ import type { Numeric } from "@prisma/orm-postgres/target/codec-types";
 import { db } from "@/prisma/db";
 import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { OVERDUE_NOTICE_STATUSES, overdueOn } from "@/lib/levies/overdue";
+import { balancesCents } from "./case-amount";
 import type { RecordedRecoveryFacts, RecoveryRecordToWrite } from "./recovery-gates";
 
 type Orm = typeof db.orm;
@@ -40,12 +41,14 @@ export function recordedFacts(rows: readonly Pick<RecoveryRecordRow, "kind" | "f
 }
 
 /**
- * The lot's amount owing now, as opening a case works it out (the balances
- * of the notices overdue on the building's day `today`, isOverdueOn, plus
- * their late charge), to two decimals. Without `today`, the building's day
- * now. Throws when the notices cannot be read, so a failed read is never
- * "nothing owing", and when a notice's due day or balance cannot be read
- * (UnreadableNoticeError), so it is never left out of the amount silently.
+ * The lot's amount owing now, as opening a case works it out: the sum, in
+ * cents, of the balances of the notices overdue on the building's day
+ * `today` (isOverdueOn), to two decimals. A balance already includes the
+ * notice's late charge, so it is not added again (C1, "Balance only",
+ * 30 Oct 2026). Without `today`, the building's day now. Throws when the
+ * notices cannot be read, so a failed read is never "nothing owing", and when
+ * a notice's due day or balance cannot be read (UnreadableNoticeError), so it
+ * is never left out of the amount silently.
  */
 export async function currentAmountOwing(schemeId: string, lotId: string, orm: Orm = db.orm, today?: string): Promise<string> {
   const day = today ?? (await schemeToday(schemeId, new Date(), orm));
@@ -55,8 +58,7 @@ export async function currentAmountOwing(schemeId: string, lotId: string, orm: O
     .where((n) => n.status.in([...OVERDUE_NOTICE_STATUSES]))
     .limit(5000)
     .all();
-  const total = overdueOn(notices, day).reduce((sum, n) => sum + Number(n.balanceOutstanding) + Number(n.interestCharged || 0), 0);
-  return total.toFixed(2);
+  return (balancesCents(overdueOn(notices, day)) / 100).toFixed(2);
 }
 
 /** Write the step's records, in the step's transaction (`orm` is the transaction's). */

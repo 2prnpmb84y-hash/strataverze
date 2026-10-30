@@ -21,6 +21,8 @@
  * Fail closed: a notice whose answer depends on a due day or a balance that
  * cannot be read throws UnreadableNoticeError, so it is never counted, or
  * left out, without anyone knowing. Each caller decides what to do with it.
+ * noticeCents reads a notice's other amounts the same way (30 Oct 2026, for
+ * the debt recovery case amount, src/lib/debt-recovery/case-amount.ts).
  */
 import { toIsoDay } from "./notice-plan";
 
@@ -35,38 +37,59 @@ export interface OverdueCheckNotice {
   balanceOutstanding: unknown;
 }
 
-/** A notice whose due day or balance cannot be read, so whether it is overdue is not known. */
+/** A notice field the checks read. */
+export type NoticeField = "dueDate" | "balanceOutstanding" | "amountDue" | "amountPaid" | "interestCharged" | "payments";
+
+const FIELD_WORDS: Record<NoticeField, string> = {
+  dueDate: "due date",
+  balanceOutstanding: "balance outstanding",
+  amountDue: "amount due",
+  amountPaid: "amount paid",
+  interestCharged: "late charge",
+  payments: "payments",
+};
+
+/** A notice whose due day, an amount or its payments cannot be read (or do not agree), so what it owes is not known. */
 export class UnreadableNoticeError extends Error {
   constructor(
     readonly noticeId: string | null,
-    readonly field: "dueDate" | "balanceOutstanding",
+    readonly field: NoticeField,
     value: unknown,
+    reason = "cannot be read",
   ) {
-    super(`Notice ${noticeId ?? "(no id)"}: its ${field === "dueDate" ? "due date" : "balance outstanding"} (${String(value)}) cannot be read, so whether it is overdue is not known.`);
+    const unknown = field === "dueDate" || field === "balanceOutstanding" ? "whether it is overdue" : "what it owes";
+    super(`Notice ${noticeId ?? "(no id)"}: its ${FIELD_WORDS[field]} (${String(value)}) ${reason}, so ${unknown} is not known.`);
     this.name = "UnreadableNoticeError";
   }
 }
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 
-/** A balance in whole cents (rounded as the ledger rounds it), or null when it cannot be read. */
-function balanceCents(value: unknown): number | null {
+/** An amount in whole cents (rounded as the ledger rounds it), or null when it cannot be read. */
+function centsOrNull(value: unknown): number | null {
   if (value == null || (typeof value === "string" && value.trim() === "")) return null;
   const n = Number(value);
   return Number.isFinite(n) ? Math.round(n * 100) : null;
+}
+
+/**
+ * One of a notice's amounts in whole cents. Throws UnreadableNoticeError when
+ * it cannot be read (missing, empty, not a number), so it is never taken as 0.
+ */
+export function noticeCents(notice: { id?: unknown } & Partial<Record<NoticeField, unknown>>, field: Exclude<NoticeField, "dueDate" | "payments">): number {
+  const cents = centsOrNull(notice[field]);
+  if (cents == null) throw new UnreadableNoticeError(notice.id == null ? null : String(notice.id), field, notice[field]);
+  return cents;
 }
 
 /** Whether `notice` is overdue on the building's day `today` (YYYY-MM-DD). Throws UnreadableNoticeError (see above). */
 export function isOverdueOn(notice: OverdueCheckNotice, today: string): boolean {
   if (!DAY.test(today)) throw new RangeError(`Not a day (YYYY-MM-DD): ${String(today)}`);
   if (!(OVERDUE_NOTICE_STATUSES as readonly string[]).includes(String(notice.status))) return false;
-  const id = notice.id == null ? null : String(notice.id);
   const due = toIsoDay(notice.dueDate);
-  if (!DAY.test(due)) throw new UnreadableNoticeError(id, "dueDate", notice.dueDate);
+  if (!DAY.test(due)) throw new UnreadableNoticeError(notice.id == null ? null : String(notice.id), "dueDate", notice.dueDate);
   if (due >= today) return false;
-  const cents = balanceCents(notice.balanceOutstanding);
-  if (cents == null) throw new UnreadableNoticeError(id, "balanceOutstanding", notice.balanceOutstanding);
-  return cents > 0;
+  return noticeCents(notice, "balanceOutstanding") > 0;
 }
 
 /** The notices overdue on `today`, in the order given. Throws UnreadableNoticeError (see above). */

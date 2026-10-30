@@ -2,7 +2,7 @@
 
 exports[`NSW: which notices count as overdue > NSW C1: past-due ISSUED, late charge in the balance (500.50 + 50.00 = 550.50) 1`] = `
 {
-  "amountOwing": "600.50",
+  "amountOwing": "550.50",
   "result": {
     "id": "<DebtRecoveryCase 1>",
     "success": true,
@@ -18,10 +18,10 @@ exports[`NSW: which notices count as overdue > NSW C1: past-due ISSUED, late cha
           "interestOwed": 50,
           "lotId": "lot-1",
           "ownerId": "debtor",
-          "principalOwed": 550.5,
+          "principalOwed": 500.5,
           "rulePack": "AU-NSW 2026.10.16",
           "schemeId": "scheme-1",
-          "totalOwed": 600.5,
+          "totalOwed": 550.5,
         },
       ],
     },
@@ -30,12 +30,12 @@ exports[`NSW: which notices count as overdue > NSW C1: past-due ISSUED, late cha
         {
           "activityType": "CASE_OPENED",
           "caseId": "<DebtRecoveryCase 1>",
-          "description": "Debt recovery case DR-2026-0001 initiated by adviser for $600.50 owing",
+          "description": "Debt recovery case DR-2026-0001 initiated by adviser for $550.50 owing",
           "metadata": {
             "interestOwed": 50,
             "overdueNoticeCount": 1,
-            "principalOwed": 550.5,
-            "totalOwed": 600.5,
+            "principalOwed": 500.5,
+            "totalOwed": 550.5,
           },
           "performedBy": "adviser",
         },
@@ -47,7 +47,7 @@ exports[`NSW: which notices count as overdue > NSW C1: past-due ISSUED, late cha
 
 exports[`NSW: which notices count as overdue > NSW C1: past-due PARTIALLY_PAID, late charge in the balance, 300.00 paid (500.50 + 50.00 - 300.00 = 250.50) 1`] = `
 {
-  "amountOwing": "300.50",
+  "amountOwing": "250.50",
   "result": {
     "id": "<DebtRecoveryCase 1>",
     "success": true,
@@ -63,10 +63,10 @@ exports[`NSW: which notices count as overdue > NSW C1: past-due PARTIALLY_PAID, 
           "interestOwed": 50,
           "lotId": "lot-1",
           "ownerId": "debtor",
-          "principalOwed": 250.5,
+          "principalOwed": 200.5,
           "rulePack": "AU-NSW 2026.10.16",
           "schemeId": "scheme-1",
-          "totalOwed": 300.5,
+          "totalOwed": 250.5,
         },
       ],
     },
@@ -75,12 +75,12 @@ exports[`NSW: which notices count as overdue > NSW C1: past-due PARTIALLY_PAID, 
         {
           "activityType": "CASE_OPENED",
           "caseId": "<DebtRecoveryCase 1>",
-          "description": "Debt recovery case DR-2026-0001 initiated by adviser for $300.50 owing",
+          "description": "Debt recovery case DR-2026-0001 initiated by adviser for $250.50 owing",
           "metadata": {
             "interestOwed": 50,
             "overdueNoticeCount": 1,
-            "principalOwed": 250.5,
-            "totalOwed": 300.5,
+            "principalOwed": 200.5,
+            "totalOwed": 250.5,
           },
           "performedBy": "adviser",
         },
@@ -92,7 +92,7 @@ exports[`NSW: which notices count as overdue > NSW C1: past-due PARTIALLY_PAID, 
 
 exports[`NSW: which notices count as overdue > NSW C1: stored OVERDUE, late charge in the balance (500.50 + 50.00 = 550.50) 1`] = `
 {
-  "amountOwing": "600.50",
+  "amountOwing": "550.50",
   "result": {
     "id": "<DebtRecoveryCase 1>",
     "success": true,
@@ -108,10 +108,10 @@ exports[`NSW: which notices count as overdue > NSW C1: stored OVERDUE, late char
           "interestOwed": 50,
           "lotId": "lot-1",
           "ownerId": "debtor",
-          "principalOwed": 550.5,
+          "principalOwed": 500.5,
           "rulePack": "AU-NSW 2026.10.16",
           "schemeId": "scheme-1",
-          "totalOwed": 600.5,
+          "totalOwed": 550.5,
         },
       ],
     },
@@ -120,12 +120,12 @@ exports[`NSW: which notices count as overdue > NSW C1: stored OVERDUE, late char
         {
           "activityType": "CASE_OPENED",
           "caseId": "<DebtRecoveryCase 1>",
-          "description": "Debt recovery case DR-2026-0001 initiated by adviser for $600.50 owing",
+          "description": "Debt recovery case DR-2026-0001 initiated by adviser for $550.50 owing",
           "metadata": {
             "interestOwed": 50,
             "overdueNoticeCount": 1,
-            "principalOwed": 550.5,
-            "totalOwed": 600.5,
+            "principalOwed": 500.5,
+            "totalOwed": 550.5,
           },
           "performedBy": "adviser",
         },
@@ -204,7 +204,7 @@ exports[`NSW: which notices count as overdue > NSW ISSUED not yet due (due 1 Dec
 
 exports[`NSW: which notices count as overdue > NSW a mix: stored OVERDUE, past-due ISSUED and PARTIALLY_PAID, and ISSUED not yet due 1`] = `
 {
-  "amountOwing": "2736.05",
+  "amountOwing": "2668.15",
   "result": {
     "id": "<DebtRecoveryCase 1>",
     "success": true,
@@ -220,10 +220,10 @@ exports[`NSW: which notices count as overdue > NSW a mix: stored OVERDUE, past-d
           "interestOwed": 67.9,
           "lotId": "lot-1",
           "ownerId": "debtor",
-          "principalOwed": 2668.15,
+          "principalOwed": 2600.25,
           "rulePack": "AU-NSW 2026.10.16",
           "schemeId": "scheme-1",
-          "totalOwed": 2736.05,
+          "totalOwed": 2668.15,
         },
       ],
     },
@@ -232,12 +232,12 @@ exports[`NSW: which notices count as overdue > NSW a mix: stored OVERDUE, past-d
         {
           "activityType": "CASE_OPENED",
           "caseId": "<DebtRecoveryCase 1>",
-          "description": "Debt recovery case DR-2026-0001 initiated by adviser for $2736.05 owing",
+          "description": "Debt recovery case DR-2026-0001 initiated by adviser for $2668.15 owing",
           "metadata": {
             "interestOwed": 67.9,
             "overdueNoticeCount": 3,
-            "principalOwed": 2668.15,
-            "totalOwed": 2736.05,
+            "principalOwed": 2600.25,
+            "totalOwed": 2668.15,
           },
           "performedBy": "adviser",
         },
@@ -260,7 +260,7 @@ exports[`NSW: which notices count as overdue > NSW past-due DRAFT, PAID and WRIT
 
 exports[`NSW: which notices count as overdue > NSW past-due ISSUED with a balance 1`] = `
 {
-  "amountOwing": "825.05",
+  "amountOwing": "812.65",
   "result": {
     "id": "<DebtRecoveryCase 1>",
     "success": true,
@@ -276,10 +276,10 @@ exports[`NSW: which notices count as overdue > NSW past-due ISSUED with a balanc
           "interestOwed": 12.4,
           "lotId": "lot-1",
           "ownerId": "debtor",
-          "principalOwed": 812.65,
+          "principalOwed": 800.25,
           "rulePack": "AU-NSW 2026.10.16",
           "schemeId": "scheme-1",
-          "totalOwed": 825.05,
+          "totalOwed": 812.65,
         },
       ],
     },
@@ -288,12 +288,12 @@ exports[`NSW: which notices count as overdue > NSW past-due ISSUED with a balanc
         {
           "activityType": "CASE_OPENED",
           "caseId": "<DebtRecoveryCase 1>",
-          "description": "Debt recovery case DR-2026-0001 initiated by adviser for $825.05 owing",
+          "description": "Debt recovery case DR-2026-0001 initiated by adviser for $812.65 owing",
           "metadata": {
             "interestOwed": 12.4,
             "overdueNoticeCount": 1,
-            "principalOwed": 812.65,
-            "totalOwed": 825.05,
+            "principalOwed": 800.25,
+            "totalOwed": 812.65,
           },
           "performedBy": "adviser",
         },
@@ -329,46 +329,12 @@ exports[`NSW: which notices count as overdue > NSW past-due ISSUED with a balanc
 
 exports[`NSW: which notices count as overdue > NSW past-due ISSUED with a late charge that cannot be read 1`] = `
 {
-  "amountOwing": "NaN",
+  "amountOwing": "1000.00",
   "result": {
-    "id": "<DebtRecoveryCase 1>",
-    "success": true,
+    "error": "A levy notice for this lot could not be read, so the amount owing cannot be worked out. Nothing was saved.",
   },
-  "stepsCreated": 10,
-  "writes": [
-    {
-      "createDebtRecoveryCase": [
-        {
-          "caseNumber": "DR-2026-0001",
-          "initiatedBy": "adviser",
-          "initiatedRole": "ADVISER",
-          "interestOwed": null,
-          "lotId": "lot-1",
-          "ownerId": "debtor",
-          "principalOwed": 1000,
-          "rulePack": "AU-NSW 2026.10.16",
-          "schemeId": "scheme-1",
-          "totalOwed": null,
-        },
-      ],
-    },
-    {
-      "logDebtRecoveryActivity": [
-        {
-          "activityType": "CASE_OPENED",
-          "caseId": "<DebtRecoveryCase 1>",
-          "description": "Debt recovery case DR-2026-0001 initiated by adviser for $NaN owing",
-          "metadata": {
-            "interestOwed": null,
-            "overdueNoticeCount": 1,
-            "principalOwed": 1000,
-            "totalOwed": null,
-          },
-          "performedBy": "adviser",
-        },
-      ],
-    },
-  ],
+  "stepsCreated": 0,
+  "writes": [],
 }
 `;
 
@@ -452,7 +418,7 @@ exports[`NSW: which notices count as overdue > NSW stored OVERDUE, not yet due 1
 
 exports[`NSW: which notices count as overdue > NSW stored OVERDUE, past due with a balance (as before) 1`] = `
 {
-  "amountOwing": "1271.00",
+  "amountOwing": "1235.50",
   "result": {
     "id": "<DebtRecoveryCase 1>",
     "success": true,
@@ -468,10 +434,10 @@ exports[`NSW: which notices count as overdue > NSW stored OVERDUE, past due with
           "interestOwed": 35.5,
           "lotId": "lot-1",
           "ownerId": "debtor",
-          "principalOwed": 1235.5,
+          "principalOwed": 1200,
           "rulePack": "AU-NSW 2026.10.16",
           "schemeId": "scheme-1",
-          "totalOwed": 1271,
+          "totalOwed": 1235.5,
         },
       ],
     },
@@ -480,12 +446,12 @@ exports[`NSW: which notices count as overdue > NSW stored OVERDUE, past due with
         {
           "activityType": "CASE_OPENED",
           "caseId": "<DebtRecoveryCase 1>",
-          "description": "Debt recovery case DR-2026-0001 initiated by adviser for $1271.00 owing",
+          "description": "Debt recovery case DR-2026-0001 initiated by adviser for $1235.50 owing",
           "metadata": {
             "interestOwed": 35.5,
             "overdueNoticeCount": 1,
-            "principalOwed": 1235.5,
-            "totalOwed": 1271,
+            "principalOwed": 1200,
+            "totalOwed": 1235.5,
           },
           "performedBy": "adviser",
         },
@@ -521,7 +487,7 @@ exports[`NSW: which notices count as overdue > NSW stored OVERDUE, past due, wit
 
 exports[`QLD: which notices count as overdue > QLD C1: past-due ISSUED, late charge in the balance (500.50 + 50.00 = 550.50) 1`] = `
 {
-  "amountOwing": "600.50",
+  "amountOwing": "550.50",
   "result": {
     "id": "<DebtRecoveryCase 1>",
     "success": true,
@@ -537,10 +503,10 @@ exports[`QLD: which notices count as overdue > QLD C1: past-due ISSUED, late cha
           "interestOwed": 50,
           "lotId": "lot-1",
           "ownerId": "debtor",
-          "principalOwed": 550.5,
+          "principalOwed": 500.5,
           "rulePack": "AU-QLD 2026.10.20",
           "schemeId": "scheme-1",
-          "totalOwed": 600.5,
+          "totalOwed": 550.5,
         },
       ],
     },
@@ -549,12 +515,12 @@ exports[`QLD: which notices count as overdue > QLD C1: past-due ISSUED, late cha
         {
           "activityType": "CASE_OPENED",
           "caseId": "<DebtRecoveryCase 1>",
-          "description": "Debt recovery case DR-2026-0001 initiated by adviser for $600.50 owing",
+          "description": "Debt recovery case DR-2026-0001 initiated by adviser for $550.50 owing",
           "metadata": {
             "interestOwed": 50,
             "overdueNoticeCount": 1,
-            "principalOwed": 550.5,
-            "totalOwed": 600.5,
+            "principalOwed": 500.5,
+            "totalOwed": 550.5,
           },
           "performedBy": "adviser",
         },
@@ -566,7 +532,7 @@ exports[`QLD: which notices count as overdue > QLD C1: past-due ISSUED, late cha
 
 exports[`QLD: which notices count as overdue > QLD C1: past-due PARTIALLY_PAID, late charge in the balance, 300.00 paid (500.50 + 50.00 - 300.00 = 250.50) 1`] = `
 {
-  "amountOwing": "300.50",
+  "amountOwing": "250.50",
   "result": {
     "id": "<DebtRecoveryCase 1>",
     "success": true,
@@ -579,13 +545,13 @@ exports[`QLD: which notices count as overdue > QLD C1: past-due PARTIALLY_PAID, 
           "caseNumber": "DR-2026-0001",
           "initiatedBy": "adviser",
           "initiatedRole": "ADVISER",
-          "interestOwed": 50,
+          "interestOwed": 0,
           "lotId": "lot-1",
           "ownerId": "debtor",
           "principalOwed": 250.5,
           "rulePack": "AU-QLD 2026.10.20",
           "schemeId": "scheme-1",
-          "totalOwed": 300.5,
+          "totalOwed": 250.5,
         },
       ],
     },
@@ -594,12 +560,12 @@ exports[`QLD: which notices count as overdue > QLD C1: past-due PARTIALLY_PAID, 
         {
           "activityType": "CASE_OPENED",
           "caseId": "<DebtRecoveryCase 1>",
-          "description": "Debt recovery case DR-2026-0001 initiated by adviser for $300.50 owing",
+          "description": "Debt recovery case DR-2026-0001 initiated by adviser for $250.50 owing",
           "metadata": {
-            "interestOwed": 50,
+            "interestOwed": 0,
             "overdueNoticeCount": 1,
             "principalOwed": 250.5,
-            "totalOwed": 300.5,
+            "totalOwed": 250.5,
           },
           "performedBy": "adviser",
         },
@@ -611,7 +577,7 @@ exports[`QLD: which notices count as overdue > QLD C1: past-due PARTIALLY_PAID, 
 
 exports[`QLD: which notices count as overdue > QLD C1: stored OVERDUE, late charge in the balance (500.50 + 50.00 = 550.50) 1`] = `
 {
-  "amountOwing": "600.50",
+  "amountOwing": "550.50",
   "result": {
     "id": "<DebtRecoveryCase 1>",
     "success": true,
@@ -627,10 +593,10 @@ exports[`QLD: which notices count as overdue > QLD C1: stored OVERDUE, late char
           "interestOwed": 50,
           "lotId": "lot-1",
           "ownerId": "debtor",
-          "principalOwed": 550.5,
+          "principalOwed": 500.5,
           "rulePack": "AU-QLD 2026.10.20",
           "schemeId": "scheme-1",
-          "totalOwed": 600.5,
+          "totalOwed": 550.5,
         },
       ],
     },
@@ -639,12 +605,12 @@ exports[`QLD: which notices count as overdue > QLD C1: stored OVERDUE, late char
         {
           "activityType": "CASE_OPENED",
           "caseId": "<DebtRecoveryCase 1>",
-          "description": "Debt recovery case DR-2026-0001 initiated by adviser for $600.50 owing",
+          "description": "Debt recovery case DR-2026-0001 initiated by adviser for $550.50 owing",
           "metadata": {
             "interestOwed": 50,
             "overdueNoticeCount": 1,
-            "principalOwed": 550.5,
-            "totalOwed": 600.5,
+            "principalOwed": 500.5,
+            "totalOwed": 550.5,
           },
           "performedBy": "adviser",
         },
@@ -723,7 +689,7 @@ exports[`QLD: which notices count as overdue > QLD ISSUED not yet due (due 1 Dec
 
 exports[`QLD: which notices count as overdue > QLD a mix: stored OVERDUE, past-due ISSUED and PARTIALLY_PAID, and ISSUED not yet due 1`] = `
 {
-  "amountOwing": "2736.05",
+  "amountOwing": "2668.15",
   "result": {
     "id": "<DebtRecoveryCase 1>",
     "success": true,
@@ -736,13 +702,13 @@ exports[`QLD: which notices count as overdue > QLD a mix: stored OVERDUE, past-d
           "caseNumber": "DR-2026-0001",
           "initiatedBy": "adviser",
           "initiatedRole": "ADVISER",
-          "interestOwed": 67.9,
+          "interestOwed": 47.9,
           "lotId": "lot-1",
           "ownerId": "debtor",
-          "principalOwed": 2668.15,
+          "principalOwed": 2620.25,
           "rulePack": "AU-QLD 2026.10.20",
           "schemeId": "scheme-1",
-          "totalOwed": 2736.05,
+          "totalOwed": 2668.15,
         },
       ],
     },
@@ -751,12 +717,12 @@ exports[`QLD: which notices count as overdue > QLD a mix: stored OVERDUE, past-d
         {
           "activityType": "CASE_OPENED",
           "caseId": "<DebtRecoveryCase 1>",
-          "description": "Debt recovery case DR-2026-0001 initiated by adviser for $2736.05 owing",
+          "description": "Debt recovery case DR-2026-0001 initiated by adviser for $2668.15 owing",
           "metadata": {
-            "interestOwed": 67.9,
+            "interestOwed": 47.9,
             "overdueNoticeCount": 3,
-            "principalOwed": 2668.15,
-            "totalOwed": 2736.05,
+            "principalOwed": 2620.25,
+            "totalOwed": 2668.15,
           },
           "performedBy": "adviser",
         },
@@ -779,7 +745,7 @@ exports[`QLD: which notices count as overdue > QLD past-due DRAFT, PAID and WRIT
 
 exports[`QLD: which notices count as overdue > QLD past-due ISSUED with a balance 1`] = `
 {
-  "amountOwing": "825.05",
+  "amountOwing": "812.65",
   "result": {
     "id": "<DebtRecoveryCase 1>",
     "success": true,
@@ -795,10 +761,10 @@ exports[`QLD: which notices count as overdue > QLD past-due ISSUED with a balanc
           "interestOwed": 12.4,
           "lotId": "lot-1",
           "ownerId": "debtor",
-          "principalOwed": 812.65,
+          "principalOwed": 800.25,
           "rulePack": "AU-QLD 2026.10.20",
           "schemeId": "scheme-1",
-          "totalOwed": 825.05,
+          "totalOwed": 812.65,
         },
       ],
     },
@@ -807,12 +773,12 @@ exports[`QLD: which notices count as overdue > QLD past-due ISSUED with a balanc
         {
           "activityType": "CASE_OPENED",
           "caseId": "<DebtRecoveryCase 1>",
-          "description": "Debt recovery case DR-2026-0001 initiated by adviser for $825.05 owing",
+          "description": "Debt recovery case DR-2026-0001 initiated by adviser for $812.65 owing",
           "metadata": {
             "interestOwed": 12.4,
             "overdueNoticeCount": 1,
-            "principalOwed": 812.65,
-            "totalOwed": 825.05,
+            "principalOwed": 800.25,
+            "totalOwed": 812.65,
           },
           "performedBy": "adviser",
         },
@@ -848,46 +814,12 @@ exports[`QLD: which notices count as overdue > QLD past-due ISSUED with a balanc
 
 exports[`QLD: which notices count as overdue > QLD past-due ISSUED with a late charge that cannot be read 1`] = `
 {
-  "amountOwing": "NaN",
+  "amountOwing": "1000.00",
   "result": {
-    "id": "<DebtRecoveryCase 1>",
-    "success": true,
+    "error": "A contribution notice for this lot could not be read, so the amount owing cannot be worked out. Nothing was saved.",
   },
-  "stepsCreated": 10,
-  "writes": [
-    {
-      "createDebtRecoveryCase": [
-        {
-          "caseNumber": "DR-2026-0001",
-          "initiatedBy": "adviser",
-          "initiatedRole": "ADVISER",
-          "interestOwed": null,
-          "lotId": "lot-1",
-          "ownerId": "debtor",
-          "principalOwed": 1000,
-          "rulePack": "AU-QLD 2026.10.20",
-          "schemeId": "scheme-1",
-          "totalOwed": null,
-        },
-      ],
-    },
-    {
-      "logDebtRecoveryActivity": [
-        {
-          "activityType": "CASE_OPENED",
-          "caseId": "<DebtRecoveryCase 1>",
-          "description": "Debt recovery case DR-2026-0001 initiated by adviser for $NaN owing",
-          "metadata": {
-            "interestOwed": null,
-            "overdueNoticeCount": 1,
-            "principalOwed": 1000,
-            "totalOwed": null,
-          },
-          "performedBy": "adviser",
-        },
-      ],
-    },
-  ],
+  "stepsCreated": 0,
+  "writes": [],
 }
 `;
 
@@ -971,7 +903,7 @@ exports[`QLD: which notices count as overdue > QLD stored OVERDUE, not yet due 1
 
 exports[`QLD: which notices count as overdue > QLD stored OVERDUE, past due with a balance (as before) 1`] = `
 {
-  "amountOwing": "1271.00",
+  "amountOwing": "1235.50",
   "result": {
     "id": "<DebtRecoveryCase 1>",
     "success": true,
@@ -987,10 +919,10 @@ exports[`QLD: which notices count as overdue > QLD stored OVERDUE, past due with
           "interestOwed": 35.5,
           "lotId": "lot-1",
           "ownerId": "debtor",
-          "principalOwed": 1235.5,
+          "principalOwed": 1200,
           "rulePack": "AU-QLD 2026.10.20",
           "schemeId": "scheme-1",
-          "totalOwed": 1271,
+          "totalOwed": 1235.5,
         },
       ],
     },
@@ -999,12 +931,12 @@ exports[`QLD: which notices count as overdue > QLD stored OVERDUE, past due with
         {
           "activityType": "CASE_OPENED",
           "caseId": "<DebtRecoveryCase 1>",
-          "description": "Debt recovery case DR-2026-0001 initiated by adviser for $1271.00 owing",
+          "description": "Debt recovery case DR-2026-0001 initiated by adviser for $1235.50 owing",
           "metadata": {
             "interestOwed": 35.5,
             "overdueNoticeCount": 1,
-            "principalOwed": 1235.5,
-            "totalOwed": 1271,
+            "principalOwed": 1200,
+            "totalOwed": 1235.5,
           },
           "performedBy": "adviser",
         },

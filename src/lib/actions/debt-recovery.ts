@@ -47,6 +47,7 @@ import {
 } from "@/lib/debt-recovery/recovery-gates";
 import { createRecoveryRecords, currentAmountOwing, readRecoveryRecords, recordedFacts } from "@/lib/debt-recovery/recovery-records-repo";
 import { UnreadableNoticeError } from "@/lib/levies/overdue";
+import { caseAmountCents } from "@/lib/debt-recovery/case-amount";
 
 type ActionResult = { error?: string; success?: boolean; id?: string };
 
@@ -107,30 +108,25 @@ export async function initiateDebtRecoveryAction(
     }
 
     // The lot's notices overdue on the building's day (past the due day, with a balance).
-    const { schemeToday } = await import("@/lib/jurisdiction/scheme-time");
-    const today = await schemeToday(schemeId);
+    // Fail closed: a notice that cannot be read, or notices that could not be
+    // checked, open no case, rather than one for the wrong amount (or none).
+    const levyWord = async () => (await messageTermsFor(schemeId)).levy;
+    const unreadable = async (err: unknown) => {
+      logError("A levy notice could not be read when opening a debt recovery case:", err);
+      return { error: `A ${await levyWord()} notice for this lot could not be read, so the amount owing cannot be worked out. Nothing was saved.` };
+    };
     let overdueNotices: Awaited<ReturnType<typeof getOverdueLevyNoticesForLot>>;
     try {
-      overdueNotices = await getOverdueLevyNoticesForLot(schemeId, lotId, today);
+      const { schemeToday } = await import("@/lib/jurisdiction/scheme-time");
+      overdueNotices = await getOverdueLevyNoticesForLot(schemeId, lotId, await schemeToday(schemeId));
     } catch (err) {
-      // Fail closed: a notice that cannot be read opens no case, rather than one for the wrong amount.
-      if (!(err instanceof UnreadableNoticeError)) throw err;
-      logError("A levy notice could not be read when opening a debt recovery case:", err);
-      return { error: `A ${(await messageTermsFor(schemeId)).levy} notice for this lot could not be read, so the amount owing cannot be worked out. Nothing was saved.` };
+      if (err instanceof UnreadableNoticeError) return await unreadable(err);
+      logError("Could not check the lot's overdue notices when opening a debt recovery case:", err);
+      return { error: `Could not check this lot's overdue ${await levyWord()} notices. Nothing was saved.` };
     }
     if (overdueNotices.length === 0) {
-      return { error: `No overdue ${(await messageTermsFor(schemeId)).levy} notices found for this lot` };
+      return { error: `No overdue ${await levyWord()} notices found for this lot` };
     }
-
-    const principalOwed = overdueNotices.reduce(
-      (sum, n) => sum + Number(n.balanceOutstanding),
-      0,
-    );
-    const interestOwed = overdueNotices.reduce(
-      (sum, n) => sum + Number(n.interestCharged || 0),
-      0,
-    );
-    const totalOwed = principalOwed + interestOwed;
 
     // The building's rule pack sets the recovery steps (throws for a state with no pack).
     const { rules, label: rulePack } = await rulesForScheme(schemeId);
@@ -141,6 +137,22 @@ export async function initiateDebtRecoveryAction(
     // StrataVerze cannot apply them. Null at once for NSW and Queensland.
     const gate = recoveryGateProblem(rules, { action: "INITIATE" });
     if (gate) return { error: gate };
+
+    // What is owed, in cents: the notices' balances, which already include
+    // their late charge (C1, "Balance only", 30 Oct 2026). The interest part
+    // is the late charge still owing, with payments applied in the pack's
+    // order (as the payment plan figure); the principal is the rest.
+    let amount: Awaited<ReturnType<typeof caseAmountCents>>;
+    try {
+      amount = await caseAmountCents(overdueNotices, rules.PAYMENT_ALLOCATION_ORDER);
+    } catch (err) {
+      if (err instanceof UnreadableNoticeError) return await unreadable(err);
+      throw err;
+    }
+    const principalOwed = amount.principalCents / 100;
+    const interestOwed = amount.lateChargeCents / 100;
+    const totalOwed = amount.totalCents / 100;
+
     const caseNumber = await generateCaseNumber(schemeId);
 
     const newCase = await createDebtRecoveryCase({

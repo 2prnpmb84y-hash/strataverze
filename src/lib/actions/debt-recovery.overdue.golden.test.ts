@@ -77,6 +77,34 @@
  * paid) and "past-due ISSUED with a late charge that cannot be read". The
  * other entries are byte-identical. The stored OVERDUE entries (as before,
  * and the C1 one) give the same on 5191ec9 (checked: 1271.00 and 600.50).
+ *
+ * Second deliberate change (30 Oct 2026, review C1, "Balance only", decided
+ * by Matthew Wrigley): a case is opened for the sum, in cents, of the
+ * overdue notices' balances, which already include their late charge. The
+ * interest part is the late charge still owing (noticeOwingSplit, with
+ * payments applied in the pack's order, as lotArrears works out the payment
+ * plan figure), and the principal is the rest. currentAmountOwing is the
+ * sum of the balances. A late charge, amount due or amount paid that cannot
+ * be read refuses the case. Only these 14 entries were updated, by a
+ * targeted run of this file; the other 29 are byte-identical to the
+ * recording on 6b4d953.
+ *   NSW and QLD (7 each):
+ *   - "past-due ISSUED with a balance": 812.65 (principal 800.25, interest
+ *     12.40), was 825.05.
+ *   - "stored OVERDUE, past due with a balance (as before)": 1235.50
+ *     (1200.00 and 35.50), was 1271.00.
+ *   - "a mix: ...": 2668.15, was 2736.05. NSW (levy first): interest 67.90,
+ *     principal 2600.25. QLD (penalty first, SM s 166(5)): the 400.00 paid
+ *     on the PARTIALLY_PAID notice paid its 20.00 penalty first, so interest
+ *     47.90, principal 2620.25.
+ *   - "C1: stored OVERDUE ..." and "C1: past-due ISSUED ...": 550.50
+ *     (500.50 and 50.00), was 600.50.
+ *   - "C1: past-due PARTIALLY_PAID ... 300.00 paid": 250.50, was 300.50.
+ *     NSW: the 300.00 paid the levy, so interest 50.00, principal 200.50.
+ *     QLD: it paid the 50.00 penalty first, so interest 0, principal 250.50.
+ *   - "past-due ISSUED with a late charge that cannot be read": a case was
+ *     opened with no amount (NaN); now refused as a notice that cannot be
+ *     read, and currentAmountOwing gives the balance (1000.00, was "NaN").
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 

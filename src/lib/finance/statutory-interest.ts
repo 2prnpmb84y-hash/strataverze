@@ -560,6 +560,30 @@ export function allocatePayment(
   return { levyCents: applied.LEVY, interestCents: applied.INTEREST, recoveryCostsCents: applied.RECOVERY_COSTS, excessCents: left };
 }
 
+/**
+ * What is still owing on one notice, split into the levy and the late
+ * charge, with what was paid applied in the building's order (`order`, the
+ * pack's PAYMENT_ALLOCATION_ORDER). All in cents. Where the late charge is
+ * paid first (Queensland, SM s 166(5)), `chargePaidCents` is the part of the
+ * payments that went to it (noticeLateChargePaid); otherwise payments go to
+ * the levy first (NSW), and it is not used. A negative levy (a credit) adds
+ * to what is paid. lotArrears (the payment plan figure) and the debt
+ * recovery case amount use this one split.
+ */
+export function noticeOwingSplit(
+  n: { dueCents: number; paidCents: number; chargedCents: number; chargePaidCents?: number },
+  order?: PaymentAllocationOrder | null,
+): { levyCents: number; lateChargeCents: number } {
+  const { dueCents: due, paidCents: paid, chargedCents: charged } = n;
+  if (lateChargeFirst(order)) {
+    const chargePaid = n.chargePaidCents ?? 0;
+    const levyPaid = paid - Math.min(0, due) - chargePaid;
+    return { levyCents: Math.max(0, Math.max(0, due) - levyPaid), lateChargeCents: Math.max(0, charged - chargePaid) };
+  }
+  const applied = allocatePayment(paid - Math.min(0, due), { levyCents: Math.max(0, due), interestCents: charged, recoveryCostsCents: 0 }, order ?? undefined);
+  return { levyCents: Math.max(0, due - applied.levyCents), lateChargeCents: Math.max(0, charged - applied.interestCents) };
+}
+
 export type InterestSettingMode = LateChargeMode;
 
 /** The words the setting check used before packs gave them (an annual-rate rule passed on its own). */

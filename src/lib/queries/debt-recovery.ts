@@ -1,7 +1,7 @@
 import { db } from "@/prisma/db";
 import type { Numeric, Varchar } from "@prisma/orm-postgres/target/codec-types";
 import { schemeToday } from "@/lib/jurisdiction/scheme-time";
-import { OVERDUE_NOTICE_STATUSES, overdueOn, UnreadableNoticeError } from "@/lib/levies/overdue";
+import { OVERDUE_NOTICE_STATUSES, overdueOn } from "@/lib/levies/overdue";
 
 function toNumeric(value: number | string): Numeric<12, 2> {
   return String(value) as unknown as Numeric<12, 2>;
@@ -415,28 +415,24 @@ export async function logDebtRecoveryActivity(data: {
 /**
  * The lot's levy notices overdue on the building's day `today` (isOverdueOn:
  * ISSUED, PARTIALLY_PAID or OVERDUE, past the due day, with a balance),
- * oldest first. Without `today`, the building's day now. A notice whose due
- * day or balance cannot be read throws UnreadableNoticeError (never counted
- * or left out silently); any other failure gives none, as before.
+ * oldest first. Without `today`, the building's day now. Throws when the
+ * notices or the building cannot be read, when `today` is not a day, and
+ * (UnreadableNoticeError) when a notice's due day or balance cannot be read,
+ * so a failure is never "nothing overdue".
  */
 export async function getOverdueLevyNoticesForLot(
   schemeId: string,
   lotId: string,
   today?: string,
 ) {
-  try {
-    const day = today ?? (await schemeToday(schemeId));
-    const notices = await db.orm.public.LevyNotice
-      .where((n) => n.schemeId.eq(schemeId))
-      .where((n) => n.lotId.eq(lotId))
-      .where((n) => n.status.in([...OVERDUE_NOTICE_STATUSES]))
-      .orderBy((n) => n.dueDate.asc())
-      .all();
-    return overdueOn(notices, day);
-  } catch (err) {
-    if (err instanceof UnreadableNoticeError) throw err;
-    return [];
-  }
+  const day = today ?? (await schemeToday(schemeId));
+  const notices = await db.orm.public.LevyNotice
+    .where((n) => n.schemeId.eq(schemeId))
+    .where((n) => n.lotId.eq(lotId))
+    .where((n) => n.status.in([...OVERDUE_NOTICE_STATUSES]))
+    .orderBy((n) => n.dueDate.asc())
+    .all();
+  return overdueOn(notices, day);
 }
 
 // ─── Dashboard Stats ────────────────────────────────────────────

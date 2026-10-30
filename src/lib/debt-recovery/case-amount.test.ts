@@ -1,0 +1,94 @@
+/**
+ * The debt recovery case amount (review C1, "Balance only", 30 Oct 2026):
+ * the total is the balances, the interest part is the late charge still
+ * owing with payments applied in the pack's order (the split lotArrears, the
+ * payment plan figure, uses), and the principal is the rest. All in cents.
+ */
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { QLD_RULE_PACK, statutoryRulesFor } from "@/config/statutory";
+
+vi.mock("@prisma/orm-postgres/orm-client", async () => (await import("@/test/fake-orm")).fakeOrmClient);
+vi.mock("@/prisma/db", async () => ({ db: (await import("@/test/fake-orm")).sharedFake.db }));
+
+const { sharedFake } = await import("@/test/fake-orm");
+const { caseAmountCents, balancesCents } = await import("./case-amount");
+const { lotArrears } = await import("./payment-plan-requests");
+const { UnreadableNoticeError } = await import("@/lib/levies/overdue");
+
+const NSW = statutoryRulesFor("NSW").PAYMENT_ALLOCATION_ORDER;
+const QLD = QLD_RULE_PACK.rules.PAYMENT_ALLOCATION_ORDER;
+
+/** Notices whose balance includes the late charge (amount due + late charge - amount paid). */
+const notices = [
+  // $500.50 levy and $50.00 late charge, nothing paid.
+  { id: "n1", schemeId: "s", lotId: "l", status: "ISSUED", dueDate: "2026-07-01", amountDue: "500.50", amountPaid: "0.00", interestCharged: "50.00", balanceOutstanding: "550.50" },
+  // $500.50 levy and $50.00 late charge, $300.00 paid.
+  { id: "n2", schemeId: "s", lotId: "l", status: "PARTIALLY_PAID", dueDate: "2026-08-01", amountDue: "500.50", amountPaid: "300.00", interestCharged: "50.00", balanceOutstanding: "250.50" },
+  // $300.00 levy and $10.00 late charge, $305.00 paid: $5.00 of the late charge owing.
+  { id: "n3", schemeId: "s", lotId: "l", status: "PARTIALLY_PAID", dueDate: "2026-09-01", amountDue: "300.00", amountPaid: "305.00", interestCharged: "10.00", balanceOutstanding: "5.00" },
+];
+
+beforeEach(() => {
+  sharedFake.reset({ Scheme: [{ id: "s", state: "NSW", timeZone: "Australia/Sydney" }], LevyNotice: notices.map((n) => ({ ...n })), LevyPayment: [] });
+});
+
+describe("caseAmountCents", () => {
+  it("totals the balances, never adding the late charge again", async () => {
+    expect(balancesCents(notices)).toBe(55_050 + 25_050 + 500);
+    expect((await caseAmountCents(notices, NSW)).totalCents).toBe(80_600);
+  });
+
+  it("NSW (levy first): payments pay the levy, then the late charge", async () => {
+    // n1: 5000 late charge owing; n2: 300.00 paid to the levy, 5000 owing; n3: 300.00 to the levy, 5.00 to the late charge, 500 owing.
+    expect(await caseAmountCents(notices, NSW)).toEqual({ totalCents: 80_600, lateChargeCents: 10_500, principalCents: 70_100 });
+  });
+
+  it("Queensland (penalty first, SM s 166(5)): with no receipts, what was paid went to the penalty first", async () => {
+    // n1: 5000 owing; n2 and n3: their penalty paid first, none owing.
+    expect(await caseAmountCents(notices, QLD)).toEqual({ totalCents: 80_600, lateChargeCents: 5_000, principalCents: 75_600 });
+  });
+
+  it("Queensland: uses the part of each receipt recorded as paid to the penalty", async () => {
+    sharedFake.reset({
+      LevyPayment: [
+        // n2's 300.00 was receipted with 20.00 to the penalty; a reversed receipt is left out.
+        { id: "p1", levyNoticeId: "n2", paymentDate: "2026-08-10", amount: "300.00", lateChargeAmount: "20.00" },
+        { id: "p2", levyNoticeId: "n2", paymentDate: "2026-08-11", amount: "50.00", lateChargeAmount: "50.00", reversedAt: "2026-08-12T00:00:00.000Z" },
+      ],
+    });
+    expect(await caseAmountCents([notices[1]], QLD)).toEqual({ totalCents: 25_050, lateChargeCents: 3_000, principalCents: 22_050 });
+  });
+
+  it("agrees with lotArrears, the payment plan figure, for NSW and Queensland", async () => {
+    for (const order of [NSW, QLD]) {
+      const arrears = await lotArrears("s", "l", "2026-10-01", order);
+      const amount = await caseAmountCents(notices, order);
+      expect(amount.lateChargeCents).toBe(arrears.interestCents);
+      expect(amount.principalCents).toBe(arrears.leviesCents);
+    }
+  });
+
+  it("fails closed: an amount that cannot be read throws", async () => {
+    for (const field of ["amountDue", "amountPaid", "interestCharged", "balanceOutstanding"] as const) {
+      for (const bad of [null, undefined, "", "abc"]) {
+        await expect(caseAmountCents([{ ...notices[0], [field]: bad }], NSW)).rejects.toThrow(UnreadableNoticeError);
+        await expect(caseAmountCents([{ ...notices[0], [field]: bad }], QLD)).rejects.toThrow(UnreadableNoticeError);
+      }
+    }
+  });
+
+  it("fails closed: Queensland receipts that cannot be read throw", async () => {
+    sharedFake.reset({ LevyPayment: [{ id: "p1", levyNoticeId: "n2", paymentDate: "2026-08-10", amount: "abc", lateChargeAmount: "20.00" }] });
+    await expect(caseAmountCents([notices[1]], QLD)).rejects.toThrow(UnreadableNoticeError);
+  });
+
+  it("fails closed: a late charge owing that is more than the balance throws", async () => {
+    await expect(caseAmountCents([{ ...notices[0], balanceOutstanding: "20.00" }], NSW)).rejects.toThrow(/more than its balance/);
+  });
+
+  it("reads no payments where none can have gone to the late charge", async () => {
+    sharedFake.reset({ LevyPayment: [{ id: "p1", levyNoticeId: "n1", paymentDate: "2026-08-10", amount: "abc" }] });
+    // n1 has nothing paid, so its unreadable (stray) receipt is never read.
+    expect(await caseAmountCents([notices[0]], QLD)).toEqual({ totalCents: 55_050, lateChargeCents: 5_000, principalCents: 50_050 });
+  });
+});
