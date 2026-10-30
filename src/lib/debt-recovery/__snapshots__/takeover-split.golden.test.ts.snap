@@ -1,0 +1,352 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`the levy and late charge owing on a notice > not takeover, 60.00 paid (a control) 1`] = `
+{
+  "nsw": {
+    "caseAmount": {
+      "lateChargeCents": 10000,
+      "principalCents": 94000,
+      "totalCents": 104000,
+    },
+    "lotArrears": {
+      "interestCents": 10000,
+      "leviesCents": 94000,
+    },
+  },
+  "qld": {
+    "caseAmount": {
+      "lateChargeCents": 4000,
+      "principalCents": 100000,
+      "totalCents": 104000,
+    },
+    "lotArrears": {
+      "interestCents": 4000,
+      "leviesCents": 100000,
+    },
+  },
+}
+`;
+
+exports[`the levy and late charge owing on a notice > not takeover, 260.00 paid in two receipts (a control) 1`] = `
+{
+  "nsw": {
+    "caseAmount": {
+      "lateChargeCents": 10000,
+      "principalCents": 74000,
+      "totalCents": 84000,
+    },
+    "lotArrears": {
+      "interestCents": 10000,
+      "leviesCents": 74000,
+    },
+  },
+  "qld": {
+    "caseAmount": {
+      "lateChargeCents": 0,
+      "principalCents": 84000,
+      "totalCents": 84000,
+    },
+    "lotArrears": {
+      "interestCents": 0,
+      "leviesCents": 84000,
+    },
+  },
+}
+`;
+
+exports[`the levy and late charge owing on a notice > not takeover, nothing paid (a control) 1`] = `
+{
+  "nsw": {
+    "caseAmount": {
+      "lateChargeCents": 10000,
+      "principalCents": 100000,
+      "totalCents": 110000,
+    },
+    "lotArrears": {
+      "interestCents": 10000,
+      "leviesCents": 100000,
+    },
+  },
+  "qld": {
+    "caseAmount": {
+      "lateChargeCents": 10000,
+      "principalCents": 100000,
+      "totalCents": 110000,
+    },
+    "lotArrears": {
+      "interestCents": 10000,
+      "leviesCents": 100000,
+    },
+  },
+}
+`;
+
+exports[`the levy and late charge owing on a notice > not takeover, paid with no receipts (a control) 1`] = `
+{
+  "nsw": {
+    "caseAmount": {
+      "lateChargeCents": 10000,
+      "principalCents": 94000,
+      "totalCents": 104000,
+    },
+    "lotArrears": {
+      "interestCents": 10000,
+      "leviesCents": 94000,
+    },
+  },
+  "qld": {
+    "caseAmount": {
+      "lateChargeCents": 4000,
+      "principalCents": 100000,
+      "totalCents": 104000,
+    },
+    "lotArrears": {
+      "interestCents": 4000,
+      "leviesCents": 100000,
+    },
+  },
+}
+`;
+
+exports[`the levy and late charge owing on a notice > takeover, old late charge paid 0 1`] = `
+{
+  "nsw": {
+    "caseAmount": {
+      "lateChargeCents": 10000,
+      "principalCents": 100000,
+      "totalCents": 110000,
+    },
+    "lotArrears": {
+      "interestCents": 10000,
+      "leviesCents": 100000,
+    },
+  },
+  "qld": {
+    "caseAmount": {
+      "lateChargeCents": 10000,
+      "principalCents": 100000,
+      "totalCents": 110000,
+    },
+    "lotArrears": {
+      "interestCents": 10000,
+      "leviesCents": 100000,
+    },
+  },
+}
+`;
+
+exports[`the levy and late charge owing on a notice > takeover, old late charge paid in full 1`] = `
+{
+  "nsw": {
+    "caseAmount": {
+      "lateChargeCents": 10000,
+      "principalCents": 90000,
+      "totalCents": 100000,
+    },
+    "lotArrears": {
+      "interestCents": 10000,
+      "leviesCents": 90000,
+    },
+  },
+  "qld": {
+    "caseAmount": {
+      "lateChargeCents": 0,
+      "principalCents": 100000,
+      "totalCents": 100000,
+    },
+    "lotArrears": {
+      "interestCents": 0,
+      "leviesCents": 100000,
+    },
+  },
+}
+`;
+
+exports[`the levy and late charge owing on a notice > takeover, old late charge part paid (60.00 of 100.00) 1`] = `
+{
+  "nsw": {
+    "caseAmount": {
+      "lateChargeCents": 10000,
+      "principalCents": 94000,
+      "totalCents": 104000,
+    },
+    "lotArrears": {
+      "interestCents": 10000,
+      "leviesCents": 94000,
+    },
+  },
+  "qld": {
+    "caseAmount": {
+      "lateChargeCents": 4000,
+      "principalCents": 100000,
+      "totalCents": 104000,
+    },
+    "lotArrears": {
+      "interestCents": 4000,
+      "leviesCents": 100000,
+    },
+  },
+}
+`;
+
+exports[`the levy and late charge owing on a notice > takeover, old paid in full, a later receipt of 300.00 1`] = `
+{
+  "nsw": {
+    "caseAmount": {
+      "lateChargeCents": 10000,
+      "principalCents": 60000,
+      "totalCents": 70000,
+    },
+    "lotArrears": {
+      "interestCents": 10000,
+      "leviesCents": 60000,
+    },
+  },
+  "qld": {
+    "caseAmount": {
+      "lateChargeCents": 0,
+      "principalCents": 70000,
+      "totalCents": 70000,
+    },
+    "lotArrears": {
+      "interestCents": 0,
+      "leviesCents": 70000,
+    },
+  },
+}
+`;
+
+exports[`the levy and late charge owing on a notice > takeover, old part paid, 30.00 more late charge charged here 1`] = `
+{
+  "nsw": {
+    "caseAmount": {
+      "lateChargeCents": 13000,
+      "principalCents": 94000,
+      "totalCents": 107000,
+    },
+    "lotArrears": {
+      "interestCents": 13000,
+      "leviesCents": 94000,
+    },
+  },
+  "qld": {
+    "caseAmount": {
+      "lateChargeCents": 7000,
+      "principalCents": 100000,
+      "totalCents": 107000,
+    },
+    "lotArrears": {
+      "interestCents": 7000,
+      "leviesCents": 100000,
+    },
+  },
+}
+`;
+
+exports[`the levy and late charge owing on a notice > takeover, old part paid, a later receipt of 200.00 (40.00 recorded to the late charge) 1`] = `
+{
+  "nsw": {
+    "caseAmount": {
+      "lateChargeCents": 10000,
+      "principalCents": 74000,
+      "totalCents": 84000,
+    },
+    "lotArrears": {
+      "interestCents": 10000,
+      "leviesCents": 74000,
+    },
+  },
+  "qld": {
+    "caseAmount": {
+      "lateChargeCents": 0,
+      "principalCents": 84000,
+      "totalCents": 84000,
+    },
+    "lotArrears": {
+      "interestCents": 0,
+      "leviesCents": 84000,
+    },
+  },
+}
+`;
+
+exports[`the levy and late charge owing on a notice > takeover, old part paid, a later receipt reversed 1`] = `
+{
+  "nsw": {
+    "caseAmount": {
+      "lateChargeCents": 10000,
+      "principalCents": 94000,
+      "totalCents": 104000,
+    },
+    "lotArrears": {
+      "interestCents": 10000,
+      "leviesCents": 94000,
+    },
+  },
+  "qld": {
+    "caseAmount": {
+      "lateChargeCents": 4000,
+      "principalCents": 100000,
+      "totalCents": 104000,
+    },
+    "lotArrears": {
+      "interestCents": 4000,
+      "leviesCents": 100000,
+    },
+  },
+}
+`;
+
+exports[`the levy and late charge owing on a notice > takeover, old part paid, a later receipt with no late charge part recorded 1`] = `
+{
+  "nsw": {
+    "caseAmount": {
+      "lateChargeCents": 10000,
+      "principalCents": 84000,
+      "totalCents": 94000,
+    },
+    "lotArrears": {
+      "interestCents": 10000,
+      "leviesCents": 84000,
+    },
+  },
+  "qld": {
+    "caseAmount": {
+      "lateChargeCents": 4000,
+      "principalCents": 90000,
+      "totalCents": 94000,
+    },
+    "lotArrears": {
+      "interestCents": 4000,
+      "leviesCents": 90000,
+    },
+  },
+}
+`;
+
+exports[`the levy and late charge owing on a notice > takeover, paid off by a later receipt 1`] = `
+{
+  "nsw": {
+    "caseAmount": {
+      "lateChargeCents": 0,
+      "principalCents": 0,
+      "totalCents": 0,
+    },
+    "lotArrears": {
+      "interestCents": 0,
+      "leviesCents": 0,
+    },
+  },
+  "qld": {
+    "caseAmount": {
+      "lateChargeCents": 0,
+      "principalCents": 0,
+      "totalCents": 0,
+    },
+    "lotArrears": {
+      "interestCents": 0,
+      "leviesCents": 0,
+    },
+  },
+}
+`;
