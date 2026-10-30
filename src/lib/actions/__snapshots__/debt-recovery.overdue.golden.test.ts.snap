@@ -1,0 +1,726 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`NSW: which notices count as overdue > NSW ISSUED due today (2 Nov 2026), not overdue 1`] = `
+{
+  "amountOwing": "0.00",
+  "result": {
+    "error": "No overdue levy notices found for this lot",
+  },
+  "stepsCreated": 0,
+  "writes": [],
+}
+`;
+
+exports[`NSW: which notices count as overdue > NSW ISSUED due yesterday (1 Nov 2026) 1`] = `
+{
+  "amountOwing": "0.00",
+  "result": {
+    "error": "No overdue levy notices found for this lot",
+  },
+  "stepsCreated": 0,
+  "writes": [],
+}
+`;
+
+exports[`NSW: which notices count as overdue > NSW ISSUED not yet due (due 1 Dec 2026) 1`] = `
+{
+  "amountOwing": "0.00",
+  "result": {
+    "error": "No overdue levy notices found for this lot",
+  },
+  "stepsCreated": 0,
+  "writes": [],
+}
+`;
+
+exports[`NSW: which notices count as overdue > NSW a mix: stored OVERDUE, past-due ISSUED and PARTIALLY_PAID, and ISSUED not yet due 1`] = `
+{
+  "amountOwing": "1235.50",
+  "result": {
+    "id": "<DebtRecoveryCase 1>",
+    "success": true,
+  },
+  "stepsCreated": 10,
+  "writes": [
+    {
+      "createDebtRecoveryCase": [
+        {
+          "caseNumber": "DR-2026-0001",
+          "initiatedBy": "adviser",
+          "initiatedRole": "ADVISER",
+          "interestOwed": 35.5,
+          "lotId": "lot-1",
+          "ownerId": "debtor",
+          "principalOwed": 1200,
+          "rulePack": "AU-NSW 2026.10.16",
+          "schemeId": "scheme-1",
+          "totalOwed": 1235.5,
+        },
+      ],
+    },
+    {
+      "logDebtRecoveryActivity": [
+        {
+          "activityType": "CASE_OPENED",
+          "caseId": "<DebtRecoveryCase 1>",
+          "description": "Debt recovery case DR-2026-0001 initiated by adviser for $1235.50 owing",
+          "metadata": {
+            "interestOwed": 35.5,
+            "overdueNoticeCount": 1,
+            "principalOwed": 1200,
+            "totalOwed": 1235.5,
+          },
+          "performedBy": "adviser",
+        },
+      ],
+    },
+  ],
+}
+`;
+
+exports[`NSW: which notices count as overdue > NSW past-due DRAFT, PAID and WRITTEN_OFF with balances (never overdue) 1`] = `
+{
+  "amountOwing": "0.00",
+  "result": {
+    "error": "No overdue levy notices found for this lot",
+  },
+  "stepsCreated": 0,
+  "writes": [],
+}
+`;
+
+exports[`NSW: which notices count as overdue > NSW past-due ISSUED with a balance 1`] = `
+{
+  "amountOwing": "0.00",
+  "result": {
+    "error": "No overdue levy notices found for this lot",
+  },
+  "stepsCreated": 0,
+  "writes": [],
+}
+`;
+
+exports[`NSW: which notices count as overdue > NSW past-due ISSUED with a balance that cannot be read 1`] = `
+{
+  "amountOwing": "0.00",
+  "result": {
+    "error": "No overdue levy notices found for this lot",
+  },
+  "stepsCreated": 0,
+  "writes": [],
+}
+`;
+
+exports[`NSW: which notices count as overdue > NSW past-due ISSUED with a balance under half a cent 1`] = `
+{
+  "amountOwing": "0.00",
+  "result": {
+    "error": "No overdue levy notices found for this lot",
+  },
+  "stepsCreated": 0,
+  "writes": [],
+}
+`;
+
+exports[`NSW: which notices count as overdue > NSW past-due ISSUED with a zero balance 1`] = `
+{
+  "amountOwing": "0.00",
+  "result": {
+    "error": "No overdue levy notices found for this lot",
+  },
+  "stepsCreated": 0,
+  "writes": [],
+}
+`;
+
+exports[`NSW: which notices count as overdue > NSW past-due PARTIALLY_PAID with a balance 1`] = `
+{
+  "amountOwing": "0.00",
+  "result": {
+    "error": "No overdue levy notices found for this lot",
+  },
+  "stepsCreated": 0,
+  "writes": [],
+}
+`;
+
+exports[`NSW: which notices count as overdue > NSW past-due PARTIALLY_PAID with a zero balance 1`] = `
+{
+  "amountOwing": "0.00",
+  "result": {
+    "error": "No overdue levy notices found for this lot",
+  },
+  "stepsCreated": 0,
+  "writes": [],
+}
+`;
+
+exports[`NSW: which notices count as overdue > NSW stored OVERDUE, not yet due 1`] = `
+{
+  "amountOwing": "1000.00",
+  "result": {
+    "id": "<DebtRecoveryCase 1>",
+    "success": true,
+  },
+  "stepsCreated": 10,
+  "writes": [
+    {
+      "createDebtRecoveryCase": [
+        {
+          "caseNumber": "DR-2026-0001",
+          "initiatedBy": "adviser",
+          "initiatedRole": "ADVISER",
+          "interestOwed": 0,
+          "lotId": "lot-1",
+          "ownerId": "debtor",
+          "principalOwed": 1000,
+          "rulePack": "AU-NSW 2026.10.16",
+          "schemeId": "scheme-1",
+          "totalOwed": 1000,
+        },
+      ],
+    },
+    {
+      "logDebtRecoveryActivity": [
+        {
+          "activityType": "CASE_OPENED",
+          "caseId": "<DebtRecoveryCase 1>",
+          "description": "Debt recovery case DR-2026-0001 initiated by adviser for $1000.00 owing",
+          "metadata": {
+            "interestOwed": 0,
+            "overdueNoticeCount": 1,
+            "principalOwed": 1000,
+            "totalOwed": 1000,
+          },
+          "performedBy": "adviser",
+        },
+      ],
+    },
+  ],
+}
+`;
+
+exports[`NSW: which notices count as overdue > NSW stored OVERDUE, past due with a balance (as before) 1`] = `
+{
+  "amountOwing": "1235.50",
+  "result": {
+    "id": "<DebtRecoveryCase 1>",
+    "success": true,
+  },
+  "stepsCreated": 10,
+  "writes": [
+    {
+      "createDebtRecoveryCase": [
+        {
+          "caseNumber": "DR-2026-0001",
+          "initiatedBy": "adviser",
+          "initiatedRole": "ADVISER",
+          "interestOwed": 35.5,
+          "lotId": "lot-1",
+          "ownerId": "debtor",
+          "principalOwed": 1200,
+          "rulePack": "AU-NSW 2026.10.16",
+          "schemeId": "scheme-1",
+          "totalOwed": 1235.5,
+        },
+      ],
+    },
+    {
+      "logDebtRecoveryActivity": [
+        {
+          "activityType": "CASE_OPENED",
+          "caseId": "<DebtRecoveryCase 1>",
+          "description": "Debt recovery case DR-2026-0001 initiated by adviser for $1235.50 owing",
+          "metadata": {
+            "interestOwed": 35.5,
+            "overdueNoticeCount": 1,
+            "principalOwed": 1200,
+            "totalOwed": 1235.5,
+          },
+          "performedBy": "adviser",
+        },
+      ],
+    },
+  ],
+}
+`;
+
+exports[`NSW: which notices count as overdue > NSW stored OVERDUE, past due with a zero balance 1`] = `
+{
+  "amountOwing": "0.00",
+  "result": {
+    "id": "<DebtRecoveryCase 1>",
+    "success": true,
+  },
+  "stepsCreated": 10,
+  "writes": [
+    {
+      "createDebtRecoveryCase": [
+        {
+          "caseNumber": "DR-2026-0001",
+          "initiatedBy": "adviser",
+          "initiatedRole": "ADVISER",
+          "interestOwed": 0,
+          "lotId": "lot-1",
+          "ownerId": "debtor",
+          "principalOwed": 0,
+          "rulePack": "AU-NSW 2026.10.16",
+          "schemeId": "scheme-1",
+          "totalOwed": 0,
+        },
+      ],
+    },
+    {
+      "logDebtRecoveryActivity": [
+        {
+          "activityType": "CASE_OPENED",
+          "caseId": "<DebtRecoveryCase 1>",
+          "description": "Debt recovery case DR-2026-0001 initiated by adviser for $0.00 owing",
+          "metadata": {
+            "interestOwed": 0,
+            "overdueNoticeCount": 1,
+            "principalOwed": 0,
+            "totalOwed": 0,
+          },
+          "performedBy": "adviser",
+        },
+      ],
+    },
+  ],
+}
+`;
+
+exports[`NSW: which notices count as overdue > NSW stored OVERDUE, past due, with a balance that cannot be read 1`] = `
+{
+  "amountOwing": "NaN",
+  "result": {
+    "id": "<DebtRecoveryCase 1>",
+    "success": true,
+  },
+  "stepsCreated": 10,
+  "writes": [
+    {
+      "createDebtRecoveryCase": [
+        {
+          "caseNumber": "DR-2026-0001",
+          "initiatedBy": "adviser",
+          "initiatedRole": "ADVISER",
+          "interestOwed": 0,
+          "lotId": "lot-1",
+          "ownerId": "debtor",
+          "principalOwed": null,
+          "rulePack": "AU-NSW 2026.10.16",
+          "schemeId": "scheme-1",
+          "totalOwed": null,
+        },
+      ],
+    },
+    {
+      "logDebtRecoveryActivity": [
+        {
+          "activityType": "CASE_OPENED",
+          "caseId": "<DebtRecoveryCase 1>",
+          "description": "Debt recovery case DR-2026-0001 initiated by adviser for $NaN owing",
+          "metadata": {
+            "interestOwed": 0,
+            "overdueNoticeCount": 1,
+            "principalOwed": null,
+            "totalOwed": null,
+          },
+          "performedBy": "adviser",
+        },
+      ],
+    },
+  ],
+}
+`;
+
+exports[`QLD: which notices count as overdue > QLD ISSUED due today (2 Nov 2026), not overdue 1`] = `
+{
+  "amountOwing": "0.00",
+  "result": {
+    "error": "No overdue contribution notices found for this lot",
+  },
+  "stepsCreated": 0,
+  "writes": [],
+}
+`;
+
+exports[`QLD: which notices count as overdue > QLD ISSUED due yesterday (1 Nov 2026) 1`] = `
+{
+  "amountOwing": "0.00",
+  "result": {
+    "error": "No overdue contribution notices found for this lot",
+  },
+  "stepsCreated": 0,
+  "writes": [],
+}
+`;
+
+exports[`QLD: which notices count as overdue > QLD ISSUED not yet due (due 1 Dec 2026) 1`] = `
+{
+  "amountOwing": "0.00",
+  "result": {
+    "error": "No overdue contribution notices found for this lot",
+  },
+  "stepsCreated": 0,
+  "writes": [],
+}
+`;
+
+exports[`QLD: which notices count as overdue > QLD a mix: stored OVERDUE, past-due ISSUED and PARTIALLY_PAID, and ISSUED not yet due 1`] = `
+{
+  "amountOwing": "1235.50",
+  "result": {
+    "id": "<DebtRecoveryCase 1>",
+    "success": true,
+  },
+  "stepsCreated": 10,
+  "writes": [
+    {
+      "createDebtRecoveryCase": [
+        {
+          "caseNumber": "DR-2026-0001",
+          "initiatedBy": "adviser",
+          "initiatedRole": "ADVISER",
+          "interestOwed": 35.5,
+          "lotId": "lot-1",
+          "ownerId": "debtor",
+          "principalOwed": 1200,
+          "rulePack": "AU-QLD 2026.10.20",
+          "schemeId": "scheme-1",
+          "totalOwed": 1235.5,
+        },
+      ],
+    },
+    {
+      "logDebtRecoveryActivity": [
+        {
+          "activityType": "CASE_OPENED",
+          "caseId": "<DebtRecoveryCase 1>",
+          "description": "Debt recovery case DR-2026-0001 initiated by adviser for $1235.50 owing",
+          "metadata": {
+            "interestOwed": 35.5,
+            "overdueNoticeCount": 1,
+            "principalOwed": 1200,
+            "totalOwed": 1235.5,
+          },
+          "performedBy": "adviser",
+        },
+      ],
+    },
+  ],
+}
+`;
+
+exports[`QLD: which notices count as overdue > QLD past-due DRAFT, PAID and WRITTEN_OFF with balances (never overdue) 1`] = `
+{
+  "amountOwing": "0.00",
+  "result": {
+    "error": "No overdue contribution notices found for this lot",
+  },
+  "stepsCreated": 0,
+  "writes": [],
+}
+`;
+
+exports[`QLD: which notices count as overdue > QLD past-due ISSUED with a balance 1`] = `
+{
+  "amountOwing": "0.00",
+  "result": {
+    "error": "No overdue contribution notices found for this lot",
+  },
+  "stepsCreated": 0,
+  "writes": [],
+}
+`;
+
+exports[`QLD: which notices count as overdue > QLD past-due ISSUED with a balance that cannot be read 1`] = `
+{
+  "amountOwing": "0.00",
+  "result": {
+    "error": "No overdue contribution notices found for this lot",
+  },
+  "stepsCreated": 0,
+  "writes": [],
+}
+`;
+
+exports[`QLD: which notices count as overdue > QLD past-due ISSUED with a balance under half a cent 1`] = `
+{
+  "amountOwing": "0.00",
+  "result": {
+    "error": "No overdue contribution notices found for this lot",
+  },
+  "stepsCreated": 0,
+  "writes": [],
+}
+`;
+
+exports[`QLD: which notices count as overdue > QLD past-due ISSUED with a zero balance 1`] = `
+{
+  "amountOwing": "0.00",
+  "result": {
+    "error": "No overdue contribution notices found for this lot",
+  },
+  "stepsCreated": 0,
+  "writes": [],
+}
+`;
+
+exports[`QLD: which notices count as overdue > QLD past-due PARTIALLY_PAID with a balance 1`] = `
+{
+  "amountOwing": "0.00",
+  "result": {
+    "error": "No overdue contribution notices found for this lot",
+  },
+  "stepsCreated": 0,
+  "writes": [],
+}
+`;
+
+exports[`QLD: which notices count as overdue > QLD past-due PARTIALLY_PAID with a zero balance 1`] = `
+{
+  "amountOwing": "0.00",
+  "result": {
+    "error": "No overdue contribution notices found for this lot",
+  },
+  "stepsCreated": 0,
+  "writes": [],
+}
+`;
+
+exports[`QLD: which notices count as overdue > QLD stored OVERDUE, not yet due 1`] = `
+{
+  "amountOwing": "1000.00",
+  "result": {
+    "id": "<DebtRecoveryCase 1>",
+    "success": true,
+  },
+  "stepsCreated": 10,
+  "writes": [
+    {
+      "createDebtRecoveryCase": [
+        {
+          "caseNumber": "DR-2026-0001",
+          "initiatedBy": "adviser",
+          "initiatedRole": "ADVISER",
+          "interestOwed": 0,
+          "lotId": "lot-1",
+          "ownerId": "debtor",
+          "principalOwed": 1000,
+          "rulePack": "AU-QLD 2026.10.20",
+          "schemeId": "scheme-1",
+          "totalOwed": 1000,
+        },
+      ],
+    },
+    {
+      "logDebtRecoveryActivity": [
+        {
+          "activityType": "CASE_OPENED",
+          "caseId": "<DebtRecoveryCase 1>",
+          "description": "Debt recovery case DR-2026-0001 initiated by adviser for $1000.00 owing",
+          "metadata": {
+            "interestOwed": 0,
+            "overdueNoticeCount": 1,
+            "principalOwed": 1000,
+            "totalOwed": 1000,
+          },
+          "performedBy": "adviser",
+        },
+      ],
+    },
+  ],
+}
+`;
+
+exports[`QLD: which notices count as overdue > QLD stored OVERDUE, past due with a balance (as before) 1`] = `
+{
+  "amountOwing": "1235.50",
+  "result": {
+    "id": "<DebtRecoveryCase 1>",
+    "success": true,
+  },
+  "stepsCreated": 10,
+  "writes": [
+    {
+      "createDebtRecoveryCase": [
+        {
+          "caseNumber": "DR-2026-0001",
+          "initiatedBy": "adviser",
+          "initiatedRole": "ADVISER",
+          "interestOwed": 35.5,
+          "lotId": "lot-1",
+          "ownerId": "debtor",
+          "principalOwed": 1200,
+          "rulePack": "AU-QLD 2026.10.20",
+          "schemeId": "scheme-1",
+          "totalOwed": 1235.5,
+        },
+      ],
+    },
+    {
+      "logDebtRecoveryActivity": [
+        {
+          "activityType": "CASE_OPENED",
+          "caseId": "<DebtRecoveryCase 1>",
+          "description": "Debt recovery case DR-2026-0001 initiated by adviser for $1235.50 owing",
+          "metadata": {
+            "interestOwed": 35.5,
+            "overdueNoticeCount": 1,
+            "principalOwed": 1200,
+            "totalOwed": 1235.5,
+          },
+          "performedBy": "adviser",
+        },
+      ],
+    },
+  ],
+}
+`;
+
+exports[`QLD: which notices count as overdue > QLD stored OVERDUE, past due with a zero balance 1`] = `
+{
+  "amountOwing": "0.00",
+  "result": {
+    "id": "<DebtRecoveryCase 1>",
+    "success": true,
+  },
+  "stepsCreated": 10,
+  "writes": [
+    {
+      "createDebtRecoveryCase": [
+        {
+          "caseNumber": "DR-2026-0001",
+          "initiatedBy": "adviser",
+          "initiatedRole": "ADVISER",
+          "interestOwed": 0,
+          "lotId": "lot-1",
+          "ownerId": "debtor",
+          "principalOwed": 0,
+          "rulePack": "AU-QLD 2026.10.20",
+          "schemeId": "scheme-1",
+          "totalOwed": 0,
+        },
+      ],
+    },
+    {
+      "logDebtRecoveryActivity": [
+        {
+          "activityType": "CASE_OPENED",
+          "caseId": "<DebtRecoveryCase 1>",
+          "description": "Debt recovery case DR-2026-0001 initiated by adviser for $0.00 owing",
+          "metadata": {
+            "interestOwed": 0,
+            "overdueNoticeCount": 1,
+            "principalOwed": 0,
+            "totalOwed": 0,
+          },
+          "performedBy": "adviser",
+        },
+      ],
+    },
+  ],
+}
+`;
+
+exports[`QLD: which notices count as overdue > QLD stored OVERDUE, past due, with a balance that cannot be read 1`] = `
+{
+  "amountOwing": "NaN",
+  "result": {
+    "id": "<DebtRecoveryCase 1>",
+    "success": true,
+  },
+  "stepsCreated": 10,
+  "writes": [
+    {
+      "createDebtRecoveryCase": [
+        {
+          "caseNumber": "DR-2026-0001",
+          "initiatedBy": "adviser",
+          "initiatedRole": "ADVISER",
+          "interestOwed": 0,
+          "lotId": "lot-1",
+          "ownerId": "debtor",
+          "principalOwed": null,
+          "rulePack": "AU-QLD 2026.10.20",
+          "schemeId": "scheme-1",
+          "totalOwed": null,
+        },
+      ],
+    },
+    {
+      "logDebtRecoveryActivity": [
+        {
+          "activityType": "CASE_OPENED",
+          "caseId": "<DebtRecoveryCase 1>",
+          "description": "Debt recovery case DR-2026-0001 initiated by adviser for $NaN owing",
+          "metadata": {
+            "interestOwed": 0,
+            "overdueNoticeCount": 1,
+            "principalOwed": null,
+            "totalOwed": null,
+          },
+          "performedBy": "adviser",
+        },
+      ],
+    },
+  ],
+}
+`;
+
+exports[`midnight in the building's zone > NSW 00:00 on 2 Nov in Sydney (13:00 UTC, still 1 Nov in UTC), due 1 Nov: overdue 1`] = `
+{
+  "amountOwing": "0.00",
+  "result": {
+    "error": "No overdue levy notices found for this lot",
+  },
+  "stepsCreated": 0,
+  "writes": [],
+}
+`;
+
+exports[`midnight in the building's zone > NSW 23:59:59 on 1 Nov in Sydney (12:59:59 UTC), due 1 Nov: due today, not overdue 1`] = `
+{
+  "amountOwing": "0.00",
+  "result": {
+    "error": "No overdue levy notices found for this lot",
+  },
+  "stepsCreated": 0,
+  "writes": [],
+}
+`;
+
+exports[`midnight in the building's zone > QLD 00:00 on 2 Nov in Brisbane (14:00 UTC, still 1 Nov in UTC), due 1 Nov: overdue 1`] = `
+{
+  "amountOwing": "0.00",
+  "result": {
+    "error": "No overdue contribution notices found for this lot",
+  },
+  "stepsCreated": 0,
+  "writes": [],
+}
+`;
+
+exports[`midnight in the building's zone > QLD 13:30 UTC (23:30 on 1 Nov in Brisbane, 00:30 on 2 Nov in Sydney), due 1 Nov: due today, not overdue 1`] = `
+{
+  "amountOwing": "0.00",
+  "result": {
+    "error": "No overdue contribution notices found for this lot",
+  },
+  "stepsCreated": 0,
+  "writes": [],
+}
+`;
+
+exports[`midnight in the building's zone > QLD 23:59:59 on 1 Nov in Brisbane (13:59:59 UTC), due 1 Nov: due today, not overdue 1`] = `
+{
+  "amountOwing": "0.00",
+  "result": {
+    "error": "No overdue contribution notices found for this lot",
+  },
+  "stepsCreated": 0,
+  "writes": [],
+}
+`;
