@@ -716,7 +716,10 @@ async function checkRecoveryStep(
     } catch (err) {
       if (err instanceof UnreadableNoticeError) {
         logError("A levy notice could not be read when completing a debt recovery step:", err);
-        return { error: unreadableNotice(claimStep ? "which of its notices are overdue" : "the amount owing") };
+        // A due day or balance that cannot be read leaves which notices are overdue unknown (at a claim step); a late
+        // charge that cannot be read, only the amount owing.
+        const overdueUnknown = claimStep && (err.field === "dueDate" || err.field === "balanceOutstanding");
+        return { error: unreadableNotice(overdueUnknown ? "which of its notices are overdue" : "the amount owing") };
       }
       logError("Failed to read the lot's overdue notices:", err);
       return { error: claimStep ? "Could not check the lot's notices. Nothing was saved." : "Could not work out the amount owing. Nothing was saved." };

@@ -115,8 +115,10 @@ async function overdueLevyNotices(schemeId: string, lotId: string, today: string
  * from their issue days reads them (PR 9c): the number, the day issued in the
  * building's zone `tz`, the pack it was issued under and whether it was
  * brought across at takeover. The same notices as overdueNoticesForClaim
- * (overdueLevyNotices, one definition of overdue). Throws as that does, so a
- * failed read is never "none overdue".
+ * (overdueLevyNotices, one definition of overdue). Throws when they cannot be
+ * read, and UnreadableNoticeError when a notice's due day or balance cannot
+ * be read (its late charge is not read here), so a failed read is never "none
+ * overdue".
  */
 export async function overdueNoticesForTiming(schemeId: string, lotId: string, tz: string, today: string, orm: Orm = db.orm): Promise<TimingNotice[]> {
   const { storedDayIn } = await import("@/lib/jurisdiction/time-zone");

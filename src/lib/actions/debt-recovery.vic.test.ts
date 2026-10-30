@@ -268,6 +268,22 @@ describe("the Authority to Start Proceedings step (D2)", () => {
     expect(records()).toEqual([expect.objectContaining({ kind: "AUTHORITY_TO_SUE", amount: "1200.00" })]);
   });
 
+  it("reads overdue on the building's day in Melbourne, not the UTC day: a notice due 1 Nov counts from Melbourne's 2 Nov", async () => {
+    const dueFirst = { id: "n-2", schemeId: SCHEME, lotId: "lot-1", noticeNumber: "F-2", status: "ISSUED", dueDate: "2026-11-01", issuedAt: "2026-10-01T00:00:00.000Z", amountDue: "300.00", amountPaid: "0.00", balanceOutstanding: "300.00", interestCharged: "0", rulePack: LABEL, migrationBatchId: null };
+    const F_1 = { ...dueFirst, id: "n-1", noticeNumber: "F-1", status: "OVERDUE", dueDate: "2026-07-01", issuedAt: "2026-06-01T00:00:00.000Z", amountDue: "1200.00", balanceOutstanding: "1200.00" };
+    // 2026-11-01T12:59Z is 11:59 pm on 1 Nov in Melbourne (AEDT, UTC+11): F-2 is due that day, so not yet overdue.
+    vi.setSystemTime(new Date("2026-11-01T12:59:00.000Z"));
+    seed({ currentOrder: order("COMMITTEE_REVIEW"), notices: [F_1, dueFirst] });
+    expect(await complete("COMMITTEE_REVIEW", { authorityMeetingId: "agm", authorityItemId: "g-special" })).toEqual({ success: true });
+    expect(records()).toEqual([expect.objectContaining({ kind: "AUTHORITY_TO_SUE", amount: "1200.00" })]);
+    // 2026-11-01T14:00Z is still 1 Nov in UTC but 1 am on 2 Nov in Melbourne: F-2 is overdue, and its balance counts.
+    vi.setSystemTime(new Date("2026-11-01T14:00:00.000Z"));
+    seed({ currentOrder: order("COMMITTEE_REVIEW"), notices: [F_1, dueFirst] });
+    expect(await complete("COMMITTEE_REVIEW", { authorityMeetingId: "agm", authorityItemId: "g-special" })).toEqual({ success: true });
+    expect(records()).toEqual([expect.objectContaining({ kind: "AUTHORITY_TO_SUE", amount: "1500.00" })]);
+    expectRecordsValid();
+  });
+
   it("records an interim special resolution once carried and taken effect, as of the day it took effect", async () => {
     seed({ currentOrder: order("COMMITTEE_REVIEW") });
     expect(await complete("COMMITTEE_REVIEW", { authorityMeetingId: "agm", authorityItemId: "g-interim-carried" })).toEqual({ success: true });
@@ -389,6 +405,14 @@ describe("the Proceedings step (D4, D5, D13)", () => {
     seed({ currentOrder: order("PROCEEDINGS"), records: [finalNoticeRecord("2026-10-01"), AUTHORITY_RECORD], notices: [F1, overdue("f-9", "", "2026-09-10T00:00:00.000Z", { status: "ISSUED", dueDate: null })] });
     expect(await complete("PROCEEDINGS", { forum: "VCAT" })).toEqual({
       error: "A fee notice for this lot could not be read, so which of its notices are overdue cannot be worked out and this step cannot be completed. Nothing was saved.",
+    });
+    expectNothingWritten("PROCEEDINGS", 2);
+  });
+
+  it("refuses where a notice's late charge cannot be read, saying the amount owing cannot be worked out, with nothing written", async () => {
+    seed({ currentOrder: order("PROCEEDINGS"), records: [finalNoticeRecord("2026-10-01"), AUTHORITY_RECORD], notices: [{ ...F1, interestCharged: "not money" }] });
+    expect(await complete("PROCEEDINGS", { forum: "VCAT" })).toEqual({
+      error: "A fee notice for this lot could not be read, so the amount owing cannot be worked out and this step cannot be completed. Nothing was saved.",
     });
     expectNothingWritten("PROCEEDINGS", 2);
   });
