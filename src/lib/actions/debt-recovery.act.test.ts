@@ -128,7 +128,9 @@ function seed(opts: { st?: "ACT" | "NSW"; currentOrder?: number; records?: Recor
       { id: "m-owner", schemeId: SCHEME, lotId: "lot-1", profileId: "debtor", role: "OWNER", isActive: true, endDate: null },
       { id: "m-adviser", schemeId: SCHEME, lotId: null, profileId: "adviser", role: "ADVISER", isActive: true, endDate: null },
     ],
-    LevyNotice: [{ id: "n-1", schemeId: SCHEME, lotId: "lot-1", status: "OVERDUE", dueDate: "2026-07-01", balanceOutstanding: "1200.00", interestCharged: "35.50" }],
+    // A balance includes its late charge (fixture corrected 30 Oct 2026, overdue fix review C1, as in the WA test:
+    // it was 1200.00 with a 35.50 late charge and no amount due or paid; the lot owes 1235.50 either way).
+    LevyNotice: [{ id: "n-1", schemeId: SCHEME, lotId: "lot-1", status: "OVERDUE", dueDate: "2026-07-01", amountDue: "1200.00", amountPaid: "0.00", balanceOutstanding: "1235.50", interestCharged: "35.50" }],
     PaymentPlan: [],
     Meeting: [
       { id: "exec", schemeId: SCHEME, meetingType: "COMMITTEE", status: "MINUTES_DRAFT", title: "Executive committee meeting", scheduledAt: "2026-10-20T02:00:00.000Z", timezone: null },

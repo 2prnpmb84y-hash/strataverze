@@ -31,6 +31,22 @@
  * "deliberate:" entries were updated, by a targeted run of their tests: each
  * now shows the refusal and no writes (before, each succeeded and wrote). Every
  * other entry, 43 of 49, is byte-identical to the recording on origin/main.
+ *
+ * Fixtures corrected, no entry changed (overdue notices fix, 30 Oct 2026):
+ * debt recovery now counts a notice past its due day with a balance as
+ * overdue, and (review C1, "Balance only", decided by Matthew Wrigley on
+ * 30 Oct 2026) a case is opened for the notices' balances, which already
+ * include their late charge, never adding it again; the interest part is
+ * the late charge still owing, with payments applied in the pack's order.
+ * The two notices gave a late charge their balance did not include and had
+ * no amount due or paid. They now have them, and each balance includes its
+ * late charge: notice-1 1200.00 + 35.50 = 1235.50, notice-2 800.25 (late
+ * charge 0.00). The fix was not changed to suit the fixtures. With the
+ * corrected fixtures the code before C1 (6b4d953) opens the three initiate
+ * cases ("NSW, no payment plan", "NSW, an active payment plan" and "QLD, an
+ * active payment plan") for 2071.25, the late charge counted twice
+ * (checked); the fix opens them for 2035.75 (principal 2000.25, interest
+ * 35.50), as recorded. So no snapshot entry changed: all 49 are as before.
  */
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -118,8 +134,8 @@ function normalise(value: unknown): unknown {
 }
 
 const overdueNotices = [
-  { id: "notice-1", schemeId: SCHEME, lotId: "lot-1", status: "OVERDUE", dueDate: "2026-07-01", balanceOutstanding: "1200.00", interestCharged: "35.50" },
-  { id: "notice-2", schemeId: SCHEME, lotId: "lot-1", status: "OVERDUE", dueDate: "2026-10-01", balanceOutstanding: "800.25", interestCharged: null },
+  { id: "notice-1", schemeId: SCHEME, lotId: "lot-1", status: "OVERDUE", dueDate: "2026-07-01", amountDue: "1200.00", amountPaid: "0.00", balanceOutstanding: "1235.50", interestCharged: "35.50" },
+  { id: "notice-2", schemeId: SCHEME, lotId: "lot-1", status: "OVERDUE", dueDate: "2026-10-01", amountDue: "800.25", amountPaid: "0.00", balanceOutstanding: "800.25", interestCharged: "0.00" },
 ];
 
 /**
