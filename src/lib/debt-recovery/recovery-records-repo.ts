@@ -6,6 +6,8 @@
  */
 import type { Numeric } from "@prisma/orm-postgres/target/codec-types";
 import { db } from "@/prisma/db";
+import { schemeToday } from "@/lib/jurisdiction/scheme-time";
+import { OVERDUE_NOTICE_STATUSES, overdueOn } from "@/lib/levies/overdue";
 import type { RecordedRecoveryFacts, RecoveryRecordToWrite } from "./recovery-gates";
 
 type Orm = typeof db.orm;
@@ -38,18 +40,22 @@ export function recordedFacts(rows: readonly Pick<RecoveryRecordRow, "kind" | "f
 }
 
 /**
- * The lot's amount owing now, as opening a case works it out (the overdue
- * notices' balances plus their late charge), to two decimals. Throws when
- * the notices cannot be read, so a failed read is never "nothing owing".
+ * The lot's amount owing now, as opening a case works it out (the balances
+ * of the notices overdue on the building's day `today`, isOverdueOn, plus
+ * their late charge), to two decimals. Without `today`, the building's day
+ * now. Throws when the notices cannot be read, so a failed read is never
+ * "nothing owing", and when a notice's due day or balance cannot be read
+ * (UnreadableNoticeError), so it is never left out of the amount silently.
  */
-export async function currentAmountOwing(schemeId: string, lotId: string, orm: Orm = db.orm): Promise<string> {
+export async function currentAmountOwing(schemeId: string, lotId: string, orm: Orm = db.orm, today?: string): Promise<string> {
+  const day = today ?? (await schemeToday(schemeId, new Date(), orm));
   const notices = await orm.public.LevyNotice
     .where((n) => n.schemeId.eq(schemeId))
     .where((n) => n.lotId.eq(lotId))
-    .where((n) => n.status.eq("OVERDUE"))
+    .where((n) => n.status.in([...OVERDUE_NOTICE_STATUSES]))
     .limit(5000)
     .all();
-  const total = notices.reduce((sum, n) => sum + Number(n.balanceOutstanding) + Number(n.interestCharged || 0), 0);
+  const total = overdueOn(notices, day).reduce((sum, n) => sum + Number(n.balanceOutstanding) + Number(n.interestCharged || 0), 0);
   return total.toFixed(2);
 }
 

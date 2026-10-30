@@ -1,5 +1,7 @@
 import { db } from "@/prisma/db";
 import type { Numeric, Varchar } from "@prisma/orm-postgres/target/codec-types";
+import { schemeToday } from "@/lib/jurisdiction/scheme-time";
+import { OVERDUE_NOTICE_STATUSES, overdueOn, UnreadableNoticeError } from "@/lib/levies/overdue";
 
 function toNumeric(value: number | string): Numeric<12, 2> {
   return String(value) as unknown as Numeric<12, 2>;
@@ -410,18 +412,29 @@ export async function logDebtRecoveryActivity(data: {
 
 // ─── Overdue Levy Notices (for initiating recovery) ─────────────
 
+/**
+ * The lot's levy notices overdue on the building's day `today` (isOverdueOn:
+ * ISSUED, PARTIALLY_PAID or OVERDUE, past the due day, with a balance),
+ * oldest first. Without `today`, the building's day now. A notice whose due
+ * day or balance cannot be read throws UnreadableNoticeError (never counted
+ * or left out silently); any other failure gives none, as before.
+ */
 export async function getOverdueLevyNoticesForLot(
   schemeId: string,
   lotId: string,
+  today?: string,
 ) {
   try {
-    return await db.orm.public.LevyNotice
+    const day = today ?? (await schemeToday(schemeId));
+    const notices = await db.orm.public.LevyNotice
       .where((n) => n.schemeId.eq(schemeId))
       .where((n) => n.lotId.eq(lotId))
-      .where((n) => n.status.eq("OVERDUE"))
+      .where((n) => n.status.in([...OVERDUE_NOTICE_STATUSES]))
       .orderBy((n) => n.dueDate.asc())
       .all();
-  } catch {
+    return overdueOn(notices, day);
+  } catch (err) {
+    if (err instanceof UnreadableNoticeError) throw err;
     return [];
   }
 }

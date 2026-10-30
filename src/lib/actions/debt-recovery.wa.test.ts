@@ -221,6 +221,36 @@ describe("the Decision to Start Proceedings step (D9)", () => {
     });
   });
 
+  // Overdue notices fix (30 Oct 2026): nothing stores a notice as OVERDUE, so
+  // the amount owing counts every notice past its due day on the building's
+  // day with a balance. On 5191ec9 this recorded "0.00".
+  it("records the amount owing from ISSUED and PARTIALLY_PAID notices past their due day in Perth", async () => {
+    seed({ currentOrder: order("COMMITTEE_REVIEW") });
+    const base = { schemeId: SCHEME, lotId: "lot-1", interestCharged: null };
+    sharedFake.table("LevyNotice").splice(
+      0,
+      1,
+      { ...base, id: "n-1", status: "ISSUED", dueDate: "2026-07-01", balanceOutstanding: "1200.00", interestCharged: "35.50" },
+      // Due 1 Nov: 09:00 on 2 Nov in Perth, so overdue.
+      { ...base, id: "n-2", status: "PARTIALLY_PAID", dueDate: "2026-11-01", balanceOutstanding: "300.00" },
+      // Due today in Perth, paid, and another lot's: none counted.
+      { ...base, id: "n-3", status: "ISSUED", dueDate: "2026-11-02", balanceOutstanding: "999.00" },
+      { ...base, id: "n-4", status: "PAID", dueDate: "2026-07-01", balanceOutstanding: "0.00" },
+      { ...base, id: "n-5", lotId: "lot-2", status: "ISSUED", dueDate: "2026-07-01", balanceOutstanding: "50.00" },
+    );
+    expect(await complete("COMMITTEE_REVIEW", { authorityMeetingId: "council", authorityItemId: "c-carried" })).toEqual({ success: true });
+    expect(records()).toHaveLength(1);
+    expect(records()[0]).toMatchObject({ kind: "AUTHORITY_TO_SUE", amount: "1535.50" });
+  });
+
+  it("refuses, with nothing written, when a past-due notice's balance cannot be read (fail closed)", async () => {
+    seed({ currentOrder: order("COMMITTEE_REVIEW") });
+    sharedFake.table("LevyNotice").splice(0, 1, { id: "n-1", schemeId: SCHEME, lotId: "lot-1", status: "ISSUED", dueDate: "2026-07-01", balanceOutstanding: "not a number", interestCharged: null });
+    expect(await complete("COMMITTEE_REVIEW", { authorityMeetingId: "council", authorityItemId: "c-carried" })).toEqual({ error: "Could not work out the amount owing. Nothing was saved." });
+    expectNothingWritten("COMMITTEE_REVIEW");
+    expect(records()).toEqual([]);
+  });
+
   it("refuses a resolution that took effect before the case was opened (review L4)", async () => {
     seed({ currentOrder: order("COMMITTEE_REVIEW"), openedAt: "2026-10-15T02:00:00.000Z" });
     expect(await complete("COMMITTEE_REVIEW", { authorityMeetingId: "agm", authorityItemId: "g-carried" })).toEqual({

@@ -21,6 +21,37 @@
  * throws). Timestamps are masked and the in-memory database's ids are
  * numbered in the order they appear. The time is fixed at 2 Nov 2026 12:00
  * in Sydney (01:00 UTC) unless an entry says otherwise.
+ *
+ * One deliberate change (30 Oct 2026, approved by Matthew Wrigley: "treat
+ * notices past due with a balance as overdue wherever recovery reads them"):
+ * debt recovery counts a notice as overdue when it is ISSUED, PARTIALLY_PAID
+ * or OVERDUE, has a balance of at least a cent and its due day is before the
+ * building's day (isOverdueOn, src/lib/levies/overdue.ts), and a notice whose
+ * balance cannot be read refuses the case (and throws from
+ * currentAmountOwing) rather than being counted or left out. Only these 18
+ * entries were updated, by a targeted run of this file; the other 17 are
+ * byte-identical to the recording on 5191ec9.
+ *   NSW and QLD (9 each):
+ *   - "past-due ISSUED with a balance", "past-due PARTIALLY_PAID with a
+ *     balance", "ISSUED due yesterday (1 Nov 2026)": refused before; now a
+ *     case is opened for the balance and its late charge, and
+ *     currentAmountOwing gives that amount (was "0.00").
+ *   - "a mix: ...": the case was for the stored OVERDUE notice only
+ *     (1235.50); now for it and the past-due ISSUED and PARTIALLY_PAID
+ *     notices (2648.15). The notice not yet due is still left out.
+ *   - "stored OVERDUE, not yet due" and "stored OVERDUE, past due with a zero
+ *     balance": a case was opened (for 1000.00 and for 0.00); now refused,
+ *     as nothing is overdue on the building's day. Nothing stores OVERDUE.
+ *   - "past-due ISSUED with a balance that cannot be read": refused as "No
+ *     overdue ... notices" with "0.00" owing; now refused as a notice that
+ *     cannot be read, and currentAmountOwing throws.
+ *   - "stored OVERDUE, past due, with a balance that cannot be read": a case
+ *     was opened with no amount (NaN) and "NaN" owing; now refused the same
+ *     way.
+ *   Midnight in the building's zone (2):
+ *   - "NSW 00:00 on 2 Nov in Sydney ..." and "QLD 00:00 on 2 Nov in
+ *     Brisbane ...": refused before; now overdue (the building's day is 2
+ *     Nov while UTC is still 1 Nov), and a case is opened for 1000.00.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 

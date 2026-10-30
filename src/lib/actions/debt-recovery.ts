@@ -46,6 +46,7 @@ import {
   type RecoveryRecordToWrite,
 } from "@/lib/debt-recovery/recovery-gates";
 import { createRecoveryRecords, currentAmountOwing, readRecoveryRecords, recordedFacts } from "@/lib/debt-recovery/recovery-records-repo";
+import { UnreadableNoticeError } from "@/lib/levies/overdue";
 
 type ActionResult = { error?: string; success?: boolean; id?: string };
 
@@ -105,8 +106,18 @@ export async function initiateDebtRecoveryAction(
       return { error: "You cannot act on a debt recovery case for your own lot." };
     }
 
-    // Gather overdue levy notices
-    const overdueNotices = await getOverdueLevyNoticesForLot(schemeId, lotId);
+    // The lot's notices overdue on the building's day (past the due day, with a balance).
+    const { schemeToday } = await import("@/lib/jurisdiction/scheme-time");
+    const today = await schemeToday(schemeId);
+    let overdueNotices: Awaited<ReturnType<typeof getOverdueLevyNoticesForLot>>;
+    try {
+      overdueNotices = await getOverdueLevyNoticesForLot(schemeId, lotId, today);
+    } catch (err) {
+      // Fail closed: a notice that cannot be read opens no case, rather than one for the wrong amount.
+      if (!(err instanceof UnreadableNoticeError)) throw err;
+      logError("A levy notice could not be read when opening a debt recovery case:", err);
+      return { error: `A ${(await messageTermsFor(schemeId)).levy} notice for this lot could not be read, so the amount owing cannot be worked out. Nothing was saved.` };
+    }
     if (overdueNotices.length === 0) {
       return { error: `No overdue ${(await messageTermsFor(schemeId)).levy} notices found for this lot` };
     }
@@ -534,7 +545,7 @@ async function checkRecoveryStep(
   let amountOwing: string | null = null;
   if (needs?.authority && authority?.problem === null) {
     try {
-      amountOwing = await currentAmountOwing(input.schemeId, input.lotId);
+      amountOwing = await currentAmountOwing(input.schemeId, input.lotId, db.orm, today);
     } catch (err) {
       logError("Failed to read the lot's overdue notices:", err);
       return { error: "Could not work out the amount owing. Nothing was saved." };
