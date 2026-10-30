@@ -221,7 +221,7 @@ describe("initiateDebtRecoveryAction", () => {
     membership.mockResolvedValue({ profile: { id: "committee-member" }, membership: {}, roles: ["COMMITTEE"] });
     lotFirst.mockResolvedValue({ id: "lot-1", schemeId: SCHEME_A });
     ownerMembershipFirst.mockResolvedValue({ id: "m" });
-    queries.getOverdueLevyNoticesForLot.mockResolvedValue([{ balanceOutstanding: 100, interestCharged: 0 }]);
+    queries.getOverdueLevyNoticesForLot.mockResolvedValue([{ id: "n-1", amountDue: 100, amountPaid: 0, balanceOutstanding: 100, interestCharged: 0 }]);
     queries.generateCaseNumber.mockResolvedValue("DR-1");
     queries.createDebtRecoveryCase.mockResolvedValue({ id: "new-case" });
     const r = await actions.initiateDebtRecoveryAction(SCHEME_A, "lot-1", "debtor", "ADVISER");
@@ -237,7 +237,7 @@ describe("initiateDebtRecoveryAction for a pack without the recovery steps", () 
     membership.mockResolvedValue({ profile: { id: "committee-member" }, membership: {}, roles: ["COMMITTEE"] });
     lotFirst.mockResolvedValue({ id: "lot-1", schemeId: SCHEME_A });
     ownerMembershipFirst.mockResolvedValue({ id: "m" });
-    queries.getOverdueLevyNoticesForLot.mockResolvedValue([{ balanceOutstanding: 100, interestCharged: 0 }]);
+    queries.getOverdueLevyNoticesForLot.mockResolvedValue([{ id: "n-1", amountDue: 100, amountPaid: 0, balanceOutstanding: 100, interestCharged: 0 }]);
     queries.generateCaseNumber.mockResolvedValue("DR-1");
     queries.createDebtRecoveryCase.mockResolvedValue({ id: "new-case" });
   };
@@ -272,7 +272,7 @@ describe("initiateDebtRecoveryAction for a Queensland building (stage 2, step 8)
       membership.mockResolvedValue({ profile: { id: "committee-member" }, membership: {}, roles: ["COMMITTEE"] });
       lotFirst.mockResolvedValue({ id: "lot-1", schemeId: SCHEME_A });
       ownerMembershipFirst.mockResolvedValue({ id: "m" });
-      queries.getOverdueLevyNoticesForLot.mockResolvedValue([{ balanceOutstanding: 100, interestCharged: 0 }]);
+      queries.getOverdueLevyNoticesForLot.mockResolvedValue([{ id: "n-1", amountDue: 100, amountPaid: 0, balanceOutstanding: 100, interestCharged: 0 }]);
       queries.generateCaseNumber.mockResolvedValue("DR-1");
       queries.createDebtRecoveryCase.mockResolvedValue({ id: "new-case" });
       planFirst.mockResolvedValue({ id: "plan-1", caseId: null });
@@ -298,7 +298,7 @@ describe("initiateDebtRecoveryAction for a Queensland building (stage 2, step 8)
     membership.mockResolvedValue({ profile: { id: "committee-member" }, membership: {}, roles: ["COMMITTEE"] });
     lotFirst.mockResolvedValue({ id: "lot-1", schemeId: SCHEME_A });
     ownerMembershipFirst.mockResolvedValue({ id: "m" });
-    queries.getOverdueLevyNoticesForLot.mockResolvedValue([{ balanceOutstanding: 100, interestCharged: 0 }]);
+    queries.getOverdueLevyNoticesForLot.mockResolvedValue([{ id: "n-1", amountDue: 100, amountPaid: 0, balanceOutstanding: 100, interestCharged: 0 }]);
     queries.generateCaseNumber.mockResolvedValue("DR-1");
     queries.createDebtRecoveryCase.mockResolvedValue({ id: "new-case" });
     schemeRules.mockResolvedValueOnce({ rules: qld, label: "AU-QLD test" });

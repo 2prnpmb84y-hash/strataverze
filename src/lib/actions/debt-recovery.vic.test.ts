@@ -92,7 +92,7 @@ function seed(opts: { lots?: number; several?: string | null; currentOrder?: num
       { id: "m-adviser", schemeId: SCHEME, lotId: null, profileId: "adviser", role: "ADVISER", isActive: true, endDate: null },
     ],
     LevyNotice: opts.notices ?? [
-      { id: "n-1", schemeId: SCHEME, lotId: "lot-1", noticeNumber: "F-1", status: "OVERDUE", dueDate: "2026-07-01", issuedAt: "2026-06-01T00:00:00.000Z", balanceOutstanding: "1200.00", interestCharged: "0", rulePack: LABEL, migrationBatchId: null },
+      { id: "n-1", schemeId: SCHEME, lotId: "lot-1", noticeNumber: "F-1", status: "OVERDUE", dueDate: "2026-07-01", issuedAt: "2026-06-01T00:00:00.000Z", amountDue: "1200.00", amountPaid: "0.00", balanceOutstanding: "1200.00", interestCharged: "0", rulePack: LABEL, migrationBatchId: null },
     ],
     PaymentPlan: [],
     Meeting: [

@@ -560,6 +560,46 @@ export function allocatePayment(
   return { levyCents: applied.LEVY, interestCents: applied.INTEREST, recoveryCostsCents: applied.RECOVERY_COSTS, excessCents: left };
 }
 
+/**
+ * What is still owing on one notice, split into the levy and the late
+ * charge, with what was paid applied in the building's order (`order`, the
+ * pack's PAYMENT_ALLOCATION_ORDER). All in cents. Where the late charge is
+ * paid first (Queensland, SM s 166(5)), `chargePaidCents` is the part of the
+ * payments that went to it (noticeLateChargePaid); otherwise payments go to
+ * the levy first (NSW), and it is not used. A negative levy (a credit) adds
+ * to what is paid. lotArrears (the payment plan figure) and the debt
+ * recovery case amount use this one split.
+ *
+ * A notice brought across at takeover (M1, 30 Oct 2026) holds in amountPaid
+ * the late charge the old system collected (`takeoverChargePaidCents`, the
+ * notice's migratedInterestPaid). That part paid the late charge, whatever
+ * the order: it goes to the late charge first (never more than is charged),
+ * and only what is paid after it follows the order. With the late charge
+ * paid first, chargePaidCents already counts it (what amountPaid holds with
+ * no receipt is taken as paid to the late charge first). Throws a RangeError
+ * when it is not a whole number of cents from 0 to what was paid, so a
+ * figure that cannot be derived is never guessed.
+ */
+export function noticeOwingSplit(
+  n: { dueCents: number; paidCents: number; chargedCents: number; chargePaidCents?: number; takeoverChargePaidCents?: number },
+  order?: PaymentAllocationOrder | null,
+): { levyCents: number; lateChargeCents: number } {
+  const { dueCents: due, paidCents: paid, chargedCents: charged } = n;
+  const takeover = n.takeoverChargePaidCents ?? 0;
+  if (!Number.isInteger(takeover) || takeover < 0 || (takeover > 0 && takeover > paid)) {
+    throw new RangeError(`The late charge paid before takeover (${takeover} cents) is not a figure from 0 to what was paid (${paid} cents).`);
+  }
+  if (lateChargeFirst(order)) {
+    const chargePaid = n.chargePaidCents ?? 0;
+    const levyPaid = paid - Math.min(0, due) - chargePaid;
+    return { levyCents: Math.max(0, Math.max(0, due) - levyPaid), lateChargeCents: Math.max(0, charged - chargePaid) };
+  }
+  // The old system's late charge paid, to the late charge first; the rest of what was paid in the order.
+  const takeoverToCharge = Math.min(takeover, Math.max(0, charged));
+  const applied = allocatePayment(paid - takeoverToCharge - Math.min(0, due), { levyCents: Math.max(0, due), interestCents: charged - takeoverToCharge, recoveryCostsCents: 0 }, order ?? undefined);
+  return { levyCents: Math.max(0, due - applied.levyCents), lateChargeCents: Math.max(0, charged - takeoverToCharge - applied.interestCents) };
+}
+
 export type InterestSettingMode = LateChargeMode;
 
 /** The words the setting check used before packs gave them (an annual-rate rule passed on its own). */
