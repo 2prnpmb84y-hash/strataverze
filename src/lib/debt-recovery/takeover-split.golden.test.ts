@@ -17,6 +17,32 @@
  * Each entry is one notice on its own lot: lotArrears with the NSW and the
  * Queensland payment order, and caseAmountCents with each. The day is
  * 2 Nov 2026 and every notice is past due.
+ *
+ * One deliberate change (M1, 30 Oct 2026, decided by Matthew Wrigley: "Fix
+ * in this PR"): on a takeover notice, the late charge the old system
+ * collected (migratedInterestPaid: written once at the cutover, equal to
+ * amountPaid then, never changed; every later payment here adds a receipt)
+ * pays the late charge first, never more than is charged, and only what is
+ * paid after it follows the pack's order (noticeOwingSplit). Only the NSW
+ * half (lotArrears and caseAmountCents, the same figures) of these 7 entries
+ * was updated, by a targeted run of this file; every Queensland half and the
+ * other 6 entries (takeover with nothing paid before takeover, paid off, and
+ * the 4 controls) are byte-identical to the recording on 2e82c7f.
+ *   - "takeover, old late charge part paid (60.00 of 100.00)": levy 1000.00,
+ *     late charge 40.00 (was levy 940.00, late charge 100.00).
+ *   - "takeover, old late charge paid in full": levy 1000.00, late charge 0
+ *     (was 900.00 and 100.00).
+ *   - "takeover, old part paid, a later receipt of 200.00 ...": levy
+ *     800.00, late charge 40.00 (was 740.00 and 100.00).
+ *   - "takeover, old paid in full, a later receipt of 300.00": levy 700.00,
+ *     late charge 0 (was 600.00 and 100.00).
+ *   - "takeover, old part paid, a later receipt reversed": levy 1000.00,
+ *     late charge 40.00 (was 940.00 and 100.00).
+ *   - "takeover, old part paid, a later receipt with no late charge part
+ *     recorded": levy 900.00, late charge 40.00 (was 840.00 and 100.00).
+ *   - "takeover, old part paid, 30.00 more late charge charged here": levy
+ *     1000.00, late charge 70.00 (was 940.00 and 130.00).
+ * The totals are unchanged; only the split between levy and late charge.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { QLD_RULE_PACK, statutoryRulesFor } from "@/config/statutory";

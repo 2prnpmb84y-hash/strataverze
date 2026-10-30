@@ -28,6 +28,7 @@ import {
   type TermsInput,
 } from "./payment-plans";
 import { needRule } from "@/config/statutory";
+import { MAX_RECEIPTS } from "./case-amount";
 import { lateChargeFirst, noticeOwingSplit, type PaymentAllocationOrder } from "@/lib/finance/statutory-interest";
 
 export class PaymentPlanError extends Error {
@@ -100,6 +101,19 @@ async function openCaseFor(schemeId: string, lotId: string) {
  * also use. The amounts are the notice's posted ones: a penalty the engine has
  * worked out since the last charge is not included until it is charged.
  */
+/**
+ * The late charge the old system collected on a notice brought across at
+ * takeover (migratedInterestPaid, written once at the cutover and never
+ * changed; amountPaid held exactly this then, and every later payment adds a
+ * receipt), or 0 for any other notice. A takeover figure that cannot be read
+ * is NaN, which noticeOwingSplit refuses.
+ */
+export function takeoverChargePaidCents(n: { migrationBatchId?: unknown; migratedInterestPaid?: unknown }): number {
+  if (!n.migrationBatchId) return 0;
+  const v = n.migratedInterestPaid;
+  return v == null || String(v).trim() === "" ? NaN : toCents(String(v));
+}
+
 export async function lotArrears(schemeId: string, lotId: string, today: string, order?: PaymentAllocationOrder) {
   const notices = await db.orm.public.LevyNotice.where((n) => and(n.schemeId.eq(schemeId), n.lotId.eq(lotId), n.status.neq("DRAFT"), n.status.neq("WRITTEN_OFF"))).limit(2000).all();
   if (lateChargeFirst(order)) return lotArrearsLateChargeFirst(notices.filter((n) => day(n.dueDate) < today), order);
@@ -109,7 +123,12 @@ export async function lotArrears(schemeId: string, lotId: string, today: string,
     if (day(n.dueDate) >= today) continue;
     // A notice with a negative levy (a credit) adds it to what is paid, as before.
     const owing = noticeOwingSplit(
-      { dueCents: toCents(String(n.amountDue)), paidCents: toCents(String(n.amountPaid ?? 0)), chargedCents: toCents(String(n.interestCharged ?? 0)) },
+      {
+        dueCents: toCents(String(n.amountDue)),
+        paidCents: toCents(String(n.amountPaid ?? 0)),
+        chargedCents: toCents(String(n.interestCharged ?? 0)),
+        takeoverChargePaidCents: takeoverChargePaidCents(n),
+      },
       order,
     );
     leviesCents += owing.levyCents;
@@ -120,14 +139,16 @@ export async function lotArrears(schemeId: string, lotId: string, today: string,
 
 /** lotArrears for a building that applies payments to the late charge first. */
 async function lotArrearsLateChargeFirst(
-  notices: Array<{ id: string; amountDue: unknown; amountPaid?: unknown; interestCharged?: unknown }>,
+  notices: Array<{ id: string; amountDue: unknown; amountPaid?: unknown; interestCharged?: unknown; migrationBatchId?: unknown; migratedInterestPaid?: unknown }>,
   order: PaymentAllocationOrder | undefined,
 ) {
   if (notices.length === 0) return { leviesCents: 0, interestCents: 0 };
   const { noticeLateChargePaid } = await import("@/lib/finance/interest-setting");
   const { livePayments } = await import("@/lib/finance/levy-reversal");
   const ids = notices.map((n) => n.id);
-  const payments = livePayments(await db.orm.public.LevyPayment.where((p) => p.levyNoticeId.in(ids)).limit(50000).all());
+  const rows = await db.orm.public.LevyPayment.where((p) => p.levyNoticeId.in(ids)).limit(MAX_RECEIPTS + 1).all();
+  if (rows.length > MAX_RECEIPTS) throw new Error(`More than ${MAX_RECEIPTS} receipts on the lot's notices: not all could be read.`);
+  const payments = livePayments(rows);
   let leviesCents = 0;
   let interestCents = 0;
   for (const n of notices) {
@@ -138,6 +159,7 @@ async function lotArrearsLateChargeFirst(
         paidCents: toCents(String(n.amountPaid ?? 0)),
         chargedCents: toCents(String(n.interestCharged ?? 0)),
         chargePaidCents: noticeLateChargePaid(n, payments),
+        takeoverChargePaidCents: takeoverChargePaidCents(n),
       },
       order,
     );

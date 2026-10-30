@@ -47,7 +47,7 @@ import {
 } from "@/lib/debt-recovery/recovery-gates";
 import { createRecoveryRecords, currentAmountOwing, readRecoveryRecords, recordedFacts } from "@/lib/debt-recovery/recovery-records-repo";
 import { UnreadableNoticeError } from "@/lib/levies/overdue";
-import { caseAmountCents } from "@/lib/debt-recovery/case-amount";
+import { caseAmountCents, NoticeFiguresDisagreeError } from "@/lib/debt-recovery/case-amount";
 
 type ActionResult = { error?: string; success?: boolean; id?: string };
 
@@ -147,6 +147,10 @@ export async function initiateDebtRecoveryAction(
       amount = await caseAmountCents(overdueNotices, rules.PAYMENT_ALLOCATION_ORDER);
     } catch (err) {
       if (err instanceof UnreadableNoticeError) return await unreadable(err);
+      if (err instanceof NoticeFiguresDisagreeError) {
+        logError("A levy notice's figures do not agree with its payments when opening a debt recovery case:", err);
+        return { error: `The figures on a ${await levyWord()} notice for this lot don't agree with its payments, so the amount owing cannot be worked out. Nothing was saved.` };
+      }
       throw err;
     }
     const principalOwed = amount.principalCents / 100;
@@ -553,7 +557,7 @@ async function checkRecoveryStep(
   const today = todayIn(tz);
   // The day the case was opened, in the building's zone: a decision relied on must be on or after it (review L4).
   const caseOpenedOn = input.openedAt ? storedDayIn(tz, input.openedAt) || null : null;
-  // The amount owing now, worked out as opening a case does (the lot's overdue notices, with their late charge; review L3).
+  // The amount owing now, worked out as opening a case does: the lot's overdue notices' balances, which already include their late charge (review L3; C1, 30 Oct 2026).
   let amountOwing: string | null = null;
   if (needs?.authority && authority?.problem === null) {
     try {

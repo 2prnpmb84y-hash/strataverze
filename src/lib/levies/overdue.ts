@@ -38,7 +38,7 @@ export interface OverdueCheckNotice {
 }
 
 /** A notice field the checks read. */
-export type NoticeField = "dueDate" | "balanceOutstanding" | "amountDue" | "amountPaid" | "interestCharged" | "payments";
+export type NoticeField = "dueDate" | "balanceOutstanding" | "amountDue" | "amountPaid" | "interestCharged" | "migratedInterestPaid" | "payments";
 
 const FIELD_WORDS: Record<NoticeField, string> = {
   dueDate: "due date",
@@ -46,6 +46,7 @@ const FIELD_WORDS: Record<NoticeField, string> = {
   amountDue: "amount due",
   amountPaid: "amount paid",
   interestCharged: "late charge",
+  migratedInterestPaid: "late charge paid before takeover",
   payments: "payments",
 };
 

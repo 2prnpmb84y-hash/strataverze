@@ -11,7 +11,7 @@ vi.mock("@prisma/orm-postgres/orm-client", async () => (await import("@/test/fak
 vi.mock("@/prisma/db", async () => ({ db: (await import("@/test/fake-orm")).sharedFake.db }));
 
 const { sharedFake } = await import("@/test/fake-orm");
-const { caseAmountCents, balancesCents } = await import("./case-amount");
+const { caseAmountCents, balancesCents, MAX_RECEIPTS, NoticeFiguresDisagreeError } = await import("./case-amount");
 const { lotArrears } = await import("./payment-plan-requests");
 const { UnreadableNoticeError } = await import("@/lib/levies/overdue");
 
@@ -82,8 +82,74 @@ describe("caseAmountCents", () => {
     await expect(caseAmountCents([notices[1]], QLD)).rejects.toThrow(UnreadableNoticeError);
   });
 
-  it("fails closed: a late charge owing that is more than the balance throws", async () => {
+  it("fails closed: a late charge owing that is more than the balance throws, as figures that do not agree (not unreadable)", async () => {
+    await expect(caseAmountCents([{ ...notices[0], balanceOutstanding: "20.00" }], NSW)).rejects.toThrow(NoticeFiguresDisagreeError);
     await expect(caseAmountCents([{ ...notices[0], balanceOutstanding: "20.00" }], NSW)).rejects.toThrow(/more than its balance/);
+  });
+
+  it("fails closed: more receipts than can be read at once throws, rather than reading some", async () => {
+    const many = Array.from({ length: MAX_RECEIPTS + 1 }, (_, i) => ({ id: `p${i}`, levyNoticeId: "n2", paymentDate: "2026-08-10", amount: "0.01", lateChargeAmount: null }));
+    sharedFake.reset({ LevyNotice: [{ ...notices[1] }], LevyPayment: many });
+    await expect(caseAmountCents([notices[1]], QLD)).rejects.toThrow(/More than 50000 receipts/);
+    await expect(lotArrears("s", "l", "2026-10-01", QLD)).rejects.toThrow(/More than 50000 receipts/);
+    sharedFake.reset({ LevyNotice: [{ ...notices[1] }], LevyPayment: many.slice(1) });
+    await expect(caseAmountCents([notices[1]], QLD)).resolves.toMatchObject({ totalCents: 25_050 });
+  });
+});
+
+/**
+ * A notice brought across at takeover (M1, 30 Oct 2026): amountPaid holds the
+ * late charge the old system collected (migratedInterestPaid), which paid the
+ * late charge, whatever the order. Levy 1000.00, old late charge 100.00, 60.00
+ * of it paid, balance 1040.00: levy 1000.00 and late charge 40.00 owing.
+ */
+describe("a takeover notice", () => {
+  const takeover = { id: "t1", schemeId: "s", lotId: "l", status: "ISSUED", dueDate: "2026-07-01", amountDue: "1000.00", interestCharged: "100.00", migrationBatchId: "batch-1", migratedInterestPaid: "60.00", amountPaid: "60.00", balanceOutstanding: "1040.00" };
+  const seedTakeover = (n: Record<string, unknown>, payments: Array<Record<string, unknown>> = []) => sharedFake.reset({ LevyNotice: [{ ...n }], LevyPayment: payments });
+
+  it("pays the old system's late charge paid to the late charge, for NSW as for Queensland, in the case and the payment plan figure", async () => {
+    seedTakeover(takeover);
+    for (const order of [NSW, QLD]) {
+      expect(await caseAmountCents([takeover], order)).toEqual({ totalCents: 104_000, lateChargeCents: 4_000, principalCents: 100_000 });
+      expect(await lotArrears("s", "l", "2026-10-01", order)).toEqual({ leviesCents: 100_000, interestCents: 4_000 });
+    }
+  });
+
+  it("applies later payments in the pack's order after it", async () => {
+    // 200.00 more, receipted with 40.00 to the late charge (as Queensland receipting records it).
+    const n = { ...takeover, amountPaid: "260.00", balanceOutstanding: "840.00" };
+    seedTakeover(n, [{ id: "p1", levyNoticeId: "t1", paymentDate: "2026-09-01", amount: "200.00", lateChargeAmount: "40.00" }]);
+    // NSW: the 200.00 pays the levy; QLD: 40.00 of it pays the late charge first.
+    expect(await caseAmountCents([n], NSW)).toEqual({ totalCents: 84_000, lateChargeCents: 4_000, principalCents: 80_000 });
+    expect(await caseAmountCents([n], QLD)).toEqual({ totalCents: 84_000, lateChargeCents: 0, principalCents: 84_000 });
+    expect(await lotArrears("s", "l", "2026-10-01", NSW)).toEqual({ leviesCents: 80_000, interestCents: 4_000 });
+  });
+
+  it("never pays more than the late charge charged; the rest follows the order", async () => {
+    // Not possible from the import (it refuses more paid than charged), but never more than is charged.
+    const n = { ...takeover, migratedInterestPaid: "120.00", amountPaid: "120.00", balanceOutstanding: "980.00" };
+    seedTakeover(n);
+    expect(await caseAmountCents([n], NSW)).toEqual({ totalCents: 98_000, lateChargeCents: 0, principalCents: 98_000 });
+    expect(await lotArrears("s", "l", "2026-10-01", NSW)).toEqual({ leviesCents: 98_000, interestCents: 0 });
+  });
+
+  it("fails closed when the late charge paid before takeover cannot be read or is more than is paid now", async () => {
+    for (const bad of [null, undefined, "", "abc"]) {
+      const n = { ...takeover, migratedInterestPaid: bad };
+      seedTakeover(n);
+      await expect(caseAmountCents([n], NSW)).rejects.toThrow(UnreadableNoticeError);
+      await expect(lotArrears("s", "l", "2026-10-01", NSW)).rejects.toThrow(RangeError);
+    }
+    const n = { ...takeover, amountPaid: "50.00", balanceOutstanding: "1050.00" };
+    seedTakeover(n);
+    await expect(caseAmountCents([n], NSW)).rejects.toThrow(NoticeFiguresDisagreeError);
+    await expect(lotArrears("s", "l", "2026-10-01", NSW)).rejects.toThrow(RangeError);
+  });
+
+  it("is not read for a notice not brought across", async () => {
+    const n = { ...notices[1], migrationBatchId: null, migratedInterestPaid: "abc" };
+    seedTakeover(n);
+    expect(await caseAmountCents([n], NSW)).toMatchObject({ totalCents: 25_050 });
   });
 
   it("reads no payments where none can have gone to the late charge", async () => {

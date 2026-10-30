@@ -139,13 +139,13 @@ exports[`the levy and late charge owing on a notice > takeover, old late charge 
 {
   "nsw": {
     "caseAmount": {
-      "lateChargeCents": 10000,
-      "principalCents": 90000,
+      "lateChargeCents": 0,
+      "principalCents": 100000,
       "totalCents": 100000,
     },
     "lotArrears": {
-      "interestCents": 10000,
-      "leviesCents": 90000,
+      "interestCents": 0,
+      "leviesCents": 100000,
     },
   },
   "qld": {
@@ -166,13 +166,13 @@ exports[`the levy and late charge owing on a notice > takeover, old late charge 
 {
   "nsw": {
     "caseAmount": {
-      "lateChargeCents": 10000,
-      "principalCents": 94000,
+      "lateChargeCents": 4000,
+      "principalCents": 100000,
       "totalCents": 104000,
     },
     "lotArrears": {
-      "interestCents": 10000,
-      "leviesCents": 94000,
+      "interestCents": 4000,
+      "leviesCents": 100000,
     },
   },
   "qld": {
@@ -193,13 +193,13 @@ exports[`the levy and late charge owing on a notice > takeover, old paid in full
 {
   "nsw": {
     "caseAmount": {
-      "lateChargeCents": 10000,
-      "principalCents": 60000,
+      "lateChargeCents": 0,
+      "principalCents": 70000,
       "totalCents": 70000,
     },
     "lotArrears": {
-      "interestCents": 10000,
-      "leviesCents": 60000,
+      "interestCents": 0,
+      "leviesCents": 70000,
     },
   },
   "qld": {
@@ -220,13 +220,13 @@ exports[`the levy and late charge owing on a notice > takeover, old part paid, 3
 {
   "nsw": {
     "caseAmount": {
-      "lateChargeCents": 13000,
-      "principalCents": 94000,
+      "lateChargeCents": 7000,
+      "principalCents": 100000,
       "totalCents": 107000,
     },
     "lotArrears": {
-      "interestCents": 13000,
-      "leviesCents": 94000,
+      "interestCents": 7000,
+      "leviesCents": 100000,
     },
   },
   "qld": {
@@ -247,13 +247,13 @@ exports[`the levy and late charge owing on a notice > takeover, old part paid, a
 {
   "nsw": {
     "caseAmount": {
-      "lateChargeCents": 10000,
-      "principalCents": 74000,
+      "lateChargeCents": 4000,
+      "principalCents": 80000,
       "totalCents": 84000,
     },
     "lotArrears": {
-      "interestCents": 10000,
-      "leviesCents": 74000,
+      "interestCents": 4000,
+      "leviesCents": 80000,
     },
   },
   "qld": {
@@ -274,13 +274,13 @@ exports[`the levy and late charge owing on a notice > takeover, old part paid, a
 {
   "nsw": {
     "caseAmount": {
-      "lateChargeCents": 10000,
-      "principalCents": 94000,
+      "lateChargeCents": 4000,
+      "principalCents": 100000,
       "totalCents": 104000,
     },
     "lotArrears": {
-      "interestCents": 10000,
-      "leviesCents": 94000,
+      "interestCents": 4000,
+      "leviesCents": 100000,
     },
   },
   "qld": {
@@ -301,13 +301,13 @@ exports[`the levy and late charge owing on a notice > takeover, old part paid, a
 {
   "nsw": {
     "caseAmount": {
-      "lateChargeCents": 10000,
-      "principalCents": 84000,
+      "lateChargeCents": 4000,
+      "principalCents": 90000,
       "totalCents": 94000,
     },
     "lotArrears": {
-      "interestCents": 10000,
-      "leviesCents": 84000,
+      "interestCents": 4000,
+      "leviesCents": 90000,
     },
   },
   "qld": {

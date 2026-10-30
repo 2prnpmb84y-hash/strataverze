@@ -105,6 +105,15 @@
  *   - "past-due ISSUED with a late charge that cannot be read": a case was
  *     opened with no amount (NaN); now refused as a notice that cannot be
  *     read, and currentAmountOwing gives the balance (1000.00, was "NaN").
+ *
+ * Third deliberate change (30 Oct 2026, review low L2): currentAmountOwing
+ * reads the late charge as opening a case does, so one that cannot be read
+ * refuses there too. Only these 2 entries were updated, by a targeted run of
+ * this file; the other 41 are byte-identical.
+ *   - "NSW past-due ISSUED with a late charge that cannot be read" and "QLD
+ *     past-due ISSUED with a late charge that cannot be read":
+ *     currentAmountOwing throws (the notice's late charge cannot be read),
+ *     was "1000.00". Opening the case is refused, as before.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 

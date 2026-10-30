@@ -110,6 +110,7 @@ describe("opening a case when the notices cannot be checked (L1)", () => {
 
 describe("a notice that cannot be read opens no case (L2, L4)", () => {
   const UNREADABLE = { error: "A levy notice for this lot could not be read, so the amount owing cannot be worked out. Nothing was saved." };
+  const DISAGREE = { error: "The figures on a levy notice for this lot don't agree with its payments, so the amount owing cannot be worked out. Nothing was saved." };
 
   it.each([
     ["a due date", { dueDate: "soon" }],
@@ -130,6 +131,19 @@ describe("a notice that cannot be read opens no case (L2, L4)", () => {
     // Levy first: 1030.00 paid pays the 1000.00 levy and 30.00 of the late charge, leaving 20.00: agrees.
     expect(await initiate()).toMatchObject({ success: true });
     seed([{ dueDate: "2026-10-01", amountDue: "1000.00", interestCharged: "50.00", balanceOutstanding: "20.00", amountPaid: "0.00" }]);
+    expect(await initiate()).toEqual(DISAGREE);
+    NOTHING_WRITTEN();
+  });
+
+  it("a takeover notice with more late charge paid before takeover than is paid now (the records do not agree)", async () => {
+    const takeover = { dueDate: "2026-10-01", amountDue: "1000.00", interestCharged: "100.00", migrationBatchId: "batch-1" };
+    seed([{ ...takeover, migratedInterestPaid: "60.00", amountPaid: "60.00", balanceOutstanding: "1040.00" }]);
+    expect(await initiate()).toMatchObject({ success: true });
+    expect(sharedFake.table("DebtRecoveryCase")[0]).toMatchObject({ principalOwed: "1000", interestOwed: "40", totalOwed: "1040" });
+    seed([{ ...takeover, migratedInterestPaid: "60.00", amountPaid: "50.00", balanceOutstanding: "1050.00" }]);
+    expect(await initiate()).toEqual(DISAGREE);
+    NOTHING_WRITTEN();
+    seed([{ ...takeover, migratedInterestPaid: null, amountPaid: "60.00", balanceOutstanding: "1040.00" }]);
     expect(await initiate()).toEqual(UNREADABLE);
     NOTHING_WRITTEN();
   });

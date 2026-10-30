@@ -329,7 +329,9 @@ exports[`NSW: which notices count as overdue > NSW past-due ISSUED with a balanc
 
 exports[`NSW: which notices count as overdue > NSW past-due ISSUED with a late charge that cannot be read 1`] = `
 {
-  "amountOwing": "1000.00",
+  "amountOwing": {
+    "thrown": "Notice notice-1: its late charge (not a number) cannot be read, so what it owes is not known.",
+  },
   "result": {
     "error": "A levy notice for this lot could not be read, so the amount owing cannot be worked out. Nothing was saved.",
   },
@@ -814,7 +816,9 @@ exports[`QLD: which notices count as overdue > QLD past-due ISSUED with a balanc
 
 exports[`QLD: which notices count as overdue > QLD past-due ISSUED with a late charge that cannot be read 1`] = `
 {
-  "amountOwing": "1000.00",
+  "amountOwing": {
+    "thrown": "Notice notice-1: its late charge (not a number) cannot be read, so what it owes is not known.",
+  },
   "result": {
     "error": "A contribution notice for this lot could not be read, so the amount owing cannot be worked out. Nothing was saved.",
   },

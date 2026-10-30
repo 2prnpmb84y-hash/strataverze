@@ -7,7 +7,7 @@
 import type { Numeric } from "@prisma/orm-postgres/target/codec-types";
 import { db } from "@/prisma/db";
 import { schemeToday } from "@/lib/jurisdiction/scheme-time";
-import { OVERDUE_NOTICE_STATUSES, overdueOn } from "@/lib/levies/overdue";
+import { noticeCents, OVERDUE_NOTICE_STATUSES, overdueOn } from "@/lib/levies/overdue";
 import { balancesCents } from "./case-amount";
 import type { RecordedRecoveryFacts, RecoveryRecordToWrite } from "./recovery-gates";
 
@@ -47,8 +47,8 @@ export function recordedFacts(rows: readonly Pick<RecoveryRecordRow, "kind" | "f
  * notice's late charge, so it is not added again (C1, "Balance only",
  * 30 Oct 2026). Without `today`, the building's day now. Throws when the
  * notices cannot be read, so a failed read is never "nothing owing", and when
- * a notice's due day or balance cannot be read (UnreadableNoticeError), so it
- * is never left out of the amount silently.
+ * a notice's due day, balance or late charge cannot be read
+ * (UnreadableNoticeError), so it is never left out of the amount silently.
  */
 export async function currentAmountOwing(schemeId: string, lotId: string, orm: Orm = db.orm, today?: string): Promise<string> {
   const day = today ?? (await schemeToday(schemeId, new Date(), orm));
@@ -58,7 +58,10 @@ export async function currentAmountOwing(schemeId: string, lotId: string, orm: O
     .where((n) => n.status.in([...OVERDUE_NOTICE_STATUSES]))
     .limit(5000)
     .all();
-  return (balancesCents(overdueOn(notices, day)) / 100).toFixed(2);
+  const overdue = overdueOn(notices, day);
+  // The late charge is read as opening a case reads it: one that cannot be read refuses, here as there.
+  for (const n of overdue) noticeCents(n, "interestCharged");
+  return (balancesCents(overdue) / 100).toFixed(2);
 }
 
 /** Write the step's records, in the step's transaction (`orm` is the transaction's). */
