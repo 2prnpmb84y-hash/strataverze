@@ -52,6 +52,31 @@
  *   - "NSW 00:00 on 2 Nov in Sydney ..." and "QLD 00:00 on 2 Nov in
  *     Brisbane ...": refused before; now overdue (the building's day is 2
  *     Nov while UTC is still 1 Nov), and a case is opened for 1000.00.
+ *
+ * Fixtures corrected (30 Oct 2026, review C1): every writer keeps a notice's
+ * balance outstanding = amount due + late charge (interestCharged) - amount
+ * paid, so the balance already includes the late charge. Three fixtures gave
+ * a late charge their balance did not include, and the default late charge
+ * was null (the column is never null; it defaults to 0). Each fixture now
+ * has an amount due and amount paid, a late charge of "0.00" by default, and
+ * a balance that includes its late charge. Re-recorded by a targeted run of
+ * this file on 6b4d953 (the branch before the C1 fix), in a temporary
+ * worktree. These 6 entries changed, because their fixtures did; on that
+ * code a case adds the late charge to the balance again:
+ *   NSW and QLD (3 each):
+ *   - "past-due ISSUED with a balance" (amount due 800.25, late charge
+ *     12.40, balance 812.65): 825.05 owing, was 812.65.
+ *   - "stored OVERDUE, past due with a balance (as before)" (1200.00 +
+ *     35.50 = 1235.50): 1271.00 owing, was 1235.50.
+ *   - "a mix: ..." (the PARTIALLY_PAID notice now has a late charge of
+ *     20.00, balance 620.00): 2736.05 owing (balances 2668.15 plus late
+ *     charges 67.90), was 2648.15.
+ * Added, recorded on the same code (8, 4 for each state): the "C1: ..."
+ * entries (the reviewed example, amount due 500.50, late charge 50.00,
+ * balance 550.50, stored OVERDUE, ISSUED, and PARTIALLY_PAID with 300.00
+ * paid) and "past-due ISSUED with a late charge that cannot be read". The
+ * other entries are byte-identical. The stored OVERDUE entries (as before,
+ * and the C1 one) give the same on 5191ec9 (checked: 1271.00 and 600.50).
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -114,7 +139,7 @@ function normalise(value: unknown): unknown {
   });
 }
 
-type Notice = { status: string; dueDate: string; amountDue?: string; amountPaid?: string; balanceOutstanding: unknown; interestCharged?: string | null };
+type Notice = { status: string; dueDate: string; amountDue?: string; amountPaid?: string; balanceOutstanding: unknown; interestCharged?: string };
 
 const ZONES = { NSW: "Australia/Sydney", QLD: "Australia/Brisbane" } as const;
 
@@ -134,7 +159,7 @@ function seed(st: keyof typeof ZONES, notices: Notice[]) {
       noticeNumber: `L-${i + 1}`,
       amountDue: "1000.00",
       amountPaid: "0.00",
-      interestCharged: null,
+      interestCharged: "0.00",
       ...n,
     })),
     PaymentPlan: [],
@@ -162,30 +187,37 @@ async function entry(st: keyof typeof ZONES, notices: Notice[]) {
 
 const PAST = "2026-10-01";
 const scenarios: Array<[string, Notice[]]> = [
-  ["past-due ISSUED with a balance", [{ status: "ISSUED", dueDate: PAST, balanceOutstanding: "800.25", interestCharged: "12.40" }]],
+  ["past-due ISSUED with a balance", [{ status: "ISSUED", dueDate: PAST, amountDue: "800.25", balanceOutstanding: "812.65", interestCharged: "12.40" }]],
   ["past-due PARTIALLY_PAID with a balance", [{ status: "PARTIALLY_PAID", dueDate: PAST, amountPaid: "400.00", balanceOutstanding: "600.00" }]],
   ["ISSUED not yet due (due 1 Dec 2026)", [{ status: "ISSUED", dueDate: "2026-12-01", balanceOutstanding: "1000.00" }]],
   ["ISSUED due today (2 Nov 2026), not overdue", [{ status: "ISSUED", dueDate: "2026-11-02", balanceOutstanding: "1000.00" }]],
   ["ISSUED due yesterday (1 Nov 2026)", [{ status: "ISSUED", dueDate: "2026-11-01", balanceOutstanding: "1000.00" }]],
   ["past-due ISSUED with a zero balance", [{ status: "ISSUED", dueDate: PAST, amountPaid: "1000.00", balanceOutstanding: "0.00" }]],
   ["past-due PARTIALLY_PAID with a zero balance", [{ status: "PARTIALLY_PAID", dueDate: PAST, amountPaid: "1000.00", balanceOutstanding: "0.00" }]],
-  ["past-due ISSUED with a balance under half a cent", [{ status: "ISSUED", dueDate: PAST, balanceOutstanding: "0.004" }]],
+  ["past-due ISSUED with a balance under half a cent", [{ status: "ISSUED", dueDate: PAST, amountDue: "0.004", balanceOutstanding: "0.004" }]],
   ["past-due DRAFT, PAID and WRITTEN_OFF with balances (never overdue)", [
     { status: "DRAFT", dueDate: PAST, balanceOutstanding: "1000.00" },
-    { status: "PAID", dueDate: PAST, balanceOutstanding: "5.00" },
+    { status: "PAID", dueDate: PAST, amountPaid: "995.00", balanceOutstanding: "5.00" },
     { status: "WRITTEN_OFF", dueDate: PAST, balanceOutstanding: "1000.00" },
   ]],
-  ["stored OVERDUE, past due with a balance (as before)", [{ status: "OVERDUE", dueDate: PAST, balanceOutstanding: "1200.00", interestCharged: "35.50" }]],
+  ["stored OVERDUE, past due with a balance (as before)", [{ status: "OVERDUE", dueDate: PAST, amountDue: "1200.00", balanceOutstanding: "1235.50", interestCharged: "35.50" }]],
   ["stored OVERDUE, not yet due", [{ status: "OVERDUE", dueDate: "2026-12-01", balanceOutstanding: "1000.00" }]],
-  ["stored OVERDUE, past due with a zero balance", [{ status: "OVERDUE", dueDate: PAST, balanceOutstanding: "0.00" }]],
+  ["stored OVERDUE, past due with a zero balance", [{ status: "OVERDUE", dueDate: PAST, amountPaid: "1000.00", balanceOutstanding: "0.00" }]],
   ["a mix: stored OVERDUE, past-due ISSUED and PARTIALLY_PAID, and ISSUED not yet due", [
-    { status: "OVERDUE", dueDate: "2026-07-01", balanceOutstanding: "1200.00", interestCharged: "35.50" },
-    { status: "ISSUED", dueDate: PAST, balanceOutstanding: "800.25", interestCharged: "12.40" },
-    { status: "PARTIALLY_PAID", dueDate: "2026-10-15", amountPaid: "400.00", balanceOutstanding: "600.00" },
+    { status: "OVERDUE", dueDate: "2026-07-01", amountDue: "1200.00", balanceOutstanding: "1235.50", interestCharged: "35.50" },
+    { status: "ISSUED", dueDate: PAST, amountDue: "800.25", balanceOutstanding: "812.65", interestCharged: "12.40" },
+    { status: "PARTIALLY_PAID", dueDate: "2026-10-15", amountPaid: "400.00", balanceOutstanding: "620.00", interestCharged: "20.00" },
     { status: "ISSUED", dueDate: "2027-01-01", balanceOutstanding: "1000.00" },
   ]],
   ["past-due ISSUED with a balance that cannot be read", [{ status: "ISSUED", dueDate: PAST, balanceOutstanding: "not a number" }]],
   ["stored OVERDUE, past due, with a balance that cannot be read", [{ status: "OVERDUE", dueDate: PAST, balanceOutstanding: "not a number" }]],
+  // The case amount (C1, 30 Oct 2026): a balance already includes the notice's late charge.
+  ["C1: stored OVERDUE, late charge in the balance (500.50 + 50.00 = 550.50)", [{ status: "OVERDUE", dueDate: PAST, amountDue: "500.50", interestCharged: "50.00", balanceOutstanding: "550.50" }]],
+  ["C1: past-due ISSUED, late charge in the balance (500.50 + 50.00 = 550.50)", [{ status: "ISSUED", dueDate: PAST, amountDue: "500.50", interestCharged: "50.00", balanceOutstanding: "550.50" }]],
+  ["C1: past-due PARTIALLY_PAID, late charge in the balance, 300.00 paid (500.50 + 50.00 - 300.00 = 250.50)", [
+    { status: "PARTIALLY_PAID", dueDate: PAST, amountDue: "500.50", interestCharged: "50.00", amountPaid: "300.00", balanceOutstanding: "250.50" },
+  ]],
+  ["past-due ISSUED with a late charge that cannot be read", [{ status: "ISSUED", dueDate: PAST, amountDue: "1000.00", interestCharged: "not a number", balanceOutstanding: "1000.00" }]],
 ];
 
 for (const st of ["NSW", "QLD"] as const) {
