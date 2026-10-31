@@ -175,9 +175,10 @@ describe("the sign-in pages", () => {
     expect(passwordPlaceholders(container)).toEqual([]);
     const signIn = screen.getByRole("button", { name: "Sign in" });
     // Exact classes, not substrings: "hover:bg-turquoise" contains "bg-turquoise".
-    // Founder direction: outlined with turquoise-deep words at rest, filled when selected.
+    // Founder direction: outlined with turquoise-deep words at rest, filled when
+    // selected (hovered, or pressed on a touch screen).
     const signInClasses = signIn.className.split(/\s+/);
-    expect(signInClasses).toEqual(expect.arrayContaining(["border-turquoise", "bg-white", "text-turquoise-deep", "hover:bg-turquoise"]));
+    expect(signInClasses).toEqual(expect.arrayContaining(["border-turquoise", "bg-white", "text-turquoise-deep", "hover:bg-turquoise", "active:bg-turquoise", "active:text-ink"]));
     expect(signInClasses).not.toContain("bg-turquoise");
     expect(signIn.getAttribute("type")).toBe("submit");
     const create = screen.getByRole("button", { name: "Create account" });

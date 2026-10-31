@@ -13,8 +13,10 @@ import { captchaSiteKey } from "@/lib/auth/captcha";
 
 /**
  * The one sign-in form (25 Oct 2026): everyone signs in here, then goes to
- * their portal. Sign in is the filled main action; Create account is a
- * quiet link below it (AR-037; the colours are in action-styles.ts).
+ * their portal. Sign in is the main action, the outlined brand button with
+ * turquoise-deep words, filled when selected (hovered, pressed or
+ * pending); Create account is a quiet link below it (AR-037, founder
+ * direction 31 Oct 2026; the colours are in action-styles.ts).
  */
 export function LoginForm({
   error,

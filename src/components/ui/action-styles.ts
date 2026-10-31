@@ -7,9 +7,11 @@
  * (1.88:1). These pairs are taken from the tokens in globals.css and pass
  * WCAG 2.1 AA for text (4.5:1) in every state:
  *
- * Primary (outlined brand button, filled when hovered or pending)
+ * Primary (outlined brand button with coloured words; filled when selected:
+ * hovered, pressed or pending)
  * - default and focus: turquoise-deep #007A6E on white, 5.24:1
- * - hover and pending: ink #1A202C on turquoise #00D4BF, 8.68:1
+ * - hover, pressed (active) and pending: ink #1A202C on turquoise
+ *   #00D4BF, 8.68:1
  * - disabled: ink-muted #64748B on muted #F8FAFB, 4.55:1
  *
  * Secondary (outlined): ink on white 16.32:1, on muted (hover) 15.59:1.
@@ -33,13 +35,14 @@ const FOCUS =
 /**
  * The one main action on a page: Sign in, Create account, Send reset link.
  * The brand outline button (founder direction, 31 Oct 2026): white with a
- * turquoise outline and coloured words when not selected, filled turquoise
- * when hovered, pressed or pending.
+ * turquoise outline and coloured words (turquoise-deep) when not selected,
+ * filled turquoise when selected: hovered, pressed or pending. Pressed
+ * (active) is what a touch screen shows, where there is no hover.
  * - default and focus: turquoise-deep #007A6E on white, 5.24:1
- * - hover and pending: ink #1A202C on turquoise #00D4BF, 8.68:1
+ * - hover, pressed and pending: ink #1A202C on turquoise #00D4BF, 8.68:1
  */
 export const PRIMARY_ACTION_CLASS =
-  `inline-flex items-center justify-center h-11 px-6 rounded-full border-[1.5px] border-turquoise bg-white text-turquoise-deep font-semibold text-sm uppercase tracking-[0.04em] transition-colors hover:bg-turquoise hover:text-ink ${FOCUS} disabled:cursor-not-allowed disabled:border-line disabled:bg-muted disabled:text-ink-muted aria-busy:cursor-wait aria-busy:border-turquoise aria-busy:bg-turquoise aria-busy:text-ink`;
+  `inline-flex items-center justify-center h-11 px-6 rounded-full border-[1.5px] border-turquoise bg-white text-turquoise-deep font-semibold text-sm uppercase tracking-[0.04em] transition-colors hover:bg-turquoise hover:text-ink active:bg-turquoise active:text-ink ${FOCUS} disabled:cursor-not-allowed disabled:border-line disabled:bg-muted disabled:text-ink-muted aria-busy:cursor-wait aria-busy:border-turquoise aria-busy:bg-turquoise aria-busy:text-ink`;
 
 /** A second, outlined action: Back to sign in, Sign in on an error page. */
 export const SECONDARY_ACTION_CLASS =
