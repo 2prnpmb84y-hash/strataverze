@@ -10,11 +10,12 @@
  * receipt that posts no journal (a building whose chart is not set up) is
  * rolled back and left for a person.
  *
- * Not decided yet (design D3, D4): the account debited is the building's
- * administrative bank account, as for any receipt, until the ledger has an
- * account for the Zai wallet; and no StrataVerze fee is captured on a Zai
- * payin (captureFee false), since a payin to a wallet is not an Item and the
- * docs show no fee on it.
+ * Not decided yet (design D3, D4). The account debited is never assumed:
+ * it is the one ZAI_RECEIPT_DEBIT_ACCOUNT names (only BANK, the building's
+ * administrative bank account, is accepted), and with it unset nothing is
+ * receipted automatically (review M5). No StrataVerze fee is captured on a
+ * Zai payin (captureFee false), since a payin to a wallet is not an Item and
+ * the docs show no fee on it.
  */
 import { db } from "@/prisma/db";
 import { and } from "@prisma/orm-postgres/orm-client";
@@ -23,7 +24,7 @@ import { LevyReceiptError, prepareLevyReceipt } from "@/lib/finance/levy-receipt
 import { numberedTransaction } from "@/lib/queries/journal-numbering";
 import { schemeTimeZone } from "@/lib/jurisdiction/scheme-time";
 import { requireZaiConfig } from "./config";
-import type { ProcessorDeps, ReceiptRequest } from "./webhook-processor";
+import { isReceiptedRow, type ProcessorDeps, type ReceiptRequest } from "./webhook-processor";
 
 export class ZaiAlreadyReceiptedError extends Error {
   constructor() {
@@ -34,6 +35,7 @@ export class ZaiAlreadyReceiptedError extends Error {
 
 export async function receiptInLedger(request: ReceiptRequest): Promise<{ journalEntryId: string }> {
   requireZaiConfig();
+  if (request.debitFrom !== "BANK") throw new LevyReceiptError("The account a Zai receipt debits is not set (ZAI_RECEIPT_DEBIT_ACCOUNT, decision D3).");
   const prepared = await prepareLevyReceipt({
     schemeId: request.schemeId,
     receipts: request.receipts,
@@ -41,11 +43,11 @@ export async function receiptInLedger(request: ReceiptRequest): Promise<{ journa
     actorId: request.actorId,
     reference: request.reference,
     captureFee: false,
-    debitFrom: "BANK",
+    debitFrom: request.debitFrom,
   });
   const out = await numberedTransaction(request.schemeId, async (tx) => {
     const row = await tx.orm.public.ZaiTransaction.where((r) => r.id.eq(request.zaiTransactionRowId)).forNoKeyUpdate().first();
-    if (!row || row.matchStatus === "RECEIPTED" || row.journalEntryId) throw new ZaiAlreadyReceiptedError();
+    if (!row || isReceiptedRow(row)) throw new ZaiAlreadyReceiptedError();
     const result = await prepared.run(tx);
     if (!result.journalEntryId) throw new LevyReceiptError("No receipt journal could be posted: the building's chart of accounts is not set up.");
     await tx.orm.public.ZaiTransaction.where((r) => r.id.eq(request.zaiTransactionRowId)).update({
@@ -70,9 +72,11 @@ export function ledgerProcessorDeps(): ProcessorDeps {
   const config = requireZaiConfig();
   return {
     orm: db.orm,
+    transaction: (fn) => db.transaction((tx) => fn(tx as unknown as { orm: typeof db.orm })),
     loadNotices,
     timeZoneOf: (schemeId) => schemeTimeZone(schemeId),
     receipt: receiptInLedger,
     receiptActorId: config.receiptActorId,
+    receiptDebitFrom: config.receiptDebitFrom,
   };
 }

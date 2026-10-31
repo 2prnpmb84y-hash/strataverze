@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'36bf80cce05476ddf062548040496828252ad5e78d51eeaaad896a347ad06752'>;
+  StorageHashBase<'0aa2a34f5e3aa32df4f0785250d8e2d44295e2a7c8f2931ee21618d73a9491b5'>;
 export type ExecutionHash =
   ExecutionHashBase<'454fa11779756be5e20f2ae540217fc9e337e78af6dbb69e34dc8ddf4d7262fe'>;
 export type ProfileHash =
@@ -4379,10 +4379,10 @@ export namespace Models {
     objectType: FieldOutputTypes['public']['ZaiWebhookEvent']['objectType'];
     objectUpdatedAt: FieldOutputTypes['public']['ZaiWebhookEvent']['objectUpdatedAt'];
     processedAt: FieldOutputTypes['public']['ZaiWebhookEvent']['processedAt'];
-    rawBody: FieldOutputTypes['public']['ZaiWebhookEvent']['rawBody'];
     receivedAt: FieldOutputTypes['public']['ZaiWebhookEvent']['receivedAt'];
     signedAt: FieldOutputTypes['public']['ZaiWebhookEvent']['signedAt'];
     status: FieldOutputTypes['public']['ZaiWebhookEvent']['status'];
+    storedBody: FieldOutputTypes['public']['ZaiWebhookEvent']['storedBody'];
     readonly [RelationKeys]?: never;
   };
 }
@@ -28410,12 +28410,6 @@ type ContractBase = Omit<
                   readonly nullable: true;
                   readonly many: false;
                 };
-                readonly raw_body: {
-                  readonly dataType: 'pg/text';
-                  readonly codecId: 'pg/text@1';
-                  readonly nullable: false;
-                  readonly many: false;
-                };
                 readonly received_at: {
                   readonly dataType: 'pg/timestamptz';
                   readonly codecId: 'pg/timestamptz-string@1';
@@ -28438,6 +28432,12 @@ type ContractBase = Omit<
                     readonly value: DefaultLiteralValue<'sql/varchar@1', 'RECEIVED'>;
                   };
                   readonly typeParams: { readonly length: 20 };
+                  readonly many: false;
+                };
+                readonly stored_body: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
                   readonly many: false;
                 };
               };
@@ -52945,10 +52945,6 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/timestamptz-string@1';
                 };
               };
-              readonly rawBody: {
-                readonly nullable: false;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
-              };
               readonly receivedAt: {
                 readonly nullable: false;
                 readonly type: {
@@ -52971,6 +52967,10 @@ type ContractBase = Omit<
                   readonly typeParams: { readonly length: 20 };
                 };
               };
+              readonly storedBody: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
             };
             readonly relations: Record<string, never>;
             readonly storage: {
@@ -52984,10 +52984,10 @@ type ContractBase = Omit<
                 readonly objectType: { readonly column: 'object_type' };
                 readonly objectUpdatedAt: { readonly column: 'object_updated_at' };
                 readonly processedAt: { readonly column: 'processed_at' };
-                readonly rawBody: { readonly column: 'raw_body' };
                 readonly receivedAt: { readonly column: 'received_at' };
                 readonly signedAt: { readonly column: 'signed_at' };
                 readonly status: { readonly column: 'status' };
+                readonly storedBody: { readonly column: 'stored_body' };
               };
             };
           };

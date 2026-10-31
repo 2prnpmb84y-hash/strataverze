@@ -31,6 +31,7 @@ const request = {
   paymentDate: "2019-12-16",
   actorId: "00000000-0000-4000-8000-000000000001",
   reference: "Zai npp_payin abc",
+  debitFrom: "BANK" as const,
 };
 
 const preparedPosting = (journalEntryId: string | null) => ({
@@ -59,13 +60,25 @@ describe("receiptInLedger", () => {
     expect(log).toHaveBeenCalledTimes(1);
   });
 
-  it("refuses a row already receipted, writing nothing", async () => {
-    sharedFake.reset({ ZaiTransaction: [{ id: "zt-1", direction: "IN", matchStatus: "RECEIPTED", journalEntryId: "je-1" }] });
-    const prepared = preparedPosting("je-9");
-    prepareLevyReceipt.mockResolvedValue(prepared);
-    await expect(receiptInLedger(request)).rejects.toBeInstanceOf(ZaiAlreadyReceiptedError);
-    expect(prepared.run).not.toHaveBeenCalled();
-    expect(sharedFake.tables.LevyPayment ?? []).toHaveLength(0);
+  it("refuses a row already receipted (a journal, RECEIPTED or REVERSAL_REVIEW), writing nothing", async () => {
+    for (const row of [
+      { matchStatus: "RECEIPTED", journalEntryId: "je-1" },
+      { matchStatus: "REVERSAL_REVIEW", journalEntryId: "je-1" },
+      { matchStatus: "NEEDS_REVIEW", journalEntryId: "je-1" },
+      { matchStatus: "REVERSAL_REVIEW", journalEntryId: null },
+    ]) {
+      sharedFake.reset({ ZaiTransaction: [{ id: "zt-1", direction: "IN", ...row }] });
+      const prepared = preparedPosting("je-9");
+      prepareLevyReceipt.mockResolvedValue(prepared);
+      await expect(receiptInLedger(request), JSON.stringify(row)).rejects.toBeInstanceOf(ZaiAlreadyReceiptedError);
+      expect(prepared.run).not.toHaveBeenCalled();
+      expect(sharedFake.tables.LevyPayment ?? []).toHaveLength(0);
+    }
+  });
+
+  it("refuses without the explicit debit account (review M5), before preparing anything", async () => {
+    await expect(receiptInLedger({ ...request, debitFrom: undefined as unknown as "BANK" })).rejects.toBeInstanceOf(LevyReceiptError);
+    expect(prepareLevyReceipt).not.toHaveBeenCalled();
   });
 
   it("rolls the payments back when no journal could be posted", async () => {

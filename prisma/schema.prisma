@@ -4674,7 +4674,10 @@ model PendingResolutionLot {
 // Nothing reads or writes these tables while ZAI_PAYMENTS is off
 // (src/lib/payments/zai/config.ts). Design: the Zai integration design (31 Oct 2026).
 // The scheme, lot, fund and supplier keys are foreign keys in the database,
-// not declared here, so no existing model changes. Zai field names and values
+// not declared here, so no existing model changes. Also database only: the
+// partial unique indexes (one owners corporation user per building, one main
+// wallet per user, one sub-wallet per fund) and the composite keys tying a
+// wallet to its user's scheme and a payment reference to its wallet's scheme. Zai field names and values
 // are the ones the Zai docs give (read 31 Oct 2026), cited in the code.
 
 /// A Zai user StrataVerze created (POST /users, platform-supplied id): one
@@ -4758,7 +4761,7 @@ model ZaiTransaction {
   currency         String    @db.VarChar(3)
   referenceValue   String?   @map("reference_value") @db.VarChar(200) // the payer's reference as Zai sent it, if any
   lotId            String?   @map("lot_id") @db.Uuid
-  matchStatus      String    @map("match_status") @db.VarChar(30) // IN: UNMATCHED, NEEDS_REVIEW, RECEIPTED, REVERSAL_REVIEW; OUT: AWAITING_RELEASE, RELEASED, SENT, FAILED, OUTCOME_UNKNOWN
+  matchStatus      String    @map("match_status") @db.VarChar(30) // IN: UNMATCHED, NEEDS_REVIEW, RECEIPTED, REVERSAL_REVIEW (an IN row has a journal exactly when RECEIPTED or REVERSAL_REVIEW); OUT: AWAITING_RELEASE, RELEASED, SENT, FAILED, OUTCOME_UNKNOWN
   matchReason      String?   @map("match_reason") @db.VarChar(200)
   journalEntryId   String?   @map("journal_entry_id") @db.Uuid // the receipt or payment journal
   supplierInvoiceId String?  @map("supplier_invoice_id") @db.Uuid // OUT only
@@ -4774,10 +4777,10 @@ model ZaiTransaction {
   @@map("zai_transactions")
 }
 
-/// A webhook Zai sent, stored as received once its signature verified, so a
-/// repeated delivery is stored once (dedupe_key: the SHA-256 of the raw body)
-/// and every event can be processed again or audited. Holds payer details
-/// (name, BSB, account): read by the app only, RLS on with no policies.
+/// A webhook Zai sent, stored once its signature verified, so a repeated
+/// delivery is stored once (dedupe_key: the SHA-256 of the body as received)
+/// and every event can be processed again or audited. stored_body is the
+/// body with the payer's name and bank details removed (decision D7).
 model ZaiWebhookEvent {
   id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   dedupeKey          String    @unique @map("dedupe_key") @db.VarChar(64)
@@ -4785,7 +4788,7 @@ model ZaiWebhookEvent {
   objectId           String?   @map("object_id") @db.VarChar(100)
   objectUpdatedAt    DateTime? @db.Timestamptz @map("object_updated_at")
   signedAt           DateTime  @db.Timestamptz @map("signed_at") // the t value of the Webhooks-signature header
-  rawBody            String    @map("raw_body")
+  storedBody         String    @map("stored_body") // the body without payer details (bodyToStore)
   status             String    @default("RECEIVED") @db.VarChar(20) // RECEIVED, PROCESSED, STALE, IGNORED, FAILED
   error              String?   @db.VarChar(500)
   receivedAt         DateTime  @default(now()) @db.Timestamptz @map("received_at")

@@ -22,8 +22,18 @@ import { createHash } from "node:crypto";
 export const ZAI_WRAPPED_OBJECT_TYPES = ["items", "users", "batch_transactions", "accounts", "transactions", "disbursements", "companies"] as const;
 export type ZaiWrappedObjectType = (typeof ZAI_WRAPPED_OBJECT_TYPES)[number];
 
+/**
+ * Object types Zai documents that this stage stores and ignores (review L5).
+ * transaction_failure_advice: "debited funds that could not be matched to a
+ * payer's wallet" (webhooks guide); its payload is not shown
+ * (NOT_CONFIRMED NC-FAILURE-ADVICE), and it concerns debits, which
+ * StrataVerze never makes.
+ */
+export const ZAI_KNOWN_IGNORED_TYPES = ["transaction_failure_advice"] as const;
+
 export type ParsedZaiWebhook =
   | { kind: "OBJECT"; objectType: ZaiWrappedObjectType; objectId: string; updatedAt: Date | null; object: Record<string, unknown> }
+  | { kind: "KNOWN_IGNORED"; objectType: (typeof ZAI_KNOWN_IGNORED_TYPES)[number]; reason: string }
   | { kind: "TEST" }
   | { kind: "UNRECOGNISED"; reason: string };
 
@@ -52,6 +62,9 @@ export function parseZaiWebhook(rawBody: string): ParsedZaiWebhook {
   const keys = Object.keys(json);
   if (keys.length === 1 && keys[0] === "message") return { kind: "TEST" };
   if (keys.length !== 1) return { kind: "UNRECOGNISED", reason: "not one wrapped object" };
+  if ((ZAI_KNOWN_IGNORED_TYPES as readonly string[]).includes(keys[0])) {
+    return { kind: "KNOWN_IGNORED", objectType: keys[0] as (typeof ZAI_KNOWN_IGNORED_TYPES)[number], reason: `${keys[0]} is not processed at this stage (NC-FAILURE-ADVICE)` };
+  }
   const objectType = keys[0] as ZaiWrappedObjectType;
   if (!(ZAI_WRAPPED_OBJECT_TYPES as readonly string[]).includes(objectType)) return { kind: "UNRECOGNISED", reason: `object type ${keys[0].slice(0, 40)}` };
   const object = json[objectType];
@@ -148,3 +161,55 @@ export function isWalletPayin(t: ZaiTransactionPayload): boolean {
 
 /** Settled: the state the examples give a completed payin (successful; statuses page). */
 export const isSuccessful = (t: Pick<ZaiTransactionPayload, "state">) => t.state === "successful";
+
+// ─── What is stored ─────────────────────────────────────────────────────────
+
+/**
+ * Payer and bank fields removed wherever they appear: debtor_* in
+ * payin_details, payee_name (the NPP example gives the payer's name there),
+ * and bank_* in disbursements.
+ */
+const PAYER_FIELDS = new Set([
+  "payee_name",
+  "debtor_name",
+  "debtor_legal_name",
+  "debtor_bsb",
+  "debtor_account",
+  "bank_account_name",
+  "bank_account_number",
+  "bank_routing_number",
+  "account_number",
+  "routing_number",
+]);
+
+const redactValue = (v: unknown): unknown => {
+  if (Array.isArray(v)) return v.map(redactValue);
+  if (!isObject(v)) return v;
+  const out: Record<string, unknown> = {};
+  for (const [k, x] of Object.entries(v)) {
+    if (PAYER_FIELDS.has(k)) continue;
+    // payin_details keeps only the PayID the payment was sent to (StrataVerze's own, registered for the lot), which matching reads.
+    if (k === "payin_details") {
+      out[k] = isObject(x) && typeof x.pay_id === "string" ? { pay_id: x.pay_id } : null;
+      continue;
+    }
+    out[k] = redactValue(x);
+  }
+  return out;
+};
+
+/**
+ * The copy of a webhook body that is stored (review M6, decision D7): payer
+ * names, BSBs and account numbers removed, and payin_details cut down to the
+ * PayID. The dedupe key is still the SHA-256 of the body as received. A body
+ * that is not JSON is not stored at all, only its length.
+ */
+export function bodyToStore(rawBody: string): string {
+  let json: unknown;
+  try {
+    json = JSON.parse(rawBody);
+  } catch {
+    return JSON.stringify({ unrecognised_body_bytes: Buffer.byteLength(rawBody, "utf8") });
+  }
+  return JSON.stringify(redactValue(json));
+}

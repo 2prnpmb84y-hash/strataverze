@@ -14,6 +14,10 @@ describe("parseZaiWebhook", () => {
     expect(parseZaiWebhook(raw(BATCH_TRANSACTION_EXAMPLE))).toMatchObject({ kind: "OBJECT", objectType: "batch_transactions", objectId: "31622" });
   });
 
+  it("knows transaction_failure_advice, as a type stored and ignored (review L5)", () => {
+    expect(parseZaiWebhook(raw({ transaction_failure_advice: { id: "x" } }))).toMatchObject({ kind: "KNOWN_IGNORED", objectType: "transaction_failure_advice" });
+  });
+
   it("recognises the test payload, and refuses anything else", () => {
     expect(parseZaiWebhook(raw(WEBHOOK_TEST_EXAMPLE))).toEqual({ kind: "TEST" });
     for (const body of ["not json", "[]", raw({}), raw({ transactions: {}, items: {} }), raw({ payto_payments: { id: "x" } }), raw({ transactions: [] }), raw({ transactions: { amount: 1 } })]) {

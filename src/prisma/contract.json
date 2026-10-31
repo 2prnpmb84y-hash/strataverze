@@ -37796,13 +37796,6 @@
                   "kind": "scalar"
                 }
               },
-              "rawBody": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              },
               "receivedAt": {
                 "nullable": false,
                 "type": {
@@ -37825,6 +37818,13 @@
                   "typeParams": {
                     "length": 20
                   }
+                }
+              },
+              "storedBody": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
                 }
               }
             },
@@ -37852,9 +37852,6 @@
                 "processedAt": {
                   "column": "processed_at"
                 },
-                "rawBody": {
-                  "column": "raw_body"
-                },
                 "receivedAt": {
                   "column": "received_at"
                 },
@@ -37863,6 +37860,9 @@
                 },
                 "status": {
                   "column": "status"
+                },
+                "storedBody": {
+                  "column": "stored_body"
                 }
               },
               "namespaceId": "public",
@@ -64384,11 +64384,6 @@
                   "dataType": "pg/timestamptz",
                   "nullable": true
                 },
-                "raw_body": {
-                  "codecId": "pg/text@1",
-                  "dataType": "pg/text",
-                  "nullable": false
-                },
                 "received_at": {
                   "codecId": "pg/timestamptz-string@1",
                   "dataType": "pg/timestamptz",
@@ -64414,6 +64409,11 @@
                   "typeParams": {
                     "length": 20
                   }
+                },
+                "stored_body": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
                 }
               },
               "foreignKeys": [],
@@ -64474,7 +64474,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "36bf80cce05476ddf062548040496828252ad5e78d51eeaaad896a347ad06752"
+    "storageHash": "0aa2a34f5e3aa32df4f0785250d8e2d44295e2a7c8f2931ee21618d73a9491b5"
   },
   "execution": {
     "executionHash": "454fa11779756be5e20f2ae540217fc9e337e78af6dbb69e34dc8ddf4d7262fe",
