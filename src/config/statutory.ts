@@ -30,6 +30,7 @@ import type {
   BuildingFactDefinition,
   BuildingSelector,
   RecordedFactKey,
+  CertificateKindsRules,
   CertificateRules,
   ContributionInsuranceRules,
   DatedRules,
@@ -46,6 +47,7 @@ import type {
   PackFeatures,
   PaymentAllocationPart,
   ProxyRules,
+  RecordsAccessRules,
   SchemeSelector,
   SharedTerminology,
 } from "./statutory/types";
@@ -136,6 +138,20 @@ export interface SharedRules {
   CERTIFICATE?: CertificateRules;
   /** Records inspections (FEATURES.recordsInspections). */
   INSPECTIONS?: InspectionRules;
+  /**
+   * Certificates of several kinds, each with a capped fee (VIC, ACT and WA
+   * stage 2, PR 10, 31 Oct 2026), with FEATURES.certificateKinds. A pack
+   * without the key has none (NSW and Queensland keep CERTIFICATE).
+   */
+  CERTIFICATE_KINDS?: CertificateKindsRules;
+  /**
+   * Records access of several kinds, each with its own period and capped
+   * fees (VIC, ACT and WA stage 2, PR 10), with FEATURES.recordsAccess. A
+   * pack without the key has none (NSW and Queensland keep INSPECTIONS).
+   * Not RECORDS_ACCESS, the design's name: the Tasmanian and New Zealand
+   * draft packs export their own RECORDS_ACCESS in another shape.
+   */
+  RECORDS_ACCESS_KINDS?: RecordsAccessRules;
   /** How long the document library shows each record must be kept. */
   DOCUMENT_RETENTION?: DocumentRetentionRules;
   /** When works need more than one quote. */
@@ -179,6 +195,23 @@ export type { DatedLegalStatus, DatedRule, DatedRules, DatedValue, NoStatutoryRu
 
 /** The building selector shapes (types only, no rules), for the reader in src/lib/jurisdiction/building-selectors.ts. */
 export type { BuildingFactKey, BuildingSelector, DerivedBuildingSelector, RecordedFactKey, SelectorCondition } from "./statutory/types";
+
+/** The certificate kind and records access shapes (types only, no rules), for the engine in src/lib/records/caps.ts. */
+export type {
+  AccessCopies,
+  AccessKindKey,
+  AccessKindRule,
+  CapGst,
+  CertificateKindFee,
+  CertificateKindKey,
+  CertificateKindRule,
+  CertificateKindsRules,
+  CheckedValue,
+  DatedCap,
+  FeeUnitBand,
+  FeeUnitCap,
+  RecordsAccessRules,
+} from "./statutory/types";
 
 export interface RulePack {
   /** Jurisdiction code, for example AU-NSW. */

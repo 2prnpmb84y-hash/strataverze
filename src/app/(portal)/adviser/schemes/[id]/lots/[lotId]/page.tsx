@@ -3,6 +3,7 @@ import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
 import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { certificateRulesOffered } from "@/lib/records/offered";
 import { caseWordsFor, lotFormEntitlementWords, packWordsFor } from "@/lib/jurisdiction/screen-words";
 import { getLotDetail } from "@/lib/queries/lots";
 import { getCurrentProfile } from "@/lib/queries/profiles";
@@ -90,7 +91,7 @@ export default async function LotDetailPage({
       : "No owner assigned";
   // The certificate the building's pack has (stage 2, step 9), named as the pack names its button.
   const packRules = rulesForState(scheme.state).rules;
-  const certificateButton = packRules.FEATURES.strataInformationCertificate || packRules.FEATURES.bodyCorporateCertificate ? packRules.CERTIFICATE?.buttonLabel : undefined;
+  const certificateButton = certificateRulesOffered(packRules.FEATURES) ? packRules.CERTIFICATE?.buttonLabel : undefined;
   // The lot's entitlements as the pack names them, and a second schedule's
   // (Queensland's interest schedule, stage 2, step 10; Victoria's lot
   // entitlement, stage 2, PR 4) if the pack has one.
