@@ -125,11 +125,6 @@ export async function issueInvitation(input: IssueInvitationInput): Promise<Issu
     // The inviter can already see the building's members, so this says nothing new.
     return { ok: false, error: "This person already has this role on this building." };
   }
-  if (existing?.status === "DECLINED") {
-    // A declined invitation is not reopened by sending it again (second
-    // review, item 8). The inviter's list already shows it as declined.
-    return { ok: false, error: "This person declined this invitation. They can ask to be invited to another role, or contact StrataVerze support." };
-  }
 
   let account;
   try {
@@ -178,13 +173,18 @@ export async function issueInvitation(input: IssueInvitationInput): Promise<Issu
   try {
     if (existing) {
       // Sent again: a new link replaces the old one, which stops working.
-      // Only while the invitation is still in the status read above (second
-      // review, item 8): PENDING or EXPIRED, or ACCEPTED when the membership
-      // it gave has since ended (someone invited back, checked above). An
-      // invitation accepted or declined in the meantime (by the /join set-up,
-      // whose lock this waits for, at most 5 seconds) matches nothing, so it
-      // is never reopened.
-      const reopenable = ["PENDING", "EXPIRED", "ACCEPTED"];
+      // Decided by Matthew Wrigley, 31 Oct 2026 (second review, item 8):
+      //   - PENDING or EXPIRED (revoked): sent again as before;
+      //   - DECLINED: the Adviser may send it again; this explicit resend
+      //     reopens it with a new link, and it is logged (invitation.sent,
+      //     resent, previousStatus DECLINED);
+      //   - ACCEPTED: reopened only when the access it gave has ended
+      //     (someone invited back, checked above).
+      // The update matches only while the invitation is still in the status
+      // read above, so one accepted or declined in the meantime (by the
+      // /join set-up, whose lock this waits for, at most 5 seconds) matches
+      // nothing and is never reopened.
+      const reopenable = ["PENDING", "EXPIRED", "DECLINED", "ACCEPTED"];
       if (!reopenable.includes(String(existing.status))) {
         return { ok: false, error: "The invitation could not be sent. Please try again." };
       }
@@ -228,7 +228,7 @@ export async function issueInvitation(input: IssueInvitationInput): Promise<Issu
     schemeId: input.schemeId,
     resourceType: "Invitation",
     resourceId: invitationId,
-    metadata: { role, resent: !!existing },
+    metadata: { role, resent: !!existing, previousStatus: existing ? String(existing.status) : null },
   });
 
   const inviterName = [input.inviter.firstName, input.inviter.lastName].filter(Boolean).join(" ") || "Your strata manager";

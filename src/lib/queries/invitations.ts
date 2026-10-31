@@ -100,10 +100,10 @@ type InvitationRow = NonNullable<Awaited<ReturnType<typeof getInvitationByTokenH
  * (each with its own 5-second lock timeout, after which it fails and the
  * person is asked to try again). By then the invitation is accepted, and
  * each of them changes only an invitation still in the status it expects
- * (revoke and decline: PENDING; resend: the status it read, never ACCEPTED
- * with an active membership or DECLINED), so none of them reopens or ends
- * it, and a revoke cannot land between the password being set and the
- * invitation being accepted. If `work` throws, the claim is rolled back and
+ * (revoke and decline: PENDING; resend: the status it read before it
+ * waited, never ACCEPTED with active access), so none of them reopens or
+ * ends an invitation the set-up has just accepted, and a revoke cannot land
+ * between the password being set and the invitation being accepted. If `work` throws, the claim is rolled back and
  * the link can be used again.
  *
  * Returns null, having changed nothing, when the link cannot be claimed.

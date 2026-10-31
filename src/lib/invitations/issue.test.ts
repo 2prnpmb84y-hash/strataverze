@@ -369,13 +369,35 @@ describe("sending again", () => {
     expect(sha(tokenFrom(mail.sent[1].html)!)).toBe(rows[0].tokenHash);
   });
 
-  it("never reopens a declined invitation", async () => {
-    sharedFake.table("Invitation").push({ id: "inv-d", schemeId: SCHEME, email: "a@example.test", role: "OWNER", status: "DECLINED", tokenHash: null });
+  it("reopens a declined invitation when the Adviser sends it again, with a new link, and logs it", async () => {
+    sharedFake.table("Invitation").push({ id: "inv-d", schemeId: SCHEME, email: "a@example.test", role: "OWNER", status: "DECLINED", tokenHash: "e".repeat(64), tokenUsedAt: null });
     const r = await issueInvitation({ ...base, email: "a@example.test", role: "OWNER", lotId: "lot-1" });
-    expect(r).toMatchObject({ ok: false, error: expect.stringContaining("declined") });
-    expect(sharedFake.table("Invitation")[0].status).toBe("DECLINED");
-    expect(sharedFakeAuth.calls.createUser).toHaveLength(0);
-    expect(mail.sent).toHaveLength(0);
+    expect(r.ok).toBe(true);
+    const [row] = sharedFake.table("Invitation");
+    expect(row).toMatchObject({ id: "inv-d", status: "PENDING", tokenUsedAt: null });
+    expect(row.tokenHash).not.toBe("e".repeat(64));
+    expect(sha(tokenFrom(mail.sent[0].html)!)).toBe(row.tokenHash);
+    expect(audit.events).toContainEqual(
+      expect.objectContaining({ action: "invitation.sent", outcome: "allowed", schemeId: SCHEME, resourceId: "inv-d", metadata: { role: "OWNER", resent: true, previousStatus: "DECLINED" } }),
+    );
+  });
+
+  it("does not reopen an invitation accepted while a declined one was being sent again", async () => {
+    sharedFake.table("Invitation").push({ id: "inv-d", schemeId: SCHEME, email: "a@example.test", role: "OWNER", status: "DECLINED", tokenHash: null });
+    const admin = sharedFakeAuth.client.auth.admin;
+    const realCreate = admin.createUser;
+    admin.createUser = async (attributes) => {
+      sharedFake.table("Invitation")[0].status = "ACCEPTED";
+      return realCreate(attributes);
+    };
+    try {
+      const r = await issueInvitation({ ...base, email: "a@example.test", role: "OWNER", lotId: "lot-1" });
+      expect(r).toMatchObject({ ok: false, error: expect.stringContaining("changed") });
+      expect(sharedFake.table("Invitation")[0].status).toBe("ACCEPTED");
+      expect(mail.sent).toHaveLength(0);
+    } finally {
+      admin.createUser = realCreate;
+    }
   });
 
   it("reopens an accepted invitation only when the membership it gave has ended (someone invited back)", async () => {
