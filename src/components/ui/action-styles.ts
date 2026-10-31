@@ -18,8 +18,10 @@
  * (turquoise text on white is 1.88:1, so it is not used for words).
  *
  * Focus rings are ink, so the ring is visible against white and turquoise.
- * A pending button is disabled and carries aria-busy="true", which keeps
- * the brand colours (aria-busy is emitted after disabled, so it wins).
+ * A pending button carries aria-busy="true", which keeps the brand
+ * colours. SubmitButton marks it aria-disabled, not disabled, so it keeps
+ * keyboard focus; where a pending button is also disabled (the MFA forms),
+ * aria-busy is emitted after disabled, so it still wins.
  *
  * src/app/auth-form-contrast.test.tsx checks every auth form button against
  * these rules.
