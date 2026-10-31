@@ -3,6 +3,7 @@ import { captureUsageFee, quoteUsageFee } from "@/lib/billing/capture";
 import type { Disclosure } from "@/lib/billing/fee-ledger";
 import { and } from "@prisma/orm-postgres/orm-client";
 import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
+import { restartOwnerAccess } from "@/lib/queries/owner-access";
 
 /** Cast an ISO string to the Prisma 8 TimestampString branded type. */
 function toTimestamp(value: string): TimestampString<3> {
@@ -147,24 +148,41 @@ export async function claimLinkForAccountSetUp<T>(
 }
 
 /**
- * Create a new invitation.
+ * Create a new invitation with a one-time link (S2a). `tokenHash` is the
+ * SHA-256 of the link's token (newLinkToken in
+ * src/lib/invitations/link-token.ts); the token itself is never stored, and
+ * the email must carry it as a /join#<token> link. There is no way to create
+ * an invitation without one. Invitations from the Members page are made by
+ * issueInvitation (src/lib/invitations/issue.ts); this is for a change of
+ * owner, whose invitation commits with the change (H-1 review L2).
  */
-export async function createInvitation(data: {
-  schemeId: string;
-  email: string;
-  role: "OWNER" | "COMMITTEE" | "ACCOUNTANT";
-  lotId?: string;
-  invitedById: string;
-  expiresAt: string;
-}) {
-  // Generate a UUID token for the invitation link
-  return db.orm.public.Invitation.create({
+export async function createInvitation(
+  data: {
+    schemeId: string;
+    email: string;
+    role: "OWNER" | "COMMITTEE" | "ACCOUNTANT";
+    lotId?: string;
+    invitedById: string;
+    expiresAt: string;
+    tokenHash: string;
+    /** The Auth user made for the invitee, when known; a change of owner sets it after the commit. */
+    accountAuthId?: string | null;
+  },
+  /** A transaction's ORM, when the invitation must commit with other changes (change of owner, H-1 review L2). */
+  orm: typeof db.orm = db.orm,
+) {
+  if (!/^[0-9a-f]{64}$/.test(data.tokenHash)) throw new Error("An invitation needs the SHA-256 of its link token.");
+  return orm.public.Invitation.create({
     schemeId: data.schemeId,
     email: data.email.toLowerCase(),
     role: data.role,
+    status: "PENDING",
     lotId: data.lotId ?? null,
     invitedById: data.invitedById,
     expiresAt: toTimestamp(data.expiresAt),
+    tokenHash: data.tokenHash,
+    tokenUsedAt: null,
+    accountAuthId: data.accountAuthId ?? null,
   });
 }
 
@@ -224,6 +242,8 @@ export async function acceptInvitation(
     )
     .first();
 
+  // Someone invited back after their access ended is accepted below: their
+  // ended membership is started again (S2a). Only active access is refused.
   if (existing?.isActive) {
     return { error: "You already have this role on this scheme." };
   }
@@ -247,13 +267,28 @@ export async function acceptInvitation(
     // Someone invited back (an owner who sold and bought again, say) has
     // their ended membership started again, as one membership per role is
     // allowed. It starts afresh: no treasurer flag carries over, which only
-    // the committee can set (S1).
+    // the committee can set (S1). An OWNER membership is restarted through
+    // restartOwnerAccess (H-1 review M2, L3), which first keeps the lot and
+    // dates it held in owner_lot_history (migration 20261201), so the history
+    // the 30-day own-lot check reads is not rewritten. Other roles restart
+    // here, as S2a does.
     const now = toTimestamp(new Date().toISOString());
-    const restarted = existing
-      ? await t.orm.public.SchemeMembership
-          .where((m) => and(m.id.eq(existing.id), m.isActive.eq(false)))
-          .update({ isActive: true, lotId: invitation.lotId ?? null, isTreasurer: false, startDate: now, endDate: null })
-      : null;
+    let restarted: { id: string } | null = null;
+    if (existing && invitation.role === "OWNER") {
+      // Read again, locked, inside this transaction (review L2): the history row records the lot
+      // and dates the membership holds now, not those read before the transaction began.
+      const current = await t.orm.public.SchemeMembership
+        .where((m) => and(m.id.eq(existing.id), m.schemeId.eq(invitation.schemeId), m.role.eq("OWNER")))
+        .forUpdate()
+        .first();
+      if (!current || current.isActive) throw new Error("The membership changed while the invitation was being accepted.");
+      await restartOwnerAccess(t.orm, current, invitation.lotId ?? null);
+      restarted = current;
+    } else if (existing) {
+      restarted = await t.orm.public.SchemeMembership
+        .where((m) => and(m.id.eq(existing.id), m.isActive.eq(false)))
+        .update({ isActive: true, lotId: invitation.lotId ?? null, isTreasurer: false, startDate: now, endDate: null });
+    }
     if (existing && !restarted) throw new Error("The membership changed while the invitation was being accepted.");
     const membership =
       restarted ??

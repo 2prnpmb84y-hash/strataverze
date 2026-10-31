@@ -31,6 +31,8 @@ import { TenancyDetails } from "./tenancy-details";
 import { LotActionButtons } from "./lot-action-buttons";
 import { RollOwnerName } from "./roll-owner-name";
 import { ChangeOwnerButton } from "@/components/lots/change-owner-button";
+import { PendingOwnerChange } from "@/components/lots/pending-owner-change";
+import { pendingOwnerChangeView } from "@/lib/owner/owner-change-requests";
 import { connection } from "next/server";
 import { loadLotLevyView } from "@/lib/levies/lot-levy-view";
 import { LevyNoticesView } from "@/components/levies/levy-notices-view";
@@ -64,7 +66,7 @@ export default async function LotDetailPage({
   if (!lot || lot.schemeId !== id) notFound();
 
   const lotLabel = `${formatLotLabel(lot.lotNumber)}${lot.unitNumber ? ` (Unit ${lot.unitNumber})` : ""}`;
-  const [lotDetailExt, tenants, propertyManager, deliveryPrefs, debtCollection, documents, ownerView] =
+  const [lotDetailExt, tenants, propertyManager, deliveryPrefs, debtCollection, documents, ownerView, pendingChange] =
     await Promise.all([
       getLotDetailExtended(lotId),
       getTenantsForLot(lotId),
@@ -74,6 +76,8 @@ export default async function LotDetailPage({
       getDocumentsForScheme(id),
       // What the lot's owner sees for this lot in the owner portal (read only here).
       loadLotLevyView(id, lotId, lotLabel, rulesForState(scheme.state).rules.TERMINOLOGY),
+      // A committee member's change of owner waiting for the Adviser (H-1).
+      pendingOwnerChangeView(id, lotId),
     ]);
 
   // Find the operating bank account for this scheme
@@ -122,14 +126,19 @@ export default async function LotDetailPage({
           </Button>
         )}
         <LotActionButtons schemeId={id} lotId={lotId} deliveryPrefs={deliveryPrefs} />
-        <ChangeOwnerButton
-          schemeId={id}
-          lotId={lotId}
-          lotLabel={lotLabel}
-          currentOwner={lotDetailExt?.rollOwnerName ?? (lot.owners.length > 0 ? ownerName : null)}
-          today={await schemeToday(id)}
-        />
+        {/* One change of owner at a time: while one waits, it is confirmed or rejected below. */}
+        {!pendingChange && (
+          <ChangeOwnerButton
+            schemeId={id}
+            lotId={lotId}
+            lotLabel={lotLabel}
+            currentOwner={lotDetailExt?.rollOwnerName ?? (lot.owners.length > 0 ? ownerName : null)}
+            today={await schemeToday(id)}
+          />
+        )}
       </div>
+
+      {pendingChange && <PendingOwnerChange schemeId={id} lotLabel={lotLabel} change={pendingChange} />}
 
       <BuildingDataNotice problems={lotDataProblem ? [lotDataProblem] : []} />
 
@@ -273,6 +282,7 @@ export default async function LotDetailPage({
                     <OwnerAssignment
                       schemeId={id}
                       lotId={lotId}
+                      canAssign={isAdviser || !!profile.isPlatformAdmin}
                       owners={lot.owners.map((o) => ({
                         id: o.membershipId,
                         profile: {

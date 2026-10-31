@@ -38,6 +38,7 @@ const SENSITIVE: Record<string, string[]> = {
   ],
   "src/lib/actions/admin-mfa.ts": ["resetUserMfaAction"],
   "src/lib/actions/change-owner.ts": ["changeOwnerAction"],
+  "src/lib/actions/change-owner-review.ts": ["confirmOwnerChangeAction", "rejectOwnerChangeAction"],
   "src/app/(portal)/owner/(scheme)/finance/approvals/approve-actions.ts": ["ownerApproveSupplierInvoiceAction"],
   "src/app/(portal)/adviser/schemes/[id]/finance/actions.ts": [
     "approveInvoiceAction",

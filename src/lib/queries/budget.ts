@@ -9,13 +9,18 @@ function toNumeric(value: number | string): Numeric<12, 2> {
   return String(value) as unknown as Numeric<12, 2>;
 }
 
-/** Ids of the budget version being worked on for each fund and year. */
-async function workingBudgetIds(filter: { schemeId?: string; fundId?: string; financialYear: number }) {
+/**
+ * Ids of the budget version being worked on for each fund and year, always
+ * within the scheme: a fund id from another building matches nothing
+ * (finding S-02, 31 Oct 2026).
+ */
+async function workingBudgetIds(filter: { schemeId: string; fundId?: string; financialYear: number }) {
+  if (!filter.schemeId) return [];
   const budgets = await db.orm.public.Budget
     .where((b) =>
       filter.fundId
-        ? and(b.fundId.eq(filter.fundId), b.financialYear.eq(filter.financialYear))
-        : and(b.schemeId.eq(filter.schemeId!), b.financialYear.eq(filter.financialYear)),
+        ? and(b.schemeId.eq(filter.schemeId), b.fundId.eq(filter.fundId), b.financialYear.eq(filter.financialYear))
+        : and(b.schemeId.eq(filter.schemeId), b.financialYear.eq(filter.financialYear)),
     )
     .limit(500)
     .all();
@@ -23,15 +28,17 @@ async function workingBudgetIds(filter: { schemeId?: string; fundId?: string; fi
 }
 
 /**
- * Fetch the budget lines for a fund and financial year, from the version
- * being worked on (the latest that is not superseded).
+ * Fetch the budget lines for a scheme's fund and financial year, from the
+ * version being worked on (the latest that is not superseded). A fund of
+ * another scheme has no lines here.
  */
 export async function getBudgetLinesForFund(
+  schemeId: string,
   fundId: string,
   financialYear: number,
   limit = 200,
 ) {
-  const ids = await workingBudgetIds({ fundId, financialYear });
+  const ids = await workingBudgetIds({ schemeId, fundId, financialYear });
   if (ids.length === 0) return [];
   return db.orm.public.BudgetLine
     .where((b) => b.budgetId.in(ids))
@@ -142,7 +149,7 @@ export async function getBudgetVsActual(
   financialYear: number,
 ) {
   const [budgetLines, accountCodes, scheme] = await Promise.all([
-    getBudgetLinesForFund(fundId, financialYear),
+    getBudgetLinesForFund(schemeId, fundId, financialYear),
     db.orm.public.AccountCode.where((a) => a.schemeId.eq(schemeId)).orderBy((a) => a.code.asc()).limit(5000).all(),
     db.orm.public.Scheme.where((s) => s.id.eq(schemeId)).first(),
   ]);

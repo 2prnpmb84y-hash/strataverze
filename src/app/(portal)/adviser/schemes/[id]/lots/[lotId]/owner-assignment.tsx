@@ -24,14 +24,22 @@ type SearchResult = {
   email: string;
 };
 
+/**
+ * The lot's owners, with Remove, and the search to assign an owner directly.
+ * Assigning is for the building's Adviser and StrataVerze only (S-01, 31 Oct
+ * 2026): `canAssign` false hides the search. assignOwnerAction enforces the
+ * same rule on the server.
+ */
 export function OwnerAssignment({
   schemeId,
   lotId,
   owners,
+  canAssign,
 }: {
   schemeId: string;
   lotId: string;
   owners: Owner[];
+  canAssign: boolean;
 }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -154,58 +162,60 @@ export function OwnerAssignment({
         </p>
       )}
 
-      {/* Search and assign */}
-      <div ref={wrapperRef} className="relative">
-        <label
-          htmlFor="owner-search"
-          className="block text-sm font-medium text-ink mb-1.5"
-        >
-          Assign Owner
-        </label>
-        <input
-          id="owner-search"
-          type="text"
-          value={query}
-          onChange={(e) => handleSearch(e.target.value)}
-          onFocus={() => results.length > 0 && setShowResults(true)}
-          placeholder="Search by email or name..."
-          className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors"
-        />
+      {/* Search and assign: the Adviser and StrataVerze only */}
+      {canAssign && (
+        <div ref={wrapperRef} className="relative">
+          <label
+            htmlFor="owner-search"
+            className="block text-sm font-medium text-ink mb-1.5"
+          >
+            Assign Owner
+          </label>
+          <input
+            id="owner-search"
+            type="text"
+            value={query}
+            onChange={(e) => handleSearch(e.target.value)}
+            onFocus={() => results.length > 0 && setShowResults(true)}
+            placeholder="Search by email or name..."
+            className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors"
+          />
 
-        {searching && (
-          <p className="mt-1.5 text-xs text-ink-muted">Searching...</p>
-        )}
+          {searching && (
+            <p className="mt-1.5 text-xs text-ink-muted">Searching...</p>
+          )}
 
-        {/* Search results dropdown */}
-        {showResults && results.length > 0 && (
-          <div className="absolute z-10 mt-1 w-full rounded-[var(--radius-card)] border border-line bg-white shadow-lg max-h-48 overflow-y-auto">
-            {results.map((p) => {
-              const name =
-                `${p.firstName} ${p.lastName}`.trim() || p.email;
-              return (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => handleAssign(p.id, name)}
-                  disabled={isPending}
-                  className="w-full text-left px-4 py-3 hover:bg-muted transition-colors border-b border-line last:border-0 disabled:opacity-50"
-                >
-                  <p className="text-sm font-medium text-ink">{name}</p>
-                  <p className="text-xs text-ink-muted">{p.email}</p>
-                </button>
-              );
-            })}
-          </div>
-        )}
+          {/* Search results dropdown */}
+          {showResults && results.length > 0 && (
+            <div className="absolute z-10 mt-1 w-full rounded-[var(--radius-card)] border border-line bg-white shadow-lg max-h-48 overflow-y-auto">
+              {results.map((p) => {
+                const name =
+                  `${p.firstName} ${p.lastName}`.trim() || p.email;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => handleAssign(p.id, name)}
+                    disabled={isPending}
+                    className="w-full text-left px-4 py-3 hover:bg-muted transition-colors border-b border-line last:border-0 disabled:opacity-50"
+                  >
+                    <p className="text-sm font-medium text-ink">{name}</p>
+                    <p className="text-xs text-ink-muted">{p.email}</p>
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
-        {showResults && !searching && results.length === 0 && query.trim().length >= 2 && (
-          <div className="absolute z-10 mt-1 w-full rounded-[var(--radius-card)] border border-line bg-white shadow-lg px-4 py-3">
-            <p className="text-sm text-ink-muted">
-              No matching profiles found. The owner must sign up first.
-            </p>
-          </div>
-        )}
-      </div>
+          {showResults && !searching && results.length === 0 && query.trim().length >= 2 && (
+            <div className="absolute z-10 mt-1 w-full rounded-[var(--radius-card)] border border-line bg-white shadow-lg px-4 py-3">
+              <p className="text-sm text-ink-muted">
+                No matching profiles found. The owner must sign up first.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Feedback messages */}
       {error && (

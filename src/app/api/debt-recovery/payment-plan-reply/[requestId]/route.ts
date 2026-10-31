@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { forbidden } from "@/lib/finance/access-denied";
+import { refuseAsNotFound } from "@/lib/finance/access-denied";
 import { recordSecurityEventLater } from "@/lib/audit/security-audit";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { and } from "@prisma/orm-postgres/orm-client";
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     allowed = !!m && ownerMaySeeRequest(row, { profileId: profile.id, ownerSince: storedDayIn(await schemeTimeZone(schemeId), m.startDate) });
   }
   if (!allowed) {
-    return forbidden({ schemeId, actorId: profile.id, entityType: "Lot", entityId: row.lotId, what: "Payment plan reply PDF" });
+    return refuseAsNotFound({ schemeId, actorId: profile.id, entityType: "Lot", entityId: row.lotId, what: "Payment plan reply PDF" });
   }
   if (!(await rulesForScheme(schemeId)).rules.FEATURES.statutoryPaymentPlans) return notFound();
   const pdf = await generatePaymentPlanReplyPdf(schemeId, requestId);

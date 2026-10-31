@@ -7,7 +7,7 @@ import { EveryLotUnavailableError } from "@/lib/levies/every-lot";
 import { NO_STORE } from "@/lib/http/no-store";
 import { NextResponse } from "next/server";
 import { canReadLotDocuments } from "@/lib/finance/finance-access";
-import { forbidden } from "@/lib/finance/access-denied";
+import { refuseAsNotFound } from "@/lib/finance/access-denied";
 import { notFound, pdfResponse, signIn, UUID } from "@/lib/pdf/response";
 
 /** The PDF of an issued levy notice (for the scheme's finance team or the lot's owner). */
@@ -19,7 +19,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   const notice = await db.orm.public.LevyNotice.where((n) => n.id.eq(noticeId)).first();
   if (!notice || notice.status === "DRAFT") return notFound();
   if (!(await canReadLotDocuments(profile, notice.schemeId, notice.lotId))) {
-    return forbidden({ schemeId: notice.schemeId, actorId: profile.id, entityType: "LevyNotice", entityId: notice.id, what: "Levy notice PDF" });
+    return refuseAsNotFound({ schemeId: notice.schemeId, actorId: profile.id, entityType: "LevyNotice", entityId: notice.id, what: "Levy notice PDF" });
   }
   let pdf;
   try {

@@ -12,8 +12,14 @@ const ALLOWED_USERS = new Set([
   "src/app/(portal)/admin/security/page.tsx",
   // The documents bucket (S3): every caller authorises first.
   "src/lib/storage/server-storage.ts",
+  // Reads a held change of owner's recorder's current Auth addresses (H-1, L1, L4): for
+  // confirmOwnerChangeAction (after requireRolesOrAdmin(["ADVISER"]) and the step-up check) and the
+  // review card on the Adviser's lot page and /admin/owner-changes (each checked first).
+  "src/lib/owner/recorder-addresses.ts",
   // Invited people's accounts (S2a): the invitation is authorised, or its
-  // one-time link checked, before any call.
+  // one-time link checked, before any call. A change of owner's invitation
+  // (Adviser or platform admin, step-up checked) prepares the account after
+  // the change commits, through src/lib/invitations/issue.ts.
   "src/lib/invitations/accounts.ts",
 ]);
 

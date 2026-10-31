@@ -67,7 +67,9 @@ export default async function BudgetPage({
     };
   });
 
-  // Get budget vs actual for the selected fund (or all funds)
+  // Get budget vs actual for the selected fund (or all funds). A fund that is
+  // not one of this scheme's (another building's, say) is not found (S-02).
+  if (fundParam && !funds.some((f) => f.id === fundParam)) notFound();
   const selectedFundId = fundParam || (funds[0]?.id ?? "");
   let budgetVsActual = null;
   if (selectedFundId) {

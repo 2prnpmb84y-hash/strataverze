@@ -1,4 +1,4 @@
-import { forbidden } from "@/lib/finance/access-denied";
+import { refuseAsNotFound } from "@/lib/finance/access-denied";
 import { recordSecurityEventLater } from "@/lib/audit/security-audit";
 import type { NextRequest } from "next/server";
 import { getCurrentProfile } from "@/lib/queries/profiles";
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
   const endDate = q.get("endDate") || undefined;
   if (!UUID.test(schemeId) || !UUID.test(lotId) || (startDate && !ISO_DAY.test(startDate)) || (endDate && !ISO_DAY.test(endDate))) return notFound();
   if (!(await canReadLotDocuments(profile, schemeId, lotId))) {
-    return forbidden({ schemeId, actorId: profile.id, entityType: "Lot", entityId: lotId, what: "Owner statement PDF" });
+    return refuseAsNotFound({ schemeId, actorId: profile.id, entityType: "Lot", entityId: lotId, what: "Owner statement PDF" });
   }
   const pdf = await generateOwnerStatementPdf({ schemeId, lotId, startDate, endDate, actorId: profile.id });
   if (pdf) {

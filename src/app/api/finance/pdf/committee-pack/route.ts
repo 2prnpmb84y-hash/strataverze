@@ -1,4 +1,4 @@
-import { forbidden } from "@/lib/finance/access-denied";
+import { refuseAsNotFound } from "@/lib/finance/access-denied";
 import { recordSecurityEventLater } from "@/lib/audit/security-audit";
 import type { NextRequest } from "next/server";
 import { getCurrentProfile } from "@/lib/queries/profiles";
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
   const financialYear = Number(q.get("year"));
   if (!UUID.test(schemeId) || !ISO_DAY.test(startDate) || !ISO_DAY.test(endDate) || !Number.isInteger(financialYear)) return notFound();
   if (!(await canReadCommitteeReports(profile, schemeId))) {
-    return forbidden({ schemeId, actorId: profile.id, entityType: "Scheme", entityId: schemeId, what: "Committee pack PDF" });
+    return refuseAsNotFound({ schemeId, actorId: profile.id, entityType: "Scheme", entityId: schemeId, what: "Committee pack PDF" });
   }
   const pdf = await generateCommitteePackPdf({ schemeId, startDate, endDate, financialYear, actorId: profile.id });
   if (pdf) {

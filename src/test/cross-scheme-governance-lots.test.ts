@@ -66,7 +66,7 @@ function model(name: string) {
   }
   const t = terminals[name];
   const chain: Record<string, unknown> = {};
-  for (const m of ["where", "include", "orderBy", "limit", "select"]) chain[m] = () => chain;
+  for (const m of ["where", "include", "orderBy", "limit", "select", "forNoKeyUpdate", "forUpdate"]) chain[m] = () => chain;
   for (const op of Object.keys(t) as Terminal[]) chain[op] = (...a: unknown[]) => t[op](...a);
   return chain;
 }
@@ -88,7 +88,7 @@ const lots = {
   createLot: vi.fn(),
   updateLot: vi.fn(),
   deleteLot: vi.fn(),
-  assignOwnerToLot: vi.fn(),
+  assignOwnerToLot: vi.fn(async () => ({ restartedFrom: null })),
   removeOwnerFromLot: vi.fn(),
 };
 vi.mock("@/lib/queries/lots", () => lots);
@@ -173,7 +173,6 @@ vi.mock("@/lib/queries/schemes", () => ({
 }));
 vi.mock("@/lib/notifications", () => ({
   notifyMeetingScheduled: vi.fn(async () => {}),
-  notifyInvitation: vi.fn(async () => {}),
 }));
 vi.mock("@/lib/meetings/rule-set-repo", () => ({ getActiveRuleSet: vi.fn(async () => ({})) }));
 // The debtor voting check (stage 2, step 7): NSW records no rule, so it finds no problem by default.
@@ -260,6 +259,9 @@ beforeEach(() => {
     t.first.mockResolvedValue(null);
     t.all.mockResolvedValue([]);
   }
+  // The lot's row lock (H-1 review L2) finds scheme A's lot; a foreign lot is refused before it.
+  model("Lot");
+  terminals.Lot.first.mockResolvedValue(LOT_A);
 });
 
 describe("lots (C1)", () => {
@@ -286,6 +288,102 @@ describe("lots (C1)", () => {
     const r = await lotActions.assignOwnerAction(SCHEME_A, LOT_B.id, "someone");
     expect(r.error).toBe("Lot not found.");
     expect(lots.assignOwnerToLot).not.toHaveBeenCalled();
+  });
+
+  // S-01 (founder decision, 31 Oct 2026): only the Adviser or StrataVerze assigns an owner directly.
+  it("assignOwnerAction refuses a committee member of the scheme, including assigning themselves", async () => {
+    callerRoles = { [SCHEME_A]: ["COMMITTEE"] };
+    for (const profileId of [caller.id, "someone-else"]) {
+      const r = await lotActions.assignOwnerAction(SCHEME_A, LOT_A.id, profileId);
+      expect(r.error).toMatch(/permission/);
+    }
+    // A committee member who is also an owner on the scheme is refused too.
+    callerRoles = { [SCHEME_A]: ["COMMITTEE", "OWNER"] };
+    expect((await lotActions.assignOwnerAction(SCHEME_A, LOT_A.id, caller.id)).error).toMatch(/permission/);
+    expect(lots.assignOwnerToLot).not.toHaveBeenCalled();
+    // Refused before the step-up check, so the refusal does not depend on MFA.
+    expect(stepUp.requireRecentMfa).not.toHaveBeenCalled();
+  });
+
+  it("assignOwnerAction lets the scheme's Adviser assign an owner", async () => {
+    const r = await lotActions.assignOwnerAction(SCHEME_A, LOT_A.id, "new-owner");
+    expect(r.error).toBeUndefined();
+    expect(stepUp.requireRecentMfa).toHaveBeenCalled();
+    expect(lots.assignOwnerToLot).toHaveBeenCalledWith({ schemeId: SCHEME_A, lotId: LOT_A.id, profileId: "new-owner" }, expect.anything());
+  });
+
+  it("assignOwnerAction lets a StrataVerze admin assign an owner without a role on the scheme", async () => {
+    callerRoles = {};
+    caller.isPlatformAdmin = true;
+    const r = await lotActions.assignOwnerAction(SCHEME_A, LOT_A.id, "new-owner");
+    expect(r.error).toBeUndefined();
+    expect(lots.assignOwnerToLot).toHaveBeenCalledWith({ schemeId: SCHEME_A, lotId: LOT_A.id, profileId: "new-owner" }, expect.anything());
+  });
+
+  it("assignOwnerAction refuses an Adviser of another scheme acting through scheme A's id", async () => {
+    callerRoles = { [SCHEME_B]: ["ADVISER"] };
+    const r = await lotActions.assignOwnerAction(SCHEME_A, LOT_A.id, caller.id);
+    expect(r.error).toMatch(/permission/);
+    expect(lots.assignOwnerToLot).not.toHaveBeenCalled();
+  });
+
+  // L-1 (31 Oct 2026): the owner search is for assigning an owner directly, so the same people as S-01.
+  it("searchProfilesAction refuses a committee member, without querying profiles", async () => {
+    callerRoles = { [SCHEME_A]: ["COMMITTEE", "OWNER"] };
+    model("Profile");
+    expect(await lotActions.searchProfilesAction("someone@example.com", SCHEME_A)).toEqual([]);
+    expect(terminals.Profile.all).not.toHaveBeenCalled();
+    expect(terminals.Profile.first).not.toHaveBeenCalled();
+  });
+
+  it("searchProfilesAction lets the scheme's Adviser and a StrataVerze admin search, but not an Adviser of another scheme", async () => {
+    model("Profile");
+    const row = { id: "p1", firstName: "Pat", lastName: "Lee", email: "pat@example.com" };
+    terminals.Profile.all.mockResolvedValue([row]);
+    expect(await lotActions.searchProfilesAction("pat@example.com", SCHEME_A)).toEqual([row]);
+
+    callerRoles = {};
+    caller.isPlatformAdmin = true;
+    expect(await lotActions.searchProfilesAction("pat@example.com", SCHEME_A)).toEqual([row]);
+
+    caller.isPlatformAdmin = false;
+    callerRoles = { [SCHEME_B]: ["ADVISER"] };
+    terminals.Profile.all.mockClear();
+    expect(await lotActions.searchProfilesAction("pat@example.com", SCHEME_A)).toEqual([]);
+    expect(terminals.Profile.all).not.toHaveBeenCalled();
+  });
+
+  // M1 (founder decision, 31 Oct 2026): removing an owner is for the Adviser or StrataVerze, as assigning one is.
+  it("removeOwnerAction refuses a committee member, before the step-up check and any lookup", async () => {
+    callerRoles = { [SCHEME_A]: ["COMMITTEE", "OWNER"] };
+    model("SchemeMembership");
+    const r = await lotActions.removeOwnerAction(SCHEME_A, LOT_A.id, "membership-x");
+    expect(r.error).toMatch(/permission/);
+    expect(stepUp.requireRecentMfa).not.toHaveBeenCalled();
+    expect(terminals.SchemeMembership.first).not.toHaveBeenCalled();
+    expect(lots.removeOwnerFromLot).not.toHaveBeenCalled();
+  });
+
+  it("removeOwnerAction lets the Adviser and a StrataVerze admin through, and refuses an Adviser of another scheme", async () => {
+    // Past the role check: refused only because the membership is not on the lot.
+    expect((await lotActions.removeOwnerAction(SCHEME_A, LOT_A.id, "membership-x")).error).toBe("Membership not found on this scheme.");
+    callerRoles = {};
+    caller.isPlatformAdmin = true;
+    expect((await lotActions.removeOwnerAction(SCHEME_A, LOT_A.id, "membership-x")).error).toBe("Membership not found on this scheme.");
+    caller.isPlatformAdmin = false;
+    callerRoles = { [SCHEME_B]: ["ADVISER"] };
+    expect((await lotActions.removeOwnerAction(SCHEME_A, LOT_A.id, "membership-x")).error).toMatch(/permission/);
+    expect(lots.removeOwnerFromLot).not.toHaveBeenCalled();
+  });
+
+  it("removeOwnerAction is refused while a change of owner of the lot waits for review", async () => {
+    model("SchemeMembership");
+    model("OwnerChangeRequest");
+    terminals.SchemeMembership.first.mockResolvedValueOnce({ id: "m-own", schemeId: SCHEME_A, lotId: LOT_A.id, role: "OWNER", profileId: "p-own" });
+    terminals.OwnerChangeRequest.first.mockResolvedValueOnce({ id: "req-1", schemeId: SCHEME_A, lotId: LOT_A.id, status: "PENDING" });
+    const r = await lotActions.removeOwnerAction(SCHEME_A, LOT_A.id, "m-own");
+    expect(r.error).toContain("waiting for review");
+    expect(lots.removeOwnerFromLot).not.toHaveBeenCalled();
   });
 
   it("an adviser of scheme B cannot act through scheme A's id", async () => {

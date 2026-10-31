@@ -1,4 +1,5 @@
 import { db } from "@/prisma/db";
+import { restartOwnerAccess } from "./owner-access";
 import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { and } from "@prisma/orm-postgres/orm-client";
 import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
@@ -151,25 +152,42 @@ export async function deleteLot(schemeId: string, lotId: string) {
 /**
  * Assign an owner to a lot by creating a membership.
  */
-export async function assignOwnerToLot(data: {
-  schemeId: string;
-  lotId: string;
-  profileId: string;
-}) {
-  return db.orm.public.SchemeMembership.create({
+export async function assignOwnerToLot(
+  data: {
+    schemeId: string;
+    lotId: string;
+    profileId: string;
+  },
+  /** The caller's transaction, holding the lot's row (H-1 review L2). */
+  orm: typeof db.orm = db.orm,
+): Promise<{ restartedFrom: { lotId: string | null; endDate: string | null } | null }> {
+  // A person holds one owner access per building (unique scheme, profile and role), so a new row
+  // cannot be made for someone whose access has ended (say they sold a lot; access is never moved
+  // automatically, H-1 review H1). Their ended row is started again on this lot, and the lot and
+  // dates it held first are kept in owner_lot_history (review L3), which lotOwnerProfileIds reads.
+  // An active one is refused by the unique key.
+  const ended = await orm.public.SchemeMembership
+    .where((m) => and(m.schemeId.eq(data.schemeId), m.profileId.eq(data.profileId), m.role.eq("OWNER"), m.isActive.eq(false)))
+    .first();
+  if (ended) {
+    await restartOwnerAccess(orm, ended, data.lotId);
+    return { restartedFrom: { lotId: ended.lotId ?? null, endDate: ended.endDate ? String(ended.endDate) : null } };
+  }
+  await orm.public.SchemeMembership.create({
     schemeId: data.schemeId,
     profileId: data.profileId,
     lotId: data.lotId,
     role: "OWNER",
     isActive: true,
   });
+  return { restartedFrom: null };
 }
 
 /**
  * Remove an owner from a lot by deactivating the membership.
  */
-export async function removeOwnerFromLot(membershipId: string) {
-  return db.orm.public.SchemeMembership
+export async function removeOwnerFromLot(membershipId: string, orm: typeof db.orm = db.orm) {
+  return orm.public.SchemeMembership
     .where({ id: membershipId })
     .update({
       isActive: false,

@@ -10,7 +10,8 @@ import { getLotInScheme } from "@/lib/queries/lots";
 import { getSchemeNameById } from "@/lib/queries/schemes";
 import { withLockTimeout } from "@/lib/queries/invitations";
 import { invitationExpiry, newLinkToken } from "./link-token";
-import { InviteeAccountError, provisionInviteeAccount } from "./accounts";
+import { isInvitableEmail } from "./invitable-email";
+import { InviteeAccountError, provisionInviteeAccount, type InviteeAccount } from "./accounts";
 
 /**
  * Issuing an invitation (security stage S2a). The caller has already
@@ -33,6 +34,8 @@ import { InviteeAccountError, provisionInviteeAccount } from "./accounts";
  * so the inviter cannot use invitations to find out who uses StrataVerze.
  */
 
+export { isInvitableEmail };
+
 export const INVITABLE_ROLES = ["OWNER", "COMMITTEE", "ACCOUNTANT"] as const;
 export type InvitableRole = (typeof INVITABLE_ROLES)[number];
 
@@ -49,29 +52,6 @@ export type IssueInvitationInput = {
 export type IssueInvitationResult =
   | { ok: true; invitationId: string; email: string; role: InvitableRole; expiresAt: Date; emailed: boolean }
   | { ok: false; error?: string; fieldErrors?: Record<string, string> };
-
-/**
- * An address the invitation may go to (review finding L6). ASCII only.
- * The local part is dot-separated runs of letters, digits and _ % + ' -
- * (no leading, trailing or double dots, no quotes, comments or spaces); the
- * domain is labels that start and end with a letter or digit, ending in a
- * letter TLD. Control characters and < > , ; " \ are refused outright, so
- * nothing can split a header or a list of recipients. Internationalised and
- * unusual-but-valid RFC 5322 addresses are refused for now; the inviter is
- * told to enter a valid address.
- */
-const EMAIL = /^[A-Za-z0-9_%+'-]+(?:\.[A-Za-z0-9_%+'-]+)*@(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,63}$/;
-
-/** Whether an address (already trimmed and lower-cased) may be invited. */
-export function isInvitableEmail(email: string): boolean {
-  if (!email || email.length > 254) return false;
-  // Anything outside printable ASCII (control characters, spaces, non-ASCII
-  // letters) or any of < > , ; " \ : refused before the pattern, which
-  // refuses them too.
-  if (/[^\x21-\x7e]/.test(email) || /[<>,;"\\]/.test(email)) return false;
-  if (email.lastIndexOf("@") > 64) return false;
-  return EMAIL.test(email);
-}
 
 function ts(d: Date): TimestampString<3> {
   return d.toISOString() as unknown as TimestampString<3>;
@@ -126,35 +106,8 @@ export async function issueInvitation(input: IssueInvitationInput): Promise<Issu
     return { ok: false, error: "This person already has this role on this building." };
   }
 
-  let account;
-  try {
-    account = await provisionInviteeAccount(email);
-  } catch (err) {
-    const code = err instanceof InviteeAccountError ? err.code : "error";
-    console.error("[invitations] account could not be prepared:", code);
-    await recordSecurityEventLater({
-      action: "invitation.send",
-      outcome: "failed",
-      actorProfileId: input.inviter.id,
-      actorRole: input.actorRole,
-      schemeId: input.schemeId,
-      reason: "account could not be prepared",
-      metadata: { code },
-    });
-    return { ok: false, error: "The invitation could not be sent. Please try again." };
-  }
-  if (account.kind === "new") {
-    // Kept apart from the building's events, which the building's Adviser can
-    // read: whether an address already had an account is not theirs to know.
-    await recordSecurityEventLater({
-      action: account.adopted ? "account.adopted_for_invitation" : "account.created_for_invitation",
-      outcome: "allowed",
-      actorProfileId: input.inviter.id,
-      actorRole: input.actorRole,
-      resourceType: "auth_user",
-      resourceId: account.authId,
-    });
-  }
+  const account = await prepareInviteeAccount(email, input.schemeId, input.inviter.id, input.actorRole);
+  if (!account) return { ok: false, error: "The invitation could not be sent. Please try again." };
 
   const { token, hash } = newLinkToken();
   const expiresAt = invitationExpiry();
@@ -231,20 +184,202 @@ export async function issueInvitation(input: IssueInvitationInput): Promise<Issu
     metadata: { role, resent: !!existing, previousStatus: existing ? String(existing.status) : null },
   });
 
-  const inviterName = [input.inviter.firstName, input.inviter.lastName].filter(Boolean).join(" ") || "Your strata manager";
-  const emailed = await sendEmail(
-    invitationLinkEmail({
-      recipientEmail: email,
-      schemeName: await getSchemeNameById(input.schemeId),
-      role,
-      inviterName,
-      expiresAt,
-      lotNumber,
-      acceptUrl: `${siteUrl()}/join#${token}`,
-    }),
-  );
+  const emailed = await emailInvitationLink({ schemeId: input.schemeId, email, role, lotNumber, expiresAt, token, inviter: input.inviter });
 
   return { ok: true, invitationId, email, role: role as InvitableRole, expiresAt, emailed };
+}
+
+/**
+ * The invitee's account (S2a), made with the Supabase admin API if the
+ * address has none. Records the neutral events: a failure in the building's
+ * log with no detail of the address, and a new or adopted account in an event
+ * with no building. Null when the account could not be prepared. Makes Auth
+ * HTTP calls: never call it while holding row locks.
+ */
+async function prepareInviteeAccount(
+  email: string,
+  schemeId: string,
+  inviterId: string,
+  actorRole: string,
+): Promise<InviteeAccount | null> {
+  let account: InviteeAccount;
+  try {
+    account = await provisionInviteeAccount(email);
+  } catch (err) {
+    const code = err instanceof InviteeAccountError ? err.code : "error";
+    console.error("[invitations] account could not be prepared:", code);
+    await recordSecurityEventLater({
+      action: "invitation.send",
+      outcome: "failed",
+      actorProfileId: inviterId,
+      actorRole,
+      schemeId,
+      reason: "account could not be prepared",
+      metadata: { code },
+    });
+    return null;
+  }
+  if (account.kind === "new") {
+    // Kept apart from the building's events, which the building's Adviser can
+    // read: whether an address already had an account is not theirs to know.
+    await recordSecurityEventLater({
+      action: account.adopted ? "account.adopted_for_invitation" : "account.created_for_invitation",
+      outcome: "allowed",
+      actorProfileId: inviterId,
+      actorRole,
+      resourceType: "auth_user",
+      resourceId: account.authId,
+    });
+  }
+  return account;
+}
+
+/** Email the one-time /join link. The token goes only in the link's fragment. */
+async function emailInvitationLink(p: {
+  schemeId: string;
+  email: string;
+  role: string;
+  lotNumber: string | null;
+  expiresAt: Date;
+  token: string;
+  inviter: { firstName?: string | null; lastName?: string | null };
+}): Promise<boolean> {
+  const inviterName = [p.inviter.firstName, p.inviter.lastName].filter(Boolean).join(" ") || "Your strata manager";
+  return sendEmail(
+    invitationLinkEmail({
+      recipientEmail: p.email,
+      schemeName: await getSchemeNameById(p.schemeId),
+      role: p.role,
+      inviterName,
+      expiresAt: p.expiresAt,
+      lotNumber: p.lotNumber,
+      acceptUrl: `${siteUrl()}/join#${p.token}`,
+    }),
+  );
+}
+
+export type DeliverInvitationLinkInput = {
+  invitationId: string;
+  schemeId: string;
+  email: string;
+  role: InvitableRole;
+  lotNumber: string | null;
+  /** The link token made with the invitation (newLinkToken); the row holds only `hash`. */
+  token: string;
+  hash: string;
+  expiresAt: Date;
+  inviter: { id: string; firstName?: string | null; lastName?: string | null };
+  actorRole: string;
+  resent: boolean;
+  previousStatus: string | null;
+  /** What made the invitation, for the security event (e.g. "owner_change"). */
+  via: string;
+};
+
+export type DeliverInvitationLinkResult =
+  | { emailed: true }
+  | { emailed: false; reason: "address" | "rate_limited" | "account" | "changed" | "email" };
+
+/**
+ * Finish an invitation that was written inside another transaction (a change
+ * of owner, src/lib/owner/change-owner-effects.ts) with its link token already
+ * stored as a hash: the steps of issueInvitation that make Auth or email
+ * calls, run after that transaction has committed, so no HTTP call is made
+ * while its row locks are held.
+ *
+ *   1. the same sending limits as issueInvitation (per inviter, and per
+ *      building and address);
+ *   2. the invitee's account, made on the server if the address has none
+ *      (provisionInviteeAccount), with the same neutral events;
+ *   3. the account recorded on the invitation, only while it still holds
+ *      this link (same hash, PENDING, unused): if it was sent again,
+ *      revoked or withdrawn in the meantime, nothing is emailed, as this
+ *      link no longer works;
+ *   4. invitation.sent, as issueInvitation records it;
+ *   5. the /join#<token> link emailed.
+ *
+ * Never throws for an expected failure: the invitation stays PENDING and the
+ * Adviser can send it again from the Members page, which issues a new link.
+ */
+export async function deliverInvitationLink(input: DeliverInvitationLinkInput): Promise<DeliverInvitationLinkResult> {
+  const email = input.email.trim().toLowerCase();
+  // The same address rule as issueInvitation (review finding L6): nothing goes to an address it refuses.
+  if (!isInvitableEmail(email)) {
+    await recordSecurityEventLater({
+      action: "invitation.send",
+      outcome: "denied",
+      actorProfileId: input.inviter.id,
+      actorRole: input.actorRole,
+      schemeId: input.schemeId,
+      resourceType: "Invitation",
+      resourceId: input.invitationId,
+      reason: "address not accepted",
+    });
+    return { emailed: false, reason: "address" };
+  }
+  const allowed = await hitRateLimits([
+    ["invitationSend", input.inviter.id],
+    ["invitationRecipient", `${input.schemeId}|${email}`],
+  ]);
+  if (!allowed) {
+    await recordSecurityEventLater({
+      action: "invitation.send",
+      outcome: "denied",
+      actorProfileId: input.inviter.id,
+      actorRole: input.actorRole,
+      schemeId: input.schemeId,
+      resourceType: "Invitation",
+      resourceId: input.invitationId,
+      reason: "too many invitations",
+    });
+    return { emailed: false, reason: "rate_limited" };
+  }
+
+  const account = await prepareInviteeAccount(email, input.schemeId, input.inviter.id, input.actorRole);
+  if (!account) return { emailed: false, reason: "account" };
+
+  let n: number;
+  try {
+    n = await withLockTimeout((orm) =>
+      orm.public.Invitation
+        .where((i) =>
+          and(
+            i.id.eq(input.invitationId),
+            i.schemeId.eq(input.schemeId),
+            i.tokenHash.eq(input.hash),
+            i.status.eq("PENDING"),
+            i.tokenUsedAt.isNull(),
+          ),
+        )
+        .updateAndCount({ accountAuthId: account.kind === "new" ? account.authId : null }),
+    );
+  } catch (err) {
+    console.error("[invitations] invitation account not recorded:", err instanceof Error ? err.name : "error");
+    n = 0;
+  }
+  if (n !== 1) return { emailed: false, reason: "changed" };
+
+  await recordSecurityEventLater({
+    action: "invitation.sent",
+    outcome: "allowed",
+    actorProfileId: input.inviter.id,
+    actorRole: input.actorRole,
+    schemeId: input.schemeId,
+    resourceType: "Invitation",
+    resourceId: input.invitationId,
+    metadata: { role: input.role, resent: input.resent, previousStatus: input.previousStatus, via: input.via },
+  });
+
+  const emailed = await emailInvitationLink({
+    schemeId: input.schemeId,
+    email,
+    role: input.role,
+    lotNumber: input.lotNumber,
+    expiresAt: input.expiresAt,
+    token: input.token,
+    inviter: input.inviter,
+  });
+  return emailed ? { emailed: true } : { emailed: false, reason: "email" };
 }
 
 /** Whether the address's account holds this role on the building now. */

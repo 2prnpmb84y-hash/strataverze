@@ -1,6 +1,5 @@
 import { sendEmail } from "@/lib/email";
 import { siteUrl } from "@/lib/site-url";
-import { invitationEmail } from "@/lib/email-templates/invitation";
 import {
   workOrderCreatedEmail,
   workOrderStatusEmail,
@@ -13,25 +12,8 @@ import { platformInvoiceEmail } from "@/lib/email-templates/platform-invoice";
 const APP_URL = siteUrl();
 
 // ─── Invitations ────────────────────────────────────────────────
-
-export async function notifyInvitation(params: {
-  recipientEmail: string;
-  schemeName: string;
-  role: string;
-  inviterName: string;
-  expiresAt: Date;
-  invitationToken: string;
-}) {
-  const email = invitationEmail({
-    recipientEmail: params.recipientEmail,
-    schemeName: params.schemeName,
-    role: params.role,
-    inviterName: params.inviterName,
-    expiresAt: params.expiresAt,
-    acceptUrl: `${APP_URL}/invitations`,
-  });
-  await sendEmail(email);
-}
+// Invitation emails carry a one-time /join#<token> link and are sent only by
+// src/lib/invitations/issue.ts (issueInvitation, deliverInvitationLink), S2a.
 
 // ─── Work Orders ────────────────────────────────────────────────
 

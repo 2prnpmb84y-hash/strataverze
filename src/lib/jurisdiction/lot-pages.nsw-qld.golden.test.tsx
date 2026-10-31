@@ -160,3 +160,103 @@ describe.each([
     expect(html).toMatchSnapshot();
   });
 });
+
+// H-1 (31 Oct 2026): a committee member's change of owner waits for the Adviser. Not a snapshot: the pages above
+// (nothing waiting) must stay byte for byte as they were.
+describe("a change of owner waiting for review", () => {
+  beforeEach(() => {
+    state.scheme = {
+      id: "s1",
+      name: "Harbour View",
+      planNumber: "SP 12345",
+      state: "NSW",
+      timeZone: "Australia/Sydney",
+      address: "1 Harbour St",
+      suburb: "Sydney",
+      memberships: [{ profileId: "adviser-1", role: "ADVISER" }],
+      bankAccounts: [],
+    };
+    state.lot = lotRow("NSW", null);
+    sharedFake.reset({
+      Scheme: [{ id: "s1", name: "Harbour View", state: "NSW", planNumber: "SP 12345", timeZone: "Australia/Sydney" }],
+      Lot: [{ id: "l1", schemeId: "s1", lotNumber: "1", unitNumber: "3", entitlement: 40 }],
+      SchemeMembership: [
+        { id: "m1", profileId: "owner-1", schemeId: "s1", lotId: "l1", role: "OWNER", isActive: true },
+        { id: "m2", profileId: "chair-1", schemeId: "s1", lotId: null, role: "COMMITTEE", isActive: true },
+        { id: "m3", profileId: "adviser-1", schemeId: "s1", lotId: null, role: "ADVISER", isActive: true },
+      ],
+      Profile: [
+        { id: "chair-1", firstName: "Chris", lastName: "Chair", email: "chair@example.com" },
+        { id: "owner-1", firstName: "Olive", lastName: "Owner", email: "olive@example.org" },
+      ],
+      OwnerChangeRequest: [
+        {
+          id: "9b2f4c3e-0000-4000-8000-000000000001",
+          schemeId: "s1",
+          lotId: "l1",
+          status: "PENDING",
+          ownerName: "Mr New Owner",
+          ownerEmail: "new@example.com",
+          settlementDate: "2026-10-24",
+          invite: true,
+          noticeDocumentId: null,
+          recordedBy: "chair-1",
+          recordedAt: "2026-10-25T01:00:00.000Z",
+        },
+      ],
+    });
+  });
+
+  it("the Adviser's lot page shows it with Confirm and Reject, in place of Change owner", async () => {
+    const html = renderToStaticMarkup(await AdviserLotPage({ params: Promise.resolve({ id: "s1", lotId: "l1" }) }));
+    expect(html).toContain("Change of owner waiting for your review");
+    expect(html).toContain("Mr New Owner");
+    expect(html).toContain("24/10/2026");
+    expect(html).toContain("Chris Chair (chair@example.com), 25/10/2026");
+    expect(html).toContain("Confirm change of owner");
+    expect(html).toContain(">Reject<");
+    expect(html).not.toContain("Change owner<");
+    // What confirming will do (review M2), and the address check (review L1).
+    expect(html).toContain("If you confirm");
+    expect(html).toContain("Olive Owner (olive@example.org)");
+    expect(html).toContain("Yes: an invitation is sent to new@example.com.");
+    expect(html).toContain("is at the same domain as the email of the committee member who recorded this change");
+  });
+
+  it("the committee's lot page says it is waiting for the Adviser, with no way to decide it", async () => {
+    state.profile = { id: "owner-1" };
+    const html = renderToStaticMarkup(await CommitteeLotPage({ params: Promise.resolve({ lotId: "l1" }) }));
+    expect(html).toContain("Change of owner waiting for the Adviser");
+    expect(html).toContain("Nothing changes until the Adviser confirms it");
+    expect(html).not.toContain("Confirm change of owner");
+    expect(html).not.toContain("If you confirm");
+    expect(html).not.toContain("Change owner<");
+  });
+
+  // Review M1: the committee's page data, not only its HTML, carries none of the reviewer's details.
+  it("the committee's lot page passes only the reduced view: no owners' or recorder's addresses, seats, invitation state or fingerprint", async () => {
+    state.profile = { id: "owner-1" };
+    const { PendingOwnerChangeNotice } = await import("@/components/lots/pending-owner-change-notice");
+    const { PendingOwnerChange } = await import("@/components/lots/pending-owner-change");
+    const tree = await CommitteeLotPage({ params: Promise.resolve({ lotId: "l1" }) });
+    // Every element in the page's tree, with its props (client components are not rendered here, so their props are what the browser would get).
+    const found: Array<{ type: unknown; props: Record<string, unknown> }> = [];
+    const walk = (node: unknown) => {
+      if (Array.isArray(node)) return node.forEach(walk);
+      if (!node || typeof node !== "object" || !("props" in node)) return;
+      const el = node as { type: unknown; props: Record<string, unknown> };
+      found.push(el);
+      walk(el.props.children);
+    };
+    walk(tree);
+    expect(found.some((e) => e.type === PendingOwnerChange)).toBe(false);
+    const notice = found.find((e) => e.type === PendingOwnerChangeNotice);
+    expect(notice).toBeDefined();
+    const change = notice!.props.change as Record<string, unknown>;
+    expect(Object.keys(change).sort()).toEqual(["ownerName", "recordedByName", "recordedOn", "reviewer", "settlementDate"]);
+    const data = JSON.stringify(found.map((e) => e.props), (k, v) => (k === "children" || typeof v === "function" ? undefined : v));
+    for (const secret of ["olive@example.org", "chair@example.com", "new@example.com", "fingerprint", "effect", "resemblance", "recordedByEmail"]) {
+      expect(data).not.toContain(secret);
+    }
+  });
+});

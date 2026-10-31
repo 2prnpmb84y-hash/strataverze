@@ -4,7 +4,7 @@ import { getCurrentProfile } from "@/lib/queries/profiles";
 import { generateStatutoryPackPdf } from "@/lib/pdf/generate";
 import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
 import { canReadCommitteeReports } from "@/lib/finance/finance-access";
-import { forbidden } from "@/lib/finance/access-denied";
+import { refuseAsNotFound } from "@/lib/finance/access-denied";
 import { notFound, pdfResponse, signIn, UUID } from "@/lib/pdf/response";
 
 /** The financial statements PDF for a year (?schemeId=&year=): the locked copy once adopted. */
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
   const financialYear = Number(q.get("year"));
   if (!UUID.test(schemeId) || !Number.isInteger(financialYear) || financialYear < 2000 || financialYear > 2100) return notFound();
   if (!(await canReadCommitteeReports(profile, schemeId))) {
-    return forbidden({ schemeId, actorId: profile.id, entityType: "Scheme", entityId: schemeId, what: "Statutory statements PDF" });
+    return refuseAsNotFound({ schemeId, actorId: profile.id, entityType: "Scheme", entityId: schemeId, what: "Statutory statements PDF" });
   }
   if (!(await rulesForScheme(schemeId)).rules.FEATURES.keyFinancialInformation) return notFound();
   const pdf = await generateStatutoryPackPdf({ schemeId, financialYear, actorId: profile.id });

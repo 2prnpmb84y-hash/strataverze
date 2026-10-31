@@ -316,6 +316,10 @@
       "model": "Organisation",
       "namespace": "public"
     },
+    "owner_change_requests": {
+      "model": "OwnerChangeRequest",
+      "namespace": "public"
+    },
     "owner_credit_balances": {
       "model": "OwnerCreditBalance",
       "namespace": "public"
@@ -326,6 +330,10 @@
     },
     "owner_credit_transactions": {
       "model": "OwnerCreditTransaction",
+      "namespace": "public"
+    },
+    "owner_lot_history": {
+      "model": "OwnerLotHistory",
       "namespace": "public"
     },
     "payment_authorisations": {
@@ -13141,6 +13149,36 @@
                   "namespace": "public"
                 }
               },
+              "ownerChangeRequests": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "lotId"
+                  ]
+                },
+                "to": {
+                  "model": "OwnerChangeRequest",
+                  "namespace": "public"
+                }
+              },
+              "ownerLotHistory": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "lotId"
+                  ]
+                },
+                "to": {
+                  "model": "OwnerLotHistory",
+                  "namespace": "public"
+                }
+              },
               "paymentPlanRequests": {
                 "cardinality": "1:N",
                 "on": {
@@ -16683,6 +16721,210 @@
               "table": "organisation_memberships"
             }
           },
+          "OwnerChangeRequest": {
+            "fields": {
+              "decidedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "decidedBy": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "invite": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "lotId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "noticeDocumentId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "ownerAddress": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "ownerEmail": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "ownerMobile": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "ownerName": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "ownerPhone": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "recordedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "recordedBy": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "schemeId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "settlementDate": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/date-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "lot": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "lotId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Lot",
+                  "namespace": "public"
+                }
+              },
+              "scheme": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "schemeId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Scheme",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "decidedAt": {
+                  "column": "decided_at"
+                },
+                "decidedBy": {
+                  "column": "decided_by"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "invite": {
+                  "column": "invite"
+                },
+                "lotId": {
+                  "column": "lot_id"
+                },
+                "noticeDocumentId": {
+                  "column": "notice_document_id"
+                },
+                "ownerAddress": {
+                  "column": "owner_address"
+                },
+                "ownerEmail": {
+                  "column": "owner_email"
+                },
+                "ownerMobile": {
+                  "column": "owner_mobile"
+                },
+                "ownerName": {
+                  "column": "owner_name"
+                },
+                "ownerPhone": {
+                  "column": "owner_phone"
+                },
+                "recordedAt": {
+                  "column": "recorded_at"
+                },
+                "recordedBy": {
+                  "column": "recorded_by"
+                },
+                "schemeId": {
+                  "column": "scheme_id"
+                },
+                "settlementDate": {
+                  "column": "settlement_date"
+                },
+                "status": {
+                  "column": "status"
+                }
+              },
+              "namespaceId": "public",
+              "table": "owner_change_requests"
+            }
+          },
           "OwnerCreditBalance": {
             "fields": {
               "balance": {
@@ -17135,6 +17377,130 @@
               },
               "namespaceId": "public",
               "table": "owner_credit_transactions"
+            }
+          },
+          "OwnerLotHistory": {
+            "fields": {
+              "endedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "lotId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "membershipId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "profileId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "recordedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "schemeId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "startedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "lot": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "lotId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Lot",
+                  "namespace": "public"
+                }
+              },
+              "scheme": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "schemeId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Scheme",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "endedAt": {
+                  "column": "ended_at"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "lotId": {
+                  "column": "lot_id"
+                },
+                "membershipId": {
+                  "column": "membership_id"
+                },
+                "profileId": {
+                  "column": "profile_id"
+                },
+                "recordedAt": {
+                  "column": "recorded_at"
+                },
+                "schemeId": {
+                  "column": "scheme_id"
+                },
+                "startedAt": {
+                  "column": "started_at"
+                }
+              },
+              "namespaceId": "public",
+              "table": "owner_lot_history"
             }
           },
           "PaymentAuthorisation": {
@@ -22847,6 +23213,36 @@
                 },
                 "to": {
                   "model": "Organisation",
+                  "namespace": "public"
+                }
+              },
+              "ownerChangeRequests": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "schemeId"
+                  ]
+                },
+                "to": {
+                  "model": "OwnerChangeRequest",
+                  "namespace": "public"
+                }
+              },
+              "ownerLotHistory": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "schemeId"
+                  ]
+                },
+                "to": {
+                  "model": "OwnerLotHistory",
                   "namespace": "public"
                 }
               },
@@ -49636,6 +50032,173 @@
               },
               "uniques": []
             },
+            "owner_change_requests": {
+              "columns": {
+                "decided_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "decided_by": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "default": {
+                    "expression": "gen_random_uuid()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "invite": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
+                "lot_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "notice_document_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "owner_address": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "owner_email": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "owner_mobile": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "owner_name": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "owner_phone": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "recorded_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "recorded_by": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "scheme_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "settlement_date": {
+                  "codecId": "pg/date-string@1",
+                  "dataType": "pg/date",
+                  "nullable": false
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": "PENDING"
+                  },
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "owner_change_requests_scheme_id_status_idx"
+                  },
+                  "onDelete": "cascade",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "scheme_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "owner_change_requests"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "schemes"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "owner_change_requests_lot_id_idx"
+                  },
+                  "onDelete": "cascade",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "lot_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "owner_change_requests"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "lots"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "lot_id"
+                  ],
+                  "name": "owner_change_requests_lot_id_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "scheme_id",
+                    "status"
+                  ],
+                  "name": "owner_change_requests_scheme_id_status_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
             "owner_credit_balances": {
               "columns": {
                 "balance": {
@@ -49950,6 +50513,115 @@
                     "lot_id"
                   ],
                   "name": "owner_credit_transactions_scheme_id_lot_id_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
+            "owner_lot_history": {
+              "columns": {
+                "ended_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "default": {
+                    "expression": "gen_random_uuid()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "lot_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "membership_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "profile_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "recorded_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "scheme_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "started_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "owner_lot_history_scheme_id_lot_id_idx"
+                  },
+                  "onDelete": "cascade",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "scheme_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "owner_lot_history"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "schemes"
+                  }
+                },
+                {
+                  "onDelete": "cascade",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "lot_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "owner_lot_history"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "lots"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "scheme_id",
+                    "lot_id"
+                  ],
+                  "name": "owner_lot_history_scheme_id_lot_id_idx",
                   "unique": false
                 }
               ],
@@ -64701,7 +65373,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "de1b4110c5b571af7cd6b0d982ee6ce94ca8cb4d6788c53e2d7f64a2c5614dbe"
+    "storageHash": "68d400a63ae5216e984f6353b5a9edc0a94fbcb4665f6f0185fcdfb11ca2baf8"
   },
   "execution": {
     "executionHash": "454fa11779756be5e20f2ae540217fc9e337e78af6dbb69e34dc8ddf4d7262fe",

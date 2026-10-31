@@ -59,6 +59,10 @@ export type ActivityAction =
   | "LOT_CREATED"
   | "STRATA_ROLL_UPDATED"
   | "OWNER_CHANGED"
+  // A committee member's change of owner held for review, and its decision (H-1, 31 Oct 2026). Advisers only: not in any owner feed.
+  | "OWNER_CHANGE_HELD"
+  | "OWNER_CHANGE_CONFIRMED"
+  | "OWNER_CHANGE_REJECTED"
   | "ONBOARDING_INCOME_BUDGET_SAVED"
   | "LEVY_PAYMENT_RECORDED"
   | "ANNOUNCEMENT_PUBLISHED"

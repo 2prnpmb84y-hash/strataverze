@@ -252,6 +252,8 @@ model Scheme {
   selectorValues     SchemeSelectorValue[]
   lateChargeWaivers           LateChargeWaiver[]
   pendingResolutions          PendingResolution[]
+  ownerChangeRequests         OwnerChangeRequest[]
+  ownerLotHistory             OwnerLotHistory[]
   debtRecoveryRecords         DebtRecoveryRecord[]
   saleCertificates            SaleCertificate[]
   recordsInspections          RecordsInspection[]
@@ -322,6 +324,8 @@ model Lot {
 
   saleCertificates   SaleCertificate[]
   recordsInspections RecordsInspection[]
+  ownerChangeRequests OwnerChangeRequest[]
+  ownerLotHistory    OwnerLotHistory[]
   @@unique([schemeId, lotNumber])
   @@map("lots")
 }
@@ -346,6 +350,65 @@ model LotDetail {
   lot               Lot       @relation(fields: [lotId], references: [id], onDelete: Cascade)
 
   @@map("lot_details")
+}
+
+// ─── Change of owner held for review (finding H-1, 31 Oct 2026) ──
+// A change of owner recorded by a committee member, held until the scheme's
+// Adviser or StrataVerze confirms or rejects it. Nothing is applied while it
+// is PENDING: the strata roll, the outgoing owner's access and committee seat
+// and the delivery preferences are unchanged and no invitation exists.
+// Confirming applies exactly what an Adviser's change of owner applies.
+// Migration 20261201_owner_change_requests (one PENDING row per lot, a decided
+// row never changes). The notice of transfer, if attached, is filed once the
+// hold is saved and linked once (noticeDocumentId; the key is in the database
+// only). Since the H1 review a confirmed change never moves anyone's access.
+model OwnerChangeRequest {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId         String    @map("scheme_id") @db.Uuid
+  lotId            String    @map("lot_id") @db.Uuid
+  status           String    @default("PENDING") // PENDING, CONFIRMED, REJECTED
+  ownerName        String    @map("owner_name")
+  ownerEmail       String?   @map("owner_email") // lower case
+  ownerMobile      String?   @map("owner_mobile")
+  ownerPhone       String?   @map("owner_phone")
+  ownerAddress     String?   @map("owner_address")
+  settlementDate   DateTime  @db.Date @map("settlement_date")
+  invite           Boolean   @default(false) // invite the new owner by email once confirmed
+  noticeDocumentId String?   @map("notice_document_id") @db.Uuid
+  recordedBy       String    @map("recorded_by") @db.Uuid
+  recordedAt       DateTime  @default(now()) @db.Timestamptz @map("recorded_at")
+  decidedBy        String?   @map("decided_by") @db.Uuid
+  decidedAt        DateTime? @db.Timestamptz @map("decided_at")
+
+  scheme           Scheme    @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  lot              Lot       @relation(fields: [lotId], references: [id], onDelete: Cascade)
+
+  @@index([schemeId, status])
+  @@index([lotId])
+  @@map("owner_change_requests")
+}
+
+// ─── Owner access history (H-1 review L3, 31 Oct 2026) ──────────
+// A person holds one OWNER membership per building, so when an ended one is
+// started again on a lot (the Adviser assigning, or an invitation accepted)
+// the lot and dates it held before are kept here first. Append only.
+// lotOwnerProfileIds reads it, so a former owner still counts as an owner of
+// the lot for 30 days after their ownership ended. Migration 20261201.
+model OwnerLotHistory {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId     String   @map("scheme_id") @db.Uuid
+  lotId        String   @map("lot_id") @db.Uuid
+  profileId    String   @map("profile_id") @db.Uuid
+  membershipId String   @map("membership_id") @db.Uuid
+  startedAt    DateTime @db.Timestamptz @map("started_at")
+  endedAt      DateTime @db.Timestamptz @map("ended_at")
+  recordedAt   DateTime @default(now()) @db.Timestamptz @map("recorded_at")
+
+  scheme       Scheme   @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  lot          Lot      @relation(fields: [lotId], references: [id], onDelete: Cascade)
+
+  @@index([schemeId, lotId])
+  @@map("owner_lot_history")
 }
 
 // ─── Lot Tenancy ──────────────────────────────────────────────────
