@@ -36,6 +36,7 @@ vi.mock("@/prisma/db", () => {
       where: () => chain,
       orderBy: () => chain,
       limit: () => chain,
+      forNoKeyUpdate: () => chain,
       first,
       all,
       create: async (v: Record<string, unknown>) => (rows.created.push({ table: name, ...v }), { id: "new" }),
