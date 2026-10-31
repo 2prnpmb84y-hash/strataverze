@@ -75,6 +75,8 @@ const orm = {
           chain[k] = (...a: unknown[]) => m[k](...a);
         }
         chain.create = (...a: unknown[]) => m.create(...a);
+        // Reference numbers count the scheme's rows (generateNumber).
+        chain.aggregate = async () => ({ n: 0 });
         return chain;
       },
     },
@@ -117,6 +119,65 @@ beforeEach(() => {
   membership.mockResolvedValue({ profile: adviser, membership: {}, roles: ["ADVISER"] });
   contractorContact.mockResolvedValue({ profile: adviser, contact: {} });
   invoiceControl.mockResolvedValue({ result: "allowed" });
+});
+
+// ─── createWorksRequest (S-05) ──────────────────────────────────
+
+describe("createWorksRequest", () => {
+  const CATEGORY_A = "cccccccc-0000-4000-8000-00000000000a";
+  const CATEGORY_B = "cccccccc-0000-4000-8000-00000000000b";
+  const owner = { id: "owner-a" };
+  const raise = (categoryId?: string) =>
+    actions.createWorksRequest(
+      {},
+      form({ schemeId: SCHEME_A, title: "Leaking gutter", description: "Over lot 3", priority: "MEDIUM", ...(categoryId ? { categoryId } : {}) }),
+    );
+
+  beforeEach(() => {
+    // An owner of scheme A only.
+    membership.mockImplementation(async (schemeId: string) => {
+      if (schemeId !== SCHEME_A) throw new AuthorisationError("You do not have permission to perform this action.");
+      return { profile: owner, membership: {}, roles: ["OWNER"] };
+    });
+  });
+
+  it("refuses scheme B's category on a request in scheme A, and stores nothing", async () => {
+    model("WorksCategory").first.mockResolvedValue({ id: CATEGORY_B, schemeId: SCHEME_B, isActive: true, name: "B's category" });
+    const r = await raise(CATEGORY_B);
+    expect(r.error).toBe("Works category not found.");
+    expect(model("WorksRequest").create).not.toHaveBeenCalled();
+  });
+
+  it("refuses a category with no scheme, an inactive one and a malformed id", async () => {
+    model("WorksCategory").first.mockResolvedValue({ id: CATEGORY_B, schemeId: null, isActive: true });
+    expect((await raise(CATEGORY_B)).error).toBe("Works category not found.");
+    model("WorksCategory").first.mockResolvedValue({ id: CATEGORY_A, schemeId: SCHEME_A, isActive: false });
+    expect((await raise(CATEGORY_A)).error).toBe("Works category not found.");
+    model("WorksCategory").first.mockClear();
+    expect((await raise("not-a-uuid")).error).toBe("Works category not found.");
+    expect(model("WorksCategory").first).not.toHaveBeenCalled();
+    expect(model("WorksRequest").create).not.toHaveBeenCalled();
+  });
+
+  it("an owner of scheme A cannot raise a request in scheme B", async () => {
+    const r = await actions.createWorksRequest({}, form({ schemeId: SCHEME_B, title: "t", description: "d", categoryId: CATEGORY_B }));
+    expect(r.error).toMatch(/permission/);
+    expect(model("WorksRequest").create).not.toHaveBeenCalled();
+  });
+
+  it("stores scheme A's own category", async () => {
+    model("WorksCategory").first.mockResolvedValue({ id: CATEGORY_A, schemeId: SCHEME_A, isActive: true });
+    const r = await raise(CATEGORY_A);
+    expect(r).toMatchObject({ success: true, error: null });
+    expect(model("WorksRequest").create).toHaveBeenCalledWith(expect.objectContaining({ schemeId: SCHEME_A, categoryId: CATEGORY_A, raisedById: "owner-a" }));
+  });
+
+  it("still raises a request without a category", async () => {
+    const r = await raise();
+    expect(r).toMatchObject({ success: true, error: null });
+    expect(model("WorksCategory").first).not.toHaveBeenCalled();
+    expect(model("WorksRequest").create).toHaveBeenCalledWith(expect.objectContaining({ schemeId: SCHEME_A, categoryId: null }));
+  });
 });
 
 // ─── submitApprovalDecision ─────────────────────────────────────

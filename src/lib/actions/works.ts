@@ -21,6 +21,7 @@ import {
 } from "@/lib/auth/require-membership";
 import { requireSchemeAccess } from "@/lib/auth/require-access";
 import { assertBelongsTo, assertInScheme } from "@/lib/auth/scheme-scope";
+import { UUID } from "@/lib/pdf/response";
 import { toCents } from "@/lib/billing/money";
 import { logActivity, type ActivityAction } from "@/lib/queries/activity-log";
 import { db } from "@/prisma/db";
@@ -169,6 +170,22 @@ async function complianceCheckInScheme(checkId: string, schemeId: string) {
   return check;
 }
 
+/**
+ * A works category for a request in this scheme: one of the scheme's own
+ * active categories, the ones the new request form offers (finding S-05).
+ * Another scheme's category, a category with no scheme, or a malformed id
+ * is not found.
+ */
+async function categoryInScheme(categoryId: string, schemeId: string) {
+  if (!UUID.test(categoryId)) throw new AuthorisationError("Works category not found.");
+  const row = await db.orm.public.WorksCategory
+    .where((c) => and(c.id.eq(categoryId), c.schemeId.eq(schemeId), c.isActive.eq(true)))
+    .first();
+  if (!row || !row.isActive) throw new AuthorisationError("Works category not found.");
+  assertBelongsTo(row.schemeId, schemeId, "Works category");
+  return row;
+}
+
 async function approvalRouteInScheme(routeId: string, schemeId: string) {
   const row = await db.orm.public.WorksApprovalRoute
     .where((r) => and(r.id.eq(routeId), r.schemeId.eq(schemeId)))
@@ -238,6 +255,8 @@ export async function createWorksRequest(
       "COMMITTEE",
       "OWNER",
     ]);
+    // The category must be one of this scheme's (S-05).
+    if (categoryId) await categoryInScheme(categoryId, schemeId);
 
     const requestNumber = await generateNumber("WR", schemeId, "WorksRequest");
 
