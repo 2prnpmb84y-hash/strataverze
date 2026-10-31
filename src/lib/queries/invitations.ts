@@ -42,10 +42,36 @@ export async function getPendingInvitationsForEmail(email: string) {
 }
 
 /**
- * Get an invitation by its token.
+ * The invitation a link is for, by the SHA-256 of the link's token (S2a).
+ * The token itself is never stored.
  */
-export async function getInvitationByToken(token: string) {
-  return db.orm.public.Invitation.first({ token });
+export async function getInvitationByTokenHash(tokenHash: string) {
+  return db.orm.public.Invitation.where((i) => i.tokenHash.eq(tokenHash)).first();
+}
+
+/**
+ * Claim an invitation link: it works once (S2a). Matches only a pending
+ * invitation with this hash whose link is unused, so of two attempts at
+ * once only one succeeds. Returns whether this call claimed it.
+ */
+export async function claimInvitationLink(invitationId: string, tokenHash: string): Promise<boolean> {
+  const n = await db.orm.public.Invitation
+    .where((i) =>
+      and(i.id.eq(invitationId), i.tokenHash.eq(tokenHash), i.status.eq("PENDING"), i.tokenUsedAt.isNull()),
+    )
+    .updateAndCount({ tokenUsedAt: toTimestamp(new Date().toISOString()) });
+  return n === 1;
+}
+
+/**
+ * Give a claimed link back, when nothing could be done with it (the account
+ * could not be set up), so the invitee can try again. Only while the
+ * invitation is still pending and still has this link.
+ */
+export async function releaseInvitationLink(invitationId: string, tokenHash: string): Promise<void> {
+  await db.orm.public.Invitation
+    .where((i) => and(i.id.eq(invitationId), i.tokenHash.eq(tokenHash), i.status.eq("PENDING")))
+    .updateAndCount({ tokenUsedAt: null });
 }
 
 /**
@@ -75,6 +101,14 @@ export async function createInvitation(data: {
  */
 export async function getInvitationById(invitationId: string) {
   return db.orm.public.Invitation.first({ id: invitationId });
+}
+
+/** The invitation was accepted, declined or revoked by another request first. */
+export class InvitationNoLongerPending extends Error {
+  constructor() {
+    super("This invitation is no longer pending.");
+    this.name = "InvitationNoLongerPending";
+  }
 }
 
 /**
@@ -115,7 +149,7 @@ export async function acceptInvitation(
     )
     .first();
 
-  if (existing) {
+  if (existing?.isActive) {
     return { error: "You already have this role on this scheme." };
   }
 
@@ -125,35 +159,56 @@ export async function acceptInvitation(
     invitation.role === "ACCOUNTANT" ? await confirmedSeatDisclosure(invitationId) : null;
 
   // Wrap the status update and membership creation in a transaction
-  await db.transaction(async (tx) => {
-    await tx.orm.public.Invitation
-      .where({ id: invitationId })
-      .update({
-        status: "ACCEPTED",
-        acceptedAt: toTimestamp(new Date().toISOString()),
-      });
+  try {
+    await db.transaction(async (tx) => {
+      // Only a pending invitation is accepted, once: of two acceptances at
+      // the same moment, the second changes nothing and is rolled back.
+      const accepted = await tx.orm.public.Invitation
+        .where((i) => and(i.id.eq(invitationId), i.status.eq("PENDING")))
+        .updateAndCount({
+          status: "ACCEPTED",
+          acceptedAt: toTimestamp(new Date().toISOString()),
+        });
+      if (accepted !== 1) throw new InvitationNoLongerPending();
 
-    const membership = await tx.orm.public.SchemeMembership.create({
-      schemeId: invitation.schemeId,
-      profileId,
-      role: invitation.role,
-      lotId: invitation.lotId ?? null,
-      isActive: true,
+      // Someone invited back (an owner who sold and bought again, say) has
+      // their ended membership started again, as one membership per role is
+      // allowed. It starts afresh: no treasurer flag carries over, which only
+      // the committee can set (S1).
+      const now = toTimestamp(new Date().toISOString());
+      const restarted = existing
+        ? await tx.orm.public.SchemeMembership
+            .where((m) => and(m.id.eq(existing.id), m.isActive.eq(false)))
+            .update({ isActive: true, lotId: invitation.lotId ?? null, isTreasurer: false, startDate: now, endDate: null })
+        : null;
+      if (existing && !restarted) throw new Error("The membership changed while the invitation was being accepted.");
+      const membership =
+        restarted ??
+        (await tx.orm.public.SchemeMembership.create({
+          schemeId: invitation.schemeId,
+          profileId,
+          role: invitation.role,
+          lotId: invitation.lotId ?? null,
+          isActive: true,
+        }));
+
+      // An external accountant or auditor seat is a StrataVerze charge per seat
+      // per month; the first month is recorded when the seat becomes active.
+      if (seatDisclosure) {
+        await captureUsageFee(tx.orm, {
+          schemeId: invitation.schemeId,
+          code: "ACCOUNTANT_SEAT",
+          sourceType: "AccountantSeatMonth",
+          sourceId: `${membership.id}_${new Date().toISOString().slice(0, 7)}`,
+          actorId: invitation.invitedById ?? null,
+          disclosure: seatDisclosure,
+        });
+      }
     });
-
-    // An external accountant or auditor seat is a StrataVerze charge per seat
-    // per month; the first month is recorded when the seat becomes active.
-    if (seatDisclosure) {
-      await captureUsageFee(tx.orm, {
-        schemeId: invitation.schemeId,
-        code: "ACCOUNTANT_SEAT",
-        sourceType: "AccountantSeatMonth",
-        sourceId: `${membership.id}_${new Date().toISOString().slice(0, 7)}`,
-        actorId: invitation.invitedById ?? null,
-        disclosure: seatDisclosure,
-      });
-    }
-  });
+  } catch (err) {
+    if (err instanceof InvitationNoLongerPending) return { error: err.message };
+    throw err;
+  }
 
   return { success: true };
 }
@@ -177,7 +232,7 @@ export async function revokeInvitation(schemeId: string, invitationId: string) {
     .where((i) =>
       and(i.id.eq(invitationId), i.schemeId.eq(schemeId), i.status.eq("PENDING")),
     )
-    .update({ status: "EXPIRED" });
+    .update({ status: "EXPIRED", tokenHash: null });
 }
 
 /**

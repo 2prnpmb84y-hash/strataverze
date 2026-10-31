@@ -1347,7 +1347,19 @@ model Invitation {
   email       String
   role        PortalRole
   lotId       String?    @map("lot_id") @db.Uuid
-  token       String     @unique @default(dbgenerated("gen_random_uuid()"))
+  /// SHA-256 (hex) of the token in the invitation link (security stage S2a,
+  /// migration 20261129). The token itself is only ever in the email, so a
+  /// database read cannot be used as a link. Null for invitations made
+  /// before S2a, which are accepted from /invitations by email match only.
+  /// The old plain `token` column is no longer in the contract and is
+  /// dropped after deploy (migration 20261130).
+  tokenHash   String?    @unique @map("token_hash")
+  /// When the link was used. A link works once: it is claimed by a
+  /// conditional update before anything else changes.
+  tokenUsedAt DateTime?  @db.Timestamptz @map("token_used_at")
+  /// The Supabase Auth user the server created for this invitee, when the
+  /// address had no account (S2a). Null when it already had one.
+  accountAuthId String?  @map("account_auth_id") @db.Uuid
   status      String     @default("PENDING") // PENDING, ACCEPTED, DECLINED, EXPIRED
   invitedById String     @map("invited_by_id") @db.Uuid
   expiresAt   DateTime   @db.Timestamptz @map("expires_at")
