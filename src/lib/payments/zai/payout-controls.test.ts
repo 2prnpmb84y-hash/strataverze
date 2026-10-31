@@ -4,8 +4,8 @@ import { DEFAULT_PAYMENT_POLICY } from "@/lib/finance/payment-controls";
 import { payoutReleaseDecision, type PayoutReleaseInput } from "./payout-controls";
 
 const input = (over: Partial<PayoutReleaseInput> = {}): PayoutReleaseInput => ({
-  invoice: { amountCents: 50000, status: "APPROVED", preparedById: "manager", authorisedBy: ["treasurer"] },
-  context: { policy: DEFAULT_PAYMENT_POLICY, eligibleApproverIds: ["treasurer", "authoriser"] },
+  invoice: { amountCents: 50000, status: "APPROVED", preparedById: "manager", authorisedBy: ["treasurer", "authoriser2"] },
+  context: { policy: DEFAULT_PAYMENT_POLICY, eligibleApproverIds: ["treasurer", "authoriser", "authoriser2"] },
   treasurerIds: ["treasurer"],
   adviserIds: ["manager"],
   supplierProfileIds: ["supplier"],
@@ -21,7 +21,7 @@ describe("payoutReleaseDecision", () => {
   });
 
   it("needs the Treasurer's approval, even of the strata manager's own invoice", () => {
-    const r = payoutReleaseDecision(input({ invoice: { amountCents: 50000, status: "APPROVED", preparedById: "manager", authorisedBy: ["authoriser"] }, initiatedBy: "treasurer", releasedBy: "authoriser" }));
+    const r = payoutReleaseDecision(input({ invoice: { amountCents: 50000, status: "APPROVED", preparedById: "manager", authorisedBy: ["authoriser"] }, initiatedBy: "treasurer", releasedBy: "authoriser2" }));
     expect(r).toEqual({ ok: false, reasons: ["The owners corporation's Treasurer has not approved this invoice."] });
   });
 
@@ -41,6 +41,20 @@ describe("payoutReleaseDecision", () => {
   it("blocks a releaser who is not an eligible approver", () => {
     const r = payoutReleaseDecision(input({ releasedBy: "owner" }));
     expect(!r.ok && r.reasons).toContain("Only the Treasurer or a payment authoriser can release a payout.");
+  });
+
+  it("blocks a releaser who prepared the invoice or was its only approver (review M2)", () => {
+    const preparer = payoutReleaseDecision(input({ invoice: { amountCents: 50000, status: "APPROVED", preparedById: "treasurer", authorisedBy: ["treasurer2"] }, treasurerIds: ["treasurer", "treasurer2"], context: { policy: DEFAULT_PAYMENT_POLICY, eligibleApproverIds: ["treasurer", "treasurer2", "authoriser"] } }));
+    expect(preparer).toEqual({ ok: false, reasons: ["The person releasing this payout prepared the invoice."] });
+    const sole = payoutReleaseDecision(input({ invoice: { amountCents: 50000, status: "APPROVED", preparedById: "manager", authorisedBy: ["treasurer"] } }));
+    expect(sole).toEqual({ ok: false, reasons: ["The person releasing this payout was the invoice's only approver."] });
+  });
+
+  it("counts a Treasurer's approval only from someone who is not a strata manager or the supplier (review M3)", () => {
+    const manager = payoutReleaseDecision(input({ invoice: { amountCents: 50000, status: "APPROVED", preparedById: "other", authorisedBy: ["manager", "authoriser2"] }, treasurerIds: ["manager"] }));
+    expect(!manager.ok && manager.reasons).toContain("The owners corporation's Treasurer has not approved this invoice.");
+    const supplier = payoutReleaseDecision(input({ invoice: { amountCents: 50000, status: "APPROVED", preparedById: "other", authorisedBy: ["supplier", "authoriser2"] }, treasurerIds: ["supplier"] }));
+    expect(!supplier.ok && supplier.reasons).toContain("The owners corporation's Treasurer has not approved this invoice.");
   });
 
   it("blocks what the existing controls block or only allow as an exception", () => {

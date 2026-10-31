@@ -7,11 +7,13 @@
  *
  * 1. Every supplier invoice, the strata manager's included, has the owners
  *    corporation Treasurer's approval before it is paid: at least one of the
- *    invoice's approvals is by a Treasurer of the building.
- * 2. The invoice is approved for payment and the person asking for the
- *    payout passes the segregation check for recording a payment
- *    (checkSegregation RECORD_PAYMENT). An "exception" there, which the
- *    manual flow logs and allows, blocks a Zai payout.
+ *    invoice's approvals is by a Treasurer of the building who is neither a
+ *    strata manager (adviser) nor the supplier (review M3).
+ * 2. The invoice is approved for payment, and both the person asking for the
+ *    payout and the person releasing it pass the segregation check for
+ *    recording a payment (checkSegregation RECORD_PAYMENT, review M2). An
+ *    "exception" there (the one who prepared the invoice, or its only
+ *    approver), which the manual flow logs and allows, blocks a Zai payout.
  * 3. The supplier's bank details pass the change control
  *    (checkBankDetailsForPayment).
  * 4. Dual control: a second person releases the payout. Never the person who
@@ -43,11 +45,22 @@ export type PayoutReleaseDecision = { ok: true } | { ok: false; reasons: string[
 export function payoutReleaseDecision(input: PayoutReleaseInput): PayoutReleaseDecision {
   const reasons: string[] = [];
   const { invoice } = input;
-  if (!invoice.authorisedBy.some((id) => input.treasurerIds.includes(id))) {
+  const countsAsTreasurer = (id: string) => input.treasurerIds.includes(id) && !input.adviserIds.includes(id) && !input.supplierProfileIds.includes(id);
+  if (!invoice.authorisedBy.some(countsAsTreasurer)) {
     reasons.push("The owners corporation's Treasurer has not approved this invoice.");
   }
   const recording = checkSegregation("RECORD_PAYMENT", input.initiatedBy, invoice, input.context);
   if (recording.result !== "allowed") reasons.push(recording.reason ?? "The person asking for the payout may not record this payment.");
+  const releasing = checkSegregation("RECORD_PAYMENT", input.releasedBy, invoice, input.context);
+  if (releasing.result !== "allowed") {
+    const why =
+      releasing.result === "exception" && invoice.preparedById === input.releasedBy
+        ? "The person releasing this payout prepared the invoice."
+        : releasing.result === "exception"
+          ? "The person releasing this payout was the invoice's only approver."
+          : (releasing.reason ?? "The person releasing the payout may not record this payment.");
+    if (!reasons.includes(why)) reasons.push(why);
+  }
   if (input.bankDetails.result !== "allowed") reasons.push(input.bankDetails.reason ?? "The supplier's bank details are not cleared for payment.");
   if (!input.releasedBy || input.releasedBy === input.initiatedBy) reasons.push("A second person, not the one who asked for the payout, must release it.");
   if (!input.context.eligibleApproverIds.includes(input.releasedBy)) reasons.push("Only the Treasurer or a payment authoriser can release a payout.");
