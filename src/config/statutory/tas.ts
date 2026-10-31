@@ -270,9 +270,10 @@ const NO_NOTICE_CHOICE = "The Act sets none (s 83(3)). A StrataVerze value is a 
  * only. The Act sets no least or most notice, no form and no content beyond a
  * written notice of the amount due, so every timing value is a product choice
  * StrataVerze has not made: each has no value (NOT_CONFIRMED) and every notice
- * is refused (it fails closed). The numbers outside `checked` are the safest
- * for a reader that knows only them: a notice never sent on less than 0 days
- * and never more than the floor. They are not law.
+ * is refused (it fails closed). The numbers outside `checked` are 0 because
+ * the Act gives no number. They are the most permissive values, not the
+ * safest, and are never relied on: `checked` refuses every notice
+ * (noticeRuleProblems). They are not law.
  */
 export const NOTICE_RULES: NoticeRules = {
   minimumNoticeDays: 0,
@@ -707,6 +708,9 @@ export const BY_LAWS = {
   complianceNoticeMinDays: 30,
   tribunalFineMaxPenaltyUnits: 50,
   exclusiveUseLapsesAfterYearsUnlessConfirmed: 5,
+  /** An exclusive use by-law expressed to be of permanent effect does not lapse (s 94(9)). */
+  exclusiveUsePermanentEffectExempt: true,
+  exclusiveUsePermanentEffectExemptSource: `${STA} s 94(9)`,
   source: `${STA} ss 90 to 97`,
   status: "CONFIRMED" as RuleStatus,
 } as const;
@@ -822,6 +826,8 @@ export const NOT_CONFIRMED = [
   "Whether notices may be served by email (the Electronic Transactions Act 2000 (Tas) was not read), and whether a regulation governs posting under s 154(1)(a).",
   "A tie on an ordinary resolution (no casting vote found), and what happens where a general meeting has no quorum (no fallback found).",
   "Seller disclosure outside the STA, and whether a body corporate may charge for a s 83(5) certificate.",
+  "Any deadline for giving a s 83(5) certificate: none is in the STA, and other law was not read.",
+  "Records inspection beyond committee minutes (s 79(6)), by-laws (s 97) and insurance policies (s 104): no general right was found in the STA, and other law was not read.",
   "Manager licensing and trust money rules outside the STA (the Property Agents and Land Transactions Act 2016 (Tas) was not read).",
   "The details of the three-tranche review (NRE page read through a summary only), and the 2025 Bills list (could not be fetched).",
   "Postcode ranges for Tasmania, and the time zone law.",

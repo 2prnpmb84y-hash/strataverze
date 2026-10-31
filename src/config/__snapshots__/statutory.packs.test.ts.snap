@@ -4077,6 +4077,8 @@ exports[`Tasmanian pack (pending, stage 1) > is the rules recorded for review 1`
   "BY_LAWS": {
     "complianceNoticeMinDays": 30,
     "exclusiveUseLapsesAfterYearsUnlessConfirmed": 5,
+    "exclusiveUsePermanentEffectExempt": true,
+    "exclusiveUsePermanentEffectExemptSource": "Strata Titles Act 1998 (Tas) s 94(9)",
     "firstByLaws": "those lodged with the plan, or the Schedule 1 model by-laws",
     "inForceOn": "the day the Recorder registers it, or a later date stated in it",
     "lapsesIfNotLodged": true,
@@ -4553,6 +4555,8 @@ exports[`Tasmanian pack (pending, stage 1) > is the rules recorded for review 1`
     "Whether notices may be served by email (the Electronic Transactions Act 2000 (Tas) was not read), and whether a regulation governs posting under s 154(1)(a).",
     "A tie on an ordinary resolution (no casting vote found), and what happens where a general meeting has no quorum (no fallback found).",
     "Seller disclosure outside the STA, and whether a body corporate may charge for a s 83(5) certificate.",
+    "Any deadline for giving a s 83(5) certificate: none is in the STA, and other law was not read.",
+    "Records inspection beyond committee minutes (s 79(6)), by-laws (s 97) and insurance policies (s 104): no general right was found in the STA, and other law was not read.",
     "Manager licensing and trust money rules outside the STA (the Property Agents and Land Transactions Act 2016 (Tas) was not read).",
     "The details of the three-tranche review (NRE page read through a summary only), and the 2025 Bills list (could not be fetched).",
     "Postcode ranges for Tasmania, and the time zone law.",

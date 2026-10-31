@@ -21,6 +21,7 @@ import {
 import { schemeStateProblem, SUPPORTED_SCHEME_STATES } from "./jurisdictions";
 import { fundConditionSelectors } from "@/lib/jurisdiction/funds";
 import { noticeRuleProblems, noticeTimingFor } from "@/lib/levies/notice-rule-check";
+import { interestSettingProblem, lateCharge, lateChargeApplies, lateChargeWaiverProblem } from "@/lib/finance/statutory-interest";
 import type { BuildingSelector, EntitlementScheduleDefinition, FundDefinition, RuleStatus, SelectorCondition } from "./statutory/types";
 
 const STATUSES: RuleStatus[] = ["CONFIRMED", "GUIDANCE", "STRATAVERZE", "NOT_CONFIRMED"];
@@ -883,6 +884,36 @@ describe("Tasmanian pack (pending, stage 1)", () => {
     expect(tas.INTEREST_ON_OVERDUE_CONTRIBUTIONS.statutoryRatePercent).toBeNull();
   });
 
+  it("refuses every notice through the notice rule check, so the 0-day numbers outside `checked` are never relied on", () => {
+    const rule = tas.NOTICE_RULES;
+    // 0 because the Act gives no number: the most permissive values, never used.
+    expect([rule.minimumNoticeDays, rule.issueDaysBeforeDue]).toEqual([0, 0]);
+    for (const ledgerFund of ["ADMINISTRATIVE", "CAPITAL_WORKS"] as const) {
+      const problems = noticeRuleProblems(rule, { ledgerFund });
+      expect(problems.length, ledgerFund).toBeGreaterThan(0);
+      for (const p of problems) expect(p.code).toBe("NOTICE_RULES_NOT_CONFIRMED");
+      expect(problems.some((p) => p.message.includes("No notice can be issued")), ledgerFund).toBe(true);
+    }
+    // Even a notice that states everything is refused.
+    const all = { EVERY_LOT_CONTRIBUTION: true, FUND_TOTAL: true, PROPORTION_AND_METHOD: true, INSTALMENT_DATES: true, EARLY_PAYMENT_DISCOUNT: true, LATE_CHARGE_STATEMENT: true, PAY_WITHIN_DAYS_STATEMENT: true, DISPUTE_PROCESS: true };
+    expect(noticeRuleProblems(rule, { ledgerFund: "ADMINISTRATIVE", states: all }).length).toBeGreaterThan(0);
+  });
+
+  it("charges nothing through the late charge engine, and refuses a resolved rate and a waiver", () => {
+    const rule = tas.LATE_CHARGE;
+    const input = { levyCents: 100_000, dueDate: "2026-07-01", payments: [], asAt: "2026-10-01" };
+    const resolved = lateCharge(input, rule, { mode: "RESOLVED_ANNUAL_RATE", annualRatePercent: 10 });
+    expect(resolved.interestCents).toBe(0);
+    expect(resolved.reason).toBe("RULE_NOT_CONFIRMED");
+    expect(lateCharge(input, rule, { mode: "NONE" }).interestCents).toBe(0);
+    for (const mode of [...rule.modes, "STATUTORY", "NO_INTEREST", "RESOLVED_RATE"]) {
+      expect(lateChargeApplies(rule, { mode, annualRatePercent: 10, monthlyRatePercent: 1 }), mode).toBe(false);
+    }
+    const terms = { lateCharge: tas.TERMINOLOGY.lateCharge, ownersCorporation: tas.TERMINOLOGY.ownersCorporation };
+    expect(interestSettingProblem({ mode: "RESOLVED_ANNUAL_RATE", annualRatePercent: 10, resolutionMeetingId: "m", resolutionMotionId: "x" }, rule, terms)).toMatch(/not confirmed/);
+    expect(lateChargeWaiverProblem({ kind: "WHOLE", reasons: "r", resolutionMeetingId: "m", resolutionMotionId: "x" }, rule, terms)).toMatch(/give no waiver/);
+  });
+
   it("holds the values read in the Act", () => {
     expect(tas.MEETINGS.noticeDays).toBe(7);
     expect(tas.MEETINGS.agmWithinMonthsOfLastAgm).toBe(15);
@@ -901,6 +932,9 @@ describe("Tasmanian pack (pending, stage 1)", () => {
     expect(tas.AUDIT_AND_ACCOUNTS).toMatchObject({ auditRequired: false, financialYearInAct: null });
     expect(tas.POSTCODES.ranges).toBeNull();
     expect(tas.PENDING_REVIEW.enactedNotInForce).toEqual([]);
+    expect(tas.BY_LAWS).toMatchObject({ exclusiveUseLapsesAfterYearsUnlessConfirmed: 5, exclusiveUsePermanentEffectExempt: true });
+    expect(tas.NOT_CONFIRMED.some((p) => p.startsWith("Any deadline for giving a s 83(5) certificate"))).toBe(true);
+    expect(tas.NOT_CONFIRMED.some((p) => p.startsWith("Records inspection beyond committee minutes"))).toBe(true);
   });
 
   it("supports a strata scheme with one body corporate only, as a proposal", () => {
