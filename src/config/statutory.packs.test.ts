@@ -788,6 +788,130 @@ describe("Western Australia pack (pending)", () => {
   });
 });
 
+describe("Tasmanian pack (pending, stage 1)", () => {
+  const pack = PENDING_RULE_PACKS.TAS;
+  const tas = pack.rules;
+  const STATUSES_WITH_VALUE = ["CONFIRMED", "STRATAVERZE"];
+
+  it("is a draft for review, not signed off, with no decisions", () => {
+    expect(pack.code).toBe("AU-TAS");
+    expect(pack.state).toBe("TAS");
+    expect(pack.name).toBe("Tasmania");
+    expect(pack.version).toBe("2026.10.1");
+    expect(pack.status).toBe("DRAFT");
+    expect(pack.reviewedOn).toBeNull();
+    expect(pack.reviewer).toBe("Matthew Wrigley");
+    expect(tas.DECISIONS).toHaveLength(0);
+    expect(tas.NOT_CONFIRMED.length).toBeGreaterThan(0);
+    expect(tas.FOR_REVIEW.length).toBeGreaterThan(0);
+    // Every product choice is a proposal, not a decision.
+    expect(tas.FOR_REVIEW.filter((p) => p.includes("proposed decision")).length).toBeGreaterThan(0);
+    expect(packs.map(([code]) => code)).toContain("AU-TAS");
+  });
+
+  it("switches every workflow off, with the NSW keys", () => {
+    expect(Object.keys(tas.FEATURES).sort()).toEqual(Object.keys(RULE_PACKS.NSW.rules.FEATURES).sort());
+    expect(Object.values(tas.FEATURES).every((on) => on === false)).toBe(true);
+  });
+
+  it("holds no shared shape the engine would run beyond the fail-closed notice and late charge rules", () => {
+    for (const key of ["MEETING_RULES", "PAYMENT_ALLOCATION_ORDER", "DEBT_RECOVERY", "DEBT_RECOVERY_STEPS", "DATED_RULES", "BUILDING_SELECTORS", "CERTIFICATE", "INSPECTIONS", "DOCUMENT_RETENTION", "WORKS_QUOTES"]) {
+      expect(key in tas, key).toBe(false);
+    }
+    expect(tas.PAYMENT_ALLOCATION.statutoryOrder).toBe("NO_STATUTORY_RULE");
+  });
+
+  it("requires the single fund and holds its capital expenditure part as optional", () => {
+    const fund = tas.FUND_CATALOGUE.find((f) => f.ledgerFund === "ADMINISTRATIVE");
+    const capital = tas.FUND_CATALOGUE.find((f) => f.ledgerFund === "CAPITAL_WORKS");
+    expect(fund).toMatchObject({ key: "FUND", required: true, status: "CONFIRMED" });
+    expect(capital).toMatchObject({ key: "CAPITAL_EXPENDITURE", required: false, status: "CONFIRMED" });
+    expect(tas.FUND_CATALOGUE.every((f) => f.requiredWhen === undefined)).toBe(true);
+    expect(tas.FUND_NAMING.status).toBe("STRATAVERZE");
+  });
+
+  it("holds the general unit entitlement on each lot, the only schedule", () => {
+    expect(tas.ENTITLEMENT_SCHEDULES.map((s) => [s.key, s.onLot])).toEqual([["UNIT_ENTITLEMENT", true]]);
+    expect(tas.UNIT_ENTITLEMENT_RULES.specialEntitlementsSupported).toMatchObject({ value: false, status: "STRATAVERZE" });
+  });
+
+  it("gives every shared term, in the Act's words", () => {
+    const shared = Object.keys(RULE_PACKS.NSW.rules.TERMINOLOGY).filter((k) => k !== "source");
+    for (const k of shared) expect(tas.TERMINOLOGY, k).toHaveProperty(k);
+    const t = tas.TERMINOLOGY;
+    expect([t.ownersCorporation, t.committee, t.levy, t.levies, t.lateCharge, t.jurisdictionShort]).toEqual(["body corporate", "committee of management", "contribution", "contributions", "interest", "Tas"]);
+    expect(t.bodyCorporateNameStatus).toBe("GUIDANCE");
+  });
+
+  it("checks every notice value: none has a value, so every notice is refused", () => {
+    const rule = tas.NOTICE_RULES;
+    const c = rule.checked!;
+    const values = [c.minimumNoticeDays, c.issueDaysBeforeDue, c.dueDateMayMove, ...(c.maximumNoticeDays ? [c.maximumNoticeDays] : []), ...Object.values(c.noticeMode)];
+    for (const v of values) {
+      if (v!.value != null) expect(STATUSES_WITH_VALUE).toContain(v!.status);
+      else expect(v!.note!.length).toBeGreaterThan(10);
+      expect(v!.source.length).toBeGreaterThan(5);
+    }
+    expect(values.every((v) => v!.value == null && v!.status === "NOT_CONFIRMED")).toBe(true);
+    expect(c.maximumNoticeDays).toBeNull();
+    expect(c.form).toBeNull();
+    expect(c.requiredContents).toEqual([]);
+    expect(rule.urgentNoticeDays).toBeNull();
+    expect(rule.hardship).toBeNull();
+    expect(rule.issueDaysBeforeDue).toBeGreaterThanOrEqual(rule.minimumNoticeDays);
+    for (const ledgerFund of ["ADMINISTRATIVE", "CAPITAL_WORKS"] as const) {
+      const points = noticeRuleProblems(rule, { ledgerFund }).map((p) => p.point);
+      expect(points, ledgerFund).toEqual(["minimumNoticeDays", "issueDaysBeforeDue", "dueDateMayMove", "noticeMode"]);
+    }
+  });
+
+  it("checks every late charge value: no statutory rate, no interest by default, and nothing that can be charged", () => {
+    const lc = tas.LATE_CHARGE;
+    expect(lc.method).toBe("ANNUAL_RATE");
+    expect(lc.defaultMode).toBe("NONE");
+    expect([lc.annualRatePercent, lc.maxMonthlyRatePercent, lc.graceMonths]).toEqual([null, null, 0]);
+    const a = lc.annual!;
+    expect(a.statutoryRatePercent).toBeNull();
+    expect(a.waiver).toBeNull();
+    const values = [a.resolvedRate!.resolution, a.resolvedRate!.minPercent, a.resolvedRate!.maxPercent, a.accrual.from, a.accrual.graceMonths, a.accrual.simple, a.accrual.daysInYear];
+    for (const v of values) {
+      expect(v.value).toBeNull();
+      expect(v.status).toBe("NOT_CONFIRMED");
+      expect(v.note!.length).toBeGreaterThan(10);
+      expect(v.source.length).toBeGreaterThan(5);
+    }
+    expect(tas.INTEREST_ON_OVERDUE_CONTRIBUTIONS.statutoryRatePercent).toBeNull();
+  });
+
+  it("holds the values read in the Act", () => {
+    expect(tas.MEETINGS.noticeDays).toBe(7);
+    expect(tas.MEETINGS.agmWithinMonthsOfLastAgm).toBe(15);
+    expect(tas.MEETINGS.firstAgm).toMatchObject({ withinMonthsAfterRegistration: 3, orOnSaleOfFractionOfLots: 1 / 2, whicheverEarlier: true });
+    expect(tas.MEETINGS.specialGeneralMeeting.mustOnRequisitionOfNotLessThanFractionOfMembers).toBe(1 / 3);
+    expect(tas.MEETINGS.quorum).toMatchObject({ defaultByLaw: true, status: "CONFIRMED" });
+    expect(tas.RESOLUTIONS.UNANIMOUS.laterWrittenVoteWithinDaysAfterMeeting).toBe(28);
+    expect(tas.RESOLUTIONS.specialResolutionInAct).toBe(false);
+    expect(tas.COMMITTEE).toMatchObject({ required: false, minMembers: 3, appointedBy: "ORDINARY" });
+    expect(tas.INSURANCE.publicRiskMinimumCents).toBe(1_000_000_000);
+    expect(tas.LEVY_RECOVERY.forum.applicationFeeCents).toBe(2_500);
+    expect(tas.LEVY_RECOVERY.appeal).toMatchObject({ withinDaysAfterOrder: 30, feeCents: 25_200 });
+    expect(tas.LEVY_RECOVERY.courtDebtClaim.status).toBe("NOT_CONFIRMED");
+    expect(tas.LEVY_RECOVERY.authority.status).toBe("NOT_CONFIRMED");
+    expect(tas.SECTION_83_CERTIFICATE.items).toHaveLength(7);
+    expect(tas.AUDIT_AND_ACCOUNTS).toMatchObject({ auditRequired: false, financialYearInAct: null });
+    expect(tas.POSTCODES.ranges).toBeNull();
+    expect(tas.PENDING_REVIEW.enactedNotInForce).toEqual([]);
+  });
+
+  it("supports a strata scheme with one body corporate only, as a proposal", () => {
+    expect(tas.SCHEME_TYPE.options.filter((o) => o.supported).map((o) => o.value)).toEqual(["STRATA_SINGLE_BODY_CORPORATE"]);
+  });
+
+  it("is the rules recorded for review", () => {
+    expect(tas).toMatchSnapshot();
+  });
+});
+
 describe("the checked notice rules of the pending packs (stage 2, PR 6a)", () => {
   const pending = [PENDING_RULE_PACKS.ACT, PENDING_RULE_PACKS.VIC, PENDING_RULE_PACKS.WA] as const;
   const STATUSES_WITH_VALUE = ["CONFIRMED", "STRATAVERZE"];
