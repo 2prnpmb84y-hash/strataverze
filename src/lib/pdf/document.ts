@@ -38,6 +38,19 @@ export interface PdfInput {
    * document prepared twice on a day is the same file (same hash).
    */
   generatedAt?: Date;
+  /**
+   * Refuse (PdfFontsUnavailableError) when the Inter fonts cannot be read,
+   * rather than draw the document in Helvetica. For a document that must
+   * read as it was issued, such as an issued certificate.
+   */
+  requireEmbeddedFonts?: boolean;
+}
+
+export class PdfFontsUnavailableError extends Error {
+  constructor() {
+    super("The PDF cannot be produced: the fonts it is set in are not available on the server.");
+    this.name = "PdfFontsUnavailableError";
+  }
 }
 
 const A4 = { width: 595.28, height: 841.89 };
@@ -82,8 +95,9 @@ async function fontBytes() {
   return cachedFontBytes;
 }
 
-async function embedFonts(doc: PDFDocument): Promise<Fonts> {
+async function embedFonts(doc: PDFDocument, requireEmbedded = false): Promise<Fonts> {
   const bytes = await fontBytes();
+  if (!bytes && requireEmbedded) throw new PdfFontsUnavailableError();
   if (bytes) {
     doc.registerFontkit(fontkit);
     const [regular, semibold, bold] = await Promise.all([
@@ -160,7 +174,7 @@ export async function renderPdf(input: PdfInput): Promise<Uint8Array> {
   const generated = new Date(`${day}T00:00:00Z`);
   doc.setCreationDate(generated);
   doc.setModificationDate(generated);
-  const fonts = await embedFonts(doc);
+  const fonts = await embedFonts(doc, input.requireEmbeddedFonts);
   const contentWidth = A4.width - MARGIN * 2;
 
   const pages: PDFPage[] = [];
