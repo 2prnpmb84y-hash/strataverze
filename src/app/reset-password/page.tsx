@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useSearchParams } from "next/navigation";
 import { Logo } from "@/components/logo";
 import { MARKETING_SITE_URL } from "@/lib/site-url";
-import { PRIMARY_ACTION_CLASS, TEXT_LINK_CLASS } from "@/components/ui/action-styles";
+import { INPUT_FOCUS_CLASS, PRIMARY_ACTION_CLASS, TEXT_LINK_CLASS } from "@/components/ui/action-styles";
 import {
   PasswordStrength,
   validatePasswordStrength,
@@ -176,7 +176,7 @@ function ResetPasswordForm() {
                   minLength={8}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-transparent transition-shadow"
+                  className={`w-full rounded-[var(--radius-card)] border border-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-muted ${INPUT_FOCUS_CLASS} transition-shadow`}
                 />
                 <PasswordStrength password={password} />
               </div>
@@ -197,7 +197,7 @@ function ResetPasswordForm() {
                   minLength={8}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-transparent transition-shadow"
+                  className={`w-full rounded-[var(--radius-card)] border border-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-muted ${INPUT_FOCUS_CLASS} transition-shadow`}
                 />
               </div>
 

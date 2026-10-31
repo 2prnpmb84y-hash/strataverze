@@ -47,6 +47,16 @@ export const SECONDARY_ACTION_CLASS =
 export const QUIET_ACTION_CLASS =
   `rounded-sm font-semibold text-sm text-ink-muted underline underline-offset-4 transition-colors hover:text-ink ${FOCUS}`;
 
+/**
+ * The focus indicator of a text field on the sign-in pages (WCAG 2.1
+ * 1.4.11, non-text contrast 3:1). The border stays visible and turns
+ * turquoise-deep, with a 2px turquoise-deep ring: #007A6E on white,
+ * 5.24:1. The brand turquoise (#00D4BF) is 1.88:1 on white, too faint to
+ * show where the cursor is, and `focus:border-transparent` hid the border.
+ */
+export const INPUT_FOCUS_CLASS =
+  "focus:outline-none focus:border-turquoise-deep focus:ring-2 focus:ring-turquoise-deep";
+
 /** An inline text link on the sign-in pages, such as Forgot password? */
 export const TEXT_LINK_CLASS =
   `rounded-sm font-medium text-ink underline decoration-turquoise decoration-2 underline-offset-4 transition-colors hover:decoration-ink ${FOCUS}`;

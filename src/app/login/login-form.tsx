@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/password-strength";
 import { Turnstile } from "@/components/auth/turnstile";
 import { SubmitButton } from "@/components/auth/submit-button";
-import { QUIET_ACTION_CLASS, TEXT_LINK_CLASS } from "@/components/ui/action-styles";
+import { INPUT_FOCUS_CLASS, QUIET_ACTION_CLASS, TEXT_LINK_CLASS } from "@/components/ui/action-styles";
 import { captchaSiteKey } from "@/lib/auth/captcha";
 
 /**
@@ -16,8 +16,6 @@ import { captchaSiteKey } from "@/lib/auth/captcha";
  * their portal. Sign in is the filled main action; Create account is a
  * quiet link below it (AR-037; the colours are in action-styles.ts).
  */
-const ACCENT = "var(--color-turquoise)";
-
 export function LoginForm({
   error,
   message,
@@ -68,10 +66,7 @@ export function LoginForm({
             type="email"
             required
             autoComplete="email"
-            className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:border-transparent transition-shadow"
-            style={
-              { "--tw-ring-color": ACCENT } as React.CSSProperties
-            }
+            className={`w-full rounded-[var(--radius-card)] border border-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-muted ${INPUT_FOCUS_CLASS} transition-shadow`}
             placeholder="you@example.com"
           />
         </div>
@@ -92,10 +87,7 @@ export function LoginForm({
             minLength={isSignUp ? 8 : undefined}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:border-transparent transition-shadow"
-            style={
-              { "--tw-ring-color": ACCENT } as React.CSSProperties
-            }
+            className={`w-full rounded-[var(--radius-card)] border border-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-muted ${INPUT_FOCUS_CLASS} transition-shadow`}
           />
           {isSignUp && <PasswordStrength password={password} />}
         </div>

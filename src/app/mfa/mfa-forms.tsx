@@ -2,10 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { confirmTotpEnrolmentAction, startTotpEnrolmentAction, verifyTotpAction } from "./actions";
-import { PRIMARY_ACTION_CLASS, TEXT_LINK_CLASS } from "@/components/ui/action-styles";
+import { INPUT_FOCUS_CLASS, PRIMARY_ACTION_CLASS, TEXT_LINK_CLASS } from "@/components/ui/action-styles";
 
-const inputClass =
-  "w-full rounded-[var(--radius-card)] border border-line bg-white px-3.5 py-2.5 text-lg tracking-[0.4em] text-center text-ink placeholder:text-ink-muted placeholder:tracking-normal focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-transparent transition-shadow";
+const inputClass = `w-full rounded-[var(--radius-card)] border border-line bg-white px-3.5 py-2.5 text-lg tracking-[0.4em] text-center text-ink placeholder:text-ink-muted placeholder:tracking-normal ${INPUT_FOCUS_CLASS} transition-shadow`;
 // White on turquoise was 1.88:1; see action-styles.ts (AR-037).
 const buttonClass = `w-full ${PRIMARY_ACTION_CLASS}`;
 

@@ -1,7 +1,7 @@
 import { resetPassword } from "./actions";
 import { Turnstile } from "@/components/auth/turnstile";
 import { SubmitButton } from "@/components/auth/submit-button";
-import { TEXT_LINK_CLASS } from "@/components/ui/action-styles";
+import { INPUT_FOCUS_CLASS, TEXT_LINK_CLASS } from "@/components/ui/action-styles";
 import { captchaSiteKey } from "@/lib/auth/captcha";
 import { Logo } from "@/components/logo";
 import { authPageError, authPageMessage } from "@/lib/auth/page-messages";
@@ -64,7 +64,7 @@ export default async function ForgotPasswordPage({
                 type="email"
                 required
                 autoComplete="email"
-                className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-transparent transition-shadow"
+                className={`w-full rounded-[var(--radius-card)] border border-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-muted ${INPUT_FOCUS_CLASS} transition-shadow`}
                 placeholder="you@example.com"
               />
             </div>

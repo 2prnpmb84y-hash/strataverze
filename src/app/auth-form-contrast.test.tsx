@@ -1,16 +1,17 @@
 /**
  * AR-037 and AR-042: every button and link on the sign-in pages has a
  * readable label (one text colour per state, 4.5:1 against its background
- * in the default, hover, focus, disabled and pending states), and no
- * password field shows a row of dots as its placeholder.
+ * in every combination of the default, hover, focus, pressed, disabled and
+ * pending states), every text field has a focus indicator of 3:1 (WCAG
+ * 1.4.11), and no password field shows a row of dots as its placeholder.
  *
  * The sign-in button used to carry `text-white` and `text-turquoise` with
  * `bg-white`, and rendered white on white.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { classContrastProblems, elementContrastProblems } from "@/test/class-contrast";
-import { PRIMARY_ACTION_CLASS, QUIET_ACTION_CLASS, SECONDARY_ACTION_CLASS, TEXT_LINK_CLASS } from "@/components/ui/action-styles";
+import { classContrastProblems, elementContrastProblems, inputFocusProblems } from "@/test/class-contrast";
+import { INPUT_FOCUS_CLASS, PRIMARY_ACTION_CLASS, QUIET_ACTION_CLASS, SECONDARY_ACTION_CLASS, TEXT_LINK_CLASS } from "@/components/ui/action-styles";
 
 vi.mock("./login/actions", () => ({ login: vi.fn(), signup: vi.fn() }));
 vi.mock("./forgot-password/actions", () => ({ resetPassword: vi.fn() }));
@@ -59,6 +60,15 @@ function problems(container: HTMLElement) {
   expect(controls.length).toBeGreaterThan(0);
   return controls
     .map((el) => ({ control: `${el.tagName.toLowerCase()} "${el.textContent?.trim()}"`, problems: elementContrastProblems(el) }))
+    .filter((c) => c.problems.length > 0);
+}
+
+/** Every visible text field on the page, with what is wrong with its focus indicator (WCAG 1.4.11). */
+function inputProblems(container: HTMLElement) {
+  const inputs = [...container.querySelectorAll<HTMLElement>('input:not([type="hidden"])')];
+  expect(inputs.length).toBeGreaterThan(0);
+  return inputs
+    .map((el) => ({ input: el.id || el.getAttribute("name"), problems: inputFocusProblems(el) }))
     .filter((c) => c.problems.length > 0);
 }
 
@@ -124,6 +134,32 @@ describe("the checker", () => {
     expect(classContrastProblems("bg-white text-ink md:px-6 group-hover:underline")).toEqual([]);
   });
 
+  it("catches the old input focus: a turquoise ring (1.88:1) and a border that disappears", () => {
+    const old = document.createElement("input");
+    old.className =
+      "w-full rounded-[var(--radius-card)] border border-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-transparent transition-shadow";
+    expect(inputFocusProblems(old)).toEqual([
+      "focus: the border becomes border-transparent; keep a visible border",
+      "focus: ring-turquoise is 1.88:1 against #FFFFFF, under 3:1 (WCAG 1.4.11)",
+    ]);
+    // The sign-in form set the ring colour in an inline style.
+    old.setAttribute("style", "--tw-ring-color: var(--color-turquoise)");
+    expect(inputFocusProblems(old)[0]).toMatch(/^inline style sets a colour \(--tw-ring-color/);
+    // Removing the outline with nothing in its place is caught too.
+    const bare = document.createElement("input");
+    bare.className = "border border-line bg-white text-ink focus:outline-none";
+    expect(inputFocusProblems(bare)).toEqual(["focus: no visible focus indicator (outline removed, no ring, border unchanged)"]);
+    // A compound variant on a ring is not ignored.
+    bare.className = "border border-line bg-white text-ink focus:outline-none focus:ring-2 focus:hover:ring-turquoise";
+    expect(inputFocusProblems(bare)[0]).toMatch(/^unknown variant "focus:hover:"/);
+  });
+
+  it("passes the shared input focus style", () => {
+    const input = document.createElement("input");
+    input.className = `border border-line bg-white text-ink ${INPUT_FOCUS_CLASS}`;
+    expect(inputFocusProblems(input)).toEqual([]);
+  });
+
   it("passes the shared button styles in every state", () => {
     for (const cls of [PRIMARY_ACTION_CLASS, SECONDARY_ACTION_CLASS, QUIET_ACTION_CLASS, TEXT_LINK_CLASS]) {
       expect(classContrastProblems(cls)).toEqual([]);
@@ -135,6 +171,7 @@ describe("the sign-in pages", () => {
   it("sign in: Sign in is the main, readable action and Create account is quieter", () => {
     const { container } = render(<LoginForm />);
     expect(problems(container)).toEqual([]);
+    expect(inputProblems(container)).toEqual([]);
     expect(passwordPlaceholders(container)).toEqual([]);
     const signIn = screen.getByRole("button", { name: "Sign in" });
     expect(signIn.className).toContain("bg-turquoise");
@@ -153,6 +190,7 @@ describe("the sign-in pages", () => {
     expect(screen.getByRole("button", { name: "Create account" }).getAttribute("type")).toBe("submit");
     expect(screen.getByRole("button", { name: "Back to sign in" })).toBeTruthy();
     expect(problems(container)).toEqual([]);
+    expect(inputProblems(container)).toEqual([]);
     expect(passwordPlaceholders(container)).toEqual([]);
   });
 
@@ -160,12 +198,14 @@ describe("the sign-in pages", () => {
     const { container } = render(await ForgotPasswordPage({ searchParams: Promise.resolve({}) }));
     expect(screen.getByRole("button", { name: "Send reset link" })).toBeTruthy();
     expect(problems(container)).toEqual([]);
+    expect(inputProblems(container)).toEqual([]);
   });
 
   it("reset password", async () => {
     const { container } = render(<ResetPasswordPage />);
     expect(await screen.findByRole("button", { name: "Update password" })).toBeTruthy();
     expect(problems(container)).toEqual([]);
+    expect(inputProblems(container)).toEqual([]);
     expect(container.querySelectorAll('input[type="password"]').length).toBe(2);
     expect(passwordPlaceholders(container)).toEqual([]);
   });
@@ -173,6 +213,7 @@ describe("the sign-in pages", () => {
   it("MFA: verify, and each step of setting up an authenticator", async () => {
     const verify = render(<VerifyForm factors={[{ id: "f1", name: "Phone" }]} next={null} />);
     expect(problems(verify.container)).toEqual([]);
+    expect(inputProblems(verify.container)).toEqual([]);
     cleanup();
 
     const enrol = render(<EnrolForm next={null} />);
@@ -181,5 +222,6 @@ describe("the sign-in pages", () => {
     expect(await screen.findByRole("button", { name: "Confirm and continue" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Enter a setup key instead" })).toBeTruthy();
     expect(problems(enrol.container)).toEqual([]);
+    expect(inputProblems(enrol.container)).toEqual([]);
   });
 });
