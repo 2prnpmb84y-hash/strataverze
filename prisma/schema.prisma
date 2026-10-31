@@ -357,8 +357,9 @@ model LotDetail {
 // and the delivery preferences are unchanged and no invitation exists.
 // Confirming applies exactly what an Adviser's change of owner applies.
 // Migration 20261201_owner_change_requests (one PENDING row per lot, a decided
-// row never changes). The notice of transfer, if attached, is filed when the
-// change is recorded (noticeDocumentId; the key is in the database only).
+// row never changes). The notice of transfer, if attached, is filed once the
+// hold is saved and linked once (noticeDocumentId; the key is in the database
+// only). Since the H1 review a confirmed change never moves anyone's access.
 model OwnerChangeRequest {
   id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   schemeId         String    @map("scheme_id") @db.Uuid

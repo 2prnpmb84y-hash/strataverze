@@ -29,8 +29,8 @@
 --
 -- owner_change_requests: the new owner's details as the committee member
 -- entered them (owner_email lower case, as the app stores it), the settlement
--- date, whether to invite the new owner, the notice of transfer filed when the
--- change was recorded (notice_document_id; cleared if that document is ever
+-- date, whether to invite the new owner, the notice of transfer filed once the
+-- change was held (notice_document_id; cleared if that document is ever
 -- deleted outright), who recorded it and when, and who decided it and when.
 -- One PENDING row for each lot (owner_change_requests_one_pending_per_lot_idx):
 -- a second change for the same lot is refused until the first is decided.
@@ -39,7 +39,10 @@
 --
 -- A trigger refuses any change to what was recorded, and any change to a
 -- decided row, except clearing notice_document_id (the document key's
--- ON DELETE SET NULL). Rows are not deleted by the app; they go with the lot
+-- ON DELETE SET NULL) and setting it once, from NULL, while the row waits.
+-- The app holds the lot's row (SELECT ... FOR NO KEY UPDATE on lots) while it
+-- checks for a waiting change and writes, and decides and applies a change in
+-- one transaction. Rows are not deleted by the app; they go with the lot
 -- or the building (ON DELETE CASCADE).
 --
 -- Every existing row passes, by construction (not by reading the data): the
@@ -96,7 +99,9 @@ ALTER TABLE public.owner_change_requests ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.owner_change_requests FROM anon, authenticated;
 
 -- What was recorded never changes; a decided row never changes (except losing
--- its notice key when that document is deleted).
+-- its notice key when that document is deleted). The one change allowed to a
+-- waiting row: its notice key set once, from NULL (the app files the notice
+-- only after the hold commits, so a hold that loses a race files nothing).
 CREATE OR REPLACE FUNCTION public.owner_change_requests_guard()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -108,7 +113,8 @@ BEGIN
      IS DISTINCT FROM
      (OLD.id, OLD.scheme_id, OLD.lot_id, OLD.owner_name, OLD.owner_email, OLD.owner_mobile, OLD.owner_phone,
       OLD.owner_address, OLD.settlement_date, OLD.invite, OLD.recorded_by, OLD.recorded_at)
-     OR (NEW.notice_document_id IS DISTINCT FROM OLD.notice_document_id AND NEW.notice_document_id IS NOT NULL) THEN
+     OR (NEW.notice_document_id IS DISTINCT FROM OLD.notice_document_id AND NEW.notice_document_id IS NOT NULL
+         AND NOT (OLD.notice_document_id IS NULL AND OLD.status = 'PENDING' AND NEW.status = 'PENDING')) THEN
     RAISE EXCEPTION 'StrataVerze: change of owner request %: what was recorded cannot change', OLD.id USING ERRCODE = '23514';
   END IF;
   IF OLD.status <> 'PENDING'
