@@ -1,5 +1,7 @@
 import { resetPassword } from "./actions";
 import { Turnstile } from "@/components/auth/turnstile";
+import { SubmitButton } from "@/components/auth/submit-button";
+import { INPUT_FOCUS_CLASS, TEXT_LINK_CLASS } from "@/components/ui/action-styles";
 import { captchaSiteKey } from "@/lib/auth/captcha";
 import { Logo } from "@/components/logo";
 import { authPageError, authPageMessage } from "@/lib/auth/page-messages";
@@ -62,25 +64,19 @@ export default async function ForgotPasswordPage({
                 type="email"
                 required
                 autoComplete="email"
-                className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-transparent transition-shadow"
+                className={`w-full rounded-[var(--radius-card)] border border-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-muted ${INPUT_FOCUS_CLASS} transition-shadow`}
                 placeholder="you@example.com"
               />
             </div>
 
             <Turnstile siteKey={captchaSiteKey()} />
-            <button
-              formAction={resetPassword}
-              className="w-full h-11 rounded-full bg-turquoise text-white font-semibold text-sm uppercase tracking-[0.04em] transition-colors hover:bg-turquoise/90 focus:outline-none focus:ring-2 focus:ring-turquoise focus:ring-offset-2 mt-2"
-            >
+            <SubmitButton formAction={resetPassword} pendingLabel="Sending…" className="mt-2">
               Send reset link
-            </button>
+            </SubmitButton>
           </form>
 
           <div className="mt-4 text-center">
-            <a
-              href="/login"
-              className="text-sm text-turquoise hover:text-turquoise/80 transition-colors"
-            >
+            <a href="/login" className={`text-sm ${TEXT_LINK_CLASS}`}>
               Back to sign in
             </a>
           </div>
