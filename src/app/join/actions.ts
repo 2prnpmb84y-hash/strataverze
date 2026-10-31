@@ -401,9 +401,22 @@ export async function acceptJoinAction(_prev: JoinFormState, formData: FormData)
     await linkRefused("denied", "link already used", invitation, actor);
     return { error: INVALID, linkDone: true };
   }
-  const result = await acceptInvitation(invitation.id, profile.id, address);
+  // The link is given back whenever nothing was accepted, whether acceptInvitation answered with
+  // an error or threw (a lost connection, a membership changed under it), so it is not left
+  // claimed and unusable (review L3). Its transaction rolled back, so nothing else changed.
+  let result: Awaited<ReturnType<typeof acceptInvitation>>;
+  try {
+    result = await acceptInvitation(invitation.id, profile.id, address);
+  } catch (err) {
+    console.error("[join] invitation not accepted:", err instanceof Error ? err.name : "error");
+    result = { error: "The invitation could not be accepted just now. Please try again." };
+  }
   if (result.error) {
-    await releaseInvitationLink(invitation.id, hash);
+    try {
+      await releaseInvitationLink(invitation.id, hash);
+    } catch {
+      console.error("[join] link not released");
+    }
     await linkDetail("failed", "existing account, could not accept", invitation, actor);
     await acceptEvent(false, invitation, actor);
     return { error: result.error };

@@ -42,7 +42,7 @@ vi.mock("@/lib/invitations/auth-users", async () => {
 
 const { sharedFake } = await import("@/test/fake-orm");
 const { sharedFakeAuth } = await import("@/test/fake-supabase-admin");
-const { issueInvitation, isInvitableEmail } = await import("./issue");
+const { issueInvitation, isInvitableEmail, deliverInvitationLink } = await import("./issue");
 const { inviteeSetupState } = await import("./accounts");
 
 const SCHEME = "99999999-0000-4000-8000-000000000001";
@@ -438,5 +438,43 @@ describe("sending again", () => {
     const r = await issueInvitation({ ...base, email: "a@example.test", role: "OWNER", lotId: "lot-1" });
     expect(r.ok).toBe(true);
     expect(sharedFake.table("Invitation")[0]).toMatchObject({ id: "inv-x", status: "PENDING", lotId: "lot-1" });
+  });
+});
+
+describe("delivering a link made inside another transaction (change of owner)", () => {
+  const link = { token: "t".repeat(43), hash: sha("t".repeat(43)) };
+  const input = (email: string) => ({
+    invitationId: "inv-co",
+    schemeId: SCHEME,
+    email,
+    role: "OWNER" as const,
+    lotNumber: "1",
+    token: link.token,
+    hash: link.hash,
+    expiresAt: new Date(Date.now() + 86_400_000),
+    inviter,
+    actorRole: "ADVISER",
+    resent: false,
+    previousStatus: null,
+    via: "owner_change",
+  });
+  beforeEach(() => {
+    sharedFake.table("Invitation").push({ id: "inv-co", schemeId: SCHEME, email: "nia@example.test", role: "OWNER", lotId: "lot-1", status: "PENDING", tokenHash: link.hash, tokenUsedAt: null, accountAuthId: null });
+  });
+
+  it("refuses an address issueInvitation refuses (review L1): no account, no email, a neutral event", async () => {
+    for (const email of ["nia@exämple.test", "nia@example.test>, x@evil.test", "bad"]) {
+      expect(await deliverInvitationLink(input(email))).toEqual({ emailed: false, reason: "address" });
+    }
+    expect(sharedFakeAuth.calls.createUser).toEqual([]);
+    expect(mail.sent).toEqual([]);
+    expect(limits.checks).toEqual([]);
+    expect(audit.events).toContainEqual(expect.objectContaining({ action: "invitation.send", outcome: "denied", reason: "address not accepted" }));
+  });
+
+  it("emails the link to a valid address, with the account recorded on the invitation", async () => {
+    expect(await deliverInvitationLink(input("nia@example.test"))).toEqual({ emailed: true });
+    expect(tokenFrom(mail.sent[0].html)).toBe(link.token);
+    expect(sharedFake.table("Invitation").find((i) => i.id === "inv-co")?.accountAuthId).toBe([...sharedFakeAuth.users.values()][0].id);
   });
 });

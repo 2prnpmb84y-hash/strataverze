@@ -26,6 +26,20 @@ describe("checking a change of owner", () => {
     expect(r.ok).toBe(false);
     if (!r.ok) expect(Object.keys(r.fieldErrors).sort()).toEqual(["email", "ownerName"]);
   });
+
+  it("refuses, when the invitation is ticked, an address S2a will not send an invitation to (review L1)", () => {
+    for (const email of ["nia@exämple.test", "nia\u00a0new@example.test", "o\"neil@example.test", "a..b@example.test", "nia@localhost.x1"]) {
+      const r = checkChangeOwner({ ownerName: "Ms Nia New", email, settlementDate: TODAY, invite: "on" }, TODAY);
+      expect(r.ok, email).toBe(false);
+      if (!r.ok) expect(r.fieldErrors.email).toBeTruthy();
+    }
+    const r = checkChangeOwner({ ownerName: "Ms Nia New", email: "nia@exämple.test", settlementDate: TODAY, invite: "on" }, TODAY);
+    expect(r.ok ? null : r.fieldErrors.email).toContain("An invitation cannot be sent to this address");
+    // The same address may still go on the roll when no invitation is sent.
+    expect(checkChangeOwner({ ownerName: "Ms Nia New", email: "nia@exämple.test", settlementDate: TODAY }, TODAY).ok).toBe(true);
+    // An ordinary address passes either way.
+    expect(checkChangeOwner({ ownerName: "Ms Nia New", email: "nia.new+lot1@example.test", settlementDate: TODAY, invite: "on" }, TODAY).ok).toBe(true);
+  });
 });
 
 describe("applying a change of owner", () => {

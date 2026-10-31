@@ -275,8 +275,15 @@ export async function acceptInvitation(
     const now = toTimestamp(new Date().toISOString());
     let restarted: { id: string } | null = null;
     if (existing && invitation.role === "OWNER") {
-      await restartOwnerAccess(t.orm, existing, invitation.lotId ?? null);
-      restarted = existing;
+      // Read again, locked, inside this transaction (review L2): the history row records the lot
+      // and dates the membership holds now, not those read before the transaction began.
+      const current = await t.orm.public.SchemeMembership
+        .where((m) => and(m.id.eq(existing.id), m.schemeId.eq(invitation.schemeId), m.role.eq("OWNER")))
+        .forUpdate()
+        .first();
+      if (!current || current.isActive) throw new Error("The membership changed while the invitation was being accepted.");
+      await restartOwnerAccess(t.orm, current, invitation.lotId ?? null);
+      restarted = current;
     } else if (existing) {
       restarted = await t.orm.public.SchemeMembership
         .where((m) => and(m.id.eq(existing.id), m.isActive.eq(false)))

@@ -357,6 +357,26 @@ describe("after the commit, the link is emailed only while it still works", () =
     expect(audit.events.some((e) => e.action === "invitation.sent")).toBe(false);
   });
 
+  it.each([
+    ["revoked", { status: "EXPIRED", tokenHash: null }],
+    ["its link used", { tokenUsedAt: "2026-10-31T00:00:00.000Z" }],
+    ["accepted", { status: "ACCEPTED" }],
+  ])("an invitation %s between the commit and the delivery is not emailed", async (_what, change) => {
+    const createUser = sharedFakeAuth.client.auth.admin.createUser;
+    const spy = vi.spyOn(sharedFakeAuth.client.auth.admin, "createUser").mockImplementationOnce(async (attrs) => {
+      Object.assign(invitation(), change);
+      return createUser(attrs);
+    });
+    const r = await changeOwnerAction("S1", "L1", {}, form(valid));
+    spy.mockRestore();
+    expect(r.done).toContain("is now the owner of Lot 1");
+    expect(r.done).toContain("could not be emailed just now");
+    expect(mail.sent).toEqual([]);
+    expect(audit.events.some((e) => e.action === "invitation.sent")).toBe(false);
+    // The account is not recorded on an invitation this link no longer opens.
+    expect(invitation().accountAuthId ?? null).toBeNull();
+  });
+
   it("S2a's sending limits apply: over the limit, the change is saved and nothing is emailed or created in Auth", async () => {
     limits.allow = false;
     const r = await changeOwnerAction("S1", "L1", {}, form(valid));

@@ -119,7 +119,8 @@ export async function completeChangeOwner(p: {
     // invitation's row while it calls Auth, and this transaction holds the lot's row meanwhile.
     await tx.execute(tx.raw.sql`SET LOCAL lock_timeout = '5s'`.affectedCount().build());
     await lockLot(tx, schemeId, lotId);
-    const planned = await planOwnerInvitation(tx.orm, { schemeId, lotId, email: input.email, invite: p.invite });
+    // Locks the lot's pending owner invitations before the lot's access is read (review M1).
+    const planned = await planOwnerInvitation(tx.orm, { schemeId, lotId, email: input.email, invite: p.invite, lock: true });
     if (p.mode.kind === "direct") {
       if (await getPendingOwnerChange(schemeId, lotId, tx.orm)) throw new OwnerChangeConflict("PENDING");
     } else {
@@ -131,7 +132,9 @@ export async function completeChangeOwner(p: {
     }
     const applied = await applyChangeOwner(tx.orm, schemeId, lotId, input);
     const toSend = await applyOwnerInvitation(tx.orm, planned, { schemeId, lotId, email: input.email, invitedById: actor.id });
-    const invited = toSend ? "sent" : planned.kind === "ALREADY" ? "already" : planned.kind === "SKIP_ACTIVE" ? "skipped_active" : "no";
+    // "issued": the invitation was made or reused here; whether it was emailed is known only after
+    // the commit, and is recorded then (invitation.sent, and the delivery on the security event).
+    const invited = toSend ? "issued" : planned.kind === "ALREADY" ? "already" : planned.kind === "SKIP_ACTIVE" ? "skipped_active" : "no";
     if (p.mode.kind === "confirm") {
       await logActivityTx(tx, {
         schemeId,
@@ -205,6 +208,8 @@ export async function completeChangeOwner(p: {
         endedMemberships: result.endedMemberships.length,
         endedCommitteeSeats: result.endedCommitteeSeats.length,
         invited,
+        // Delivery, after the commit: true emailed, false not (see the message), null none issued.
+        invitationEmailed: sent ? delivered?.emailed === true : null,
         invitationsWithdrawn: invitation.withdrawn.length,
         ...(confirmed ? { requestId: confirmed.requestId } : {}),
       },

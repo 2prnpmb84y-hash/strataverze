@@ -1,6 +1,7 @@
 import { and } from "@prisma/orm-postgres/orm-client";
 import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
 import { db } from "@/prisma/db";
+import { isInvitableEmail } from "@/lib/invitations/invitable-email";
 
 /**
  * A change of owner on the strata roll (decided 25 Oct 2026), server side.
@@ -58,6 +59,10 @@ export function checkChangeOwner(raw: Record<string, unknown>, today: string): C
   else if (CONTROL.test(ownerName)) fieldErrors.ownerName = "The owner name cannot contain line breaks.";
   const email = text("email", 255).toLowerCase();
   if (email && !EMAIL.test(email)) fieldErrors.email = "Enter a valid email address, or leave it blank.";
+  // An invitation goes only to an address S2a accepts (ASCII, nothing that could split a header).
+  else if (email && raw.invite === "on" && !isInvitableEmail(email)) {
+    fieldErrors.email = "An invitation cannot be sent to this address. Enter a valid email address, or untick the invitation.";
+  }
   const settlementDate = text("settlementDate", 10);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(settlementDate) || Number.isNaN(Date.parse(settlementDate))) {
     fieldErrors.settlementDate = "Enter the settlement date.";

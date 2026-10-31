@@ -173,7 +173,6 @@ vi.mock("@/lib/queries/schemes", () => ({
 }));
 vi.mock("@/lib/notifications", () => ({
   notifyMeetingScheduled: vi.fn(async () => {}),
-  notifyInvitation: vi.fn(async () => {}),
 }));
 vi.mock("@/lib/meetings/rule-set-repo", () => ({ getActiveRuleSet: vi.fn(async () => ({})) }));
 // The debtor voting check (stage 2, step 7): NSW records no rule, so it finds no problem by default.

@@ -179,6 +179,8 @@ export type PendingOwnerChangeView = {
     invitation: OwnerInvitationPlan["kind"];
     /** SKIP_ACTIVE: the lot the new owner already holds owner access through. */
     invitationActiveLot: string | null;
+    /** The reused invitation's status now (REFRESH, REOPEN): DECLINED is shown to the reviewer (review L4). */
+    invitationPreviousStatus: string | null;
     /** Invitations that will be withdrawn: other pending owner invitations to this lot. */
     withdrawnInvitations: string[];
   };
@@ -258,6 +260,7 @@ async function toView(row: RequestRow, hasAdviser: boolean): Promise<PendingOwne
       seatsKept: plan.seatsKept.map((k) => ({ name: k.name, lotNumbers: k.lotNumbers })),
       invitation: invitation.kind,
       invitationActiveLot: invitation.activeLotNumber,
+      invitationPreviousStatus: invitation.kind === "REFRESH" || invitation.kind === "REOPEN" ? invitation.fromStatus : null,
       withdrawnInvitations: invitation.withdrawn.map((w) => w.email),
     },
     fingerprint: planFingerprint(row.id, plan, invitation),

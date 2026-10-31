@@ -10,6 +10,7 @@ import { getLotInScheme } from "@/lib/queries/lots";
 import { getSchemeNameById } from "@/lib/queries/schemes";
 import { withLockTimeout } from "@/lib/queries/invitations";
 import { invitationExpiry, newLinkToken } from "./link-token";
+import { isInvitableEmail } from "./invitable-email";
 import { InviteeAccountError, provisionInviteeAccount, type InviteeAccount } from "./accounts";
 
 /**
@@ -33,6 +34,8 @@ import { InviteeAccountError, provisionInviteeAccount, type InviteeAccount } fro
  * so the inviter cannot use invitations to find out who uses StrataVerze.
  */
 
+export { isInvitableEmail };
+
 export const INVITABLE_ROLES = ["OWNER", "COMMITTEE", "ACCOUNTANT"] as const;
 export type InvitableRole = (typeof INVITABLE_ROLES)[number];
 
@@ -49,29 +52,6 @@ export type IssueInvitationInput = {
 export type IssueInvitationResult =
   | { ok: true; invitationId: string; email: string; role: InvitableRole; expiresAt: Date; emailed: boolean }
   | { ok: false; error?: string; fieldErrors?: Record<string, string> };
-
-/**
- * An address the invitation may go to (review finding L6). ASCII only.
- * The local part is dot-separated runs of letters, digits and _ % + ' -
- * (no leading, trailing or double dots, no quotes, comments or spaces); the
- * domain is labels that start and end with a letter or digit, ending in a
- * letter TLD. Control characters and < > , ; " \ are refused outright, so
- * nothing can split a header or a list of recipients. Internationalised and
- * unusual-but-valid RFC 5322 addresses are refused for now; the inviter is
- * told to enter a valid address.
- */
-const EMAIL = /^[A-Za-z0-9_%+'-]+(?:\.[A-Za-z0-9_%+'-]+)*@(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,63}$/;
-
-/** Whether an address (already trimmed and lower-cased) may be invited. */
-export function isInvitableEmail(email: string): boolean {
-  if (!email || email.length > 254) return false;
-  // Anything outside printable ASCII (control characters, spaces, non-ASCII
-  // letters) or any of < > , ; " \ : refused before the pattern, which
-  // refuses them too.
-  if (/[^\x21-\x7e]/.test(email) || /[<>,;"\\]/.test(email)) return false;
-  if (email.lastIndexOf("@") > 64) return false;
-  return EMAIL.test(email);
-}
 
 function ts(d: Date): TimestampString<3> {
   return d.toISOString() as unknown as TimestampString<3>;
@@ -298,7 +278,7 @@ export type DeliverInvitationLinkInput = {
 
 export type DeliverInvitationLinkResult =
   | { emailed: true }
-  | { emailed: false; reason: "rate_limited" | "account" | "changed" | "email" };
+  | { emailed: false; reason: "address" | "rate_limited" | "account" | "changed" | "email" };
 
 /**
  * Finish an invitation that was written inside another transaction (a change
@@ -323,6 +303,20 @@ export type DeliverInvitationLinkResult =
  */
 export async function deliverInvitationLink(input: DeliverInvitationLinkInput): Promise<DeliverInvitationLinkResult> {
   const email = input.email.trim().toLowerCase();
+  // The same address rule as issueInvitation (review finding L6): nothing goes to an address it refuses.
+  if (!isInvitableEmail(email)) {
+    await recordSecurityEventLater({
+      action: "invitation.send",
+      outcome: "denied",
+      actorProfileId: input.inviter.id,
+      actorRole: input.actorRole,
+      schemeId: input.schemeId,
+      resourceType: "Invitation",
+      resourceId: input.invitationId,
+      reason: "address not accepted",
+    });
+    return { emailed: false, reason: "address" };
+  }
   const allowed = await hitRateLimits([
     ["invitationSend", input.inviter.id],
     ["invitationRecipient", `${input.schemeId}|${email}`],

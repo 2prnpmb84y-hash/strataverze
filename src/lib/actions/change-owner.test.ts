@@ -609,6 +609,7 @@ describe("review findings (31 Oct 2026)", () => {
       seatsKept: [],
       invitation: "NEW",
       invitationActiveLot: null,
+      invitationPreviousStatus: null,
       withdrawnInvitations: [],
     });
     // Not the recorder's address, but the same domain (not a public provider): flagged for the reviewer.
@@ -713,9 +714,8 @@ describe("final review (31 Oct 2026)", () => {
     expect(r.done).toContain("An earlier invitation to this lot was withdrawn.");
     const status = Object.fromEntries(sharedFake.table("Invitation").map((i) => [i.id, i.status]));
     expect(status).toMatchObject({ "i-stale": "EXPIRED", "i-other-lot": "PENDING", "i-committee": "PENDING" });
-    // The new invitation is untouched (the in-memory ORM applies no column default, so its status is unset; PENDING in Postgres).
-    expect(invitation()).toMatchObject({ lotId: "L1" });
-    expect(invitation().status ?? "PENDING").toBe("PENDING");
+    // The new owner's invitation is not withdrawn: it is made PENDING, for this lot, after the others are.
+    expect(invitation()).toMatchObject({ lotId: "L1", status: "PENDING" });
   });
 
   it("L1: failures after the commit never report the change as not made", async () => {
@@ -767,8 +767,17 @@ describe("final review (31 Oct 2026)", () => {
 
   it("L4: the own-address check folds Gmail dots, googlemail.com and a trailing dot, over every sign-in identity", async () => {
     as(CHAIR, { email: "chair@x.test", identities: [{ identity_data: { email: "chris.chair@gmail.com" } }] });
-    for (const email of ["ChrisChair@googlemail.com", "c.h.r.i.s.chair+lot@gmail.com", "chair@x.test."]) {
-      const r = await changeOwnerAction("S1", "L1", {}, form({ ...valid, email }));
+    // With the invitation ticked and without it (a trailing dot is now also not an address an
+    // invitation can go to, review L1, so it is checked unticked: the own-address rule applies anyway).
+    const { invite: _invite, ...noInvite } = valid;
+    for (const [email, fields] of [
+      ["ChrisChair@googlemail.com", valid],
+      ["c.h.r.i.s.chair+lot@gmail.com", valid],
+      ["ChrisChair@googlemail.com", noInvite],
+      ["c.h.r.i.s.chair+lot@gmail.com", noInvite],
+      ["chair@x.test.", noInvite],
+    ] as const) {
+      const r = await changeOwnerAction("S1", "L1", {}, form({ ...fields, email }));
       expect(r.fieldErrors?.email).toContain("You cannot record yourself");
     }
     expect(requests()).toHaveLength(0);
@@ -801,5 +810,124 @@ describe("final review (31 Oct 2026)", () => {
     expect((await confirmOwnerChangeAction("S1", id, "")).error).toContain("has changed");
     // With the current plan it goes ahead.
     expect((await confirm("S1", id)).done).toContain("Confirmed.");
+  });
+});
+
+describe("merge review of S2a into S9 (31 Oct 2026)", () => {
+  const future = "2999-01-01T00:00:00.000Z";
+  const past = "2020-01-01T00:00:00.000Z";
+  const invitation = () => sharedFake.table("Invitation").find((i) => i.email === "new@x.test");
+
+  /**
+   * In the next transaction, an invitation update whose values match `which` changes nothing
+   * (count 0), as when another request changed the row after the plan read it.
+   */
+  function nextInvitationUpdateMatchesNothing(which: (values: Record<string, unknown>) => boolean) {
+    const real = sharedFake.db.transaction;
+    return vi.spyOn(sharedFake.db, "transaction").mockImplementationOnce(async (fn) =>
+      real(async (tx) => {
+        const publicTables = new Proxy(tx.orm.public, {
+          get: (t, name: string) => {
+            const c = (t as unknown as Record<string, Record<string, (...a: unknown[]) => Record<string, unknown>>>)[name];
+            if (name !== "Invitation") return c;
+            return {
+              ...c,
+              where: (...a: unknown[]) => {
+                const b = c.where(...a) as Record<string, (...v: unknown[]) => unknown>;
+                return { ...b, updateAndCount: async (v: Record<string, unknown>) => (which(v) ? 0 : b.updateAndCount(v)) };
+              },
+            };
+          },
+        });
+        return fn({ ...tx, orm: { ...tx.orm, public: publicTables } } as never);
+      }),
+    );
+  }
+
+  it("M1: the lot's pending owner invitations are locked in the change's transaction", async () => {
+    sharedFake.table("Invitation").push({ id: "i-stale", schemeId: "S1", email: "old-buyer@x.test", role: "OWNER", status: "PENDING", lotId: "L1", expiresAt: future });
+    as(ADVISER);
+    await changeOwnerAction("S1", "L1", {}, form(valid));
+    expect(sharedFake.locks).toContainEqual(expect.objectContaining({ table: "Invitation", ids: ["i-stale"], inTransaction: true }));
+    expect(sharedFake.table("Invitation").find((i) => i.id === "i-stale")).toMatchObject({ status: "EXPIRED", tokenHash: null });
+  });
+
+  it("M1: a withdrawal that matches nothing (accepted first) rolls the whole change back; nothing is sent", async () => {
+    sharedFake.table("Invitation").push({ id: "i-stale", schemeId: "S1", email: "old-buyer@x.test", role: "OWNER", status: "PENDING", lotId: "L1", expiresAt: future, tokenHash: "d".repeat(64) });
+    as(ADVISER);
+    const spy = nextInvitationUpdateMatchesNothing((v) => v.status === "EXPIRED");
+    const r = await changeOwnerAction("S1", "L1", {}, form(valid));
+    spy.mockRestore();
+    expect(r.error).toContain("could not be saved. Nothing was changed");
+    expect(cateOwner().isActive).toBe(true);
+    expect(roll().rollOwnerName).toBe("Ms Cate Blanchett");
+    expect(invitation()).toBeUndefined();
+    expect(sharedFake.table("Invitation").find((i) => i.id === "i-stale")).toMatchObject({ status: "PENDING", tokenHash: "d".repeat(64) });
+    expect(sent.emails).toEqual([]);
+    expect(activity().filter((a) => a.action === "OWNER_CHANGED")).toEqual([]);
+  });
+
+  it("a reused invitation whose status changed mid-flight (the update matches nothing) rolls the change back; nothing is sent", async () => {
+    sharedFake.table("Invitation").push({ id: "i-old", schemeId: "S1", email: "new@x.test", role: "OWNER", status: "DECLINED", lotId: "L9", expiresAt: past, invitedById: "p-x", tokenHash: OLD_HASH });
+    as(ADVISER);
+    const spy = nextInvitationUpdateMatchesNothing((v) => v.status === "PENDING" && typeof v.tokenHash === "string");
+    const r = await changeOwnerAction("S1", "L1", {}, form(valid));
+    spy.mockRestore();
+    expect(r.error).toContain("could not be saved. Nothing was changed");
+    expect(cateOwner().isActive).toBe(true);
+    expect(invitation()).toMatchObject({ id: "i-old", status: "DECLINED", lotId: "L9", tokenHash: OLD_HASH });
+    expect(sent.emails).toEqual([]);
+    expect(sharedFakeAuth.calls.createUser).toEqual([]);
+  });
+
+  it("L4: the reviewer's view says the reused invitation was declined", async () => {
+    sharedFake.table("Invitation").push({ id: "i-old", schemeId: "S1", email: "new@x.test", role: "OWNER", status: "DECLINED", lotId: "L9", expiresAt: future, tokenHash: OLD_HASH });
+    as(CHAIR);
+    expect((await changeOwnerAction("S1", "L1", {}, form(valid))).done).toContain("waiting for the Adviser");
+    const v = await pendingOwnerChangeView("S1", "L1");
+    expect(v?.effect).toMatchObject({ invitation: "REFRESH", invitationPreviousStatus: "DECLINED" });
+  });
+
+  it("NOT_REUSABLE: an earlier invitation in a status S2a does not resend is left alone and nothing is sent; the change applies", async () => {
+    sharedFake.table("Invitation").push({ id: "i-odd", schemeId: "S1", email: "new@x.test", role: "OWNER", status: "CANCELLED", lotId: "L9", expiresAt: past, tokenHash: OLD_HASH });
+    as(ADVISER);
+    const r = await changeOwnerAction("S1", "L1", {}, form(valid));
+    expect(r.done).toContain("Mr New Owner is now the owner of Lot 1");
+    expect(r.done).toContain("An earlier invitation to new@x.test could not be reused, so no invitation was sent.");
+    expect(invitation()).toMatchObject({ id: "i-odd", status: "CANCELLED", lotId: "L9", tokenHash: OLD_HASH });
+    expect(sent.emails).toEqual([]);
+    expect(activity().find((a) => a.action === "OWNER_CHANGED")?.metadata).toMatchObject({ invited: "no" });
+  });
+
+  it("the activity entry says the invitation was issued; the security event records whether it was emailed", async () => {
+    as(ADVISER);
+    await changeOwnerAction("S1", "L1", {}, form(valid));
+    expect(activity().find((a) => a.action === "OWNER_CHANGED")?.metadata).toMatchObject({ invited: "issued" });
+    expect(audit.events).toContainEqual(expect.objectContaining({ action: "lot.owner_changed", metadata: expect.objectContaining({ invited: "issued", invitationEmailed: true }) }));
+  });
+
+  it("L1: with the invitation ticked, an address S2a will not invite is refused before anything changes", async () => {
+    as(ADVISER);
+    const r = await changeOwnerAction("S1", "L1", {}, form({ ...valid, email: "nia@exämple.test" }));
+    expect(r.fieldErrors?.email).toContain("An invitation cannot be sent to this address");
+    expectUnchanged();
+  });
+
+  it("L2: accepting re-reads the ended owner access under lock; if it was started again meanwhile, nothing is written", async () => {
+    sharedFake.table("Profile").push({ id: "p-new", email: "new@x.test", firstName: "Nia", lastName: "New" });
+    sharedFake.table("SchemeMembership").push({ id: "m-new", schemeId: "S1", lotId: "L2", role: "OWNER", isActive: false, profileId: "p-new", startDate: "2025-01-01T00:00:00.000Z", endDate: "2026-10-20T00:00:00.000Z" });
+    sharedFake.table("Invitation").push({ id: "i-acc", schemeId: "S1", email: "new@x.test", role: "OWNER", status: "PENDING", lotId: "L1", expiresAt: future });
+    const { acceptInvitation } = await import("@/lib/queries/invitations");
+    // The access is started again (an Adviser's assignment, say) after acceptInvitation read it, before its transaction.
+    const real = sharedFake.db.transaction;
+    const spy = vi.spyOn(sharedFake.db, "transaction").mockImplementationOnce(async (fn) => {
+      Object.assign(sharedFake.table("SchemeMembership").find((m) => m.id === "m-new")!, { isActive: true, lotId: "L2", endDate: null });
+      return real(fn);
+    });
+    await expect(acceptInvitation("i-acc", "p-new", "new@x.test")).rejects.toThrow("membership changed");
+    spy.mockRestore();
+    expect(sharedFake.table("OwnerLotHistory") ?? []).toEqual([]);
+    expect(invitation()).toMatchObject({ status: "PENDING" });
+    expect(sharedFake.locks).toContainEqual(expect.objectContaining({ table: "SchemeMembership", ids: ["m-new"], inTransaction: true }));
   });
 });

@@ -56,17 +56,33 @@ export type OwnerInvitationPlan = {
 
 export async function planOwnerInvitation(
   orm: Orm,
-  p: { schemeId: string; lotId: string; email: string | null; invite: boolean; now?: Date },
+  p: {
+    schemeId: string;
+    lotId: string;
+    email: string | null;
+    invite: boolean;
+    now?: Date;
+    /**
+     * Inside the change's transaction: lock the lot's pending OWNER invitations
+     * (FOR UPDATE) before anything reads the lot's access (review M1). An
+     * acceptance from /join of one of them then either committed first (it is
+     * no longer PENDING here, and its new access is seen and ended by the
+     * change) or waits until the change has withdrawn it (and then matches
+     * nothing). Called before previewChangeOwner.
+     */
+    lock?: boolean;
+  },
 ): Promise<OwnerInvitationPlan> {
   const now = (p.now ?? new Date()).getTime();
   const email = p.email?.trim().toLowerCase() || null;
+  const pendingForLot = orm.public.Invitation
+    .where((i) => and(i.schemeId.eq(p.schemeId), i.lotId.eq(p.lotId), i.role.eq("OWNER"), i.status.eq("PENDING")))
+    .orderBy((i) => i.id.asc())
+    .limit(50);
+  const forLot = p.lock ? await pendingForLot.forUpdate().all() : await pendingForLot.all();
   const existing = email
     ? await orm.public.Invitation.where((i) => and(i.schemeId.eq(p.schemeId), i.email.eq(email), i.role.eq("OWNER"))).first()
     : null;
-  const forLot = await orm.public.Invitation
-    .where((i) => and(i.schemeId.eq(p.schemeId), i.lotId.eq(p.lotId), i.role.eq("OWNER"), i.status.eq("PENDING")))
-    .limit(50)
-    .all();
   const withdrawn = forLot.filter((i) => i.id !== existing?.id).map((i) => ({ id: i.id, email: String(i.email) }));
   const base = { invitationId: existing?.id ?? null, fromStatus: existing ? String(existing.status) : null, activeLotNumber: null, withdrawn };
 
@@ -150,10 +166,13 @@ export async function applyOwnerInvitation(
     sent = { id: plan.invitationId, token, hash, expiresAt, resent: true, previousStatus: plan.fromStatus };
   }
   for (const w of plan.withdrawn) {
-    // As a revoke does (revokeInvitation): its link stops working too.
-    await orm.public.Invitation
-      .where((i) => and(i.id.eq(w.id), i.schemeId.eq(p.schemeId), i.lotId.eq(p.lotId), i.status.eq("PENDING")))
-      .update({ status: "EXPIRED", tokenHash: null });
+    // As a revoke does (revokeInvitation): its link stops working too. Each must still be pending
+    // (review M1): one accepted, declined or revoked since it was planned rolls the whole change
+    // back, so the change never reports withdrawn an invitation that in fact gave access.
+    const n = await orm.public.Invitation
+      .where((i) => and(i.id.eq(w.id), i.schemeId.eq(p.schemeId), i.lotId.eq(p.lotId), i.role.eq("OWNER"), i.status.eq("PENDING")))
+      .updateAndCount({ status: "EXPIRED", tokenHash: null });
+    if (n !== 1) throw new InvitationChanged("an invitation to the lot changed while the change of owner was applied");
   }
   return sent;
 }

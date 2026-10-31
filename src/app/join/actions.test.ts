@@ -390,6 +390,23 @@ describe("someone with an account accepting from the link", () => {
     expect(await accept()).toMatchObject({ signInInstead: true });
   });
 
+  it("gives the link back when accepting throws (review L3), so it can be used again", async () => {
+    who.profile = { id: "p-existing", email: "existing.owner@example.test", isPlatformAdmin: false };
+    // acceptInvitation's transaction fails (a lost connection, say) after the link was claimed.
+    const spy = vi.spyOn(sharedFake.db, "transaction").mockRejectedValueOnce(new Error("connection lost"));
+    const r = await accept();
+    spy.mockRestore();
+    expect(r.error).toBe("The invitation could not be accepted just now. Please try again.");
+    expect(r.linkDone).toBeUndefined();
+    expect(invitation("inv-old")).toMatchObject({ status: "PENDING", tokenUsedAt: null });
+    expect(sharedFake.table("SchemeMembership")).toHaveLength(0);
+    expect(audit.events).toContainEqual(expect.objectContaining({ action: "invitation.accept", outcome: "failed", resourceId: "inv-old" }));
+    expect(JSON.stringify(audit.events)).not.toContain("connection lost");
+    // The same link then works.
+    expect(await redirected(accept())).toBe("/owner");
+    expect(invitation("inv-old").status).toBe("ACCEPTED");
+  });
+
   it("matches the Auth address, not a stale profile copy (L7)", async () => {
     // The profile still says the invited address; the Auth account has moved on.
     who.profile = { id: "p-existing", authId: "auth-existing", email: "existing.owner@example.test", isPlatformAdmin: false };
