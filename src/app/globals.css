@@ -39,6 +39,8 @@
   --color-ink-muted: #64748B;
   --color-line: #E2E8F0;
   --color-turquoise: #00D4BF;
+  /* Turquoise for words on white: #00D4BF itself is 1.88:1 on white, this is 5.24:1 (WCAG AA). */
+  --color-turquoise-deep: #007A6E;
   /* Scheme navigation pills (sampled from the scheme design) */
   --color-pill-peach: #FFD18B;
   --color-pill-peach-line: #FFE3B9;
