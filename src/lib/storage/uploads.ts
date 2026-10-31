@@ -16,7 +16,7 @@ function expectedMimeFor(fileName: string, kinds: readonly FileKind[]): string |
   return check.ok ? check.mime : null;
 }
 import { readObjectHead, removeRejectedUpload, signUpload, storedObjectInfo } from "./server-storage";
-import { inactiveSchemeIds } from "@/lib/schemes/inactive";
+import { activeSchemesOnly, inactiveSchemeIds } from "@/lib/schemes/inactive";
 
 /**
  * Uploads (security stage S3, findings SEC-006 and SEC-022).
@@ -324,7 +324,7 @@ export async function consumeUpload<T>(
 export async function removeExpiredUploads(nowMs: number = Date.now(), batch = 200): Promise<number> {
   const inactive = await inactiveSchemeIds();
   const rows = await db.orm.public.StorageUpload
-    .where((u) => and(u.usedAt.eq(null), u.expiresAt.lt(ts(nowMs - 15 * 60 * 1000)), u.schemeId.notIn(inactive)))
+    .where((u) => and(u.usedAt.eq(null), u.expiresAt.lt(ts(nowMs - 15 * 60 * 1000)), ...activeSchemesOnly(u.schemeId, inactive)))
     .select("id", "path")
     .limit(batch)
     .all();

@@ -45,7 +45,7 @@ import { RULE_PACKS, UnsupportedJurisdictionError } from "@/config/statutory";
 import { messageTermsFor, rulesForScheme, rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { platformToday, storedDayIn, todayIn } from "@/lib/jurisdiction/time-zone";
 import { schemeTimeZone, timeZoneOf } from "@/lib/jurisdiction/scheme-time";
-import { inactiveSchemeIds } from "@/lib/schemes/inactive";
+import { activeSchemesOnly, inactiveSchemeIds } from "@/lib/schemes/inactive";
 
 const ts = (v: string) => v as unknown as TimestampString<3>;
 const PAGE = 1000;
@@ -261,7 +261,7 @@ export async function postPendingLevies(now = new Date()): Promise<number> {
   const before = new Date(now.getTime() - PENDING_GRACE_MS).toISOString();
   const inactive = await inactiveSchemeIds();
   const pending = await db.orm.public.LevyNotice
-    .where((n) => and(n.levyPostPending.eq(true), n.issuedAt.lte(ts(before)), n.schemeId.notIn(inactive)))
+    .where((n) => and(n.levyPostPending.eq(true), n.issuedAt.lte(ts(before)), ...activeSchemesOnly(n.schemeId, inactive)))
     .limit(2000)
     .all();
   let posted = 0;
@@ -341,7 +341,7 @@ async function draftNoticesDue(scheduleIds: string[], horizon: string) {
  */
 export async function issueDueNotices(now: Date = new Date()): Promise<DueRunResult[]> {
   const inactive = await inactiveSchemeIds();
-  const schedules = await db.orm.public.LevySchedule.where((s) => and(s.status.eq("ACTIVE"), s.schemeId.notIn(inactive))).limit(5000).all();
+  const schedules = await db.orm.public.LevySchedule.where((s) => and(s.status.eq("ACTIVE"), ...activeSchemesOnly(s.schemeId, inactive))).limit(5000).all();
   if (!schedules.length) return [];
   // Read far enough ahead for every rule pack; each building's own rule decides below.
   const lookAhead = Math.max(...Object.values(RULE_PACKS).map((p) => noticeTimingFor(p.rules.NOTICE_RULES).leadDays));
@@ -523,7 +523,7 @@ export async function retryNoticeEmails(now: Date = new Date()): Promise<number>
   const notices = await db.orm.public.LevyNotice
     .where((n) =>
       and(
-        n.schemeId.notIn(inactive),
+        ...activeSchemesOnly(n.schemeId, inactive),
         n.status.in(["ISSUED", "PARTIALLY_PAID", "PAID", "OVERDUE"]),
         n.emailedAt.isNull(),
         n.levyPostPending.eq(false),
