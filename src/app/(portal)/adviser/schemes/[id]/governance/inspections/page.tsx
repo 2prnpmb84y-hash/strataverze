@@ -7,6 +7,7 @@ import { schemeTimeZone, schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { formatDateTimeIn } from "@/lib/jurisdiction/time-zone";
 import { inspectionDeadlines } from "@/lib/records/fees";
 import { accessRulesText } from "@/lib/records/certificate-text";
+import { inspectionRulesOffered } from "@/lib/records/offered";
 import { addDays } from "@/lib/levies/notice-plan";
 import type { FieldSpec } from "@/components/records/records-forms";
 import { cancelInspectionAction, completeInspectionAction, createInspectionAction, recordFeePaidAction, scheduleInspectionAction } from "@/lib/actions/records";
@@ -33,7 +34,7 @@ export default async function InspectionsPage({ params }: { params: Promise<{ id
     db.orm.public.RecordsInspection.where((r) => r.schemeId.eq(id)).orderBy((r) => r.createdAt.desc()).limit(200).all(),
     db.orm.public.Lot.where((l) => l.schemeId.eq(id)).limit(5000).all(),
   ]);
-  if (!rules.FEATURES.recordsInspections) notFound();
+  if (!inspectionRulesOffered(rules.FEATURES)) notFound();
   const r = needRule(rules, "INSPECTIONS");
   const oc = rules.TERMINOLOGY.ownersCorporation;
   const types = Object.entries(r.requesterTypes).map(([value, label]) => ({ value, label }));

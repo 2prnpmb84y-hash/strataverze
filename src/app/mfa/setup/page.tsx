@@ -4,6 +4,7 @@ import { getMfaStatus } from "@/lib/auth/mfa-enforcement";
 import { MAX_TOTP_FACTORS, recentlyVerified, safeNextPath } from "@/lib/auth/mfa-policy";
 import { MfaShell } from "../shell";
 import { EnrolForm } from "../mfa-forms";
+import { TEXT_LINK_CLASS } from "@/components/ui/action-styles";
 
 export const instant = false;
 
@@ -34,7 +35,7 @@ export default async function MfaSetupPage({
         title="Authenticators"
         description={`You already have ${MAX_TOTP_FACTORS} authenticators, the most allowed. Remove one in Settings before adding another.`}
       >
-        <a href="/settings" className="text-sm font-medium text-turquoise">
+        <a href="/settings" className={`text-sm ${TEXT_LINK_CLASS}`}>
           Go to Settings
         </a>
       </MfaShell>

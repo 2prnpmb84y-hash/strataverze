@@ -13,6 +13,23 @@ import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 import * as statutory from "./statutory";
 
+/** The certificate kind and records access shapes (types only), for the engine in src/lib/records/caps.ts. */
+const CERTIFICATE_KIND_SHAPES = [
+  "AccessCopies",
+  "AccessKindKey",
+  "AccessKindRule",
+  "CapGst",
+  "CertificateKindFee",
+  "CertificateKindKey",
+  "CertificateKindRule",
+  "CertificateKindsRules",
+  "CheckedValue",
+  "DatedCap",
+  "FeeUnitBand",
+  "FeeUnitCap",
+  "RecordsAccessRules",
+];
+
 /** What application code may import from `@/config/statutory`: the index, never a rule. */
 const ALLOWED = new Set([
   "RULE_PACKS",
@@ -39,10 +56,12 @@ const ALLOWED = new Set([
   "DerivedBuildingSelector",
   "RecordedFactKey",
   "SelectorCondition",
+  // The certificate kind and records access shapes: types only, no rules (VIC, ACT and WA stage 2, PR 10a).
+  ...CERTIFICATE_KIND_SHAPES,
 ]);
 
 /** The allowed names that are types, so have no value to check. */
-const TYPES = new Set(["StatutoryRules", "RulePack", "NswRules", "DatedLegalStatus", "DatedRule", "DatedRules", "DatedValue", "NoStatutoryRule", "PendingDatedValue", "BuildingFactKey", "BuildingSelector", "DerivedBuildingSelector", "RecordedFactKey", "SelectorCondition"]);
+const TYPES = new Set(["StatutoryRules", "RulePack", "NswRules", "DatedLegalStatus", "DatedRule", "DatedRules", "DatedValue", "NoStatutoryRule", "PendingDatedValue", "BuildingFactKey", "BuildingSelector", "DerivedBuildingSelector", "RecordedFactKey", "SelectorCondition", ...CERTIFICATE_KIND_SHAPES]);
 
 const SRC = join(__dirname, "..");
 

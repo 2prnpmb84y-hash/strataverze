@@ -6,6 +6,7 @@ import { runLevyNoticeDay } from "@/lib/levies/issue-notices";
 import { runWorksDay } from "@/lib/works/daily";
 import { runComplianceDay } from "@/lib/compliance/daily";
 import { logError } from "@/lib/log";
+import { inactiveSchemeIds } from "@/lib/schemes/inactive";
 
 /**
  * Levy notices (24 to 25 Oct 2026), every day: issue each planned notice
@@ -18,6 +19,9 @@ import { logError } from "@/lib/log";
  * tells the committee, and sends statutory deadline reminders (payment plan
  * replies, committee training, Strata Hub reports, the deadline to start proceedings for a long
  * outstanding debt); a failure there never stops the levy notices.
+ *
+ * A switched off scheme is left alone by all three and listed under
+ * skippedSchemes (src/lib/schemes/inactive.ts).
  */
 export const maxDuration = 300;
 
@@ -28,6 +32,7 @@ export async function GET(request: NextRequest) {
   // Each building's day is worked out in its own time zone; this is StrataVerze's, for the report.
   const now = new Date();
   const today = platformToday(now);
+  const skippedSchemes = await inactiveSchemeIds();
   // First, and caught: the works run is quick, and neither run stops the other.
   let works: { interestClosed: number; quotesClosed: number } | { error: string };
   try {
@@ -56,6 +61,7 @@ export async function GET(request: NextRequest) {
       leviesRecovered: recovered,
       works,
       compliance,
+      skippedSchemes,
     },
     { headers: NO_STORE },
   );

@@ -363,6 +363,52 @@ describe("the daily job", () => {
   });
 });
 
+describe("a switched off scheme (schemes.is_active = false, 31 Oct 2026)", () => {
+  /** A second building, s2, with the same schedule, Adviser and planned notices as s1; s1 then switched off if asked. */
+  async function twoBuildings(switchOffFirst: boolean) {
+    today.value = "2026-05-01";
+    await generate();
+    const t = (name: string) => sharedFake.table(name);
+    t("Scheme").push({ ...t("Scheme")[0], id: "s2" });
+    t("LevySchedule").push({ ...t("LevySchedule")[0], id: "ls2", schemeId: "s2" });
+    t("SchemeMembership").push({ ...t("SchemeMembership")[0], id: "m-adv-2", schemeId: "s2" });
+    t("LevyNotice").push(...notices().map((n) => ({ ...n, id: `${n.id}-s2`, schemeId: "s2", levyScheduleId: "ls2" })));
+    if (switchOffFirst) switchOff("s1");
+  }
+  const switchOff = (id: string) => (sharedFake.table("Scheme").find((s) => s.id === id)!.isActive = false);
+  const of = (schemeId: string) => notices().filter((n) => n.schemeId === schemeId);
+
+  it("issues none of its notices, and the other building's as before", async () => {
+    await twoBuildings(true);
+    expect(await issueDueNotices(midday("2026-05-27"))).toEqual([expect.objectContaining({ scheduleId: "ls2", schemeId: "s2", issued: 2, held: null })]);
+    expect(of("s1").every((n) => n.status === "DRAFT")).toBe(true);
+    expect(of("s2").filter((n) => n.status === "ISSUED").map((n) => n.dueDate)).toEqual(["2026-07-01", "2026-07-01"]);
+    expect(journals.posted).toEqual([{ date: "2026-07-01", total: 10000 }]);
+    expect(sent.notices).toHaveLength(2);
+  });
+
+  it("posts none of its pending levies, and the other building's as before", async () => {
+    await twoBuildings(true);
+    for (const n of notices().filter((x) => x.dueDate === "2026-07-01")) Object.assign(n, { status: "ISSUED", levyPostPending: true, issuedAt: "2026-05-27T20:00:00.000Z" });
+    expect(await postPendingLevies(new Date("2026-05-28T20:00:00.000Z"))).toBe(2);
+    expect(of("s1").filter((n) => n.levyPostPending).map((n) => n.issuedAt)).toEqual(["2026-05-27T20:00:00.000Z", "2026-05-27T20:00:00.000Z"]);
+    expect(of("s2").filter((n) => n.levyPostPending)).toHaveLength(0);
+    expect(journals.posted).toEqual([{ date: "2026-07-01", total: 10000 }]);
+  });
+
+  it("resends none of its failed emails, and the other building's as before", async () => {
+    await twoBuildings(false);
+    await issueDueNotices(midday("2026-05-27"));
+    for (const n of notices().filter((x) => x.status === "ISSUED")) n.emailedAt = null;
+    expect(notices().filter((n) => n.status === "ISSUED")).toHaveLength(4);
+    sent.notices = [];
+    switchOff("s1");
+    expect((await runLevyNoticeDay(midday("2026-05-28"))).resent).toBe(2);
+    expect(of("s1").filter((n) => n.status === "ISSUED").every((n) => n.emailedAt == null)).toBe(true);
+    expect(of("s2").filter((n) => n.status === "ISSUED").every((n) => n.emailedAt != null)).toBe(true);
+  });
+});
+
 describe("the urgent special levy option (stage 2, step 5)", () => {
   const special = () => {
     sharedFake.table("LevySchedule").push({

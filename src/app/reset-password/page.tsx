@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useSearchParams } from "next/navigation";
 import { Logo } from "@/components/logo";
 import { MARKETING_SITE_URL } from "@/lib/site-url";
+import { INPUT_FOCUS_CLASS, PRIMARY_ACTION_CLASS, TEXT_LINK_CLASS } from "@/components/ui/action-styles";
 import {
   PasswordStrength,
   validatePasswordStrength,
@@ -137,7 +138,7 @@ function ResetPasswordForm() {
               {needsMfa && (
                 <a
                   href={`/mfa?next=${encodeURIComponent("/reset-password?after=mfa")}`}
-                  className="text-sm font-medium text-turquoise hover:text-turquoise/80 transition-colors mt-2 inline-block"
+                  className={`text-sm mt-2 inline-block ${TEXT_LINK_CLASS}`}
                 >
                   Enter authenticator code
                 </a>
@@ -150,7 +151,7 @@ function ResetPasswordForm() {
               <p className="text-sm text-ink">{status.message}</p>
               <a
                 href="/login"
-                className="text-sm font-medium text-turquoise hover:text-turquoise/80 transition-colors mt-2 inline-block"
+                className={`text-sm mt-2 inline-block ${TEXT_LINK_CLASS}`}
               >
                 Sign in
               </a>
@@ -175,8 +176,7 @@ function ResetPasswordForm() {
                   minLength={8}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-transparent transition-shadow"
-                  placeholder="At least 8 characters"
+                  className={`w-full rounded-[var(--radius-card)] border border-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-muted ${INPUT_FOCUS_CLASS} transition-shadow`}
                 />
                 <PasswordStrength password={password} />
               </div>
@@ -197,8 +197,7 @@ function ResetPasswordForm() {
                   minLength={8}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-transparent transition-shadow"
-                  placeholder="Repeat your password"
+                  className={`w-full rounded-[var(--radius-card)] border border-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-muted ${INPUT_FOCUS_CLASS} transition-shadow`}
                 />
               </div>
 
@@ -210,18 +209,16 @@ function ResetPasswordForm() {
                   !validatePasswordStrength(password).allMet ||
                   password !== confirmPassword
                 }
-                className="w-full h-11 rounded-full bg-turquoise text-white font-semibold text-sm uppercase tracking-[0.04em] transition-colors hover:bg-turquoise/90 focus:outline-none focus:ring-2 focus:ring-turquoise focus:ring-offset-2 mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-busy={loading || undefined}
+                className={`w-full mt-2 ${PRIMARY_ACTION_CLASS}`}
               >
-                {loading ? "Updating..." : "Update password"}
+                {loading ? "Updating…" : "Update password"}
               </button>
             </form>
           )}
 
           <div className="mt-4 text-center">
-            <a
-              href="/login"
-              className="text-sm text-turquoise hover:text-turquoise/80 transition-colors"
-            >
+            <a href="/login" className={`text-sm ${TEXT_LINK_CLASS}`}>
               Back to sign in
             </a>
           </div>

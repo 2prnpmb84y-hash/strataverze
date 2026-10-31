@@ -7,13 +7,17 @@ import {
   validatePasswordStrength,
 } from "@/components/ui/password-strength";
 import { Turnstile } from "@/components/auth/turnstile";
+import { SubmitButton } from "@/components/auth/submit-button";
+import { INPUT_FOCUS_CLASS, QUIET_ACTION_CLASS, TEXT_LINK_CLASS } from "@/components/ui/action-styles";
 import { captchaSiteKey } from "@/lib/auth/captcha";
 
-/** The one sign-in form (25 Oct 2026): everyone signs in here, then goes to their portal. */
-const BUTTON_CLASS =
-  "border-[1.5px] border-turquoise text-turquoise bg-white hover:bg-turquoise hover:text-white focus:ring-turquoise";
-const ACCENT = "var(--color-turquoise)";
-
+/**
+ * The one sign-in form (25 Oct 2026): everyone signs in here, then goes to
+ * their portal. Sign in is the main action, the outlined brand button with
+ * turquoise-deep words, filled when selected (hovered, pressed or
+ * pending); Create account is a quiet link below it (AR-037, founder
+ * direction 31 Oct 2026; the colours are in action-styles.ts).
+ */
 export function LoginForm({
   error,
   message,
@@ -64,10 +68,7 @@ export function LoginForm({
             type="email"
             required
             autoComplete="email"
-            className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:border-transparent transition-shadow"
-            style={
-              { "--tw-ring-color": ACCENT } as React.CSSProperties
-            }
+            className={`w-full rounded-[var(--radius-card)] border border-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-muted ${INPUT_FOCUS_CLASS} transition-shadow`}
             placeholder="you@example.com"
           />
         </div>
@@ -88,21 +89,13 @@ export function LoginForm({
             minLength={isSignUp ? 8 : undefined}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:border-transparent transition-shadow"
-            style={
-              { "--tw-ring-color": ACCENT } as React.CSSProperties
-            }
-            placeholder="••••••••"
+            className={`w-full rounded-[var(--radius-card)] border border-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-muted ${INPUT_FOCUS_CLASS} transition-shadow`}
           />
           {isSignUp && <PasswordStrength password={password} />}
         </div>
 
         <div className="flex justify-end">
-          <a
-            href="/forgot-password"
-            className="text-sm transition-colors"
-            style={{ color: ACCENT }}
-          >
+          <a href="/forgot-password" className={`text-sm ${TEXT_LINK_CLASS}`}>
             Forgot password?
           </a>
         </div>
@@ -110,49 +103,52 @@ export function LoginForm({
         {/* The security check (SEC-020), when CAPTCHA is set up. */}
         <Turnstile siteKey={captchaSiteKey()} />
 
-        <div className="flex flex-col gap-2 mt-2">
+        <div className="flex flex-col items-center gap-4 mt-2">
           {isSignUp ? (
             <>
-              <button
+              <SubmitButton
                 formAction={(formData) => {
                   const { allMet } = validatePasswordStrength(password);
                   if (!allMet) return;
-                  signup(formData);
+                  return signup(formData);
                 }}
-                className={`w-full h-11 rounded-full text-white font-semibold text-sm uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${BUTTON_CLASS}`}
                 disabled={!validatePasswordStrength(password).allMet}
+                pendingLabel="Creating account…"
               >
                 Create account
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsSignUp(false);
-                  setPassword("");
-                }}
-                className="w-full h-11 rounded-full border-[1.5px] border-line bg-white text-ink-muted font-semibold text-sm uppercase tracking-[0.04em] transition-colors hover:bg-muted hover:text-ink focus:outline-none focus:ring-2 focus:ring-turquoise focus:ring-offset-2"
-              >
-                Back to sign in
-              </button>
+              </SubmitButton>
+              <p className="text-sm text-ink-muted">
+                Already have an account?{" "}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsSignUp(false);
+                    setPassword("");
+                  }}
+                  className={QUIET_ACTION_CLASS}
+                >
+                  Back to sign in
+                </button>
+              </p>
             </>
           ) : (
             <>
-              <button
-                formAction={login}
-                className={`w-full h-11 rounded-full text-white font-semibold text-sm uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${BUTTON_CLASS}`}
-              >
+              <SubmitButton formAction={login} pendingLabel="Signing in…">
                 Sign in
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsSignUp(true);
-                  setPassword("");
-                }}
-                className="w-full h-11 rounded-full border-[1.5px] border-line bg-white text-ink-muted font-semibold text-sm uppercase tracking-[0.04em] transition-colors hover:bg-muted hover:text-ink focus:outline-none focus:ring-2 focus:ring-turquoise focus:ring-offset-2"
-              >
-                Create account
-              </button>
+              </SubmitButton>
+              <p className="text-sm text-ink-muted">
+                New to StrataVerze?{" "}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsSignUp(true);
+                    setPassword("");
+                  }}
+                  className={QUIET_ACTION_CLASS}
+                >
+                  Create account
+                </button>
+              </p>
             </>
           )}
         </div>

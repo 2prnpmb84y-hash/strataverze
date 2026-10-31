@@ -28,6 +28,7 @@ import { recordMeetingEvent } from "./events";
 import { schemeTimeZones } from "@/lib/jurisdiction/scheme-time";
 import { dayIn, formatDateIn, platformToday, todayIn } from "@/lib/jurisdiction/time-zone";
 import { logError } from "@/lib/log";
+import { activeSchemesOnly, inactiveSchemeIds } from "@/lib/schemes/inactive";
 import { addDays } from "@/lib/levies/notice-plan";
 import { lotEntitlementFor } from "@/lib/jurisdiction/building-data";
 import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
@@ -376,12 +377,14 @@ const SETTLE_PAGE = 500;
  */
 async function pendingRowsThatCouldBeDue(filter: { meetingId?: string }, now: Date) {
   const before = addDays(platformToday(now), 1);
+  // A switched off scheme's rows are left as they are, by the daily run and for one meeting alike.
+  const inactive = await inactiveSchemeIds();
   const out: NonNullable<PendingRow>[] = [];
   for (let offset = 0; ; offset += SETTLE_PAGE) {
     const page = await db.orm.public.PendingResolution
       .where((p) => {
         const due = and(p.status.eq("PENDING"), or(p.windowClosesOn.lt(before), p.meetingNoticeGivenOn.isNotNull()));
-        return filter.meetingId ? and(due, p.meetingId.eq(filter.meetingId)) : due;
+        return and(due, ...(filter.meetingId ? [p.meetingId.eq(filter.meetingId)] : []), ...activeSchemesOnly(p.schemeId, inactive));
       })
       .orderBy([(p) => p.windowClosesOn.asc(), (p) => p.id.asc()])
       .offset(offset)

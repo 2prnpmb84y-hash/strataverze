@@ -4,6 +4,7 @@ import { bearerMatches } from "@/lib/auth/secret-compare";
 import { platformToday } from "@/lib/jurisdiction/time-zone";
 import { settleDuePendingResolutions } from "@/lib/meetings/pending-repo";
 import { logError } from "@/lib/log";
+import { inactiveSchemeIds } from "@/lib/schemes/inactive";
 
 /**
  * Pending resolutions (VIC, ACT and WA stage 2, PR 8b-i, 29 Oct 2026;
@@ -16,7 +17,8 @@ import { logError } from "@/lib/log";
  * time zone, with CRON_SECRET as a bearer token. A separate route, so the
  * levy notices run and its response are unchanged. A repeated call does no
  * harm: each resolution is decided once, under its row lock. A failure is
- * caught and reported, never thrown.
+ * caught and reported, never thrown. A switched off scheme's resolutions are
+ * left as they are, and the scheme is listed under skippedSchemes.
  */
 export const maxDuration = 300;
 
@@ -27,8 +29,9 @@ export async function GET(request: NextRequest) {
   const now = new Date();
   const today = platformToday(now);
   try {
+    const skippedSchemes = await inactiveSchemeIds();
     const { settled, waiting, blocked, failed } = await settleDuePendingResolutions({}, now);
-    return NextResponse.json({ today, settled, waiting, blocked: blocked.length, failed }, { headers: NO_STORE });
+    return NextResponse.json({ today, settled, waiting, blocked: blocked.length, failed, skippedSchemes }, { headers: NO_STORE });
   } catch (err) {
     logError("[cron] pending resolutions failed:", err);
     return NextResponse.json({ today, error: "failed" }, { status: 500, headers: NO_STORE });

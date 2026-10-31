@@ -22,7 +22,6 @@ const CHECKS =
 
 const ALLOWED: Record<string, string> = {
   // Public auth and marketing endpoints.
-  "src/app/actions.ts#joinWaitlistAction": "public waitlist form",
   "src/app/login/actions.ts#login": "sign-in",
   "src/app/login/actions.ts#signup": "sign-up (to be replaced by invitation and supplier sign-up in S2)",
   "src/app/forgot-password/actions.ts#resetPassword": "public password reset request",

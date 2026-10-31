@@ -1,0 +1,502 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Queensland request errors > are as recorded 1`] = `
+{
+  "certificateAgent": {
+    "fieldErrors": {
+      "authorisedByAddress": "Enter that person's address.",
+      "authorisedByName": "Enter the name of the person who authorised them.",
+      "authorisedByType": "Choose who authorised them.",
+    },
+    "message": "Check the request details.",
+  },
+  "certificateAuthorisedPerson": {
+    "fieldErrors": {
+      "requesterType": "Choose who is asking.",
+    },
+    "message": "Check the request details.",
+  },
+  "certificateBadType": {
+    "fieldErrors": {
+      "requestedOn": "Enter the date the request was received (not in the future).",
+      "requesterName": "Enter their name.",
+      "requesterType": "Choose who is asking.",
+    },
+    "message": "Check the request details.",
+  },
+  "completeBadPages": {
+    "fieldErrors": {
+      "copyPages": "Enter the number of pages copied (0 if none).",
+    },
+    "message": "Enter the pages copied.",
+  },
+  "completeNoFeeYear": {
+    "fieldErrors": {},
+    "message": "StrataVerze does not hold the fees for a request received on 2026-06-30 yet. Ask StrataVerze to add that financial year's fees, then record it.",
+  },
+  "completeNothing": {
+    "fieldErrors": {
+      "inspected": "Tick this, or enter the pages copied.",
+    },
+    "message": "Record an inspection or copies.",
+  },
+  "inspectionAgent": {
+    "fieldErrors": {
+      "authorisedBy": "Enter who they act for.",
+    },
+    "message": "Check the request.",
+  },
+  "inspectionBadType": {
+    "fieldErrors": {
+      "inspectorName": "Enter the name of the person asking.",
+      "inspectorType": "Choose who is asking.",
+      "requestedOn": "Enter the date of the request (not in the future).",
+    },
+    "message": "Check the request.",
+  },
+  "inspectionNoLot": {
+    "fieldErrors": {
+      "lotId": "Choose the lot the request is about.",
+    },
+    "message": "Check the request.",
+  },
+  "saveDraft": {
+    "fieldErrors": {
+      "authorisedByAddress": "Enter that person's address.",
+      "authorisedByName": "Enter the name of the person who authorised them.",
+      "authorisedByType": "Choose who authorised them.",
+      "item_1": "Complete this item (write “Nil” if it does not apply).",
+    },
+    "message": "Check the certificate.",
+  },
+  "scheduleEarly": {
+    "fieldErrors": {
+      "place": "Enter the place (or how it will be given electronically).",
+      "when": "The inspection cannot be before the request.",
+    },
+    "message": "Check the time and place.",
+  },
+  "scheduleNoTime": {
+    "fieldErrors": {
+      "when": "Enter the date and time.",
+    },
+    "message": "Check the time and place.",
+  },
+}
+`;
+
+exports[`Queensland request errors > refuse every certificate and inspection step for a pack without the switches (NSW and Queensland) 1`] = `
+{
+  "NSW": {
+    "complete": {
+      "fieldErrors": {},
+      "message": "This is not available for this building.",
+    },
+    "create": {
+      "fieldErrors": {},
+      "message": "This is not available for this building.",
+    },
+    "createInspection": {
+      "fieldErrors": {},
+      "message": "This is not available for this building.",
+    },
+    "issue": {
+      "fieldErrors": {},
+      "message": "This is not available for this building.",
+    },
+    "save": {
+      "fieldErrors": {},
+      "message": "This is not available for this building.",
+    },
+    "schedule": {
+      "fieldErrors": {},
+      "message": "This is not available for this building.",
+    },
+  },
+  "QLD": {
+    "complete": {
+      "fieldErrors": {},
+      "message": "This is not available for this building.",
+    },
+    "create": {
+      "fieldErrors": {},
+      "message": "This is not available for this building.",
+    },
+    "createInspection": {
+      "fieldErrors": {},
+      "message": "This is not available for this building.",
+    },
+    "issue": {
+      "fieldErrors": {},
+      "message": "This is not available for this building.",
+    },
+    "save": {
+      "fieldErrors": {},
+      "message": "This is not available for this building.",
+    },
+    "schedule": {
+      "fieldErrors": {},
+      "message": "This is not available for this building.",
+    },
+  },
+}
+`;
+
+exports[`the Queensland body corporate certificate draft (store) > with the module and both entitlements recorded 1`] = `
+[
+  {
+    "no": "1",
+    "text": "StrataVerze holds no record of this. Check and complete.",
+    "title": "Lot and plan type",
+  },
+  {
+    "no": "2",
+    "text": "Scheme name: Seaview. Regulation module: Standard Module.",
+    "title": "Scheme name and regulation module",
+  },
+  {
+    "no": "3",
+    "text": "StrataVerze holds no record of this. Check and complete.",
+    "title": "Body corporate manager and the person who keeps the records",
+  },
+  {
+    "no": "4",
+    "text": "Administrative Fund:
+Due 2026-08-01 (period 2026-07-01 to 2026-09-30): $450.00, unpaid (overdue)
+Total outstanding on these notices: $450.00. Amounts in credit and any early payment discount: check and complete.
+Sinking Fund:
+Due 2026-11-01 (period 2026-10-01 to 2026-12-31): $200.00, $150.00 unpaid
+Total outstanding on these notices: $150.00. Amounts in credit and any early payment discount: check and complete.
+Special contributions:
+Due 2026-09-01 (period 2026-09-01 to 2026-09-30): $1,000.00, paid
+Total outstanding on these notices: $0.00. Amounts in credit and any early payment discount: check and complete.
+Any discount for paying on time and any penalty for late payment, as resolved by the body corporate: check and complete.",
+    "title": "Contributions, discounts and penalties",
+  },
+  {
+    "no": "5",
+    "text": "Contribution schedule lot entitlement: 12
+Interest schedule lot entitlement: 15
+From StrataVerze's records. Check them before the certificate is issued.",
+    "title": "Lot entitlements (contribution schedule and interest schedule)",
+  },
+  {
+    "no": "6",
+    "text": "Unpaid contributions overdue at 2026-10-27: $450.00.
+Penalty charged and unpaid: $11.25.
+Any penalty since it was last charged, recovery costs and other amounts owing: check and complete.",
+    "title": "Amounts owing for the lot",
+  },
+  {
+    "no": "7",
+    "text": "StrataVerze holds no record of this. Check and complete.",
+    "title": "Sinking fund balance",
+  },
+  {
+    "no": "8",
+    "text": "building: Acme, policy B1, sum insured $15,000,000.00, due 2027-03-31, premium $9,000.00, broker Brokers Co.
+Anything else the form asks about the insurance: check and complete.",
+    "title": "Insurance",
+  },
+  {
+    "no": "9",
+    "text": "StrataVerze holds no record of this. Check and complete.",
+    "title": "Caretaking service contractor and letting agent",
+  },
+  {
+    "no": "10",
+    "text": "StrataVerze holds no record of this. Check and complete.",
+    "title": "Building management statement",
+  },
+  {
+    "no": "11",
+    "text": "StrataVerze holds no record of this. Check and complete.",
+    "title": "Improvements",
+  },
+  {
+    "no": "12",
+    "text": "StrataVerze holds no record of this. Check and complete.",
+    "title": "Body corporate assets",
+  },
+  {
+    "no": "13",
+    "text": "StrataVerze holds no record of this. Check and complete.",
+    "title": "Embedded electricity network",
+  },
+  {
+    "no": "14",
+    "text": "StrataVerze holds no record of this. Check and complete.",
+    "title": "Layered arrangement of community titles schemes",
+  },
+  {
+    "no": "15",
+    "text": "StrataVerze holds no record of this. Check and complete.",
+    "title": "Latest statement of accounts",
+  },
+  {
+    "no": "16",
+    "text": "StrataVerze holds no record of this. Check and complete.",
+    "title": "Other matters in the approved form",
+  },
+]
+`;
+
+exports[`the Queensland body corporate certificate draft (store) > with the module and the entitlements missing, and nothing else recorded 1`] = `
+[
+  {
+    "no": "1",
+    "text": "StrataVerze holds no record of this. Check and complete.",
+    "title": "Lot and plan type",
+  },
+  {
+    "no": "2",
+    "text": "Scheme name: Seaview. Regulation module: not recorded for this building in StrataVerze. Check and complete.",
+    "title": "Scheme name and regulation module",
+  },
+  {
+    "no": "3",
+    "text": "StrataVerze holds no record of this. Check and complete.",
+    "title": "Body corporate manager and the person who keeps the records",
+  },
+  {
+    "no": "4",
+    "text": "Administrative Fund:
+No contribution notices for this fund are recorded in StrataVerze for the lot. Check and complete.
+Sinking Fund:
+No contribution notices for this fund are recorded in StrataVerze for the lot. Check and complete.
+Any discount for paying on time and any penalty for late payment, as resolved by the body corporate: check and complete.",
+    "title": "Contributions, discounts and penalties",
+  },
+  {
+    "no": "5",
+    "text": "Contribution schedule lot entitlement: not recorded for this lot in StrataVerze. Check and complete.
+Interest schedule lot entitlement: not recorded for this lot in StrataVerze. Check and complete.
+From StrataVerze's records. Check them before the certificate is issued.",
+    "title": "Lot entitlements (contribution schedule and interest schedule)",
+  },
+  {
+    "no": "6",
+    "text": "Unpaid contributions overdue at 2026-10-27: $450.00.
+Penalty charged and unpaid: $11.25.
+Any penalty since it was last charged, recovery costs and other amounts owing: check and complete.",
+    "title": "Amounts owing for the lot",
+  },
+  {
+    "no": "7",
+    "text": "StrataVerze holds no record of this. Check and complete.",
+    "title": "Sinking fund balance",
+  },
+  {
+    "no": "8",
+    "text": "No active insurance policies are recorded in StrataVerze. StrataVerze holds no record of this. Check and complete.",
+    "title": "Insurance",
+  },
+  {
+    "no": "9",
+    "text": "StrataVerze holds no record of this. Check and complete.",
+    "title": "Caretaking service contractor and letting agent",
+  },
+  {
+    "no": "10",
+    "text": "StrataVerze holds no record of this. Check and complete.",
+    "title": "Building management statement",
+  },
+  {
+    "no": "11",
+    "text": "StrataVerze holds no record of this. Check and complete.",
+    "title": "Improvements",
+  },
+  {
+    "no": "12",
+    "text": "StrataVerze holds no record of this. Check and complete.",
+    "title": "Body corporate assets",
+  },
+  {
+    "no": "13",
+    "text": "StrataVerze holds no record of this. Check and complete.",
+    "title": "Embedded electricity network",
+  },
+  {
+    "no": "14",
+    "text": "StrataVerze holds no record of this. Check and complete.",
+    "title": "Layered arrangement of community titles schemes",
+  },
+  {
+    "no": "15",
+    "text": "StrataVerze holds no record of this. Check and complete.",
+    "title": "Latest statement of accounts",
+  },
+  {
+    "no": "16",
+    "text": "StrataVerze holds no record of this. Check and complete.",
+    "title": "Other matters in the approved form",
+  },
+]
+`;
+
+exports[`the Queensland inspections page > header, deadlines and requests in every status 1`] = `
+[
+  "Governance",
+  "Records inspections",
+  "Body Corporate and Community Management Act 1997 (Qld) s 205(2), (3). The body corporate must let the person inspect the records, or give the copies asked for, within 7 days after the written request and fee. Fees for 2026-27, with no GST: an owner $20.70 to inspect, anyone else $39.75, and $0.75 for each page copied. Copies alone carry no inspection fee.",
+  "Jo Citizen (owner), Lot 7",
+  "Requested 2026-10-26. Give access or the copies by 2026-11-02.",
+  "Requested",
+  "Date and time",
+  "Place (or how the records are given electronically)",
+  "Record time and place",
+  "They inspected the records",
+  "Pages copied (0 if none)",
+  "Record access given",
+  "Cancel request",
+  "Pat Agent (agent for Sam Buyer), Lot 12",
+  "Requested 2026-10-20. Agreed: 24 Oct 2026, 10:00 am, Office.",
+  "Scheduled",
+  "Date and time",
+  "Place (or how the records are given electronically)",
+  "Record time and place",
+  "They inspected the records",
+  "Pages copied (0 if none)",
+  "Record access given",
+  "Cancel request",
+  "Sam Buyer (buyer), Lot 7",
+  "Requested 2026-10-01. Agreed: 3 Oct 2026, 10:00 am, Office.",
+  "Completed",
+  "Inspected. 12 pages copied. Fee $48.75, no GST. Not yet recorded as paid (collected outside StrataVerze).",
+  "Date the fee was paid",
+  "Record payment",
+  "Big Bank (mortgagee), Lot 12",
+  "Requested 2026-09-01.",
+  "Completed",
+  "Not inspected. 4 pages copied. Fee $3.00, no GST. Paid 2026-09-10.",
+  "Al Interest (person with a proper interest), Lot 7",
+  "Requested 2026-08-01.",
+  "Cancelled",
+  "Di Recipient (person given a seller&#x27;s disclosure statement), Lot 12",
+  "Requested 2026-10-27.",
+  "Completed",
+  "Inspected. 0 pages copied. Fee $0.00, no GST. Not yet recorded as paid (collected outside StrataVerze).",
+  "Record a request",
+  "An owner, a mortgagee, a buyer or another interested person may ask in writing to inspect the records or to get copies.",
+  "Lot the request is about",
+  "Lot 7",
+  "Lot 12",
+  "Who is asking",
+  "Owner",
+  "Mortgagee",
+  "Buyer",
+  "Person given a seller&#x27;s disclosure statement",
+  "Person with a proper interest",
+  "Agent",
+  "Name of the person asking",
+  "If an agent: who they act for",
+  "Date of the request",
+  "Records asked for (optional)",
+  "Record request",
+]
+`;
+
+exports[`the Queensland inspections page > in a financial year StrataVerze holds no fees for 1`] = `
+[
+  "Governance",
+  "Records inspections",
+  "Body Corporate and Community Management Act 1997 (Qld) s 205(2), (3). The body corporate must let the person inspect the records, or give the copies asked for, within 7 days after the written request and fee. Fees in fee units: an owner 18.25 to inspect, anyone else 35.1, and 0.65 for each page copied. StrataVerze does not hold the dollar amounts for this financial year yet.",
+  "Jo Citizen (owner), Lot 7",
+  "Requested 2026-10-26. Give access or the copies by 2026-11-02.",
+  "Requested",
+  "Date and time",
+  "Place (or how the records are given electronically)",
+  "Record time and place",
+  "They inspected the records",
+  "Pages copied (0 if none)",
+  "Record access given",
+  "Cancel request",
+  "Record a request",
+  "An owner, a mortgagee, a buyer or another interested person may ask in writing to inspect the records or to get copies.",
+  "Lot the request is about",
+  "Lot 7",
+  "Lot 12",
+  "Who is asking",
+  "Owner",
+  "Mortgagee",
+  "Buyer",
+  "Person given a seller&#x27;s disclosure statement",
+  "Person with a proper interest",
+  "Agent",
+  "Name of the person asking",
+  "If an agent: who they act for",
+  "Date of the request",
+  "Records asked for (optional)",
+  "Record request",
+]
+`;
+
+exports[`the Queensland inspections page > is refused for a pack without records inspections (NSW and Queensland) 1`] = `
+{
+  "nsw": {
+    "thrown": "NOT_FOUND",
+  },
+  "qld": {
+    "thrown": "NOT_FOUND",
+  },
+}
+`;
+
+exports[`the governance card > NSW 1`] = `
+[
+  "By-laws Register",
+  "No by-laws registered yet.",
+  "New By-law",
+  "Register by-laws to track the rules governing this scheme.",
+  "Strata Hub annual report",
+  "When the annual report is due after each AGM, and what it asks for.",
+  "Annual report",
+  "Records inspections",
+  "Requests to inspect the owners corporation&#x27;s records: times, notices and fees.",
+  "Inspections",
+  "Committee training",
+  "Each committee member&#x27;s training: completed, due or overdue.",
+  "Committee training",
+  "Members",
+  "Owners, committee members and advisers with access to this scheme.",
+  "Manage Members",
+]
+`;
+
+exports[`the governance card > Queensland 1`] = `
+[
+  "By-laws Register",
+  "No by-laws registered yet.",
+  "New By-law",
+  "Register by-laws to track the rules governing this scheme.",
+  "Records inspections",
+  "Requests to inspect or copy the body corporate&#x27;s records: dates and fees.",
+  "Inspections",
+  "Members",
+  "Owners, committee members and advisers with access to this scheme.",
+  "Manage Members",
+]
+`;
+
+exports[`the governance card > a pack without records inspections (NSW and Queensland words) 1`] = `
+{
+  "nsw": [
+    "By-laws Register",
+    "No by-laws registered yet.",
+    "New By-law",
+    "Register by-laws to track the rules governing this scheme.",
+    "Members",
+    "Owners, committee members and advisers with access to this scheme.",
+    "Manage Members",
+  ],
+  "qld": [
+    "By-laws Register",
+    "No by-laws registered yet.",
+    "New By-law",
+    "Register by-laws to track the rules governing this scheme.",
+    "Members",
+    "Owners, committee members and advisers with access to this scheme.",
+    "Manage Members",
+  ],
+}
+`;

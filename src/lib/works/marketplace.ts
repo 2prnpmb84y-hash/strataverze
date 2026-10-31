@@ -25,6 +25,7 @@ import { consumeUpload, verifyUpload } from "@/lib/storage/uploads";
 import { signDownloads } from "@/lib/storage/server-storage";
 import { schemeStoragePathProblem } from "@/lib/queries/document-url";
 import { requestPhotos } from "./requests";
+import { activeSchemesOnly, inactiveSchemeIds } from "@/lib/schemes/inactive";
 import { buildingQuoteRule } from "./quote-rule-repo";
 import { quoteRuleSentence, quotesProblem } from "./quote-rule";
 
@@ -675,11 +676,13 @@ export async function issueQuoteOrder(input: { schemeId: string; requestId: stri
  * Close deadlines that have passed and say so once (called daily by the
  * cron): interest closed (with how many are interested, or none), and
  * quotes closed. Each RFQ is claimed with one conditional update, so two
- * runs at once report it once. Returns what to email.
+ * runs at once report it once. Returns what to email. A switched off
+ * scheme's RFQs are left as they are.
  */
 export async function sweepDeadlines(now = new Date()) {
+  const inactive = await inactiveSchemeIds();
   const interestDue = await db.orm.public.WorksRfq
-    .where((r) => and(r.marketplace.eq(true), r.status.eq("INTEREST"), r.interestClosesAt.lte(ts(now)), r.noInterestNotifiedAt.isNull()))
+    .where((r) => and(r.marketplace.eq(true), r.status.eq("INTEREST"), r.interestClosesAt.lte(ts(now)), r.noInterestNotifiedAt.isNull(), ...activeSchemesOnly(r.schemeId, inactive)))
     .limit(500)
     .all();
   const interestClosed: Array<{ schemeId: string; requestId: string | null; rfqNumber: string; interested: number }> = [];
@@ -690,7 +693,7 @@ export async function sweepDeadlines(now = new Date()) {
     interestClosed.push({ schemeId: r.schemeId, requestId: r.requestId, rfqNumber: String(r.rfqNumber), interested: interested.length });
   }
   const quotesDue = await db.orm.public.WorksRfq
-    .where((r) => and(r.marketplace.eq(true), r.status.eq("QUOTING"), r.quoteClosesAt.lte(ts(now)), r.quotesClosedNotifiedAt.isNull()))
+    .where((r) => and(r.marketplace.eq(true), r.status.eq("QUOTING"), r.quoteClosesAt.lte(ts(now)), r.quotesClosedNotifiedAt.isNull(), ...activeSchemesOnly(r.schemeId, inactive)))
     .limit(500)
     .all();
   const quotesClosed: Array<{ schemeId: string; requestId: string | null; rfqNumber: string; quotes: number }> = [];

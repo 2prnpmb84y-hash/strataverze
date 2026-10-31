@@ -9,12 +9,15 @@ export default function PublicLayout({
     <div className="min-h-screen bg-white text-gray-900">
       <header className="border-b border-gray-200 bg-white">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-4">
-          <Link
+          {/* A full page load, not a client navigation: the app root is a
+              redirect (to the dashboard when signed in, otherwise to the
+              public site), made in src/proxy.ts. */}
+          <a
             href="/"
             className="text-xl font-bold tracking-tight text-[#0A0F1C]"
           >
             Strata<span className="text-[#00D4BF]">Verze</span>
-          </Link>
+          </a>
           <nav className="flex items-center gap-4 text-sm text-gray-600">
             <Link href="/privacy" className="hover:text-gray-900">
               Privacy

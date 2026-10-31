@@ -2,11 +2,11 @@
 
 import { useState, useTransition } from "react";
 import { confirmTotpEnrolmentAction, startTotpEnrolmentAction, verifyTotpAction } from "./actions";
+import { INPUT_FOCUS_CLASS, PRIMARY_ACTION_CLASS, TEXT_LINK_CLASS } from "@/components/ui/action-styles";
 
-const inputClass =
-  "w-full rounded-[var(--radius-card)] border border-line bg-white px-3.5 py-2.5 text-lg tracking-[0.4em] text-center text-ink placeholder:text-ink-muted placeholder:tracking-normal focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-transparent transition-shadow";
-const buttonClass =
-  "w-full inline-flex items-center justify-center rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] bg-turquoise text-white hover:bg-turquoise/90 disabled:opacity-50 transition-colors";
+const inputClass = `w-full rounded-[var(--radius-card)] border border-line bg-white px-3.5 py-2.5 text-lg tracking-[0.4em] text-center text-ink placeholder:text-ink-muted placeholder:tracking-normal ${INPUT_FOCUS_CLASS} transition-shadow`;
+// White on turquoise was 1.88:1; see action-styles.ts (AR-037).
+const buttonClass = `w-full ${PRIMARY_ACTION_CLASS}`;
 
 function ErrorBox({ message }: { message: string | null }) {
   if (!message) return null;
@@ -88,7 +88,7 @@ export function VerifyForm({
         </div>
       )}
       <CodeInput value={code} onChange={setCode} />
-      <button type="submit" disabled={pending} className={buttonClass}>
+      <button type="submit" disabled={pending} aria-busy={pending || undefined} className={buttonClass}>
         {pending ? "Checking…" : "Verify"}
       </button>
     </form>
@@ -113,6 +113,7 @@ export function EnrolForm({ next }: { next: string | null }) {
         <button
           type="button"
           disabled={pending}
+          aria-busy={pending || undefined}
           className={buttonClass}
           onClick={() =>
             start(async () => {
@@ -159,7 +160,7 @@ export function EnrolForm({ next }: { next: string | null }) {
       <img src={qrSrc} alt="QR code for your authenticator app" className="mx-auto h-48 w-48 bg-white" />
       <div className="text-xs text-ink-muted">
         Can&apos;t scan it?{" "}
-        <button type="button" className="text-turquoise underline" onClick={() => setShowSecret((v) => !v)}>
+        <button type="button" className={TEXT_LINK_CLASS} onClick={() => setShowSecret((v) => !v)}>
           {showSecret ? "Hide the setup key" : "Enter a setup key instead"}
         </button>
         {showSecret && (
@@ -169,7 +170,7 @@ export function EnrolForm({ next }: { next: string | null }) {
         )}
       </div>
       <CodeInput value={code} onChange={setCode} />
-      <button type="submit" disabled={pending} className={buttonClass}>
+      <button type="submit" disabled={pending} aria-busy={pending || undefined} className={buttonClass}>
         {pending ? "Checking…" : "Confirm and continue"}
       </button>
     </form>
