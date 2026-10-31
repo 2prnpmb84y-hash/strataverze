@@ -23,9 +23,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'622cd4194807762f074f38bc048979734c6d7392343ce5f8829f3858dacdd157'>;
+  StorageHashBase<'1301a290c0d271e8fb0480d0715adcf3d94df95b658e7168c48f5aa74b618ece'>;
 export type ExecutionHash =
-  ExecutionHashBase<'8c9cb0b046b1bd7cbabff3729749064a4319da7e3f83be98fb8c1e93574f50c8'>;
+  ExecutionHashBase<'454fa11779756be5e20f2ae540217fc9e337e78af6dbb69e34dc8ddf4d7262fe'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -4305,6 +4305,87 @@ export namespace Models {
       | 'scheme'
       | 'siteVisits';
   };
+  export type public_ZaiPaymentReference = {
+    createdAt: FieldOutputTypes['public']['ZaiPaymentReference']['createdAt'];
+    createdBy: FieldOutputTypes['public']['ZaiPaymentReference']['createdBy'];
+    id: FieldOutputTypes['public']['ZaiPaymentReference']['id'];
+    lotId: FieldOutputTypes['public']['ZaiPaymentReference']['lotId'];
+    method: FieldOutputTypes['public']['ZaiPaymentReference']['method'];
+    schemeId: FieldOutputTypes['public']['ZaiPaymentReference']['schemeId'];
+    status: FieldOutputTypes['public']['ZaiPaymentReference']['status'];
+    updatedAt: FieldOutputTypes['public']['ZaiPaymentReference']['updatedAt'];
+    value: FieldOutputTypes['public']['ZaiPaymentReference']['value'];
+    zaiWalletAccountId: FieldOutputTypes['public']['ZaiPaymentReference']['zaiWalletAccountId'];
+    readonly [RelationKeys]?: never;
+  };
+  export type public_ZaiTransaction = {
+    amount: FieldOutputTypes['public']['ZaiTransaction']['amount'];
+    createdAt: FieldOutputTypes['public']['ZaiTransaction']['createdAt'];
+    currency: FieldOutputTypes['public']['ZaiTransaction']['currency'];
+    direction: FieldOutputTypes['public']['ZaiTransaction']['direction'];
+    id: FieldOutputTypes['public']['ZaiTransaction']['id'];
+    idempotencyKey: FieldOutputTypes['public']['ZaiTransaction']['idempotencyKey'];
+    initiatedBy: FieldOutputTypes['public']['ZaiTransaction']['initiatedBy'];
+    journalEntryId: FieldOutputTypes['public']['ZaiTransaction']['journalEntryId'];
+    lotId: FieldOutputTypes['public']['ZaiTransaction']['lotId'];
+    matchReason: FieldOutputTypes['public']['ZaiTransaction']['matchReason'];
+    matchStatus: FieldOutputTypes['public']['ZaiTransaction']['matchStatus'];
+    referenceValue: FieldOutputTypes['public']['ZaiTransaction']['referenceValue'];
+    releasedAt: FieldOutputTypes['public']['ZaiTransaction']['releasedAt'];
+    releasedBy: FieldOutputTypes['public']['ZaiTransaction']['releasedBy'];
+    schemeId: FieldOutputTypes['public']['ZaiTransaction']['schemeId'];
+    supplierInvoiceId: FieldOutputTypes['public']['ZaiTransaction']['supplierInvoiceId'];
+    updatedAt: FieldOutputTypes['public']['ZaiTransaction']['updatedAt'];
+    zaiAccountId: FieldOutputTypes['public']['ZaiTransaction']['zaiAccountId'];
+    zaiObjectId: FieldOutputTypes['public']['ZaiTransaction']['zaiObjectId'];
+    zaiObjectType: FieldOutputTypes['public']['ZaiTransaction']['zaiObjectType'];
+    zaiState: FieldOutputTypes['public']['ZaiTransaction']['zaiState'];
+    zaiType: FieldOutputTypes['public']['ZaiTransaction']['zaiType'];
+    zaiTypeMethod: FieldOutputTypes['public']['ZaiTransaction']['zaiTypeMethod'];
+    zaiUpdatedAt: FieldOutputTypes['public']['ZaiTransaction']['zaiUpdatedAt'];
+    readonly [RelationKeys]?: never;
+  };
+  export type public_ZaiUser = {
+    createdAt: FieldOutputTypes['public']['ZaiUser']['createdAt'];
+    createdBy: FieldOutputTypes['public']['ZaiUser']['createdBy'];
+    id: FieldOutputTypes['public']['ZaiUser']['id'];
+    role: FieldOutputTypes['public']['ZaiUser']['role'];
+    schemeId: FieldOutputTypes['public']['ZaiUser']['schemeId'];
+    supplierId: FieldOutputTypes['public']['ZaiUser']['supplierId'];
+    updatedAt: FieldOutputTypes['public']['ZaiUser']['updatedAt'];
+    verificationState: FieldOutputTypes['public']['ZaiUser']['verificationState'];
+    zaiCompanyId: FieldOutputTypes['public']['ZaiUser']['zaiCompanyId'];
+    zaiUpdatedAt: FieldOutputTypes['public']['ZaiUser']['zaiUpdatedAt'];
+    zaiUserId: FieldOutputTypes['public']['ZaiUser']['zaiUserId'];
+    readonly [RelationKeys]?: never;
+  };
+  export type public_ZaiWalletAccount = {
+    active: FieldOutputTypes['public']['ZaiWalletAccount']['active'];
+    createdAt: FieldOutputTypes['public']['ZaiWalletAccount']['createdAt'];
+    fundId: FieldOutputTypes['public']['ZaiWalletAccount']['fundId'];
+    id: FieldOutputTypes['public']['ZaiWalletAccount']['id'];
+    kind: FieldOutputTypes['public']['ZaiWalletAccount']['kind'];
+    schemeId: FieldOutputTypes['public']['ZaiWalletAccount']['schemeId'];
+    updatedAt: FieldOutputTypes['public']['ZaiWalletAccount']['updatedAt'];
+    zaiAccountId: FieldOutputTypes['public']['ZaiWalletAccount']['zaiAccountId'];
+    zaiUpdatedAt: FieldOutputTypes['public']['ZaiWalletAccount']['zaiUpdatedAt'];
+    zaiUserRowId: FieldOutputTypes['public']['ZaiWalletAccount']['zaiUserRowId'];
+    readonly [RelationKeys]?: never;
+  };
+  export type public_ZaiWebhookEvent = {
+    dedupeKey: FieldOutputTypes['public']['ZaiWebhookEvent']['dedupeKey'];
+    error: FieldOutputTypes['public']['ZaiWebhookEvent']['error'];
+    id: FieldOutputTypes['public']['ZaiWebhookEvent']['id'];
+    objectId: FieldOutputTypes['public']['ZaiWebhookEvent']['objectId'];
+    objectType: FieldOutputTypes['public']['ZaiWebhookEvent']['objectType'];
+    objectUpdatedAt: FieldOutputTypes['public']['ZaiWebhookEvent']['objectUpdatedAt'];
+    processedAt: FieldOutputTypes['public']['ZaiWebhookEvent']['processedAt'];
+    receivedAt: FieldOutputTypes['public']['ZaiWebhookEvent']['receivedAt'];
+    signedAt: FieldOutputTypes['public']['ZaiWebhookEvent']['signedAt'];
+    status: FieldOutputTypes['public']['ZaiWebhookEvent']['status'];
+    storedBody: FieldOutputTypes['public']['ZaiWebhookEvent']['storedBody'];
+    readonly [RelationKeys]?: never;
+  };
 }
 
 export declare const models: {
@@ -4480,6 +4561,11 @@ export declare const models: {
     WorksVariation: Models.public_WorksVariation;
     WorksVerificationEvent: Models.public_WorksVerificationEvent;
     WorksWorkOrder: Models.public_WorksWorkOrder;
+    ZaiPaymentReference: Models.public_ZaiPaymentReference;
+    ZaiTransaction: Models.public_ZaiTransaction;
+    ZaiUser: Models.public_ZaiUser;
+    ZaiWalletAccount: Models.public_ZaiWalletAccount;
+    ZaiWebhookEvent: Models.public_ZaiWebhookEvent;
   };
 };
 
@@ -27808,6 +27894,581 @@ type ContractBase = Omit<
                 },
               ];
             };
+            readonly zai_payment_references: {
+              columns: {
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly created_by: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly lot_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly method: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly length: 30 };
+                  readonly many: false;
+                };
+                readonly scheme_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly status: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'sql/varchar@1', 'pending_activation'>;
+                  };
+                  readonly typeParams: { readonly length: 40 };
+                  readonly many: false;
+                };
+                readonly updated_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly value: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly length: 200 };
+                  readonly many: false;
+                };
+                readonly zai_wallet_account_id: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly length: 100 };
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'zai_payment_references_method_value_key';
+                  readonly columns: readonly ['method', 'value'];
+                  readonly unique: true;
+                },
+                {
+                  readonly name: 'zai_payment_references_scheme_id_lot_id_idx';
+                  readonly columns: readonly ['scheme_id', 'lot_id'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [];
+            };
+            readonly zai_transactions: {
+              columns: {
+                readonly amount: {
+                  readonly dataType: 'pg/numeric';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 14; readonly scale: 2 };
+                  readonly many: false;
+                };
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly currency: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly length: 3 };
+                  readonly many: false;
+                };
+                readonly direction: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly length: 3 };
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly idempotency_key: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly length: 100 };
+                  readonly many: false;
+                };
+                readonly initiated_by: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly journal_entry_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly lot_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly match_reason: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly length: 200 };
+                  readonly many: false;
+                };
+                readonly match_status: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly length: 30 };
+                  readonly many: false;
+                };
+                readonly reference_value: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly length: 200 };
+                  readonly many: false;
+                };
+                readonly released_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly released_by: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly scheme_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly supplier_invoice_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly updated_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly zai_account_id: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly length: 100 };
+                  readonly many: false;
+                };
+                readonly zai_object_id: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly length: 100 };
+                  readonly many: false;
+                };
+                readonly zai_object_type: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly length: 40 };
+                  readonly many: false;
+                };
+                readonly zai_state: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly length: 40 };
+                  readonly many: false;
+                };
+                readonly zai_type: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly length: 40 };
+                  readonly many: false;
+                };
+                readonly zai_type_method: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly length: 40 };
+                  readonly many: false;
+                };
+                readonly zai_updated_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'zai_transactions_idempotency_key_key';
+                  readonly columns: readonly ['idempotency_key'];
+                  readonly unique: true;
+                },
+                {
+                  readonly name: 'zai_transactions_scheme_id_match_status_idx';
+                  readonly columns: readonly ['scheme_id', 'match_status'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'zai_transactions_zai_object_type_zai_object_id_key';
+                  readonly columns: readonly ['zai_object_type', 'zai_object_id'];
+                  readonly unique: true;
+                },
+              ];
+              foreignKeys: readonly [];
+            };
+            readonly zai_users: {
+              columns: {
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly created_by: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly role: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly length: 30 };
+                  readonly many: false;
+                };
+                readonly scheme_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly supplier_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly updated_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly verification_state: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'sql/varchar@1', 'pending'>;
+                  };
+                  readonly typeParams: { readonly length: 40 };
+                  readonly many: false;
+                };
+                readonly zai_company_id: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly length: 100 };
+                  readonly many: false;
+                };
+                readonly zai_updated_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly zai_user_id: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly length: 100 };
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'zai_users_scheme_id_role_idx';
+                  readonly columns: readonly ['scheme_id', 'role'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'zai_users_zai_user_id_key';
+                  readonly columns: readonly ['zai_user_id'];
+                  readonly unique: true;
+                },
+              ];
+              foreignKeys: readonly [];
+            };
+            readonly zai_wallet_accounts: {
+              columns: {
+                readonly active: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', true>;
+                  };
+                  readonly many: false;
+                };
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly fund_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly kind: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly length: 30 };
+                  readonly many: false;
+                };
+                readonly scheme_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly updated_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly zai_account_id: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly length: 100 };
+                  readonly many: false;
+                };
+                readonly zai_updated_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly zai_user_row_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'zai_wallet_accounts_scheme_id_idx';
+                  readonly columns: readonly ['scheme_id'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'zai_wallet_accounts_zai_account_id_key';
+                  readonly columns: readonly ['zai_account_id'];
+                  readonly unique: true;
+                },
+                {
+                  readonly name: 'zai_wallet_accounts_zai_user_row_id_idx';
+                  readonly columns: readonly ['zai_user_row_id'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [];
+            };
+            readonly zai_webhook_events: {
+              columns: {
+                readonly dedupe_key: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly length: 64 };
+                  readonly many: false;
+                };
+                readonly error: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly length: 500 };
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly object_id: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly length: 100 };
+                  readonly many: false;
+                };
+                readonly object_type: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly length: 40 };
+                  readonly many: false;
+                };
+                readonly object_updated_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly processed_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly received_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly signed_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly status: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'sql/varchar@1', 'RECEIVED'>;
+                  };
+                  readonly typeParams: { readonly length: 20 };
+                  readonly many: false;
+                };
+                readonly stored_body: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'zai_webhook_events_dedupe_key_key';
+                  readonly columns: readonly ['dedupe_key'];
+                  readonly unique: true;
+                },
+                {
+                  readonly name: 'zai_webhook_events_object_type_object_id_idx';
+                  readonly columns: readonly ['object_type', 'object_id'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'zai_webhook_events_status_idx';
+                  readonly columns: readonly ['status'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [];
+            };
           };
           readonly valueSet: {
             readonly PortalRole: {
@@ -28465,6 +29126,23 @@ type ContractBase = Omit<
     readonly works_work_orders: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'WorksWorkOrder';
+    };
+    readonly zai_payment_references: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'ZaiPaymentReference';
+    };
+    readonly zai_transactions: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'ZaiTransaction';
+    };
+    readonly zai_users: { readonly namespace: 'public' & NamespaceId; readonly model: 'ZaiUser' };
+    readonly zai_wallet_accounts: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'ZaiWalletAccount';
+    };
+    readonly zai_webhook_events: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'ZaiWebhookEvent';
     };
   };
   readonly domain: {
@@ -51780,6 +52458,551 @@ type ContractBase = Omit<
               };
             };
           };
+          readonly ZaiPaymentReference: {
+            readonly fields: {
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly createdBy: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly lotId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly method: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 30 };
+                };
+              };
+              readonly schemeId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly status: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 40 };
+                };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly value: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 200 };
+                };
+              };
+              readonly zaiWalletAccountId: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 100 };
+                };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'zai_payment_references';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly createdBy: { readonly column: 'created_by' };
+                readonly id: { readonly column: 'id' };
+                readonly lotId: { readonly column: 'lot_id' };
+                readonly method: { readonly column: 'method' };
+                readonly schemeId: { readonly column: 'scheme_id' };
+                readonly status: { readonly column: 'status' };
+                readonly updatedAt: { readonly column: 'updated_at' };
+                readonly value: { readonly column: 'value' };
+                readonly zaiWalletAccountId: { readonly column: 'zai_wallet_account_id' };
+              };
+            };
+          };
+          readonly ZaiTransaction: {
+            readonly fields: {
+              readonly amount: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly typeParams: { readonly precision: 14; readonly scale: 2 };
+                };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly currency: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 3 };
+                };
+              };
+              readonly direction: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 3 };
+                };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly idempotencyKey: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 100 };
+                };
+              };
+              readonly initiatedBy: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly journalEntryId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly lotId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly matchReason: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 200 };
+                };
+              };
+              readonly matchStatus: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 30 };
+                };
+              };
+              readonly referenceValue: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 200 };
+                };
+              };
+              readonly releasedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly releasedBy: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly schemeId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly supplierInvoiceId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly zaiAccountId: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 100 };
+                };
+              };
+              readonly zaiObjectId: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 100 };
+                };
+              };
+              readonly zaiObjectType: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 40 };
+                };
+              };
+              readonly zaiState: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 40 };
+                };
+              };
+              readonly zaiType: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 40 };
+                };
+              };
+              readonly zaiTypeMethod: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 40 };
+                };
+              };
+              readonly zaiUpdatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'zai_transactions';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly amount: { readonly column: 'amount' };
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly currency: { readonly column: 'currency' };
+                readonly direction: { readonly column: 'direction' };
+                readonly id: { readonly column: 'id' };
+                readonly idempotencyKey: { readonly column: 'idempotency_key' };
+                readonly initiatedBy: { readonly column: 'initiated_by' };
+                readonly journalEntryId: { readonly column: 'journal_entry_id' };
+                readonly lotId: { readonly column: 'lot_id' };
+                readonly matchReason: { readonly column: 'match_reason' };
+                readonly matchStatus: { readonly column: 'match_status' };
+                readonly referenceValue: { readonly column: 'reference_value' };
+                readonly releasedAt: { readonly column: 'released_at' };
+                readonly releasedBy: { readonly column: 'released_by' };
+                readonly schemeId: { readonly column: 'scheme_id' };
+                readonly supplierInvoiceId: { readonly column: 'supplier_invoice_id' };
+                readonly updatedAt: { readonly column: 'updated_at' };
+                readonly zaiAccountId: { readonly column: 'zai_account_id' };
+                readonly zaiObjectId: { readonly column: 'zai_object_id' };
+                readonly zaiObjectType: { readonly column: 'zai_object_type' };
+                readonly zaiState: { readonly column: 'zai_state' };
+                readonly zaiType: { readonly column: 'zai_type' };
+                readonly zaiTypeMethod: { readonly column: 'zai_type_method' };
+                readonly zaiUpdatedAt: { readonly column: 'zai_updated_at' };
+              };
+            };
+          };
+          readonly ZaiUser: {
+            readonly fields: {
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly createdBy: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly role: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 30 };
+                };
+              };
+              readonly schemeId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly supplierId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly verificationState: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 40 };
+                };
+              };
+              readonly zaiCompanyId: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 100 };
+                };
+              };
+              readonly zaiUpdatedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly zaiUserId: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 100 };
+                };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'zai_users';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly createdBy: { readonly column: 'created_by' };
+                readonly id: { readonly column: 'id' };
+                readonly role: { readonly column: 'role' };
+                readonly schemeId: { readonly column: 'scheme_id' };
+                readonly supplierId: { readonly column: 'supplier_id' };
+                readonly updatedAt: { readonly column: 'updated_at' };
+                readonly verificationState: { readonly column: 'verification_state' };
+                readonly zaiCompanyId: { readonly column: 'zai_company_id' };
+                readonly zaiUpdatedAt: { readonly column: 'zai_updated_at' };
+                readonly zaiUserId: { readonly column: 'zai_user_id' };
+              };
+            };
+          };
+          readonly ZaiWalletAccount: {
+            readonly fields: {
+              readonly active: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly fundId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly kind: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 30 };
+                };
+              };
+              readonly schemeId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly zaiAccountId: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 100 };
+                };
+              };
+              readonly zaiUpdatedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly zaiUserRowId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'zai_wallet_accounts';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly active: { readonly column: 'active' };
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly fundId: { readonly column: 'fund_id' };
+                readonly id: { readonly column: 'id' };
+                readonly kind: { readonly column: 'kind' };
+                readonly schemeId: { readonly column: 'scheme_id' };
+                readonly updatedAt: { readonly column: 'updated_at' };
+                readonly zaiAccountId: { readonly column: 'zai_account_id' };
+                readonly zaiUpdatedAt: { readonly column: 'zai_updated_at' };
+                readonly zaiUserRowId: { readonly column: 'zai_user_row_id' };
+              };
+            };
+          };
+          readonly ZaiWebhookEvent: {
+            readonly fields: {
+              readonly dedupeKey: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 64 };
+                };
+              };
+              readonly error: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 500 };
+                };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly objectId: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 100 };
+                };
+              };
+              readonly objectType: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 40 };
+                };
+              };
+              readonly objectUpdatedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly processedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly receivedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly signedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly status: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 20 };
+                };
+              };
+              readonly storedBody: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'zai_webhook_events';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly dedupeKey: { readonly column: 'dedupe_key' };
+                readonly error: { readonly column: 'error' };
+                readonly id: { readonly column: 'id' };
+                readonly objectId: { readonly column: 'object_id' };
+                readonly objectType: { readonly column: 'object_type' };
+                readonly objectUpdatedAt: { readonly column: 'object_updated_at' };
+                readonly processedAt: { readonly column: 'processed_at' };
+                readonly receivedAt: { readonly column: 'received_at' };
+                readonly signedAt: { readonly column: 'signed_at' };
+                readonly status: { readonly column: 'status' };
+                readonly storedBody: { readonly column: 'stored_body' };
+              };
+            };
+          };
         };
       };
     };
@@ -52550,6 +53773,42 @@ type ContractBase = Omit<
           readonly onUpdate: { readonly id: 'timestamptzStringNow'; readonly kind: 'generator' };
           readonly ref: {
             readonly entry: 'works_work_orders';
+            readonly field: 'updated_at';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'timestamptzStringNow'; readonly kind: 'generator' };
+          readonly onUpdate: { readonly id: 'timestamptzStringNow'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'zai_payment_references';
+            readonly field: 'updated_at';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'timestamptzStringNow'; readonly kind: 'generator' };
+          readonly onUpdate: { readonly id: 'timestamptzStringNow'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'zai_transactions';
+            readonly field: 'updated_at';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'timestamptzStringNow'; readonly kind: 'generator' };
+          readonly onUpdate: { readonly id: 'timestamptzStringNow'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'zai_users';
+            readonly field: 'updated_at';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'timestamptzStringNow'; readonly kind: 'generator' };
+          readonly onUpdate: { readonly id: 'timestamptzStringNow'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'zai_wallet_accounts';
             readonly field: 'updated_at';
             readonly namespace: 'public';
           };
