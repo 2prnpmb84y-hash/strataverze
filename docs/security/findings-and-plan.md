@@ -333,6 +333,28 @@ Each stage is one PR, green on lint, type-check, tests and build. Production dat
   - **Alerts.** A failed check shows on the admin page only, until email exists.
   - **Specific events.** Of 212 privileged actions, 97 have no specific event, only the generic "action taken" one.
 
+## Invitations that create the account (stage S2a, built 31 Oct, not deployed)
+
+S2 is shipped in slices. S2a is the first; S2b (supplier sign-up, then closing open sign-up), S2c (change of ownership and 30 days read-only), S2d (committee offices, Adviser invitation) and S2e (lifecycle emails, account disable) follow.
+
+- **Who invites.** The building's Adviser (`members.manage`) or a platform admin, with a fresh authenticator check, for owners (tied to a lot of that building), committee members and accountants. Adviser invitations wait for S2d. Checked in the server action (`src/lib/invitations/authorise.ts`).
+- **The account.** If the address has no account, the server creates one with the Supabase admin API (`auth.admin.createUser`), unconfirmed and with no password. Nobody can sign in to it until the invitee sets a password from the link (`src/lib/invitations/accounts.ts`).
+- **The link.** `/join#<token>`: 32 random bytes, stored only as a SHA-256 (`invitations.token_hash`). The token sits in the URL fragment, so it never reaches server logs. It works once (claimed by a conditional update), lasts 14 days, and sending the invitation again replaces it.
+- **Using it.**
+  - Someone new chooses a password. The server checks that the account is the one it made for that invitation, carries the invited address and has never been set up. It then sets the password (`auth.admin.updateUserById`), accepts and signs them in.
+  - Someone with an account signs in with the invited address and accepts. The Invitations page works as before.
+- **No account enumeration.** The inviter sees the same reply, and the invitee gets the same email, whether or not the address had an account. Account creation is logged without the building, so the Adviser's security log does not show it.
+- **Limits.** These are counted in the database:
+  - 60 invitations an hour per inviter;
+  - 5 per 12 hours per address and building;
+  - 30 link checks per 15 minutes per IP address;
+  - 10 uses per 15 minutes per link.
+- **Database.** These are written but **not applied**:
+  - `20261129_invitation_link_tokens.sql`, applied before deploy;
+  - `20261130_invitation_plain_token_drop.sql`, applied after deploy;
+  - the rolled-back rehearsal in `prisma/rehearsals/`.
+- **Not changed.** Open sign-up stays on until S2b. `owner-assignment` stays until S2c or S2d. The change-of-owner invitation still uses the old email, which needs an account, until S2c routes it through S2a.
+
 ## Storage design (stage S3, as built 23 Oct)
 
 **Uploads, in three steps** (`src/lib/storage/uploads.ts`):
