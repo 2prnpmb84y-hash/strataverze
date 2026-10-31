@@ -238,6 +238,18 @@ describe("the daily run", () => {
     expect(pendingRow("i2").status).toBe("PENDING");
   });
 
+  it("leaves a switched off scheme's rows as they are, deciding the other buildings' as before", async () => {
+    await open("i2", "INTERIM_NO_QUORUM");
+    await open("x1", "REDUCED_QUORUM");
+    pendingRow("i2").noticeGivenOn = "2026-11-03";
+    pendingRow("x1").noticeGivenOn = "2026-11-03";
+    sharedFake.table("Scheme").find((s) => s.id === "s1")!.isActive = false;
+    expect(await repo.settleDuePendingResolutions({}, at("2027-01-01T00:00:00.000Z"))).toEqual({ settled: 1, waiting: 0, blocked: [], failed: 0 });
+    expect(pendingRow("x1")).toMatchObject({ status: "CARRIED", endedBy: "PERIOD_ENDED" });
+    expect(pendingRow("i2").status).toBe("PENDING");
+    expect(item("i2").status).toBe("INTERIM");
+  });
+
   it("counts a failure and goes on with the others", async () => {
     await open("i2", "INTERIM_NO_QUORUM");
     await open("x1", "REDUCED_QUORUM");
