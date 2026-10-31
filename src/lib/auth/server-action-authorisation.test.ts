@@ -34,6 +34,10 @@ const ALLOWED: Record<string, string> = {
   "src/lib/actions/uploads.ts#prepareUploadAction": "prepareUpload authorises through the purpose's own check (UPLOAD_PURPOSES in src/lib/storage/uploads.ts)",
   "src/app/(portal)/invitations/actions.ts#acceptInvitationAction": "requires the invitation to be for the caller's email",
   "src/app/(portal)/invitations/actions.ts#declineInvitationAction": "requires the invitation to be for the caller's email",
+  // Invitation links (S2a): holding the emailed one-time link is the credential.
+  "src/app/join/actions.ts#lookupJoinLinkAction": "public: shows what a valid invitation link is for and changes nothing; rate limited per address",
+  "src/app/join/actions.ts#completeJoinAction": "public: needs a valid, unused link for an account the server made for that invitation; sets only that account's first password; rate limited per address and link",
+  "src/app/join/actions.ts#acceptJoinAction": "needs a valid, unused link and the caller signed in with the invited email",
   "src/lib/actions/scheme-selection.ts#selectScheme": "checks the caller's own memberships",
   "src/lib/actions/scheme-selection.ts#getSelectedSchemeId": "reads the caller's own cookie; never used as authorisation after S1",
   "src/lib/actions/scheme-selection.ts#clearSelectedScheme": "clears the caller's own cookie",
