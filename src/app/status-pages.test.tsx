@@ -82,7 +82,7 @@ describe("errors", () => {
   it("global error renders its own document, without the message", () => {
     const html = renderToStaticMarkup(<GlobalError error={thrown()} retry={() => {}} />);
     expect(html).toMatch(/^<html lang="en-AU"/);
-    expect(html).toMatch(/<body[^>]*>.*Something went wrong.*<\/body><\/html>$/s);
+    expect(html).toMatch(/<body[^>]*>[\s\S]*Something went wrong[\s\S]*<\/body><\/html>$/);
     expect(html).toContain("Something went wrong");
     expect(html).toContain("support@strataverze.com");
     expect(html).toContain('href="/dashboard"');
