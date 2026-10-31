@@ -1,7 +1,8 @@
 /**
- * AR-037: every button and link on the sign-in pages has a readable label
- * (one text colour per state, 4.5:1 against its background in the default,
- * hover, focus, disabled and pending states).
+ * AR-037 and AR-042: every button and link on the sign-in pages has a
+ * readable label (one text colour per state, 4.5:1 against its background
+ * in the default, hover, focus, disabled and pending states), and no
+ * password field shows a row of dots as its placeholder.
  *
  * The sign-in button used to carry `text-white` and `text-turquoise` with
  * `bg-white`, and rendered white on white.
@@ -45,6 +46,12 @@ function problems(container: HTMLElement) {
     .filter((c) => c.problems.length > 0);
 }
 
+function passwordPlaceholders(container: HTMLElement) {
+  return [...container.querySelectorAll<HTMLInputElement>('input[type="password"]')]
+    .map((el) => el.getAttribute("placeholder"))
+    .filter((p) => p !== null && p !== "Password");
+}
+
 describe("the checker", () => {
   it("catches the old sign-in button", () => {
     const old =
@@ -70,6 +77,7 @@ describe("the sign-in pages", () => {
   it("sign in: Sign in is the main, readable action and Create account is quieter", () => {
     const { container } = render(<LoginForm />);
     expect(problems(container)).toEqual([]);
+    expect(passwordPlaceholders(container)).toEqual([]);
     const signIn = screen.getByRole("button", { name: "Sign in" });
     expect(signIn.className).toContain("bg-turquoise");
     expect(signIn.className).toContain("text-ink");
@@ -87,6 +95,7 @@ describe("the sign-in pages", () => {
     expect(screen.getByRole("button", { name: "Create account" }).getAttribute("type")).toBe("submit");
     expect(screen.getByRole("button", { name: "Back to sign in" })).toBeTruthy();
     expect(problems(container)).toEqual([]);
+    expect(passwordPlaceholders(container)).toEqual([]);
   });
 
   it("forgot password", async () => {
@@ -99,6 +108,8 @@ describe("the sign-in pages", () => {
     const { container } = render(<ResetPasswordPage />);
     expect(await screen.findByRole("button", { name: "Update password" })).toBeTruthy();
     expect(problems(container)).toEqual([]);
+    expect(container.querySelectorAll('input[type="password"]').length).toBe(2);
+    expect(passwordPlaceholders(container)).toEqual([]);
   });
 
   it("MFA: verify, and each step of setting up an authenticator", async () => {

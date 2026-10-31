@@ -96,7 +96,6 @@ export function LoginForm({
             style={
               { "--tw-ring-color": ACCENT } as React.CSSProperties
             }
-            placeholder="••••••••"
           />
           {isSignUp && <PasswordStrength password={password} />}
         </div>
