@@ -194,20 +194,21 @@ describe("failing closed", () => {
     expect(recoveryStepNeeds(withRecovery({ authorityToSue: authority({ value: [], status: "STRATAVERZE", source: "s" }) }), "COMMITTEE_REVIEW")).toMatchObject({ problem: expect.stringMatching(/not confirmed/) });
   });
 
-  // statutoryCharge is applied since PR 9b (recovery-gates.charge.test.ts): only the keys still not applied are here.
-  it.each(["stepTiming", "finalNotice", "appliesWhen"])("a key StrataVerze does not apply yet (%s) refuses every action", (key) => {
+  // statutoryCharge is applied since PR 9b (recovery-gates.charge.test.ts), and stepTiming, finalNotice, appliesWhen and
+  // the amount threshold since PR 9c (recovery-gates.vic.test.ts): a value not in their shape refuses every action.
+  it.each(["stepTiming", "finalNotice", "appliesWhen"])("a key not in its shape (%s) refuses every action", (key) => {
     const rules = withRecovery({ [key]: { anything: true } });
     expect(recoveryGatesApply(rules)).toBe(true);
-    const refusal = "Debt recovery for this building needs rules StrataVerze does not apply yet, so this is refused. Nothing was saved.";
+    const refusal = "This building's debt recovery rules are not in the shape StrataVerze applies, so this is refused. Nothing was saved.";
     for (const input of [{ action: "INITIATE" } as const, { action: "CLOSE" } as const, { action: "REFER_LEGAL", recorded: AUTHORISED } as const, complete("LEDGER_VERIFICATION")]) {
       expect(recoveryGateProblem(rules, input)).toBe(refusal);
     }
     expect(recoveryStepNeeds(rules, "LEDGER_VERIFICATION")).toEqual({ problem: refusal });
   });
 
-  it("the Victorian amount threshold is not applied yet, so it refuses", () => {
+  it("an amount threshold not in its shape refuses", () => {
     const rules = withRecovery({ authorityToSue: authority({ value: [GENERAL], status: "STRATAVERZE", source: "s" }, { amountThreshold: { multiple: 2 } }) });
-    expect(recoveryGateProblem(rules, { action: "INITIATE" })).toMatch(/does not apply yet/);
+    expect(recoveryGateProblem(rules, { action: "INITIATE" })).toMatch(/not in the shape/);
   });
 
   it("a key written as undefined, or not in the shared shape (such as the ACT pack's own forum and charge fields before PR 9b), refuses", () => {

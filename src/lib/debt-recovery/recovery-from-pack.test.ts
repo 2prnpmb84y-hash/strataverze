@@ -324,12 +324,12 @@ describe("Western Australian debt recovery (draft, stage 2, PR 9a)", () => {
 });
 
 describe("the draft packs' debt recovery switch (stage 2, PR 9a)", () => {
-  it("a draft pack has the recovery steps on only with DEBT_RECOVERY.authorityToSue (VIC stays off until PR 9c)", () => {
+  it("a draft pack has the recovery steps on only with DEBT_RECOVERY.authorityToSue (VIC since PR 9c)", () => {
     for (const pack of Object.values(PENDING_RULE_PACKS)) {
       const rules = pack.rules as unknown as { FEATURES: { debtRecoverySteps: boolean }; DEBT_RECOVERY?: { authorityToSue?: unknown } };
       if (rules.FEATURES.debtRecoverySteps) expect(rules.DEBT_RECOVERY?.authorityToSue, pack.code).toBeDefined();
     }
-    expect(PENDING_RULE_PACKS.VIC.rules.FEATURES.debtRecoverySteps).toBe(false);
+    expect(PENDING_RULE_PACKS.VIC.rules.FEATURES.debtRecoverySteps).toBe(true);
     expect(PENDING_RULE_PACKS.WA.rules.FEATURES.debtRecoverySteps).toBe(true);
   });
 });
@@ -458,5 +458,126 @@ describe("a pack with a statutory charge has no statutory payment plans (PR 9b r
         `${p.code}: completePlan (src/lib/debt-recovery/payment-plan-requests.ts) closes a case as paid when the last instalment is paid without checking a lodged statutory charge's revocation, so a pack with a statutory charge must not have statutory payment plans until completePlan applies the charge close gate`,
       ).toBe(false);
     }
+  });
+});
+
+describe("Victorian debt recovery (draft, stage 2, PR 9c)", () => {
+  const vic = PENDING_RULE_PACKS.VIC.rules;
+  const steps = vic.DEBT_RECOVERY_STEPS;
+  // Compile-time: the pack's DEBT_RECOVERY follows the shared shape.
+  const shared: DebtRecoveryRules = vic.DEBT_RECOVERY;
+  const recovery = vic.DEBT_RECOVERY;
+  const ownerText = steps.flatMap((s) => [s.actionRequired, s.legalBasis ?? "", s.triggerCondition, vic.DEBT_RECOVERY_STEP_LABELS[s.stepType] ?? ""]);
+
+  it("follows the shared DebtRecoveryRules shape, with every key the gates apply and none written as undefined", () => {
+    expect(shared.source.length).toBeGreaterThan(10);
+    expect(Object.keys(recovery).sort()).toEqual(["appliesWhen", "authorityToSue", "finalNotice", "forum", "source", "stepTiming"]);
+    for (const [k, v] of Object.entries(recovery)) expect(v, k).not.toBeUndefined();
+    expect("statutoryCharge" in recovery).toBe(false);
+    expect(shared.authorityToSue?.recordedAtStep).toBe("COMMITTEE_REVIEW");
+    expect(shared.forum?.recordedAtStep).toBe("PROCEEDINGS");
+    expect(shared.finalNotice?.stepType).toBe("FINAL_NOTICE");
+    expect(shared.stepTiming?.map((t) => [t.stepType, t.after.kind, t.days.value, t.pausedBy])).toEqual([
+      ["FINAL_NOTICE", "EACH_OVERDUE_NOTICE_ISSUED", 28, "PAYMENT_PLANS"],
+      ["PROCEEDINGS", "STEP_NOTICE_SENT", 28, "PAYMENT_PLANS"],
+    ]);
+    expect(shared.stepTiming?.[1].forums).toEqual(["VCAT", "COURT"]);
+    // The pause guard reads a dated rule the pack holds.
+    expect(vic.DATED_RULES.PAYMENT_PLANS.versions[0]).toMatchObject({ legalStatus: "ENACTED_NOT_COMMENCED", commencedOn: null, latestStartDate: "2027-12-01" });
+  });
+
+  it("uses the NSW step types without the reminder notice, in order from LEDGER_VERIFICATION, each with a label and guidance (D11)", () => {
+    const nswTypes = NSW.DEBT_RECOVERY_STEPS.map((s) => s.stepType);
+    expect(steps.map((s) => s.stepType)).toEqual(nswTypes.filter((t) => t !== "REMINDER_NOTICE"));
+    expect(steps.map((s) => s.stepOrder)).toEqual(steps.map((_, i) => i + 1));
+    for (const s of steps) {
+      expect(vic.DEBT_RECOVERY_STEP_LABELS[s.stepType], s.stepType).toBeTruthy();
+      expect(vic.DEBT_RECOVERY_GUIDANCE[s.stepType], s.stepType).toBeTruthy();
+    }
+    expect(Object.keys(vic.DEBT_RECOVERY_STEP_LABELS).sort()).toEqual(steps.map((s) => s.stepType).sort());
+    expect(Object.keys(vic.DEBT_RECOVERY_GUIDANCE).sort()).toEqual(steps.map((s) => s.stepType).sort());
+    expect(vic.FEATURES.debtRecoverySteps).toBe(true);
+    const by = (t: string) => steps.find((s) => s.stepType === t)!;
+    expect(by("FINAL_NOTICE")).toMatchObject({ noticeType: "FINAL_FEE_NOTICE", legalBasis: "OCA s 32(1), (2)", status: "CONFIRMED" });
+    expect(vic.DEBT_RECOVERY_STEP_LABELS.HARDSHIP_REVIEW).toBe("Instalment or Waiver Request");
+    expect(by("HARDSHIP_REVIEW").status).toBe("STRATAVERZE");
+    expect(vic.DEBT_RECOVERY_STEP_LABELS.COMMITTEE_REVIEW).toBe("Authority to Start Proceedings");
+    expect(by("COMMITTEE_REVIEW")).toMatchObject({ responsibleParty: "GENERAL_MEETING", approvalRequired: true });
+    expect(by("COMMITTEE_REVIEW").legalBasis).toContain("OCA s 18");
+    expect(by("PROCEEDINGS").legalBasis).toBe("OCA ss 162, 163(2) (VCAT), s 30 (a court)");
+    expect(by("ENFORCEMENT").status).toBe("NOT_CONFIRMED");
+  });
+
+  it("charges every recovery step fee to the owners corporation, never the owner (D10)", () => {
+    expect(vic.NEVER_RECOVERABLE_FEE_VARIANTS.map((v) => `${v.code}:${v.variant}`).sort()).toEqual(
+      ["RECOVERY_STEP:FINAL_NOTICE", "RECOVERY_STEP:PAYMENT_PLAN", "RECOVERY_STEP:REFERRAL", "RECOVERY_STEP:REMINDER"],
+    );
+    expect("RECOVERY_COSTS_RECOVERABLE" in vic).toBe(false);
+    for (const variant of ["REMINDER", "FINAL_NOTICE", "REFERRAL", "PAYMENT_PLAN"]) {
+      const quote = usageFee({ code: "RECOVERY_STEP", variant, priceBook: book, date: "2026-11-01", neverRecoverableFromOwner: vic.NEVER_RECOVERABLE_FEE_VARIANTS });
+      if (quote) expect(quote.recoverableFromOwner, variant).toBe(false);
+    }
+  });
+
+  it("owner text never names the Magistrates Court, a VCAT limit or guidance, and never says levy", () => {
+    for (const t of ownerText) {
+      expect(t).not.toMatch(/Magistrates|\$\d|limit|guidance|cap\b/i);
+      expect(t).not.toMatch(/\blev(y|ies)\b/i);
+    }
+    // No Victorian recovery text names the Magistrates Court, the guidance and the pack's rules included.
+    const all = JSON.stringify([recovery, steps, vic.DEBT_RECOVERY_GUIDANCE, vic.DEBT_RECOVERY_STEP_LABELS]);
+    expect(all).not.toMatch(/Magistrates/);
+    expect(steps.find((s) => s.stepType === "PROCEEDINGS")?.actionRequired).toContain("any court of competent jurisdiction");
+  });
+
+  it("states only CONFIRMED law to owners, and says StrataVerze practice where a step is StrataVerze's own", () => {
+    for (const s of steps) {
+      expect(s.status, s.stepType).toBeDefined();
+      if (s.status === "STRATAVERZE") expect(s.legalBasis, s.stepType).toMatch(/^StrataVerze practice/);
+      if (s.status === "NOT_CONFIRMED") expect(s.legalBasis, s.stepType).toBeUndefined();
+    }
+    expect(steps.filter((s) => s.status === "CONFIRMED").map((s) => s.stepType)).toEqual(["FINAL_NOTICE", "PROCEEDINGS"]);
+    // The guidance (advisers only) keeps the points not confirmed and the decisions.
+    expect(vic.DEBT_RECOVERY_GUIDANCE.COMMITTEE_REVIEW).toMatch(/decision D2/);
+    expect(vic.DEBT_RECOVERY_GUIDANCE.FINAL_NOTICE).toMatch(/decision D3/);
+    expect(vic.DEBT_RECOVERY_GUIDANCE.PROCEEDINGS).toMatch(/Not confirmed: any limit in the VCAT Act/);
+    expect(vic.DEBT_RECOVERY_GUIDANCE.PROCEEDINGS).toMatch(/decision D5/);
+  });
+
+  it("holds every value checked: a value only where it is CONFIRMED or STRATAVERZE, and a note otherwise", () => {
+    const a = recovery.authorityToSue;
+    const f = recovery.finalNotice;
+    const checked = [
+      a.accepted,
+      a.managerMayDecide,
+      a.amountThreshold.comparator,
+      ...recovery.stepTiming.flatMap((t) => [t.days, t.earliest]),
+      f.form.required,
+      f.form.appliedFrom,
+      f.givenOutsideMayBeRecorded,
+      f.dailyInterestRounding,
+    ];
+    for (const v of checked) {
+      if (v.value != null) expect(["CONFIRMED", "STRATAVERZE"]).toContain(v.status);
+      else expect(v.note.length).toBeGreaterThan(10);
+    }
+    // D2: a special resolution at a general meeting for every claim while the comparator has no value; never a committee or the adviser.
+    expect(a.accepted.value?.map((r) => [r.meeting, r.kind])).toEqual([["GENERAL", "ORDINARY"], ["GENERAL", "SPECIAL"]]);
+    expect(a.amountThreshold).toMatchObject({ multiple: 2, comparator: { value: null, status: "NOT_CONFIRMED" }, upTo: { kind: "ORDINARY" }, above: { kind: "SPECIAL" } });
+    expect(a.managerMayDecide.value).toBe(false);
+    // D3: never produced, and one given outside not recorded.
+    expect(f.givenOutsideMayBeRecorded.value).toBe(false);
+    expect(f.form.appliedFrom.value).toBeNull();
+    expect(f.contents.map((c) => c.key)).toEqual(["PAY_IMMEDIATELY", "INTEREST_TO_DATE_AND_DAILY", "PART_11_ACTION"]);
+    // D13: VCAT and a court, both confirmed, no limit.
+    expect(recovery.forum.options.map((o) => [o.key, o.status, o.limitCents])).toEqual([["VCAT", "CONFIRMED", null], ["COURT", "CONFIRMED", null]]);
+    expect(recovery.forum.excluded).toEqual([]);
+    // D6: tiers 1 to 4.
+    expect(recovery.appliesWhen.status).toBe("STRATAVERZE");
+  });
+
+  it("have no dashes or semicolons in their text", () => {
+    const texts = [...ownerText, ...Object.values(vic.DEBT_RECOVERY_GUIDANCE)];
+    for (const t of texts) expect(t).not.toMatch(/[;–—]| - /);
   });
 });

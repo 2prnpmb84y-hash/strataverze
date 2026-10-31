@@ -4,7 +4,8 @@
  * the meetings and carried motions the decision to start proceedings may be
  * chosen from, the forums, the notes advisers are shown, and what the case
  * already records, and (PR 9b) the statutory charge: what its step asks for,
- * and the panel that shows a lodged charge and records its revocation. Only
+ * and the panel that shows a lodged charge and records its revocation, and
+ * (PR 9c) the day a final notice given outside StrataVerze was given. Only
  * called where recoveryGatesApply holds (the charge panel only where the pack
  * has a statutory charge), so an NSW or Queensland case page reads nothing
  * more and passes nothing more.
@@ -32,6 +33,11 @@ export interface RecoveryStepRequirement {
    * may be chosen from.
    */
   charge?: { words: string; declaredWords: string; lodgedWith: string; today: string; meetings: { id: string; label: string; motions: { id: string; label: string }[] }[] };
+  /**
+   * The final notice given outside StrataVerze (PR 9c), only where the pack lets one be recorded: how the screens name
+   * it and the building's day (the latest day given that may be entered).
+   */
+  finalNotice?: { words: string; today: string };
   /** What the case records for this step, in words. */
   recorded?: string[];
 }
@@ -78,6 +84,10 @@ export async function recoveryStepRequirements(
       const today = await schemeToday(schemeId);
       out[t] = { ...out[t], charge: { words: needs.charge.words, declaredWords: needs.charge.declaredWords, lodgedWith: needs.charge.lodgedWith, today, meetings: [] } };
     }
+    if (needs.finalNotice) {
+      const { schemeToday } = await import("@/lib/jurisdiction/scheme-time");
+      out[t] = { ...out[t], finalNotice: { words: needs.finalNotice.words, today: await schemeToday(schemeId) } };
+    }
   }
   if (Object.keys(out).length === 0) return null;
 
@@ -104,6 +114,7 @@ export async function recoveryStepRequirements(
     const authorityStep = rules.DEBT_RECOVERY?.authorityToSue?.recordedAtStep;
     const forumStep = rules.DEBT_RECOVERY?.forum?.recordedAtStep;
     const chargeStep = rules.DEBT_RECOVERY?.statutoryCharge?.stepType;
+    const finalNoticeStep = rules.DEBT_RECOVERY?.finalNotice?.stepType;
     for (const rec of records) {
       const step =
         rec.kind === "AUTHORITY_TO_SUE"
@@ -112,7 +123,9 @@ export async function recoveryStepRequirements(
             ? forumStep
             : rec.kind === "STATUTORY_CHARGE_LODGED" || rec.kind === "STATUTORY_CHARGE_REVOKED"
               ? chargeStep
-              : undefined;
+              : rec.kind === "FINAL_NOTICE_GIVEN"
+                ? finalNoticeStep
+                : undefined;
       if (!step) continue;
       out[step] = { ...out[step], recorded: [...(out[step]?.recorded ?? []), recordWords(rules, rec)] };
     }
@@ -126,6 +139,7 @@ function recordWords(rules: StatutoryRules, rec: RecoveryRecordRow): string {
   if (rec.kind === "PROCEEDINGS_STARTED") return `Proceedings started in ${forumWordsFor(rules, rec.forum ?? "")} (recorded ${auDate(rec.decidedOn)}).`;
   const charge = rules.DEBT_RECOVERY?.statutoryCharge;
   if (rec.kind === "STATUTORY_CHARGE_REVOKED") return `Its revocation was lodged on ${auDate(rec.lodgedOn ?? "")}.`;
+  if (rec.kind === "FINAL_NOTICE_GIVEN") return `${capitalise(rules.DEBT_RECOVERY?.finalNotice?.words ?? "the final notice")} was given on ${auDate(rec.decidedOn)}, outside StrataVerze.`;
   if (rec.kind === "STATUTORY_CHARGE_LODGED" && charge) {
     const how = (charge.declaredBy.value ?? []).find((a) => storedResolutionKind(a) === rec.resolutionKind)?.words ?? "a resolution";
     return `${capitalise(charge.words)} declared by ${how}, which took effect on ${auDate(rec.decidedOn)}, and lodged with ${charge.lodgedWith} on ${auDate(rec.lodgedOn ?? "")}.`;
