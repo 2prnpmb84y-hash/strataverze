@@ -25,6 +25,7 @@ DECLARE
   v_hash text := repeat('ab', 32);
   v_checks text[] := ARRAY[]::text[];
   v_n int;
+  v_type text;
 BEGIN
   PERFORM set_config('lock_timeout', '5s', true);
 
@@ -46,6 +47,8 @@ BEGIN
   ALTER TABLE public.invitations DROP CONSTRAINT IF EXISTS invitations_account_auth_id_fkey;
   ALTER TABLE public.invitations ADD CONSTRAINT invitations_account_auth_id_fkey
     FOREIGN KEY (account_auth_id) REFERENCES auth.users (id) ON DELETE SET NULL;
+  CREATE INDEX IF NOT EXISTS invitations_account_auth_id_idx
+    ON public.invitations (account_auth_id) WHERE account_auth_id IS NOT NULL;
 
   -- 1. The three columns exist, nullable, with the right types.
   SELECT count(*) INTO v_n FROM information_schema.columns
@@ -101,6 +104,9 @@ BEGIN
    WHERE conname = 'invitations_account_auth_id_fkey' AND conrelid = 'public.invitations'::regclass
      AND confrelid = 'auth.users'::regclass AND confdeltype = 'n';
   IF v_n <> 1 THEN RAISE EXCEPTION 'STOP: the Auth user key is missing or not ON DELETE SET NULL'; END IF;
+  SELECT count(*) INTO v_n FROM pg_indexes
+   WHERE schemaname = 'public' AND tablename = 'invitations' AND indexname = 'invitations_account_auth_id_idx';
+  IF v_n <> 1 THEN RAISE EXCEPTION 'STOP: the account_auth_id index is missing'; END IF;
   v_checks := array_append(v_checks, 'auth user key');
 
   -- 6. Single use: the claim the app makes succeeds once and then matches nothing.
@@ -114,6 +120,24 @@ BEGIN
   IF v_n <> 0 THEN RAISE EXCEPTION 'STOP: a second claim changed % rows', v_n; END IF;
   v_checks := array_append(v_checks, 'single-use claim');
 
+  -- 6b. The set-up lock the app takes (claimLinkForAccountSetUp): every
+  --     pending invitation for the account, locked in id order, can be read
+  --     and claimed in one transaction. (Another session waiting on it cannot
+  --     be shown inside one DO block.)
+  PERFORM 1 FROM public.invitations
+    WHERE account_auth_id = v_auth AND status = 'PENDING'
+    ORDER BY id FOR NO KEY UPDATE;
+  GET DIAGNOSTICS v_n = ROW_COUNT;
+  IF v_n < 1 THEN RAISE EXCEPTION 'STOP: the set-up lock found no pending invitation for the account'; END IF;
+  v_checks := array_append(v_checks, 'account set-up lock');
+
+  -- 6c. The read the app makes of auth.users when an address already has an
+  --     Auth user (accounts.ts, adoption of a never-confirmed account): the
+  --     columns it names exist and the app's role can read them.
+  PERFORM id::text, (email_confirmed_at IS NOT NULL), (last_sign_in_at IS NOT NULL)
+    FROM auth.users WHERE lower(email::text) = 'rehearsal-a@example.invalid' ORDER BY created_at LIMIT 2;
+  v_checks := array_append(v_checks, 'auth.users read');
+
   -- 7. The browser roles still have no access to the table or the new columns (SEC-005).
   IF has_table_privilege('anon', 'public.invitations', 'SELECT')
      OR has_table_privilege('authenticated', 'public.invitations', 'SELECT')
@@ -124,6 +148,12 @@ BEGIN
   v_checks := array_append(v_checks, 'no browser access');
 
   -- ── Part 2, exactly as in 20261130_invitation_plain_token_drop.sql ──
+  -- The restore SQL in part 2's header assumes the column is text.
+  SELECT data_type INTO v_type FROM information_schema.columns
+   WHERE table_schema = 'public' AND table_name = 'invitations' AND column_name = 'token';
+  IF v_type IS DISTINCT FROM 'text' THEN
+    RAISE EXCEPTION 'STOP: token is %, not text: fix the restore SQL in part 2''s header first', coalesce(v_type, 'missing');
+  END IF;
   ALTER TABLE public.invitations DROP COLUMN IF EXISTS token;
 
   SELECT count(*) INTO v_n FROM information_schema.columns
@@ -136,6 +166,17 @@ BEGIN
   INSERT INTO public.invitations (scheme_id, email, role, invited_by_id, expires_at, token_hash)
   VALUES (v_scheme, 'rehearsal-e@example.invalid', 'COMMITTEE', v_profile, now() + interval '14 days', repeat('cd', 32));
   v_checks := array_append(v_checks, 'part 2 and new insert');
+
+  -- 9. The rollback path in part 2's header: the column comes back, every
+  --    row gets a token, and an insert as the pre-S2a code makes it works.
+  ALTER TABLE public.invitations
+    ADD COLUMN IF NOT EXISTS token text NOT NULL DEFAULT (gen_random_uuid())::text;
+  CREATE UNIQUE INDEX IF NOT EXISTS invitations_token_key ON public.invitations (token);
+  SELECT count(*) INTO v_n FROM public.invitations WHERE token IS NULL;
+  IF v_n <> 0 THEN RAISE EXCEPTION 'STOP: % rows have no token after the restore', v_n; END IF;
+  INSERT INTO public.invitations (scheme_id, email, role, invited_by_id, expires_at)
+  VALUES (v_scheme, 'rehearsal-f@example.invalid', 'OWNER', v_profile, now() + interval '14 days');
+  v_checks := array_append(v_checks, 'restore of token');
 
   RAISE EXCEPTION 'PROOF ok: % (all rolled back)', array_to_string(v_checks, ', ');
 END;

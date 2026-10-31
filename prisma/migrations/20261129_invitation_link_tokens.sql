@@ -30,7 +30,9 @@
 --   no password; the invitee sets the password from the link). Null when the
 --   address already had an account. If that Auth user is deleted, the column
 --   is cleared (ON DELETE SET NULL) and the link then asks the person to
---   sign in instead.
+--   sign in instead. Indexed (partial, non-null only): setting a password
+--   from a link locks every pending invitation for the account at once
+--   (review finding L2), and deleting an Auth user clears the column.
 --
 -- The old plain `token` column (a uuid, unique) is left in place here,
 -- because the code deployed now still lists it. Nothing has ever used it as
@@ -58,5 +60,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS invitations_token_hash_key ON public.invitatio
 ALTER TABLE public.invitations DROP CONSTRAINT IF EXISTS invitations_account_auth_id_fkey;
 ALTER TABLE public.invitations ADD CONSTRAINT invitations_account_auth_id_fkey
   FOREIGN KEY (account_auth_id) REFERENCES auth.users (id) ON DELETE SET NULL;
+
+CREATE INDEX IF NOT EXISTS invitations_account_auth_id_idx
+  ON public.invitations (account_auth_id) WHERE account_auth_id IS NOT NULL;
 
 COMMIT;
