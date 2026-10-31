@@ -8,6 +8,7 @@ import { hitRateLimits } from "@/lib/auth/rate-limit-db";
 import { recordSecurityEventLater } from "@/lib/audit/security-audit";
 import { getLotInScheme } from "@/lib/queries/lots";
 import { getSchemeNameById } from "@/lib/queries/schemes";
+import { withLockTimeout } from "@/lib/queries/invitations";
 import { invitationExpiry, newLinkToken } from "./link-token";
 import { InviteeAccountError, provisionInviteeAccount } from "./accounts";
 
@@ -124,6 +125,11 @@ export async function issueInvitation(input: IssueInvitationInput): Promise<Issu
     // The inviter can already see the building's members, so this says nothing new.
     return { ok: false, error: "This person already has this role on this building." };
   }
+  if (existing?.status === "DECLINED") {
+    // A declined invitation is not reopened by sending it again (second
+    // review, item 8). The inviter's list already shows it as declined.
+    return { ok: false, error: "This person declined this invitation. They can ask to be invited to another role, or contact StrataVerze support." };
+  }
 
   let account;
   try {
@@ -172,10 +178,31 @@ export async function issueInvitation(input: IssueInvitationInput): Promise<Issu
   try {
     if (existing) {
       // Sent again: a new link replaces the old one, which stops working.
-      const n = await db.orm.public.Invitation
-        .where((i) => and(i.id.eq(existing.id), i.schemeId.eq(input.schemeId)))
-        .updateAndCount(fields);
-      if (n !== 1) return { ok: false, error: "The invitation could not be sent. Please try again." };
+      // Only while the invitation is still in the status read above (second
+      // review, item 8): PENDING or EXPIRED, or ACCEPTED when the membership
+      // it gave has since ended (someone invited back, checked above). An
+      // invitation accepted or declined in the meantime (by the /join set-up,
+      // whose lock this waits for, at most 5 seconds) matches nothing, so it
+      // is never reopened.
+      const reopenable = ["PENDING", "EXPIRED", "ACCEPTED"];
+      if (!reopenable.includes(String(existing.status))) {
+        return { ok: false, error: "The invitation could not be sent. Please try again." };
+      }
+      let n: number;
+      try {
+        n = await withLockTimeout((orm) =>
+          orm.public.Invitation
+            .where((i) => and(i.id.eq(existing.id), i.schemeId.eq(input.schemeId), i.status.eq(existing.status)))
+            .updateAndCount(fields),
+        );
+      } catch (err) {
+        if (isUniqueViolation(err)) throw err;
+        console.error("[invitations] resend did not complete:", err instanceof Error ? err.name : "error");
+        n = 0;
+      }
+      if (n !== 1) {
+        return { ok: false, error: "This invitation changed while it was being sent again. Please check the list and try again." };
+      }
       invitationId = existing.id;
     } else {
       const created = await db.orm.public.Invitation.create({

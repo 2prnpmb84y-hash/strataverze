@@ -1,6 +1,6 @@
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getCurrentSession } from "@/lib/auth/current-session";
-import { invitationAddressOf } from "@/lib/invitations/invitee-address";
+import { ADDRESS_UNCONFIRMED, invitationAddressOf } from "@/lib/invitations/invitee-address";
 import { getPendingInvitationsForEmail } from "@/lib/queries/invitations";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
@@ -45,7 +45,15 @@ export default async function InvitationsPage() {
         description="Pending invitations to join schemes."
       />
 
-      {invitations.length === 0 ? (
+      {!address ? (
+        // Signed in, but the profile's copy of the address differs from the
+        // Auth address: nothing is listed, and the person is told why (L-d).
+        <Card>
+          <div className="p-6 text-center" role="alert">
+            <p className="text-sm text-ink">{ADDRESS_UNCONFIRMED}</p>
+          </div>
+        </Card>
+      ) : invitations.length === 0 ? (
         <Card>
           <div className="p-6 text-center">
             <p className="text-sm text-ink-muted">

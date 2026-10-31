@@ -24,4 +24,4 @@ export function invitationAddressOf(
 
 /** What to say when the session's Auth address and its profile disagree. */
 export const ADDRESS_UNCONFIRMED =
-  "This invitation cannot be accepted from this account just now. Sign out, sign in again with the address the invitation was sent to, and try again. If that does not help, contact StrataVerze support.";
+  "Invitations cannot be shown or accepted for this account just now. Sign out, sign in again with the address the invitation was sent to, and try again. If that does not help, contact StrataVerze support.";

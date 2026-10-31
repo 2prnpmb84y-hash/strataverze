@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useState } from "react";
 import { Turnstile } from "@/components/auth/turnstile";
 import { PasswordStrength } from "@/components/ui/password-strength";
+import { ADDRESS_UNCONFIRMED } from "@/lib/invitations/invitee-address";
 import {
   acceptJoinAction,
   completeJoinAction,
@@ -213,7 +214,7 @@ function SetPasswordForm({ token, captchaSiteKey, maskedEmail }: { token: string
   );
 }
 
-function SignInToAccept({ token, signedIn }: { token: string; signedIn: "invitee" | "someone-else" | "nobody" }) {
+function SignInToAccept({ token, signedIn }: { token: string; signedIn: "invitee" | "someone-else" | "nobody" | "unconfirmed" }) {
   const [state, formAction, pending] = useActionState<JoinFormState, FormData>(acceptJoinAction, {});
   useTokenAfterAnswer(token, state);
   if (signedIn === "invitee") {
@@ -229,7 +230,9 @@ function SignInToAccept({ token, signedIn }: { token: string; signedIn: "invitee
   }
   return (
     <div className="flex flex-col gap-3 text-sm text-ink">
-      {signedIn === "someone-else" ? (
+      {signedIn === "unconfirmed" ? (
+        <p role="alert">{ADDRESS_UNCONFIRMED}</p>
+      ) : signedIn === "someone-else" ? (
         <p>
           You are signed in with a different email address. Sign out, then sign in with the address this invitation was
           sent to. It will be waiting under Invitations.

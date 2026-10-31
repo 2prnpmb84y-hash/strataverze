@@ -96,10 +96,15 @@ type InvitationRow = NonNullable<Awaited<ReturnType<typeof getInvitationByTokenH
  *   3. the link is claimed (token_used_at), and `work` runs while the locks
  *      are held. It sets the password and accepts the invitation.
  *
- * A revoke or a resend of a locked invitation waits for the commit, and by
- * then the invitation is accepted, so a revoke cannot land between the
- * password being set and the invitation being accepted. If `work` throws,
- * the claim is rolled back and the link can be used again.
+ * A revoke, resend or decline of a locked invitation waits for the commit
+ * (each with its own 5-second lock timeout, after which it fails and the
+ * person is asked to try again). By then the invitation is accepted, and
+ * each of them changes only an invitation still in the status it expects
+ * (revoke and decline: PENDING; resend: the status it read, never ACCEPTED
+ * with an active membership or DECLINED), so none of them reopens or ends
+ * it, and a revoke cannot land between the password being set and the
+ * invitation being accepted. If `work` throws, the claim is rolled back and
+ * the link can be used again.
  *
  * Returns null, having changed nothing, when the link cannot be claimed.
  * `work` must use tx for every write: a write through the global db would
@@ -110,7 +115,14 @@ export async function claimLinkForAccountSetUp<T>(
   work: (tx: InvitationTx, invitation: InvitationRow) => Promise<T>,
 ): Promise<{ result: T } | null> {
   return db.transaction(async (tx) => {
+    // Bounded on every side (review finding M-2): a lock wait gives up after
+    // 5 seconds, one statement after 10, and the transaction is ended by
+    // Postgres if it sits idle for 20 seconds (the Auth calls in `work`, each
+    // limited to 8 seconds, are where it is idle), so nothing can hold the
+    // locks or a pooled connection indefinitely.
     await tx.execute(tx.raw.sql`SET LOCAL lock_timeout = '5s'`.affectedCount().build());
+    await tx.execute(tx.raw.sql`SET LOCAL statement_timeout = '10s'`.affectedCount().build());
+    await tx.execute(tx.raw.sql`SET LOCAL idle_in_transaction_session_timeout = '20s'`.affectedCount().build());
     const pending = await tx.orm.public.Invitation
       .where((i) => and(i.accountAuthId.eq(link.accountAuthId), i.status.eq("PENDING")))
       .orderBy((i) => i.id.asc())
@@ -285,9 +297,24 @@ export async function acceptInvitation(
  */
 export async function declineInvitation(invitationId: string) {
   // Only a pending invitation can be declined; an accepted one stays accepted.
-  await db.orm.public.Invitation
-    .where((i) => and(i.id.eq(invitationId), i.status.eq("PENDING")))
-    .update({ status: "DECLINED" });
+  await withLockTimeout((orm) =>
+    orm.public.Invitation
+      .where((i) => and(i.id.eq(invitationId), i.status.eq("PENDING")))
+      .update({ status: "DECLINED" }),
+  );
+}
+
+/**
+ * A single write to invitations that waits at most 5 seconds for a row
+ * lock (the /join set-up holds the invitation's lock while it calls Auth),
+ * so it cannot pin a connection indefinitely (review finding M-2). On a
+ * timeout it throws (SQLSTATE 55P03) and the caller reports a failure.
+ */
+export async function withLockTimeout<T>(write: (orm: typeof db.orm) => Promise<T>): Promise<T> {
+  return db.transaction(async (tx) => {
+    await tx.execute(tx.raw.sql`SET LOCAL lock_timeout = '5s'`.affectedCount().build());
+    return write(tx.orm);
+  });
 }
 
 /**
@@ -295,11 +322,13 @@ export async function declineInvitation(invitationId: string) {
  * another scheme matches nothing.
  */
 export async function revokeInvitation(schemeId: string, invitationId: string) {
-  await db.orm.public.Invitation
-    .where((i) =>
-      and(i.id.eq(invitationId), i.schemeId.eq(schemeId), i.status.eq("PENDING")),
-    )
-    .update({ status: "EXPIRED", tokenHash: null });
+  await withLockTimeout((orm) =>
+    orm.public.Invitation
+      .where((i) =>
+        and(i.id.eq(invitationId), i.schemeId.eq(schemeId), i.status.eq("PENDING")),
+      )
+      .update({ status: "EXPIRED", tokenHash: null }),
+  );
 }
 
 /**

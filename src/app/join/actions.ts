@@ -51,8 +51,10 @@ import { ADDRESS_UNCONFIRMED, invitationAddressOf } from "@/lib/invitations/invi
  * Security events (review finding L1): the building's Adviser can read the
  * events that carry the building (schemeId), so those never say whether
  * the invitee's account was new or already existed. They carry one neutral
- * reason per outcome and the same actor fields on both paths. The detail
- * goes in an `invitation.link_detail` event with no building.
+ * reason per outcome, one fixed outcome for a refused link ("denied", on
+ * every path, review finding L-a) and the same actor fields on both paths.
+ * The detail, with the real outcome, goes in an `invitation.link_detail`
+ * event with no building.
  */
 
 const INVALID = "This invitation link is not valid. It may have been used already, replaced by a newer invitation, or expired. Ask whoever invited you to send it again.";
@@ -71,7 +73,12 @@ export type JoinDetails = {
 export type JoinView =
   | { state: "invalid"; message: string }
   | { state: "set-password"; details: JoinDetails }
-  | { state: "sign-in"; details: JoinDetails; signedIn: "invitee" | "someone-else" | "nobody" };
+  /**
+   * signedIn "unconfirmed": someone is signed in, but their profile's copy
+   * of their address differs from the Auth address, so the page cannot say
+   * whether they are the invitee (review finding L-d).
+   */
+  | { state: "sign-in"; details: JoinDetails; signedIn: "invitee" | "someone-else" | "nobody" | "unconfirmed" };
 
 /**
  * A form's answer. `linkDone`: the link cannot be used again (the page then
@@ -133,7 +140,9 @@ async function linkRefused(outcome: Exclude<SecurityOutcome, "allowed">, reason:
   }
   await recordSecurityEventLater({
     action: "invitation.link",
-    outcome,
+    // One outcome on every path: whether it failed or was refused differs
+    // between new and existing accounts. The real one is in the detail.
+    outcome: "denied",
     reason: "link not used",
     schemeId: invitation.schemeId,
     resourceType: "Invitation",
@@ -179,7 +188,7 @@ function waitedTooLong(err: unknown): boolean {
 
 /** Why a new account's set-up stopped before the password was set (the claim is then rolled back). */
 class SetUpStopped extends Error {
-  constructor(readonly why: "already-set-up" | "unavailable" | "weak_password" | "failed") {
+  constructor(readonly why: "already-set-up" | "unavailable" | "unknown" | "weak_password" | "failed" | "maybe-set") {
     super(why);
     this.name = "SetUpStopped";
   }
@@ -202,11 +211,8 @@ export async function lookupJoinLinkAction(token: string): Promise<JoinView> {
 
   // Matched on the Auth address, not the stored profile copy (L7).
   const session = await getCurrentSession();
-  const signedIn = !session
-    ? "nobody"
-    : invitationAddressOf(session) === invitation.email.toLowerCase()
-      ? "invitee"
-      : "someone-else";
+  const address = session ? invitationAddressOf(session) : null;
+  const signedIn = !session ? "nobody" : !address ? "unconfirmed" : address === invitation.email.toLowerCase() ? "invitee" : "someone-else";
   return { state: "sign-in", details: shown, signedIn };
 }
 
@@ -251,6 +257,12 @@ export async function completeJoinAction(_prev: JoinFormState, formData: FormDat
       if (setup !== "ready") throw new SetUpStopped(setup);
 
       const set = await setInviteePassword(authId, password);
+      if (!set.ok && set.reason === "failed") {
+        // Ambiguous (M-2): the request may have reached Auth before it timed
+        // out or failed. Read the account again before saying anything.
+        const after = await inviteeSetupState(authId, locked.email);
+        throw new SetUpStopped(after === "ready" ? "failed" : after === "already-set-up" ? "maybe-set" : after);
+      }
       if (!set.ok) throw new SetUpStopped(set.reason);
       passwordSet = true;
 
@@ -269,7 +281,17 @@ export async function completeJoinAction(_prev: JoinFormState, formData: FormDat
         await linkDetail("denied", "account already set up", invitation, { actorAuthId: authId });
         return { error: "This account is already set up. Sign in to accept the invitation.", signInInstead: true };
       }
-      await linkRefused("failed", err.why === "unavailable" ? "account not available" : "password not set", invitation, { actorAuthId: authId });
+      if (err.why === "maybe-set") {
+        // Auth answered with an error, but the account now shows as set up:
+        // the password most likely took. The invitation is still pending.
+        await linkRefused("failed", "password may be set, invitation not accepted", invitation, { actorAuthId: authId });
+        return {
+          error: "Your password may have been set. Try signing in with it; the invitation will be waiting under Invitations. If that does not work, use “Forgot password” on the sign-in page.",
+          signInInstead: true,
+        };
+      }
+      const detail = err.why === "unavailable" ? "account not available" : err.why === "unknown" ? "auth not reachable" : "password not set";
+      await linkRefused("failed", detail, invitation, { actorAuthId: authId });
       if (err.why === "unavailable") return { error: INVALID, linkDone: true };
       if (err.why === "weak_password") return { fieldErrors: { password: "Choose a stronger password." } };
       return { error: "Your account could not be set up just now. Please try again." };

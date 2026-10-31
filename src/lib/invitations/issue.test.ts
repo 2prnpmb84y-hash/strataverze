@@ -129,22 +129,85 @@ describe("no account enumeration", () => {
     expect(strip(mail.sent[0].html)).toBe(strip(mail.sent[1].html));
   });
 
-  it("adopts an Auth user nobody has confirmed or signed in to (planted through open sign-up), so the link sets its password", async () => {
-    // Someone signed up with the invitee's address and a password of their own, and never confirmed it.
-    sharedFakeAuth.addUser({ id: "auth-dormant", email: "dormant@example.test", password: "Planted-Pass-2026!" });
+  it("replaces an Auth user nobody has confirmed or signed in to (planted through open sign-up), so nothing planted survives (M-1)", async () => {
+    // Someone signed up with the invitee's address, a password and metadata of their own, and never confirmed it.
+    sharedFakeAuth.addUser({
+      id: "auth-dormant",
+      email: "dormant@example.test",
+      password: "Planted-Pass-2026!",
+      user_metadata: { full_name: "Planted Name" },
+      confirmation_token: "planted-confirmation",
+    });
     const r = await issueInvitation({ ...base, email: "dormant@example.test", role: "OWNER", lotId: "lot-1" });
     expect(r.ok).toBe(true);
-    expect(sharedFake.table("Invitation")[0].accountAuthId).toBe("auth-dormant");
-    // No second Auth user, and the adoption is logged away from the building.
+    // Deleted outright (not soft), and made again as for a new address.
+    expect(sharedFakeAuth.calls.deleteUser).toEqual([{ id: "auth-dormant", soft: false }]);
+    expect(sharedFakeAuth.users.has("auth-dormant")).toBe(false);
+    expect(sharedFakeAuth.calls.createUser.at(-1)).toEqual({ email: "dormant@example.test", email_confirm: false });
     expect(sharedFakeAuth.users.size).toBe(1);
+    const [fresh] = [...sharedFakeAuth.users.values()];
+    expect(fresh).toEqual({ id: fresh.id, email: "dormant@example.test" });
+    expect(fresh.password).toBeUndefined();
+    expect(fresh.user_metadata).toBeUndefined();
+    expect(fresh.confirmation_token).toBeUndefined();
+    expect(sharedFake.table("Invitation")[0].accountAuthId).toBe(fresh.id);
+    // Logged away from the building.
     const adopted = audit.events.find((e) => e.action === "account.adopted_for_invitation");
-    expect(adopted).toMatchObject({ outcome: "allowed", resourceId: "auth-dormant" });
+    expect(adopted).toMatchObject({ outcome: "allowed", resourceId: fresh.id });
     expect(adopted?.schemeId ?? null).toBeNull();
     // The building's event is the same as for any other invitation.
     const sent = audit.events.find((e) => e.action === "invitation.sent");
     expect(JSON.stringify(sent)).not.toMatch(/adopt|new|created|auth/i);
-    // The link can set it up: the guard still sees it as never set up.
-    expect(await inviteeSetupState("auth-dormant", "dormant@example.test")).toBe("ready");
+    // The link can set it up.
+    expect(await inviteeSetupState(fresh.id, "dormant@example.test")).toBe("ready");
+  });
+
+  it("treats the address as existing if it is taken again between the delete and the create", async () => {
+    sharedFakeAuth.addUser({ id: "auth-dormant", email: "dormant@example.test", password: "Planted-Pass-2026!" });
+    const admin = sharedFakeAuth.client.auth.admin;
+    const realDelete = admin.deleteUser;
+    admin.deleteUser = async (id: string, soft?: boolean) => {
+      const out = await realDelete(id, soft);
+      sharedFakeAuth.addUser({ id: "auth-again", email: "dormant@example.test", password: "Planted-Again-2026!" });
+      return out;
+    };
+    try {
+      const r = await issueInvitation({ ...base, email: "dormant@example.test", role: "OWNER", lotId: "lot-1" });
+      expect(r.ok).toBe(true);
+      expect(sharedFake.table("Invitation")[0].accountAuthId).toBeNull();
+    } finally {
+      admin.deleteUser = realDelete;
+    }
+  });
+
+  it("sends nothing if the planted user cannot be deleted", async () => {
+    sharedFakeAuth.addUser({ id: "auth-dormant", email: "dormant@example.test" });
+    sharedFakeAuth.failures.deleteUser = "unexpected_failure";
+    const r = await issueInvitation({ ...base, email: "dormant@example.test", role: "OWNER", lotId: "lot-1" });
+    expect(r).toMatchObject({ ok: false });
+    expect(sharedFake.table("Invitation")).toHaveLength(0);
+    expect(mail.sent).toHaveLength(0);
+  });
+
+  for (const [what, extra] of [
+    ["confirmed by phone", { phone_confirmed_at: "2026-10-01T00:00:00Z" }],
+    ["banned", { banned_until: "2999-01-01T00:00:00Z" }],
+    ["an SSO user", { is_sso_user: true }],
+    ["anonymous", { is_anonymous: true }],
+  ] as const) {
+    it(`does not replace an Auth user that is ${what}`, async () => {
+      sharedFakeAuth.addUser({ id: "auth-kept", email: "kept@example.test", ...extra });
+      expect((await issueInvitation({ ...base, email: "kept@example.test", role: "OWNER", lotId: "lot-1" })).ok).toBe(true);
+      expect(sharedFakeAuth.users.has("auth-kept")).toBe(true);
+      expect(sharedFakeAuth.calls.deleteUser).toHaveLength(0);
+      expect(sharedFake.table("Invitation")[0].accountAuthId).toBeNull();
+    });
+  }
+
+  it("replaces one whose ban has ended", async () => {
+    sharedFakeAuth.addUser({ id: "auth-was-banned", email: "was.banned@example.test", banned_until: "2020-01-01T00:00:00Z" });
+    expect((await issueInvitation({ ...base, email: "was.banned@example.test", role: "OWNER", lotId: "lot-1" })).ok).toBe(true);
+    expect(sharedFakeAuth.calls.deleteUser).toEqual([{ id: "auth-was-banned", soft: false }]);
   });
 
   it("treats a confirmed Auth user with no profile as existing", async () => {
@@ -304,6 +367,48 @@ describe("sending again", () => {
     expect(rows[0].tokenHash).not.toBe(firstHash);
     expect(rows[0].tokenUsedAt).toBeNull();
     expect(sha(tokenFrom(mail.sent[1].html)!)).toBe(rows[0].tokenHash);
+  });
+
+  it("never reopens a declined invitation", async () => {
+    sharedFake.table("Invitation").push({ id: "inv-d", schemeId: SCHEME, email: "a@example.test", role: "OWNER", status: "DECLINED", tokenHash: null });
+    const r = await issueInvitation({ ...base, email: "a@example.test", role: "OWNER", lotId: "lot-1" });
+    expect(r).toMatchObject({ ok: false, error: expect.stringContaining("declined") });
+    expect(sharedFake.table("Invitation")[0].status).toBe("DECLINED");
+    expect(sharedFakeAuth.calls.createUser).toHaveLength(0);
+    expect(mail.sent).toHaveLength(0);
+  });
+
+  it("reopens an accepted invitation only when the membership it gave has ended (someone invited back)", async () => {
+    sharedFake.table("Invitation").push({ id: "inv-a", schemeId: SCHEME, email: "existing.owner@example.test", role: "OWNER", status: "ACCEPTED", tokenHash: null });
+    sharedFake.table("SchemeMembership").push({ id: "m1", schemeId: SCHEME, profileId: "p-existing", role: "OWNER", isActive: false });
+    const r = await issueInvitation({ ...base, email: "existing.owner@example.test", role: "OWNER", lotId: "lot-1" });
+    expect(r.ok).toBe(true);
+    expect(sharedFake.table("Invitation")[0]).toMatchObject({ id: "inv-a", status: "PENDING" });
+  });
+
+  it("does not reopen an invitation accepted while it was being sent again", async () => {
+    sharedFake.table("Invitation").push({ id: "inv-p", schemeId: SCHEME, email: "a@example.test", role: "OWNER", status: "PENDING", tokenHash: "f".repeat(64), accountAuthId: null });
+    // Accepted (by the /join set-up, say) after the resend read it as pending.
+    const admin = sharedFakeAuth.client.auth.admin;
+    const realCreate = admin.createUser;
+    admin.createUser = async (attributes) => {
+      sharedFake.table("Invitation")[0].status = "ACCEPTED";
+      return realCreate(attributes);
+    };
+    try {
+      const r = await issueInvitation({ ...base, email: "a@example.test", role: "OWNER", lotId: "lot-1" });
+      expect(r).toMatchObject({ ok: false, error: expect.stringContaining("changed") });
+      expect(sharedFake.table("Invitation")[0]).toMatchObject({ status: "ACCEPTED", tokenHash: "f".repeat(64) });
+      expect(mail.sent).toHaveLength(0);
+    } finally {
+      admin.createUser = realCreate;
+    }
+  });
+
+  it("waits at most 5 seconds for the invitation's lock", async () => {
+    sharedFake.table("Invitation").push({ id: "inv-x", schemeId: SCHEME, email: "a@example.test", role: "OWNER", status: "EXPIRED", tokenHash: null });
+    await issueInvitation({ ...base, email: "a@example.test", role: "OWNER", lotId: "lot-1" });
+    expect(sharedFake.statements).toContain("SET LOCAL lock_timeout = '5s'");
   });
 
   it("brings back an expired or revoked invitation as pending", async () => {

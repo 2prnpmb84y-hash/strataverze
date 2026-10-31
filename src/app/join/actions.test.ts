@@ -278,6 +278,8 @@ describe("someone new setting a password", () => {
   it("locks every pending invitation for the account, with a lock timeout, before claiming", async () => {
     await redirected(submit());
     expect(sharedFake.statements).toContain("SET LOCAL lock_timeout = '5s'");
+    expect(sharedFake.statements).toContain("SET LOCAL statement_timeout = '10s'");
+    expect(sharedFake.statements).toContain("SET LOCAL idle_in_transaction_session_timeout = '20s'");
     expect(sharedFake.locks).toContainEqual({ table: "Invitation", ids: ["inv-new"], inTransaction: true });
   });
 
@@ -292,6 +294,41 @@ describe("someone new setting a password", () => {
     expect(invitation("inv-new")).toMatchObject({ status: "ACCEPTED" });
     expect(invitation("inv-new").tokenHash).toBe(newLink.hash);
     expect(sharedFake.table("SchemeMembership")).toEqual([expect.objectContaining({ role: "OWNER", isActive: true })]);
+  });
+
+  it("a revoke cannot wait on the set-up for ever: it gives up at its lock timeout (M-2)", async () => {
+    sharedFake.setLockTimeoutMs(20);
+    let revokeResult: Promise<unknown> | null = null;
+    sharedFakeAuth.hooks.duringUpdateUserById = async () => {
+      revokeResult = revokeInvitation(SCHEME, "inv-new").then(
+        () => "revoked",
+        (err: { sqlState?: string }) => err.sqlState,
+      );
+      // Auth is slow to answer while the set-up holds the lock.
+      await new Promise((r) => setTimeout(r, 80));
+    };
+    expect(await redirected(submit())).toBe("/owner");
+    expect(await revokeResult).toBe("55P03");
+    expect(invitation("inv-new").status).toBe("ACCEPTED");
+  });
+
+  it("treats an Auth error after the password took as ambiguous: reads again, and sends them to sign in (M-2)", async () => {
+    sharedFakeAuth.failures.updateUserByIdAfterApplying = "request_timeout";
+    const r = await submit();
+    expect(r).toMatchObject({ signInInstead: true, error: expect.stringContaining("may have been set") });
+    // Nothing claimed or accepted here: the invitation waits under Invitations.
+    expect(invitation("inv-new")).toMatchObject({ status: "PENDING", tokenUsedAt: null });
+    expect(sharedFake.table("SchemeMembership")).toHaveLength(0);
+    expect(audit.events).toContainEqual(expect.objectContaining({ action: "invitation.link_detail", reason: "password may be set, invitation not accepted" }));
+  });
+
+  it("asks them to try again when Auth cannot be reached, and changes nothing (M-2)", async () => {
+    sharedFakeAuth.failures.getUserById = "request_timeout";
+    const r = await submit();
+    expect(r.error).toContain("try again");
+    expect(r.linkDone).toBeFalsy();
+    expect(invitation("inv-new")).toMatchObject({ status: "PENDING", tokenUsedAt: null });
+    expect(sharedFakeAuth.calls.updateUserById).toHaveLength(0);
   });
 
   it("a revoke that lands first leaves the account with no password", async () => {
@@ -358,18 +395,18 @@ describe("someone with an account accepting from the link", () => {
     who.profile = { id: "p-existing", authId: "auth-existing", email: "existing.owner@example.test", isPlatformAdmin: false };
     who.authEmail = "moved.on@example.test";
     const r = await accept();
-    expect(r.error).toContain("cannot be accepted from this account");
+    expect(r.error).toContain("cannot be shown or accepted");
     expect(r.error).not.toContain("existing.owner");
     expect(invitation("inv-old")).toMatchObject({ status: "PENDING", tokenUsedAt: null });
     expect(sharedFake.table("SchemeMembership")).toHaveLength(0);
-    // The page does not call them the invitee either.
-    expect(await lookupJoinLinkAction(oldLink.token)).toMatchObject({ state: "sign-in", signedIn: "someone-else" });
+    // The page says the address cannot be confirmed (L-d).
+    expect(await lookupJoinLinkAction(oldLink.token)).toMatchObject({ state: "sign-in", signedIn: "unconfirmed" });
   });
 
   it("refuses when the Auth address is the invited one but the profile copy is not (L7)", async () => {
     who.profile = { id: "p-other", authId: "auth-other", email: "someone.else@example.test", isPlatformAdmin: false };
     who.authEmail = "existing.owner@example.test";
-    expect((await accept()).error).toContain("cannot be accepted from this account");
+    expect((await accept()).error).toContain("cannot be shown or accepted");
     expect(invitation("inv-old").status).toBe("PENDING");
   });
 
@@ -399,8 +436,8 @@ describe("the existing Invitations page flow", () => {
   it("refuses, neutrally, when the profile's address differs from the Auth address (L7)", async () => {
     who.profile = { id: "p-existing", email: "existing.owner@example.test", isPlatformAdmin: false };
     who.authEmail = "moved.on@example.test";
-    expect((await acceptInvitationAction("inv-old")).error).toContain("cannot be accepted from this account");
-    expect((await declineInvitationAction("inv-old")).error).toContain("cannot be accepted from this account");
+    expect((await acceptInvitationAction("inv-old")).error).toContain("cannot be shown or accepted");
+    expect((await declineInvitationAction("inv-old")).error).toContain("cannot be shown or accepted");
     expect(invitation("inv-old").status).toBe("PENDING");
   });
 });
@@ -420,6 +457,23 @@ describe("the building's security events (L1)", () => {
     const forExisting = scoped().map(shape);
     expect(forNew).toEqual(forExisting);
     expect(forNew).toEqual(["invitation.accept:allowed:accepted from link:profile:auth"]);
+  });
+
+  it("refused links look the same too, outcome included (L-a)", async () => {
+    // New account: Auth refuses the password (a failure).
+    sharedFakeAuth.failures.updateUserById = "unexpected_failure";
+    await completeJoinAction({}, form({ token: newLink.token, password: GOOD, confirmPassword: GOOD }));
+    const forNew = scoped().map(shape);
+    audit.events = [];
+    // Existing account: signed in as someone else (a denial).
+    who.profile = { id: "p-other", authId: "auth-other", email: "someone.else@example.test", isPlatformAdmin: false };
+    await acceptJoinAction({}, form({ token: oldLink.token }));
+    const forExisting = scoped().map(shape);
+    expect(forNew).toEqual(forExisting);
+    expect(forNew).toEqual(["invitation.link:denied:link not used:-:-"]);
+    // The real outcomes are kept, with no building.
+    const detail = audit.events.filter((e) => e.action === "invitation.link_detail");
+    expect(detail.map((e) => `${e.outcome}:${e.reason}`)).toEqual(["denied:signed in as a different address"]);
   });
 
   it("never say new, existing, account or password in an event with the building", async () => {
