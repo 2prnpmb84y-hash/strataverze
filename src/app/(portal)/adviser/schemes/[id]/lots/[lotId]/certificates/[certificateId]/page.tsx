@@ -10,6 +10,7 @@ import { requesterFields } from "@/lib/records/requester-fields";
 import { certificateDrafting, type CertificateItem } from "@/lib/records/certificate-draft";
 import { certificateDueText } from "@/lib/records/certificate-text";
 import { checkKeptCertificate, keptContent } from "@/lib/records/issued-certificate";
+import { certificateRulesOffered } from "@/lib/records/offered";
 import { formatLotLabel } from "@/lib/format";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -39,7 +40,7 @@ export default async function CertificatePage({ params }: { params: Promise<{ id
     kept ? checkKeptCertificate(kept) : null,
   ]);
   const rules = current?.rules ?? null;
-  if (rules && !rules.FEATURES.strataInformationCertificate && !rules.FEATURES.bodyCorporateCertificate) notFound();
+  if (rules && !certificateRulesOffered(rules.FEATURES)) notFound();
   const c = rules ? needRule(rules, "CERTIFICATE") : null;
   const words = kept?.document ?? c!;
   const due = c ? certificateDueText(c, day(cert.requestedOn)) : null;

@@ -7,7 +7,8 @@
 import { revalidatePath } from "next/cache";
 import { AuthorisationError, requireSchemeMembership } from "@/lib/auth/require-membership";
 import { logError } from "@/lib/log";
-import { schemeHasFeature } from "@/lib/jurisdiction/scheme-rules";
+import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
+import { accessOffered, certificateOffered } from "@/lib/records/offered";
 import {
   RecordsError,
   cancelCertificateDraft,
@@ -56,7 +57,7 @@ const certPaths = (schemeId: string, lotId: string) => revalidatePath(`/adviser/
 export async function createCertificateAction(schemeId: string, lotId: string, _prev: RecordsFormState, formData: FormData): Promise<RecordsFormState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
-    if (!(await schemeHasFeature(schemeId, "strataInformationCertificate")) && !(await schemeHasFeature(schemeId, "bodyCorporateCertificate"))) return { error: NOT_AVAILABLE };
+    if (!certificateOffered((await rulesForScheme(schemeId)).rules.FEATURES)) return { error: NOT_AVAILABLE };
     const r = await createCertificate({ schemeId, lotId, requester: requester(formData), actorId: profile.id });
     certPaths(schemeId, lotId);
     return { success: "Draft started from StrataVerze's records. Check and complete every item.", id: r.id };
@@ -135,7 +136,7 @@ const inspPath = (schemeId: string) => revalidatePath(`/adviser/schemes/${scheme
 export async function createInspectionAction(schemeId: string, _prev: RecordsFormState, formData: FormData): Promise<RecordsFormState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
-    if (!(await schemeHasFeature(schemeId, "recordsInspections"))) return { error: NOT_AVAILABLE };
+    if (!accessOffered((await rulesForScheme(schemeId)).rules.FEATURES)) return { error: NOT_AVAILABLE };
     await createInspection({
       schemeId,
       lotId: text(formData, "lotId"),

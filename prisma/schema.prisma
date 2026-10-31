@@ -4536,6 +4536,15 @@ model SaleCertificate {
   /// issued certificate stays issued (trigger sale_certificates_issued_guard). Null for a draft, a
   /// cancelled draft and a certificate issued before the migration.
   issuedContent      Json?     @map("issued_content")
+  /// The kind of certificate under a VIC, ACT or WA pack's CERTIFICATE_KINDS (migration 20261127): OWNERS_CORPORATION,
+  /// SALE, SALE_UPDATE, RENTAL, SCHEME or LOT. Null for an NSW or Queensland certificate (check sale_certificates_kind_check).
+  kind               String?
+  /// The cap the fee was checked against when it was issued, and whether it includes GST (kind rows only; the fee is
+  /// never above it). Null for an NSW or Queensland certificate.
+  feeCapCents        Int?      @map("fee_cap_cents")
+  feeIncludesGst     Boolean?  @map("fee_includes_gst")
+  /// The adviser's answer: an additional certificate for the same applicant (VIC OWNERS_CORPORATION only).
+  additionalCertificate Boolean? @map("additional_certificate")
   createdBy          String    @map("created_by") @db.Uuid
   issuedBy           String?   @map("issued_by") @db.Uuid
   createdAt          DateTime  @default(now()) @db.Timestamptz @map("created_at")
@@ -4549,7 +4558,7 @@ model SaleCertificate {
   @@map("sale_certificates")
 }
 
-/// A request to inspect the records or get copies (NSW s 182, Queensland Act s 205).
+/// A request to inspect the records or get copies (NSW s 182, Queensland Act s 205; the draft packs' records access kinds in RECORDS_ACCESS_KINDS, migration 20261127).
 model RecordsInspection {
   id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   schemeId         String    @map("scheme_id") @db.Uuid
@@ -4568,6 +4577,22 @@ model RecordsInspection {
   feeCents         Int?      @map("fee_cents")
   feePaidOn        DateTime? @db.Date @map("fee_paid_on")
   notes            String?
+  /// The rule pack a VIC, ACT or WA records access request was recorded under (migration 20261127; written by the
+  /// kinds store, 10b). NSW and Queensland code never writes it, so it is null for their requests.
+  rulePack         String?   @map("rule_pack") @db.VarChar(40)
+  /// The kind of records access under a VIC, ACT or WA pack's RECORDS_ACCESS_KINDS: RECORDS, REGISTER, EXECUTIVE_MEMBERS,
+  /// INSURANCE or CONTACT. Null for NSW and Queensland (check records_inspections_access_kind_check).
+  accessKind       String?   @map("access_kind")
+  /// What copies were given (access kind rows only): PHOTOCOPY, ELECTRONIC or STORAGE_DEVICE, how many records, and the
+  /// cost of a storage device.
+  copyMedium       String?   @map("copy_medium")
+  recordsCopied    Int?      @map("records_copied")
+  deviceCostCents  Int?      @map("device_cost_cents")
+  /// The cap the fee was checked against when it was completed, and whether it includes GST (access kind rows only).
+  feeCapCents      Int?      @map("fee_cap_cents")
+  feeIncludesGst   Boolean?  @map("fee_includes_gst")
+  /// The adviser's answer: the person also asked for a sale certificate (ACT RECORDS only).
+  alsoSaleCertificate Boolean? @map("also_sale_certificate")
   createdBy        String    @map("created_by") @db.Uuid
   createdAt        DateTime  @default(now()) @db.Timestamptz @map("created_at")
   updatedAt        DateTime  @updatedAt @db.Timestamptz @map("updated_at")

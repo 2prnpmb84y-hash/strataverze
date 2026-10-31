@@ -21221,7 +21221,28 @@
           },
           "RecordsInspection": {
             "fields": {
+              "accessKind": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "alsoSaleCertificate": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
               "authorisedBy": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "copyMedium": {
                 "nullable": true,
                 "type": {
                   "codecId": "pg/text@1",
@@ -21249,10 +21270,31 @@
                   "kind": "scalar"
                 }
               },
+              "deviceCostCents": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "feeCapCents": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
               "feeCents": {
                 "nullable": true,
                 "type": {
                   "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "feeIncludesGst": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/bool@1",
                   "kind": "scalar"
                 }
               },
@@ -21319,11 +21361,28 @@
                   "kind": "scalar"
                 }
               },
+              "recordsCopied": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
               "requestedOn": {
                 "nullable": false,
                 "type": {
                   "codecId": "pg/date-string@1",
                   "kind": "scalar"
+                }
+              },
+              "rulePack": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 40
+                  }
                 }
               },
               "scheduledFor": {
@@ -21398,8 +21457,17 @@
             },
             "storage": {
               "fields": {
+                "accessKind": {
+                  "column": "access_kind"
+                },
+                "alsoSaleCertificate": {
+                  "column": "also_sale_certificate"
+                },
                 "authorisedBy": {
                   "column": "authorised_by"
+                },
+                "copyMedium": {
+                  "column": "copy_medium"
                 },
                 "copyPages": {
                   "column": "copy_pages"
@@ -21410,8 +21478,17 @@
                 "createdBy": {
                   "column": "created_by"
                 },
+                "deviceCostCents": {
+                  "column": "device_cost_cents"
+                },
+                "feeCapCents": {
+                  "column": "fee_cap_cents"
+                },
                 "feeCents": {
                   "column": "fee_cents"
+                },
+                "feeIncludesGst": {
+                  "column": "fee_includes_gst"
                 },
                 "feePaidOn": {
                   "column": "fee_paid_on"
@@ -21440,8 +21517,14 @@
                 "place": {
                   "column": "place"
                 },
+                "recordsCopied": {
+                  "column": "records_copied"
+                },
                 "requestedOn": {
                   "column": "requested_on"
+                },
+                "rulePack": {
+                  "column": "rule_pack"
                 },
                 "scheduledFor": {
                   "column": "scheduled_for"
@@ -21600,6 +21683,13 @@
           },
           "SaleCertificate": {
             "fields": {
+              "additionalCertificate": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
               "authorisedByAddress": {
                 "nullable": true,
                 "type": {
@@ -21649,10 +21739,24 @@
                   "kind": "scalar"
                 }
               },
+              "feeCapCents": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
               "feeCents": {
                 "nullable": true,
                 "type": {
                   "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "feeIncludesGst": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/bool@1",
                   "kind": "scalar"
                 }
               },
@@ -21695,6 +21799,13 @@
                 "nullable": false,
                 "type": {
                   "codecId": "pg/jsonb@1",
+                  "kind": "scalar"
+                }
+              },
+              "kind": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
                   "kind": "scalar"
                 }
               },
@@ -21808,6 +21919,9 @@
             },
             "storage": {
               "fields": {
+                "additionalCertificate": {
+                  "column": "additional_certificate"
+                },
                 "authorisedByAddress": {
                   "column": "authorised_by_address"
                 },
@@ -21829,8 +21943,14 @@
                 "draftedOn": {
                   "column": "drafted_on"
                 },
+                "feeCapCents": {
+                  "column": "fee_cap_cents"
+                },
                 "feeCents": {
                   "column": "fee_cents"
+                },
+                "feeIncludesGst": {
+                  "column": "fee_includes_gst"
                 },
                 "feePaidOn": {
                   "column": "fee_paid_on"
@@ -21849,6 +21969,9 @@
                 },
                 "items": {
                   "column": "items"
+                },
+                "kind": {
+                  "column": "kind"
                 },
                 "lotId": {
                   "column": "lot_id"
@@ -52148,7 +52271,22 @@
             },
             "records_inspections": {
               "columns": {
+                "access_kind": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "also_sale_certificate": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "nullable": true
+                },
                 "authorised_by": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "copy_medium": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
                   "nullable": true
@@ -52172,9 +52310,24 @@
                   "dataType": "pg/uuid",
                   "nullable": false
                 },
+                "device_cost_cents": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
+                "fee_cap_cents": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
                 "fee_cents": {
                   "codecId": "pg/int4@1",
                   "dataType": "pg/int4",
+                  "nullable": true
+                },
+                "fee_includes_gst": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
                   "nullable": true
                 },
                 "fee_paid_on": {
@@ -52226,10 +52379,23 @@
                   "dataType": "pg/text",
                   "nullable": true
                 },
+                "records_copied": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
                 "requested_on": {
                   "codecId": "pg/date-string@1",
                   "dataType": "pg/date",
                   "nullable": false
+                },
+                "rule_pack": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 40
+                  }
                 },
                 "scheduled_for": {
                   "codecId": "pg/timestamptz-string@1",
@@ -52429,6 +52595,11 @@
             },
             "sale_certificates": {
               "columns": {
+                "additional_certificate": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "nullable": true
+                },
                 "authorised_by_address": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -52468,9 +52639,19 @@
                   "dataType": "pg/date",
                   "nullable": false
                 },
+                "fee_cap_cents": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
                 "fee_cents": {
                   "codecId": "pg/int4@1",
                   "dataType": "pg/int4",
+                  "nullable": true
+                },
+                "fee_includes_gst": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
                   "nullable": true
                 },
                 "fee_paid_on": {
@@ -52510,6 +52691,11 @@
                   "codecId": "pg/jsonb@1",
                   "dataType": "pg/jsonb",
                   "nullable": false
+                },
+                "kind": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
                 },
                 "lot_id": {
                   "codecId": "pg/uuid@1",
@@ -64489,7 +64675,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "1301a290c0d271e8fb0480d0715adcf3d94df95b658e7168c48f5aa74b618ece"
+    "storageHash": "9097182771794b48b7d5c350e8442d76998e59fbbdc7b35d428ddee47b5424f0"
   },
   "execution": {
     "executionHash": "454fa11779756be5e20f2ae540217fc9e337e78af6dbb69e34dc8ddf4d7262fe",

@@ -7,11 +7,12 @@ vi.mock("@/lib/auth/require-membership", async () => {
   return { ...actual, requireSchemeMembership: (...a: unknown[]) => membership(...a) };
 });
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
-// The building's rule pack has the workflow unless a test says otherwise.
-const hasFeature = vi.fn(async (_schemeId: string, _feature: string) => true);
+// The building's rule pack has the workflows (the NSW switches) unless a test says otherwise.
+const ON = { strataInformationCertificate: true, recordsInspections: true };
+const features = vi.fn(async (_schemeId: string): Promise<Record<string, boolean | undefined>> => ON);
 vi.mock("@/lib/jurisdiction/scheme-rules", async () => {
   const actual = await vi.importActual<typeof import("@/lib/jurisdiction/scheme-rules")>("@/lib/jurisdiction/scheme-rules");
-  return { ...actual, schemeHasFeature: (...a: [string, string]) => hasFeature(...a) };
+  return { ...actual, rulesForScheme: async (schemeId: string) => ({ rules: { FEATURES: await features(schemeId) }, label: "AU-TEST" }) };
 });
 const store = {
   createCertificate: vi.fn(async () => ({ id: "c1" })),
@@ -81,16 +82,37 @@ describe("certificate and inspection actions", () => {
 describe("a building whose rule pack does not have the workflow", () => {
   it("refuses to start a certificate or record an inspection, writing nothing", async () => {
     membership.mockResolvedValue({ profile: { id: "a1" }, membership: {}, roles: ["ADVISER"] });
-    hasFeature.mockResolvedValue(false);
+    // Stage 2, step 9: a certificate needs either the NSW s 184 certificate or the Queensland body corporate certificate.
+    // PR 10a: the gates are certificateOffered and accessOffered (src/lib/records/offered.ts), read from the building's pack.
+    const off = [
+      { strataInformationCertificate: false, recordsInspections: false },
+      { strataInformationCertificate: false, bodyCorporateCertificate: false, recordsInspections: false },
+      { strataInformationCertificate: false, bodyCorporateCertificate: false, certificateKinds: false, recordsInspections: false, recordsAccess: false },
+    ];
     try {
-      expect((await actions.createCertificateAction(SCHEME, "lot-1", {}, form({}))).error).toBe("This is not available for this building.");
-      expect((await actions.createInspectionAction(SCHEME, {}, form({}))).error).toBe("This is not available for this building.");
-      // Stage 2, step 9: a certificate needs either the NSW s 184 certificate or the Queensland body corporate certificate.
-      expect(hasFeature.mock.calls.map((c) => c[1])).toEqual(["strataInformationCertificate", "bodyCorporateCertificate", "recordsInspections"]);
+      for (const f of off) {
+        features.mockResolvedValue(f);
+        expect((await actions.createCertificateAction(SCHEME, "lot-1", {}, form({}))).error).toBe("This is not available for this building.");
+        expect((await actions.createInspectionAction(SCHEME, {}, form({}))).error).toBe("This is not available for this building.");
+      }
+      expect(features.mock.calls.every((c) => c[0] === SCHEME)).toBe(true);
       expect(store.createCertificate).not.toHaveBeenCalled();
       expect(store.createInspection).not.toHaveBeenCalled();
     } finally {
-      hasFeature.mockResolvedValue(true);
+      features.mockResolvedValue(ON);
+    }
+  });
+
+  it("starts a certificate for either certificate switch, and records an inspection for the inspections switch", async () => {
+    membership.mockResolvedValue({ profile: { id: "a1" }, membership: {}, roles: ["ADVISER"] });
+    try {
+      features.mockResolvedValue({ strataInformationCertificate: false, bodyCorporateCertificate: true, recordsInspections: true });
+      expect((await actions.createCertificateAction(SCHEME, "lot-1", {}, form({}))).success).toBeDefined();
+      expect((await actions.createInspectionAction(SCHEME, {}, form({}))).success).toBeDefined();
+      expect(store.createCertificate).toHaveBeenCalledTimes(1);
+      expect(store.createInspection).toHaveBeenCalledTimes(1);
+    } finally {
+      features.mockResolvedValue(ON);
     }
   });
 });

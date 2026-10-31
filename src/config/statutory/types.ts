@@ -468,6 +468,19 @@ export interface PackFeatures {
    * recorded.
    */
   bodyCorporateCertificate?: boolean;
+  /**
+   * Certificates of the kinds in CERTIFICATE_KINDS, each with its own fee cap
+   * (VIC, ACT and WA stage 2, PR 10). A pack without the key does not have
+   * them, so the NSW and Queensland packs' FEATURES stay as recorded. No pack
+   * sets it until the pack PR that adds its CERTIFICATE_KINDS (10b to 10d).
+   */
+  certificateKinds?: boolean;
+  /**
+   * Records access of the kinds in RECORDS_ACCESS_KINDS (VIC, ACT and WA stage 2,
+   * PR 10). A pack without the key does not have it, as for
+   * certificateKinds.
+   */
+  recordsAccess?: boolean;
 }
 
 /**
@@ -557,6 +570,212 @@ export type InspectionRules =
       feesIncludeGst: boolean;
       source: string;
     };
+
+/*
+ * Certificate kinds and records access (VIC, ACT and WA stage 2, PR 10,
+ * 31 Oct 2026; Matthew Wrigley's decisions D1 to D21 of 31 Oct 2026). New
+ * keys beside CERTIFICATE and INSPECTIONS, so the NSW and Queensland shapes
+ * and branches are unchanged. In the draft packs every fee is a cap: the body
+ * sets its own fee "up to" the cap, the adviser enters the fee the body
+ * charged (never filled in from the cap, D3) and StrataVerze refuses one
+ * above it. The engine is src/lib/records/caps.ts; it reads only these shapes.
+ */
+
+/**
+ * How GST meets a cap (D10): INCLUDED, the cap already includes it (ACT);
+ * ADD_10_IF_GST_REGISTERED and MAY_BE_ADDED, 10% is added to the cap only
+ * for a building recorded as registered for GST (WA "if remitted", VIC
+ * "may be added").
+ */
+export type CapGst = "INCLUDED" | "ADD_10_IF_GST_REGISTERED" | "MAY_BE_ADDED";
+
+/**
+ * A cap on a fee the body sets itself, for requests received from `from`
+ * (inclusive) to `to` (exclusive), both YYYY-MM-DD. A null `from` is a
+ * provision that shows no amendment since it was made (WA reg 86), so any
+ * request date before `to`; a null `to` has no end yet. A cap applies only
+ * while `cents` has a checked value (CONFIRMED or STRATAVERZE): with none, a
+ * request in its period is refused (fails closed).
+ */
+export interface DatedCap {
+  from: string | null;
+  to: string | null;
+  cents: CheckedValue<number>;
+  gst: CapGst;
+  source: string;
+}
+
+/**
+ * A cap in fee units, plus any part fixed in cents (VIC regs 12 to 15):
+ * `feeUnits` at the year's value of a fee unit, plus `plusCents`, plus
+ * `perPageCents` for each printed page. While `centsPerFeeUnit` has no
+ * checked value, the cap is the safe floor: the parts fixed in cents only
+ * (D6), which is always below the true cap.
+ */
+export interface FeeUnitCap {
+  feeUnits: number;
+  plusCents: number;
+  perPageCents: number;
+  /** The cents in one fee unit by financial year ("2026-27"). */
+  centsPerFeeUnit: CheckedValue<FeeYearTable<number>>;
+  gst: "MAY_BE_ADDED";
+  source: string;
+}
+
+/** One turnaround band of a certificate's fee unit caps: given within this many business days (VIC regs 14, 15). */
+export interface FeeUnitBand {
+  withinBusinessDays: number;
+  standard: FeeUnitCap;
+  /** An additional certificate for the same applicant, where the owners corporations share a manager. */
+  additional: FeeUnitCap;
+}
+
+/** The kinds of certificate a draft pack may hold. Each is held in sale_certificates.kind (migration 20261127). */
+export type CertificateKindKey = "OWNERS_CORPORATION" | "SALE" | "SALE_UPDATE" | "RENTAL" | "SCHEME" | "LOT";
+
+/** How a certificate kind's fee is capped. */
+export type CertificateKindFee =
+  | {
+      basis: "DATED_CENTS";
+      caps: readonly DatedCap[];
+      /**
+       * MM-DD: a cap with no `to` is refused from the next such day after its
+       * `from`, until a pack version records the next determination (ACT
+       * "07-01", D13).
+       */
+      refuseFromNextYear?: string;
+    }
+  | {
+      basis: "FEE_UNIT_BANDS";
+      bands: readonly FeeUnitBand[];
+      /** The band (its withinBusinessDays) used until business days are decided: the lowest cap (D7). */
+      bandUntilBusinessDaysDecided: number;
+      /** The question the adviser answers each time, never pre-filled (D8). */
+      additionalQuestion: string;
+    };
+
+/**
+ * One kind of certificate (VIC s 151, ACT s 119, WA s 110). `items` are the
+ * headings StrataVerze drafts, in order. `requesterTypes` narrows the pack's
+ * list for this kind. `refused`: never offered, and refused with these words
+ * if asked for (ACT rental, D11). `after`: needs a certificate of that kind
+ * for the same lot issued in StrataVerze within the months before the
+ * request (ACT update, D12).
+ */
+export interface CertificateKindRule {
+  key: CertificateKindKey;
+  title: string;
+  section: string;
+  items: ReadonlyArray<readonly [string, string]>;
+  /** What StrataVerze's layout follows, after "following". */
+  follows: string;
+  conclusiveNote: string;
+  /** The PDF's file name before the number. */
+  fileStem: string;
+  /** Whether the PDF names the lot (WA s 110(1), about the scheme: false). Drawn only by a layout after layout 1. */
+  showsLot: boolean;
+  requesterTypes?: readonly string[];
+  /** When it must be given: with no checked value (VIC business days, D5) it is shown as not checked, never as a date. */
+  giveWithin: CheckedValue<{ days: number; count: "CALENDAR" | "BUSINESS" }>;
+  refused?: { words: string; source: string };
+  after?: { kind: CertificateKindKey; withinMonths: number; words: string; source: string };
+  fee: CertificateKindFee;
+}
+
+/**
+ * A draft pack's certificates (VIC, ACT and WA stage 2, PR 10), with
+ * FEATURES.certificateKinds. `appliesWhen` is tested against the building's
+ * selectors; false or unknown refuses before anything is written, with
+ * `notAppliesWords` (VIC services-only owners corporations, D9). `penalty`
+ * is for advisers only, never on a certificate (D21).
+ */
+export interface CertificateKindsRules {
+  buttonLabel: string;
+  planRowLabel: string;
+  execution: string;
+  executionLines: readonly string[];
+  requesterTypes: Readonly<Record<string, string>>;
+  agentType: string;
+  appliesWhen?: SelectorCondition;
+  notAppliesWords?: string;
+  kinds: readonly CertificateKindRule[];
+  /** The pack's words for the fee: "the fee the body sets, up to ...". */
+  feeWords: string;
+  penalty?: { words: string; source: string; status: RuleStatus };
+  source: string;
+}
+
+/** The kinds of records access a draft pack may hold. Each is held in records_inspections.access_kind (migration 20261127). */
+export type AccessKindKey = "RECORDS" | "REGISTER" | "EXECUTIVE_MEMBERS" | "INSURANCE" | "CONTACT";
+
+/** How copies given under an access kind are capped. */
+export type AccessCopies =
+  /** Copies are part of the access fee (ACT s 120A). */
+  | { basis: "INCLUDED" }
+  /**
+   * The first record a fee unit cap, each additional record in the same
+   * request `additionalRecordCents`; `first.perPageCents` is charged on every
+   * printed page of the request (VIC reg 12: 20c a page for the first and
+   * each additional record alike).
+   */
+  | { basis: "PER_RECORD"; first: FeeUnitCap; additionalRecordCents: number }
+  /** One fee unit cap for the copy (VIC reg 13). */
+  | { basis: "FEE_UNITS"; cap: FeeUnitCap }
+  /** By medium (WA reg 88): a photocopy, an electronic copy, or a storage device plus its cost. */
+  | {
+      basis: "BY_MEDIUM";
+      photocopy: { firstPages: number; firstCents: number; extraPageCents: number };
+      electronicCents: number;
+      storageDeviceCents: number;
+      plusDeviceCost: true;
+      gst: CapGst;
+      source: string;
+    };
+
+/**
+ * One kind of records access (VIC ss 146, 150; ACT ss 116 to 118, 120A; WA
+ * ss 108, 109). `within`: calendar days after the request, or null where the
+ * law sets no period ("at any reasonable time"). `schedule`: a time agreed
+ * within some days or set by notice within more, between two times of day
+ * (WA s 109; checked for a time set by notice only, D18). `inspection`: free,
+ * or dated caps by requester type ("*" for any). `nilWhen`: a question the
+ * adviser answers that makes the fee nil (ACT, D14). `agentRefused`: copies
+ * refused to the agent type (VIC register, D16).
+ */
+export interface AccessKindRule {
+  key: AccessKindKey;
+  label: string;
+  section: string;
+  within: CheckedValue<{ days: number; count: "CALENDAR" }> | null;
+  schedule?: { agreeWithinDays: number; setWithinDays: number; setBetween: readonly [string, string] };
+  inspection: "FREE" | Readonly<Record<string, readonly DatedCap[]>>;
+  /**
+   * MM-DD: an inspection cap with no `to` is refused from the next such day
+   * after its `from`, until a pack version records the next determination
+   * (ACT "07-01", D13), as CertificateKindFee's.
+   */
+  refuseFromNextYear?: string;
+  copies?: AccessCopies;
+  /** The body may refuse copies (WA s 109(5)): recording none is always allowed. */
+  copiesOptional?: boolean;
+  /** Photographs with the person's own camera are free (WA reg 87). */
+  photographsFree?: boolean;
+  nilWhen?: { key: "ALSO_SALE_CERTIFICATE"; question: string; source: string };
+  agentRefused?: { words: string; source: string };
+  penalty?: { words: string; source: string; status: RuleStatus };
+}
+
+/** A draft pack's records access (VIC, ACT and WA stage 2, PR 10), with FEATURES.recordsAccess. */
+export interface RecordsAccessRules {
+  section: string;
+  whoMayAsk: string;
+  requesterTypes: Readonly<Record<string, string>>;
+  agentType: string;
+  appliesWhen?: SelectorCondition;
+  notAppliesWords?: string;
+  kinds: readonly AccessKindRule[];
+  source: string;
+}
 
 /**
  * How long the document library shows each record must be kept (stage 2,
