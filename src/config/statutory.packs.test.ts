@@ -788,8 +788,110 @@ describe("Western Australia pack (pending)", () => {
   });
 });
 
+describe("Northern Territory pack (pending)", () => {
+  const pack = PENDING_RULE_PACKS.NT;
+  const nt = pack.rules;
+
+  it("is a draft for review, not signed off, with no decisions yet", () => {
+    expect(pack.code).toBe("AU-NT");
+    expect(pack.state).toBe("NT");
+    expect(pack.version).toBe("2026.10.1");
+    expect(pack.status).toBe("DRAFT");
+    expect(pack.reviewedOn).toBeNull();
+    expect(pack.reviewer).toBe("Matthew Wrigley");
+    expect(nt.DECISIONS).toEqual([]);
+    expect(nt.NOT_CONFIRMED.length).toBeGreaterThan(0);
+    expect(nt.FOR_REVIEW.length).toBeGreaterThan(0);
+    // Every product choice the draft had to make is a proposal in FOR_REVIEW, not a decision.
+    expect(nt.FOR_REVIEW.filter((p) => p.startsWith("Proposed decision")).length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("supports unit title schemes under the 2009 Act on management modules 1 and 2 only", () => {
+    expect(nt.SCHEME_ACT.options.filter((o) => o.supported).map((o) => o.value)).toEqual(["UTSA"]);
+    expect(nt.MANAGEMENT_MODULE.options.filter((o) => o.supported).map((o) => o.value)).toEqual(["MODULE_2", "MODULE_1"]);
+    expect(nt.SCHEME_CLASSES.standardFromUnitOwners).toBe(4);
+    expect(nt.SCHEME_CLASSES.counts).toBe("unit owners");
+  });
+
+  it("switches every NSW workflow off", () => {
+    expect(Object.keys(nt.FEATURES).sort()).toEqual(Object.keys(RULE_PACKS.NSW.rules.FEATURES).sort());
+    expect(Object.values(nt.FEATURES).every((on) => on === false)).toBe(true);
+  });
+
+  it("gives every shared term", () => {
+    const shared = Object.keys(RULE_PACKS.NSW.rules.TERMINOLOGY).filter((k) => k !== "source");
+    for (const k of shared) expect(nt.TERMINOLOGY, k).toHaveProperty(k);
+    expect(nt.TERMINOLOGY.jurisdictionShort).toBe("NT");
+    expect(nt.TERMINOLOGY.tribunal).toBe("NTCAT");
+    expect(nt.TERMINOLOGY.bodyCorporateNameStatus).toBe("STRATAVERZE");
+  });
+
+  it("requires no fund: both ledger funds are StrataVerze choices, neither required", () => {
+    for (const f of nt.FUND_CATALOGUE) {
+      expect(f.required, f.key).toBe(false);
+      expect(f.status, f.key).toBe("STRATAVERZE");
+      expect(f.requiredWhen, f.key).toBeUndefined();
+    }
+  });
+
+  it("holds contribution entitlement on each unit and interest entitlement separately", () => {
+    expect(nt.ENTITLEMENT_SCHEDULES.map((s) => [s.key, s.onLot, s.decides])).toEqual([
+      ["CONTRIBUTION", true, ["CONTRIBUTIONS", "SPECIAL_RESOLUTION"]],
+      ["INTEREST", false, ["COMMON_PROPERTY_SHARE"]],
+    ]);
+  });
+
+  it("holds the s 79 resolution tests and the debtor rule", () => {
+    expect(nt.RESOLUTIONS.SPECIAL.forAtLeastFractionOfVotesCast).toBe(2 / 3);
+    expect(nt.RESOLUTIONS.SPECIAL.againstNotMoreThanFractionOfAllContributionEntitlements).toBe(0.25);
+    expect(nt.RESOLUTIONS.MAJORITY.moreThanFractionOfAllUnits).toBe(0.5);
+    expect(nt.RESOLUTIONS.ORDINARY.modulesApplyEntitlementCount).toBe(false);
+    expect(nt.DEBT_RECOVERY.debtorMayVoteOnlyOn).toEqual(["UNANIMOUS", "WITHOUT_DISSENT"]);
+  });
+
+  it("counts meeting notice in working days: 14, or 21 for without dissent, unanimous or termination resolutions", () => {
+    expect(nt.MEETINGS.noticeCountsWorkingDays).toBe(true);
+    expect(nt.MEETINGS.noticeWorkingDays).toEqual({ general: 14, withoutDissentUnanimousOrTermination: 21, smallScheme: 14 });
+    expect(nt.MEETINGS.quorumPercentOfInterestEntitlements).toBe(50);
+    expect(nt.MEETINGS.agmWithinMonthsOfLast).toBe(15);
+    expect(nt.RECORDS.accessWithinWorkingDays).toBe(10);
+    expect(nt.RECORDS.accessFeeCents).toBe(3_000);
+    expect(nt.RECORDS.retentionYears).toBe(7);
+  });
+
+  it("charges no interest: optional in law, and every value the engine needs is not confirmed", () => {
+    const lc = nt.LATE_CHARGE;
+    expect(lc.defaultMode).toBe("NONE");
+    expect(lc.annualRatePercent).toBeNull();
+    expect(lc.maxMonthlyRatePercent).toBeNull();
+    const a = lc.annual!;
+    const values = [a.statutoryRatePercent!, a.resolvedRate!.resolution, a.resolvedRate!.minPercent, a.resolvedRate!.maxPercent, a.accrual.from, a.accrual.graceMonths, a.accrual.simple, a.accrual.daysInYear, a.waiver!.decidedBy];
+    for (const v of values) {
+      expect(v.value).toBeNull();
+      expect(v.status).toBe("NOT_CONFIRMED");
+      expect(v.note!.length).toBeGreaterThan(10);
+    }
+    expect(nt.INTEREST_ON_LATE_PAYMENT.mayCharge).toBe(true);
+    expect(nt.INTEREST_ON_LATE_PAYMENT.section85RatePercent).toBeNull();
+  });
+
+  it("gives no notice rule problem, its timing being StrataVerze proposals", () => {
+    expect(noticeRuleProblems(nt.NOTICE_RULES, { ledgerFund: "ADMINISTRATIVE" })).toEqual([]);
+    expect(noticeRuleProblems(nt.NOTICE_RULES, { ledgerFund: "CAPITAL_WORKS" })).toEqual([]);
+    expect(noticeTimingFor(nt.NOTICE_RULES)).toMatchObject({ minimumDays: 14, leadDays: 35, maximumDays: null, dueDateMayMove: false, minimumIsStatutory: false });
+  });
+
+  it("uses the Darwin time zone, with no daylight saving", () => {
+    expect(nt.TIME_ZONE).toMatchObject({ zone: "Australia/Darwin", utcOffset: "+09:30", daylightSaving: false });
+  });
+
+  it("is the rules recorded for review", () => {
+    expect(nt).toMatchSnapshot();
+  });
+});
+
 describe("the checked notice rules of the pending packs (stage 2, PR 6a)", () => {
-  const pending = [PENDING_RULE_PACKS.ACT, PENDING_RULE_PACKS.VIC, PENDING_RULE_PACKS.WA] as const;
+  const pending = [PENDING_RULE_PACKS.ACT, PENDING_RULE_PACKS.VIC, PENDING_RULE_PACKS.WA, PENDING_RULE_PACKS.NT] as const;
   const STATUSES_WITH_VALUE = ["CONFIRMED", "STRATAVERZE"];
 
   it.each(pending.map((p) => [p.code, p.rules.NOTICE_RULES] as const))("%s: every value is checked, and the checked values fit together", (_code, rule) => {
