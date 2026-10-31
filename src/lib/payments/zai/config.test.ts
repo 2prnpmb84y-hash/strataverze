@@ -43,5 +43,10 @@ describe("zaiConfig", () => {
     const r = zaiConfig(TEST_ENV);
     expect(r.enabled && r.config.webhookToleranceSeconds).toBe(300);
     expect(r.enabled && r.config.receiptActorId).toBe(null);
+    // No default for the receipt's debit account (review M5): unset is null, only BANK is accepted.
+    expect(r.enabled && r.config.receiptDebitFrom).toBe(null);
+    expect(zaiConfig({ ...TEST_ENV, ZAI_RECEIPT_DEBIT_ACCOUNT: "SUSPENSE" }).enabled).toBe(false);
+    const bank = zaiConfig({ ...TEST_ENV, ZAI_RECEIPT_DEBIT_ACCOUNT: "BANK" });
+    expect(bank.enabled && bank.config.receiptDebitFrom).toBe("BANK");
   });
 });

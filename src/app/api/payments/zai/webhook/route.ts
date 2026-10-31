@@ -11,13 +11,16 @@ import { ledgerProcessorDeps } from "@/lib/payments/zai/receipt-in-ledger";
 /**
  * Zai webhooks (switched off).
  *
- * While ZAI_PAYMENTS is off, or any Zai setting is missing, every request is
- * answered 404 before its body is read, and nothing touches the database.
+ * While ZAI_PAYMENTS is off, or any Zai setting is missing, every request,
+ * whatever its method, is answered 404 before its body is read, and nothing
+ * touches the database. Once on, a method other than POST is 405.
  *
- * Once on, a request is accepted only if it comes from an address Zai sends
- * from (callbacks guide, read 31 Oct 2026) and its Webhooks-signature header
+ * Once on, a request is accepted only if its Webhooks-signature header
  * verifies against the raw body (verify webhook signatures, read
- * 31 Oct 2026; ./webhook-signature.ts). Then the raw body is stored once
+ * 31 Oct 2026; ./webhook-signature.ts), which is the real gate, and, as
+ * defence in depth, it comes from an address Zai sends webhooks from (best
+ * practices for webhooks, read 31 Oct 2026). The body is read up to 256 KB
+ * and the read stops there, whatever Content-Length says. Then the raw body is stored once
  * (a repeated delivery is the same row) and processed in an order-safe way
  * (src/lib/payments/zai/webhook-processor.ts). 200 tells Zai it is done; a
  * failure answers 500 so Zai retries (for up to 24 hours, webhooks guide), and
@@ -42,6 +45,36 @@ function senderAddress(headers: Headers): string | null {
   return forwarded || null;
 }
 
+/** The body as UTF-8 text, or null once more than `max` bytes have arrived (the read stops there; review L4). */
+async function readCapped(request: Request, max: number): Promise<string | null> {
+  if (!request.body) return "";
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > max) {
+      await reader.cancel().catch(() => undefined);
+      return null;
+    }
+    chunks.push(value);
+  }
+  return Buffer.concat(chunks).toString("utf8");
+}
+
+/** Any other method: 404 while switched off, as for POST; 405 once on (review L3). */
+function notPost() {
+  return zaiConfig().enabled ? reply(405, "Method Not Allowed") : reply(404, "Not Found");
+}
+export const GET = notPost;
+export const HEAD = notPost;
+export const PUT = notPost;
+export const PATCH = notPost;
+export const DELETE = notPost;
+export const OPTIONS = notPost;
+
 export async function POST(request: NextRequest) {
   const cfg = zaiConfig();
   if (!cfg.enabled) return reply(404, "Not Found");
@@ -51,8 +84,8 @@ export async function POST(request: NextRequest) {
   if (!address || !ZAI_SENDER_IPS[config.environment].includes(address)) return reply(403, "Forbidden");
   const declared = Number(request.headers.get("content-length") ?? "0");
   if (!Number.isFinite(declared) || declared > MAX_BODY_BYTES) return reply(413, "Payload Too Large");
-  const rawBody = await request.text();
-  if (Buffer.byteLength(rawBody, "utf8") > MAX_BODY_BYTES) return reply(413, "Payload Too Large");
+  const rawBody = await readCapped(request, MAX_BODY_BYTES);
+  if (rawBody === null) return reply(413, "Payload Too Large");
 
   const check = verifyZaiSignature({
     header: request.headers.get(ZAI_SIGNATURE_HEADER),

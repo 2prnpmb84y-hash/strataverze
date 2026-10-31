@@ -25,4 +25,5 @@ export const TEST_CONFIG: ZaiConfig = {
   webhookSecret: "placeholder-webhook-key-32-chars-or-more",
   webhookToleranceSeconds: 300,
   receiptActorId: null,
+  receiptDebitFrom: null,
 };

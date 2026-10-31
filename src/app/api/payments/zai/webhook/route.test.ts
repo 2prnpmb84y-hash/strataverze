@@ -1,5 +1,6 @@
+// @vitest-environment node
 /**
- * The Zai webhook route: 404 before reading anything while switched off;
+ * The Zai webhook route: 404 to every method before reading anything while switched off;
  * once on, only Zai's addresses with a verified signature are stored and
  * processed; a failure answers 500 so Zai retries.
  */
@@ -17,22 +18,41 @@ vi.mock("@/lib/payments/zai/webhook-processor", () => ({
 vi.mock("@/lib/payments/zai/receipt-in-ledger", () => ({ ledgerProcessorDeps: () => depsFn() }));
 vi.mock("@/lib/log", () => ({ logError: vi.fn() }));
 
-const { POST } = await import("./route");
+const { POST, GET, PUT, PATCH, DELETE, OPTIONS, HEAD } = await import("./route");
 const { TEST_ENV } = await import("@/lib/payments/zai/__fixtures__/test-env");
 const { NPP_PAYIN_EXAMPLE } = await import("@/lib/payments/zai/__fixtures__/zai-doc-examples");
 
-const ZAI_PRELIVE_IP = "13.236.213.54";
+// The first pre-live address in "best practices for webhooks" (read 31 Oct 2026).
+const ZAI_PRELIVE_IP = "13.237.240.238";
 const NOW = 1_800_000_000;
 const rawBody = JSON.stringify(NPP_PAYIN_EXAMPLE);
 const sign = (body: string, t = NOW, secret = TEST_ENV.ZAI_WEBHOOK_SECRET) => `t=${t},v=${createHmac("sha256", secret).update(`${t}.${body}`).digest("base64url")}`;
 
-function request(opts: { body?: string; signature?: string | null; ip?: string | null } = {}) {
+/**
+ * A real Request whose body is a stream; `text` records whether the body was
+ * ever read (the stream is pulled only when read).
+ */
+function request(opts: { body?: string; signature?: string | null; ip?: string | null; contentLength?: string; chunks?: number } = {}) {
   const body = opts.body ?? rawBody;
-  const headers = new Headers({ "content-type": "application/json", "content-length": String(Buffer.byteLength(body)) });
+  const headers = new Headers({ "content-type": "application/json", "content-length": opts.contentLength ?? String(Buffer.byteLength(body)) });
   if (opts.signature !== null) headers.set("Webhooks-signature", opts.signature ?? sign(body));
   if (opts.ip !== null) headers.set("x-forwarded-for", opts.ip ?? ZAI_PRELIVE_IP);
-  const text = vi.fn(async () => body);
-  return { req: { headers, text } as unknown as Parameters<typeof POST>[0], text };
+  const text = vi.fn();
+  const bytes = new TextEncoder().encode(body);
+  const repeat = opts.chunks ?? 1;
+  let sent = 0;
+  const stream = new ReadableStream<Uint8Array>(
+    {
+      pull(c) {
+        text();
+        if (sent++ < repeat) c.enqueue(bytes);
+        else c.close();
+      },
+    },
+    { highWaterMark: 0 },
+  );
+  const req = new Request("https://app.example.test/api/payments/zai/webhook", { method: "POST", headers, body: stream, duplex: "half" } as RequestInit);
+  return { req: req as unknown as Parameters<typeof POST>[0], text };
 }
 
 beforeEach(() => {
@@ -51,6 +71,10 @@ const switchOn = () => {
 };
 
 describe("switched off", () => {
+  it("answers 404 to every other method too (review L3)", () => {
+    for (const handler of [GET, PUT, PATCH, DELETE, OPTIONS, HEAD]) expect(handler().status).toBe(404);
+  });
+
   it("answers 404 without reading the body or touching the database, however the request looks", async () => {
     for (const value of [undefined, "", "off", "true", "ON"]) {
       if (value !== undefined) vi.stubEnv("ZAI_PAYMENTS", value);
@@ -85,8 +109,9 @@ describe("switched on", () => {
     expect(process_).toHaveBeenCalledWith("ev-1", {});
   });
 
-  it("refuses an address Zai does not send from, or none", async () => {
-    for (const ip of ["203.0.113.9", "13.238.88.233", null]) {
+  it("refuses an address Zai does not send webhooks from, or none (best practices list, review H1)", async () => {
+    // 13.236.213.54 is on the callbacks guide's list only; 3.24.122.159 is a production address.
+    for (const ip of ["203.0.113.9", "13.236.213.54", "3.24.122.159", null]) {
       expect((await POST(request({ ip }).req)).status, String(ip)).toBe(403);
     }
     expect(store).not.toHaveBeenCalled();
@@ -100,10 +125,19 @@ describe("switched on", () => {
     expect(store).not.toHaveBeenCalled();
   });
 
-  it("refuses a body that is too large", async () => {
+  it("refuses a body that is too large, whether or not Content-Length says so (review L4)", async () => {
     const big = JSON.stringify({ transactions: { id: "x", pad: "y".repeat(300 * 1024) } });
     expect((await POST(request({ body: big }).req)).status).toBe(413);
+    // A small Content-Length and a body that keeps coming: the read stops past 256 KB.
+    const chunk = "z".repeat(64 * 1024);
+    const lying = request({ body: chunk, contentLength: "10", chunks: 100 });
+    expect((await POST(lying.req)).status).toBe(413);
+    expect(lying.text.mock.calls.length).toBeLessThan(10);
     expect(store).not.toHaveBeenCalled();
+  });
+
+  it("answers 405 to other methods once on", async () => {
+    for (const handler of [GET, PUT, PATCH, DELETE, OPTIONS, HEAD]) expect(handler().status).toBe(405);
   });
 
   it("answers 200 to a finished duplicate without processing it again", async () => {

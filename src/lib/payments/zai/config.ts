@@ -30,6 +30,10 @@
  * - ZAI_RECEIPT_ACTOR_ID (optional): the profile automatic receipts are
  *   recorded by. Without it no payment is receipted automatically: matched
  *   payments wait for a person (decision D5 in the design).
+ * - ZAI_RECEIPT_DEBIT_ACCOUNT (optional, no default): the ledger account an
+ *   automatic Zai receipt debits. Only "BANK" (the administrative bank
+ *   account, as for every receipt) is accepted. Unset, nothing is receipted
+ *   automatically while decision D3 is open (review M5).
  */
 import { ZAI_DOCS } from "./docs";
 
@@ -42,13 +46,15 @@ export const ZAI_CORE_API_BASE_URLS: Record<ZaiEnvironment, string> = {
 };
 
 /**
- * The addresses Zai sends callbacks and webhooks from (callbacks guide and
- * best practices for webhooks, read 31 Oct 2026). Checked as well as the
- * signature, where the request's address is known.
+ * The addresses Zai sends webhooks from: "Whitelist the following IPs that
+ * webhooks will be sent from" (best practices for webhooks,
+ * https://developer.hellozai.com/docs/best-practices-for-webhooks, read
+ * 31 Oct 2026). Not the callbacks guide's list, which is for the legacy
+ * callbacks service. Defence in depth only: the signature is the real gate.
  */
 export const ZAI_SENDER_IPS: Record<ZaiEnvironment, readonly string[]> = {
-  prelive: ["13.236.213.54", "13.237.52.66", "13.237.231.88", "54.183.18.207", "54.183.142.227"],
-  live: ["13.238.88.233", "13.238.89.179", "13.238.80.244", "54.183.18.207", "54.183.142.227"],
+  prelive: ["54.183.18.207", "54.183.142.227", "13.237.240.238", "54.66.162.247", "52.63.199.160"],
+  live: ["54.183.18.207", "54.183.142.227", "3.24.122.159", "54.79.20.55", "52.62.134.160"],
 };
 
 export const DEFAULT_WEBHOOK_TOLERANCE_SECONDS = 300;
@@ -63,6 +69,8 @@ export interface ZaiConfig {
   webhookSecret: string;
   webhookToleranceSeconds: number;
   receiptActorId: string | null;
+  /** The account an automatic receipt debits; null until decision D3 is taken. */
+  receiptDebitFrom: "BANK" | null;
 }
 
 export type ZaiConfigResult = { enabled: true; config: ZaiConfig } | { enabled: false; reason: string };
@@ -114,6 +122,8 @@ export function zaiConfig(env: Env = process.env): ZaiConfigResult {
   if (actor && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(actor)) {
     return { enabled: false, reason: "ZAI_RECEIPT_ACTOR_ID must be a profile id (a uuid)" };
   }
+  const debit = env.ZAI_RECEIPT_DEBIT_ACCOUNT?.trim() || null;
+  if (debit !== null && debit !== "BANK") return { enabled: false, reason: "ZAI_RECEIPT_DEBIT_ACCOUNT must be BANK or unset" };
   return {
     enabled: true,
     config: {
@@ -126,6 +136,7 @@ export function zaiConfig(env: Env = process.env): ZaiConfigResult {
       webhookSecret,
       webhookToleranceSeconds,
       receiptActorId: actor,
+      receiptDebitFrom: debit,
     },
   };
 }
