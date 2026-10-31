@@ -12,7 +12,9 @@ const input = "w-full rounded-[var(--radius-card)] border border-line bg-white p
 /**
  * Change owner (25 Oct 2026): on the lot page, for the Adviser and the
  * committee. Records the new owner on the strata roll, ends the outgoing
- * owner's portal access and invites the new owner.
+ * owner's portal access and invites the new owner. A committee member's
+ * change (`heldForReview`) waits for the Adviser to confirm it, and changes
+ * nothing until then (H-1, 31 Oct 2026); the server decides either way.
  */
 export function ChangeOwnerButton({
   schemeId,
@@ -20,6 +22,7 @@ export function ChangeOwnerButton({
   lotLabel,
   currentOwner,
   today,
+  heldForReview = false,
 }: {
   schemeId: string;
   lotId: string;
@@ -27,6 +30,8 @@ export function ChangeOwnerButton({
   currentOwner: string | null;
   /** Sydney's date, yyyy-mm-dd: the latest settlement date allowed. */
   today: string;
+  /** A committee member: the change is held for the Adviser to confirm. */
+  heldForReview?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -80,9 +85,15 @@ export function ChangeOwnerButton({
               </div>
             ) : (
               <form action={submit} className="space-y-4 px-6 py-5">
-                <p className="text-sm text-ink-muted">
-                  Current owner on the roll: <span className="font-medium text-ink">{currentOwner || "none recorded"}</span>. Saving records the new owner, removes the outgoing owner&apos;s contact details from this lot, ends their portal access and any committee seat from the settlement date (unless they still own another lot here), and sends notices to the new owner.
-                </p>
+                {heldForReview ? (
+                  <p className="text-sm text-ink-muted">
+                    Current owner on the roll: <span className="font-medium text-ink">{currentOwner || "none recorded"}</span>. Saving sends the change to the Adviser to confirm. Nothing changes until they do: the strata roll keeps the current owner, who keeps their portal access, and no invitation is sent. You cannot record yourself as the new owner.
+                  </p>
+                ) : (
+                  <p className="text-sm text-ink-muted">
+                    Current owner on the roll: <span className="font-medium text-ink">{currentOwner || "none recorded"}</span>. Saving records the new owner, removes the outgoing owner&apos;s contact details from this lot, ends their portal access and any committee seat from the settlement date (unless they still own another lot here), and sends notices to the new owner.
+                  </p>
+                )}
 
                 <Field label="New owner's name, as it will appear on the strata roll" error={err.ownerName}>
                   <input ref={first} name="ownerName" required maxLength={500} className={input} />
@@ -110,12 +121,12 @@ export function ChangeOwnerButton({
                 </Field>
                 <label className="flex items-start gap-2 text-sm text-ink">
                   <input type="checkbox" name="invite" defaultChecked className="mt-1" />
-                  <span>Invite the new owner to StrataVerze by email (needs the email above)</span>
+                  <span>Invite the new owner to StrataVerze by email (needs the email above){heldForReview ? ", once the Adviser confirms the change" : ""}</span>
                 </label>
 
                 {state.error && <p role="alert" className="text-sm text-[#B33A3A]">{state.error}</p>}
                 <div className="flex flex-wrap gap-2 pt-1">
-                  <Button type="submit" disabled={busy}>{busy ? "Saving…" : "Record change of owner"}</Button>
+                  <Button type="submit" disabled={busy}>{busy ? "Saving…" : heldForReview ? "Send to the Adviser to confirm" : "Record change of owner"}</Button>
                   <Button type="button" variant="ghost" onClick={() => setOpen(false)} disabled={busy}>Cancel</Button>
                 </div>
                 <p className="text-xs text-ink-muted">You may be asked for your authenticator code first.</p>

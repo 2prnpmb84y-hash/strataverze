@@ -29,6 +29,9 @@ const ACTION_LABELS: Record<string, string> = {
   LOT_CREATED: "added a lot",
   STRATA_ROLL_UPDATED: "updated an owner's name on the strata roll",
   OWNER_CHANGED: "recorded a change of owner",
+  OWNER_CHANGE_HELD: "recorded a change of owner for review",
+  OWNER_CHANGE_CONFIRMED: "confirmed a change of owner",
+  OWNER_CHANGE_REJECTED: "rejected a change of owner",
   ONBOARDING_INCOME_BUDGET_SAVED: "entered last year's income and expenditure and this year's budget",
   WORKS_REQUEST_SUBMITTED: "raised a works request",
   WORKS_REQUEST_RESUBMITTED: "sent a works request back to the committee",
@@ -73,6 +76,9 @@ const ACTION_ICONS: Record<string, string> = {
   LOT_CREATED: "🏠",
   STRATA_ROLL_UPDATED: "📜",
   OWNER_CHANGED: "🔑",
+  OWNER_CHANGE_HELD: "🔑",
+  OWNER_CHANGE_CONFIRMED: "🔑",
+  OWNER_CHANGE_REJECTED: "🔑",
   ONBOARDING_INCOME_BUDGET_SAVED: "📊",
   WORKS_REQUEST_SUBMITTED: "🔧",
   WORKS_REQUEST_RESUBMITTED: "🔧",
@@ -164,6 +170,9 @@ function getMetadataDetail(action: string, metadata: Record<string, unknown> | n
     case "LOT_CREATED":
     case "STRATA_ROLL_UPDATED":
     case "OWNER_CHANGED":
+    case "OWNER_CHANGE_HELD":
+    case "OWNER_CHANGE_CONFIRMED":
+    case "OWNER_CHANGE_REJECTED":
       if (metadata.lotNumber) return formatLotLabel(String(metadata.lotNumber));
       return null;
     default:

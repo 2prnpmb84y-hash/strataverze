@@ -24,6 +24,7 @@ import {
   Home,
   Calculator,
   Wrench,
+  UserRoundPen,
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
@@ -104,6 +105,7 @@ const adminNav = [
   { label: "Revenue", href: "/admin/revenue", icon: BarChart3 },
   { label: "Referral income", href: "/admin/referral-income", icon: CreditCard },
   { label: "Contractors", href: "/adviser/contractors", icon: UserPlus },
+  { label: "Changes of owner", href: "/admin/owner-changes", icon: UserRoundPen },
   { label: "Security", href: "/admin/security", icon: Shield },
   { label: "Audit log", href: "/admin/audit", icon: FileText },
 ];

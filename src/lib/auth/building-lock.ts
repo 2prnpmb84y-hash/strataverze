@@ -1,4 +1,4 @@
-import { requireAuth, requirePlatformAdmin, requireSchemeMembership } from "./require-membership";
+import { requireAuth, requirePlatformAdmin, requireSchemeMembership, type PortalRole } from "./require-membership";
 import { requireSchemeAccess } from "./require-access";
 import type { Capability } from "@/config/permissions";
 
@@ -38,16 +38,17 @@ export function changedLockedFields<T extends string>(
 
 /**
  * A capability on the building, or a StrataVerze administrator (who may not
- * hold a role on it). Returns the profile and whether they are an admin.
+ * hold a role on it). Returns the profile, whether they are an admin and,
+ * for everyone else, every role they hold on the building.
  */
 export async function requireSchemeAccessOrAdmin(schemeId: string, capability: Capability) {
   const profile = await requireAuth();
   if (profile.isPlatformAdmin) {
     await requirePlatformAdmin();
-    return { profile, isAdmin: true as const };
+    return { profile, isAdmin: true as const, roles: [] as PortalRole[] };
   }
   const access = await requireSchemeAccess(schemeId, capability);
-  return { profile: access.profile, isAdmin: false as const };
+  return { profile: access.profile, isAdmin: false as const, roles: access.roles };
 }
 
 /** As requireSchemeAccessOrAdmin, for a list of roles. */
