@@ -250,6 +250,20 @@ describe("the daily run", () => {
     expect(item("i2").status).toBe("INTERIM");
   });
 
+  it("decides nothing for one meeting of a switched off scheme (the meeting page and the adviser's actions)", async () => {
+    await open("i2", "INTERIM_NO_QUORUM");
+    await open("x1", "REDUCED_QUORUM");
+    pendingRow("i2").noticeGivenOn = "2026-11-03";
+    pendingRow("x1").noticeGivenOn = "2026-11-03";
+    sharedFake.table("Scheme").find((s) => s.id === "s1")!.isActive = false;
+    expect(await repo.settleDuePendingResolutions({ meetingId: "m1" }, at("2027-01-01T00:00:00.000Z"))).toEqual({ settled: 0, waiting: 0, blocked: [], failed: 0 });
+    expect(pendingRow("i2").status).toBe("PENDING");
+    expect(item("i2").status).toBe("INTERIM");
+    // Another building's meeting is decided as before.
+    expect(await repo.settleDuePendingResolutions({ meetingId: "a1" }, at("2027-01-01T00:00:00.000Z"))).toMatchObject({ settled: 1 });
+    expect(pendingRow("x1").status).toBe("CARRIED");
+  });
+
   it("counts a failure and goes on with the others", async () => {
     await open("i2", "INTERIM_NO_QUORUM");
     await open("x1", "REDUCED_QUORUM");
