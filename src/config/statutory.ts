@@ -20,8 +20,10 @@
  */
 import * as ACT from "./statutory/act";
 import * as NSW from "./statutory/nsw";
+import * as NT from "./statutory/nt";
 import * as QLD from "./statutory/qld";
 import * as SA from "./statutory/sa";
+import * as TAS from "./statutory/tas";
 import * as VIC from "./statutory/vic";
 import * as WA from "./statutory/wa";
 import type { MeetingRuleSet } from "@/lib/meetings/rules";
@@ -811,6 +813,36 @@ export const PENDING_RULE_PACKS = {
     reviewedOn: null,
     rules: WA,
   } satisfies PendingRulePack<typeof WA>,
+  TAS: {
+    code: "AU-TAS",
+    state: "TAS",
+    name: "Tasmania",
+    // 2026.10.1 (31 Oct 2026): strata schemes with one body corporate, researched from the in-force STA (version from
+    // 5 Nov 2021) and the Strata Titles (Insurance) Regulations 2019 (version from 26 Aug 2019), as a draft for Matthew
+    // Wrigley to review; not signed off, no decisions yet. Every FEATURES switch is off. NOTICE_RULES and LATE_CHARGE
+    // hold no value the Act does not give (no notice timing, no statutory interest rate), so both fail closed. No
+    // MEETING_RULES, recovery steps or dated rules yet (no enacted reform found).
+    version: "2026.10.1",
+    status: "DRAFT",
+    reviewer: "Matthew Wrigley",
+    reviewedOn: null,
+    rules: TAS,
+  } satisfies PendingRulePack<typeof TAS>,
+  NT: {
+    code: "AU-NT",
+    state: "NT",
+    name: "Northern Territory",
+    // 2026.10.1 (31 Oct 2026): unit title schemes, researched from the in-force UTSA (REPU012, as in force at 27 Nov 2023)
+    // and the Management Modules Regulations (REPU012R1, as in force at 12 May 2023), with the Unit Titles Act 1975 at
+    // headline level only, as a draft for Matthew Wrigley to review; not signed off, no decisions yet. Every workflow is
+    // off, the late charge has no value, so no interest can be charged, and the notice timing is not decided, so every
+    // notice is refused (after review, same day, same version: proposals moved to FOR_REVIEW).
+    version: "2026.10.1",
+    status: "DRAFT",
+    reviewer: "Matthew Wrigley",
+    reviewedOn: null,
+    rules: NT,
+  } satisfies PendingRulePack<typeof NT>,
   SA: {
     code: "AU-SA",
     state: "SA",
