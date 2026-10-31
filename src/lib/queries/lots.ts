@@ -156,6 +156,22 @@ export async function assignOwnerToLot(data: {
   lotId: string;
   profileId: string;
 }) {
+  // A person holds one owner access per building (unique scheme, profile and role). One that has
+  // ended, say when they sold a lot (H-1 review H1: access is never moved automatically), is
+  // started again on this lot rather than refused. An active one is refused by the unique key.
+  const ended = await db.orm.public.SchemeMembership
+    .where((m) => and(m.schemeId.eq(data.schemeId), m.profileId.eq(data.profileId), m.role.eq("OWNER"), m.isActive.eq(false)))
+    .first();
+  if (ended) {
+    return db.orm.public.SchemeMembership
+      .where((m) => and(m.id.eq(ended.id), m.schemeId.eq(data.schemeId), m.isActive.eq(false)))
+      .update({
+        lotId: data.lotId,
+        isActive: true,
+        endDate: null,
+        startDate: new Date().toISOString() as unknown as TimestampString<3>,
+      });
+  }
   return db.orm.public.SchemeMembership.create({
     schemeId: data.schemeId,
     profileId: data.profileId,

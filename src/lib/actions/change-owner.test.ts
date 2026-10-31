@@ -13,6 +13,9 @@ const who = vi.hoisted(() => ({
   stepUpFresh: true,
 }));
 const sent = vi.hoisted(() => ({ invitations: [] as string[] }));
+// The Auth users the admin API returns, by auth id (the recorder's addresses at confirm, review L1).
+const auth = vi.hoisted(() => ({ users: {} as Record<string, { email?: string; new_email?: string; identities?: Array<{ identity_data?: Record<string, unknown> }> }>, down: false }));
+const files = vi.hoisted(() => ({ documents: [] as Array<Record<string, unknown>> }));
 const audit = vi.hoisted(() => ({ events: [] as Array<Record<string, unknown>>, activity: [] as Array<Record<string, unknown>> }));
 
 vi.mock("@prisma/orm-postgres/orm-client", async () => (await import("@/test/fake-orm")).fakeOrmClient);
@@ -51,17 +54,42 @@ vi.mock("@/lib/jurisdiction/scheme-rules", async () => {
   const { statutoryRulesFor } = await import("@/config/statutory");
   return { rulesForScheme: async () => ({ rules: statutoryRulesFor("NSW"), label: "AU-NSW test" }) };
 });
+vi.mock("@/lib/supabase/admin", () => ({
+  createAdminClient: () => ({
+    auth: {
+      admin: {
+        getUserById: async (id: string) =>
+          auth.down || !auth.users[id] ? { data: { user: null }, error: { message: "unavailable" } } : { data: { user: auth.users[id] }, error: null },
+      },
+    },
+  }),
+}));
+vi.mock("@/lib/storage/uploads", () => ({
+  verifyUpload: vi.fn(async (p: { uploadId: string }) => ({ uploadId: p.uploadId, path: "schemes/S1/library/n.pdf", fileName: "notice.pdf", size: 10, mimeType: "application/pdf" })),
+  consumeUpload: vi.fn(async (_id: string, create: () => Promise<unknown>) => create()),
+  uploadErrorMessage: () => null,
+}));
+vi.mock("@/lib/queries/documents", () => ({
+  createDocument: vi.fn(async (d: Record<string, unknown>) => {
+    const row = { id: `9b2f4c3e-0000-4000-8000-00000000000${files.documents.length + 1}`, ...d };
+    files.documents.push(row);
+    return row;
+  }),
+}));
+vi.mock("@/lib/auth/session-register", () => ({ revokeAllSessions: vi.fn(async () => {}) }));
 vi.mock("@/lib/vault/capture", () => ({ getTrialVault: async () => null }));
 vi.mock("@/lib/vault/sources", () => ({ captureLibraryDocument: vi.fn(), captureQuietly: vi.fn(async () => null) }));
 
 const { sharedFake } = await import("@/test/fake-orm");
 const { changeOwnerAction } = await import("./change-owner");
 const { confirmOwnerChangeAction, rejectOwnerChangeAction } = await import("./change-owner-review");
+const { updateLotDetailAction } = await import("@/app/(portal)/adviser/schemes/[id]/lots/[lotId]/lot-workflow-actions");
+const { assignOwnerAction, removeOwnerAction } = await import("@/app/(portal)/adviser/schemes/[id]/lots/actions");
 
-const CHAIR = { id: "p-chair", email: "chair@x.test", firstName: "Chris", lastName: "Chair", isPlatformAdmin: false };
-const ADVISER = { id: "p-adviser", email: "adviser@x.test", firstName: "Ada", lastName: "Adviser", isPlatformAdmin: false };
-const OTHER_ADVISER = { id: "p-other-adviser", email: "other@x.test", firstName: "Otto", lastName: "Other", isPlatformAdmin: false };
-const ADMIN = { id: "p-admin", email: "staff@strataverze.test", firstName: "Sam", lastName: "Staff", isPlatformAdmin: true };
+const CHAIR = { id: "p-chair", authId: "a-chair", email: "chair@x.test", firstName: "Chris", lastName: "Chair", isPlatformAdmin: false };
+const ADVISER = { id: "p-adviser", authId: "a-adviser", email: "adviser@x.test", firstName: "Ada", lastName: "Adviser", isPlatformAdmin: false };
+const OTHER_ADVISER = { id: "p-other-adviser", authId: "a-other", email: "other@x.test", firstName: "Otto", lastName: "Other", isPlatformAdmin: false };
+const ADMIN = { id: "p-admin", authId: "a-admin", email: "staff@strataverze.test", firstName: "Sam", lastName: "Staff", isPlatformAdmin: true };
 
 const form = (fields: Record<string, string>) => {
   const fd = new FormData();
@@ -92,10 +120,13 @@ beforeEach(() => {
   as(CHAIR);
   who.stepUpFresh = true;
   sent.invitations = [];
+  files.documents = [];
+  auth.down = false;
+  auth.users = { "a-chair": { email: "chair@x.test" } };
   audit.events = [];
   audit.activity = [];
   sharedFake.reset({
-    Lot: [{ id: "L1", schemeId: "S1", lotNumber: "1" }, { id: "LX", schemeId: "S2", lotNumber: "9" }],
+    Lot: [{ id: "L1", schemeId: "S1", lotNumber: "1" }, { id: "L2", schemeId: "S1", lotNumber: "2" }, { id: "LX", schemeId: "S2", lotNumber: "9" }],
     LotDetail: [{ id: "ld1", lotId: "L1", rollOwnerName: "Ms Cate Blanchett", ownerEmail: "cate@x.test" }],
     Profile: [CHAIR, ADVISER, OTHER_ADVISER, ADMIN, { id: "p-cate", email: "cate@x.test", firstName: "Cate", lastName: "Blanchett" }],
     SchemeMembership: [
@@ -176,6 +207,7 @@ describe("a committee member cannot make themselves the owner (H-1)", () => {
   it.each([
     ["their profile email", "chair@x.test"],
     ["their profile email in another case, with spaces", "  Chair@X.Test "],
+    ["their profile email with a plus tag", "chair+lot1@x.test"],
   ])("refuses %s", async (_what, email) => {
     const r = await changeOwnerAction("S1", "L1", {}, form({ ...valid, email }));
     expect(r.fieldErrors?.email).toContain("You cannot record yourself as the new owner");
@@ -252,7 +284,7 @@ describe("confirming or rejecting a held change (H-1)", () => {
     const r = await confirmOwnerChangeAction("S1", id);
     expect(r.error).toBeUndefined();
     expect(r.done).toContain("Mr New Owner is now the owner of Lot 1 on the strata roll, settled 24/10/2026.");
-    expect(r.done).toContain("The outgoing owner's portal access has ended.");
+    expect(r.done).toContain("The outgoing owner's portal access to Lot 1 has ended. If they own another lot in this building, the Adviser assigns them to it");
     expect(r.done).toContain("An invitation has been sent to new@x.test.");
     expect(cateOwner().isActive).toBe(false);
     expect(roll().rollOwnerName).toBe("Mr New Owner");
@@ -354,5 +386,197 @@ describe("confirming or rejecting a held change (H-1)", () => {
     const r = await changeOwnerAction("S1", "L1", {}, form({ ...valid, ownerName: "Ms Right Owner" }));
     expect(r.done).toContain("waiting for the Adviser");
     expect(requests().map((q) => q.status)).toEqual(["REJECTED", "PENDING"]);
+  });
+});
+
+describe("review findings (31 Oct 2026)", () => {
+  async function hold(fields: Record<string, string> = valid) {
+    as(CHAIR);
+    const r = await changeOwnerAction("S1", "L1", {}, form(fields));
+    expect(r.done).toContain("waiting for the Adviser");
+    return String(requests()[0].id);
+  }
+
+  // H1: the reviewer's proof. A committee member steered a confirmed change by editing another lot's roll email.
+  it("H1: editing another lot's roll email while the change waits gives the outgoing owner nothing after confirm", async () => {
+    sharedFake.reset({
+      Lot: [{ id: "L5", schemeId: "S1", lotNumber: "5" }, { id: "L7", schemeId: "S1", lotNumber: "7" }],
+      LotDetail: [
+        { id: "d5", lotId: "L5", rollOwnerName: "Chris Chair", ownerEmail: "chair@x.test" },
+        { id: "d7", lotId: "L7", rollOwnerName: "Vera Victim", ownerEmail: "vera@x.test" },
+      ],
+      Profile: [CHAIR, ADVISER, { id: "p-vera", email: "vera@x.test" }],
+      SchemeMembership: [
+        { id: "m-chair-owner", schemeId: "S1", lotId: "L5", role: "OWNER", isActive: true, profileId: CHAIR.id },
+        { id: "m-chair", schemeId: "S1", lotId: null, role: "COMMITTEE", isActive: true, profileId: CHAIR.id },
+        { id: "m-vera", schemeId: "S1", lotId: "L7", role: "OWNER", isActive: true, profileId: "p-vera" },
+        { id: "m-adviser", schemeId: "S1", lotId: null, role: "ADVISER", isActive: true, profileId: ADVISER.id },
+      ],
+      LotDeliveryPreference: [],
+      Invitation: [],
+      OwnerChangeRequest: [],
+    });
+    as(CHAIR);
+    expect((await changeOwnerAction("S1", "L5", {}, form({ ownerName: "Bob Buyer", email: "bob@x.test", settlementDate: "2026-10-24" }))).done).toContain("waiting for the Adviser");
+    // While it waits, the chair puts their own email on lot 7's roll entry (roll.manage).
+    const e = new FormData();
+    e.set("ownerEmail", "chair@x.test");
+    expect(await updateLotDetailAction("S1", "L7", e)).toEqual({});
+    as(ADVISER);
+    const r = await confirmOwnerChangeAction("S1", String(requests()[0].id));
+    expect(r.done).toContain("The outgoing owner's portal access to Lot 5 has ended.");
+    const m = sharedFake.table("SchemeMembership");
+    expect(m.find((x) => x.id === "m-chair-owner")).toMatchObject({ lotId: "L5", isActive: false });
+    expect(m.find((x) => x.id === "m-chair")).toMatchObject({ isActive: false });
+    expect(m.find((x) => x.id === "m-vera")).toMatchObject({ lotId: "L7", isActive: true });
+    expect(m.filter((x) => x.lotId === "L7" && x.isActive).map((x) => x.profileId)).toEqual(["p-vera"]);
+  });
+
+  it("H1: the Adviser can then assign the outgoing owner to a lot they own (their ended access is restarted there)", async () => {
+    as(ADVISER);
+    await changeOwnerAction("S1", "L1", {}, form(valid));
+    expect(cateOwner()).toMatchObject({ isActive: false, lotId: "L1" });
+    expect(await assignOwnerAction("S1", "L2", "p-cate")).toEqual({});
+    expect(sharedFake.table("SchemeMembership").filter((x) => x.profileId === "p-cate")).toEqual([
+      expect.objectContaining({ id: "m1", lotId: "L2", isActive: true, endDate: null }),
+    ]);
+  });
+
+  it("L1: confirming is refused when the new owner's email is now one of the recorder's addresses", async () => {
+    const id = await hold();
+    // Added to the recorder's account after the change was recorded (a linked sign-in, with a plus tag).
+    auth.users["a-chair"] = { email: "chair@x.test", identities: [{ identity_data: { email: "New+lot@x.test" } }] };
+    as(ADVISER);
+    const r = await confirmOwnerChangeAction("S1", id);
+    expect(r.error).toContain("one of the addresses of the committee member who recorded this change");
+    expect(requests()[0].status).toBe("PENDING");
+    expectUnchanged();
+    expect(audit.events).toContainEqual(expect.objectContaining({ action: "lot.owner_change_refused", outcome: "denied", actorProfileId: ADVISER.id }));
+    // The recorder's profile email changed to it: refused too.
+    auth.users["a-chair"] = { email: "chair@x.test" };
+    sharedFake.table("Profile").find((p) => p.id === CHAIR.id)!.email = "NEW@x.test";
+    expect((await confirmOwnerChangeAction("S1", id)).error).toContain("cannot be confirmed");
+    expectUnchanged();
+  });
+
+  it("L1: confirming fails closed when the recorder's Auth addresses cannot be read", async () => {
+    const id = await hold();
+    auth.down = true;
+    as(ADVISER);
+    expect((await confirmOwnerChangeAction("S1", id)).error).toContain("could not be checked");
+    expect(requests()[0].status).toBe("PENDING");
+    expectUnchanged();
+  });
+
+  it("L2: a failure part way through confirming rolls the decision back with the change", async () => {
+    const id = await hold();
+    // An earlier, accepted owner invitation to the same address: the invitations key (scheme, email, role) refuses a new one.
+    sharedFake.table("Invitation").push({ id: "i-old", schemeId: "S1", email: "new@x.test", role: "OWNER", status: "ACCEPTED" });
+    sharedFake.setUniqueKeys({ Invitation: [["schemeId", "email", "role"]] });
+    as(ADVISER);
+    const r = await confirmOwnerChangeAction("S1", id);
+    expect(r.error).toContain("could not be confirmed. Nothing changed.");
+    expect(requests()[0]).toMatchObject({ status: "PENDING" });
+    expect(requests()[0].decidedBy ?? null).toBeNull();
+    expect(cateOwner().isActive).toBe(true);
+    expect(roll().rollOwnerName).toBe("Ms Cate Blanchett");
+    expect(sent.invitations).toEqual([]);
+    expect(audit.activity.filter((a) => String(a.action).startsWith("OWNER_CHANGE"))).toEqual([expect.objectContaining({ action: "OWNER_CHANGE_HELD" })]);
+  });
+
+  it("L2, L3: everything under the lot's lock goes through the transaction, and the lot's row is locked", async () => {
+    const id = await hold();
+    as(ADVISER);
+    await confirmOwnerChangeAction("S1", id);
+    as(ADVISER);
+    await changeOwnerAction("S1", "L1", {}, form({ ...valid, ownerName: "Third Owner", email: "third@x.test" }));
+    expect(sharedFake.globalCallsUnderLock).toEqual([]);
+    expect(sharedFake.locks.filter((l) => l.table === "Lot").length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("L5: a decision made between the read and the claim (the update matches nothing) changes nothing", async () => {
+    const id = await hold();
+    as(ADVISER);
+    const real = sharedFake.db.transaction;
+    const spy = vi.spyOn(sharedFake.db, "transaction").mockImplementationOnce(async (fn) => {
+      // Someone else rejects it after this confirmation read it as PENDING.
+      Object.assign(requests()[0], { status: "REJECTED", decidedBy: "p-someone", decidedAt: "2026-10-25T00:00:00.000Z" });
+      return real(fn);
+    });
+    const r = await confirmOwnerChangeAction("S1", id);
+    spy.mockRestore();
+    expect(r.error).toContain("no longer waiting");
+    expect(requests()[0]).toMatchObject({ status: "REJECTED", decidedBy: "p-someone" });
+    expectUnchanged();
+    expect(audit.activity.find((a) => a.action === "OWNER_CHANGE_CONFIRMED")).toBeUndefined();
+  });
+
+  it("L5: the same race when rejecting changes nothing either", async () => {
+    const id = await hold();
+    as(ADVISER);
+    const real = sharedFake.db.transaction;
+    const spy = vi.spyOn(sharedFake.db, "transaction").mockImplementationOnce(async (fn) => {
+      Object.assign(requests()[0], { status: "CONFIRMED", decidedBy: "p-someone", decidedAt: "2026-10-25T00:00:00.000Z" });
+      return real(fn);
+    });
+    const r = await rejectOwnerChangeAction("S1", id);
+    spy.mockRestore();
+    expect(r.error).toContain("no longer waiting");
+    expect(audit.activity.find((a) => a.action === "OWNER_CHANGE_REJECTED")).toBeUndefined();
+  });
+
+  it("L5, L3: a hold that loses the race to another (23505 on insert) is refused and files no notice", async () => {
+    // A decided change exists, so the check finds nothing waiting; the insert then meets the one-per-lot key.
+    sharedFake.table("OwnerChangeRequest").push({ id: "9b2f4c3e-0000-4000-8000-0000000000aa", schemeId: "S1", lotId: "L1", status: "REJECTED" });
+    sharedFake.setUniqueKeys({ OwnerChangeRequest: [["lotId"]] });
+    const r = await changeOwnerAction("S1", "L1", {}, form({ ...valid, uploadId: "u-1" }));
+    expect(r.error).toContain("already waiting for the Adviser");
+    expect(requests()).toHaveLength(1);
+    expect(files.documents).toEqual([]);
+    expectUnchanged();
+  });
+
+  it("L3: a held change's notice is filed after the hold is saved, and linked to it", async () => {
+    const r = await changeOwnerAction("S1", "L1", {}, form({ ...valid, uploadId: "u-1" }));
+    expect(r.done).toContain("The notice of transfer has been filed");
+    expect(files.documents).toHaveLength(1);
+    expect(requests()[0].noticeDocumentId).toBe(files.documents[0].id);
+    expectUnchanged();
+  });
+
+  it("M2: the view shows what confirming will do", async () => {
+    sharedFake.table("SchemeMembership").push({ id: "m-cate-seat", schemeId: "S1", lotId: null, role: "COMMITTEE", isActive: true, profileId: "p-cate" });
+    await hold({ ...valid, email: "chris@x.test" });
+    const { pendingOwnerChangeView } = await import("@/lib/owner/owner-change-requests");
+    const v = await pendingOwnerChangeView("S1", "L1");
+    expect(v?.effect).toEqual({
+      rollOwnerName: "Ms Cate Blanchett",
+      accessEnding: [{ name: "Cate Blanchett", email: "cate@x.test" }],
+      seatsEnding: ["Cate Blanchett"],
+      seatsKept: [],
+      invitation: "SEND",
+    });
+    // Not the recorder's address, but the same domain (not a public provider): flagged for the reviewer.
+    expect(v?.resemblance).toBe("domain");
+  });
+});
+
+describe("removing an owner (review M1)", () => {
+  it("removes only an OWNER access of the lot: a committee seat recorded against the lot is not found", async () => {
+    sharedFake.table("SchemeMembership").push({ id: "m-seat-l1", schemeId: "S1", lotId: "L1", role: "COMMITTEE", isActive: true, profileId: "p-cate" });
+    as(ADVISER);
+    expect((await removeOwnerAction("S1", "L1", "m-seat-l1")).error).toBe("Membership not found on this scheme.");
+    expect(sharedFake.table("SchemeMembership").find((m) => m.id === "m-seat-l1")?.isActive).toBe(true);
+    expect(await removeOwnerAction("S1", "L1", "m1")).toEqual({});
+    expect(cateOwner().isActive).toBe(false);
+  });
+
+  it("is refused for the committee, and while a change of owner of the lot waits", async () => {
+    as(CHAIR);
+    expect((await removeOwnerAction("S1", "L1", "m1")).error).toContain("permission");
+    await changeOwnerAction("S1", "L1", {}, form(valid));
+    as(ADVISER);
+    expect((await removeOwnerAction("S1", "L1", "m1")).error).toContain("waiting for review");
+    expect(cateOwner().isActive).toBe(true);
   });
 });

@@ -351,11 +351,37 @@ describe("lots (C1)", () => {
     expect(terminals.Profile.all).not.toHaveBeenCalled();
   });
 
-  it("the committee keeps the other roll actions: removeOwnerAction is still open to it", async () => {
-    callerRoles = { [SCHEME_A]: ["COMMITTEE"] };
+  // M1 (founder decision, 31 Oct 2026): removing an owner is for the Adviser or StrataVerze, as assigning one is.
+  it("removeOwnerAction refuses a committee member, before the step-up check and any lookup", async () => {
+    callerRoles = { [SCHEME_A]: ["COMMITTEE", "OWNER"] };
+    model("SchemeMembership");
     const r = await lotActions.removeOwnerAction(SCHEME_A, LOT_A.id, "membership-x");
+    expect(r.error).toMatch(/permission/);
+    expect(stepUp.requireRecentMfa).not.toHaveBeenCalled();
+    expect(terminals.SchemeMembership.first).not.toHaveBeenCalled();
+    expect(lots.removeOwnerFromLot).not.toHaveBeenCalled();
+  });
+
+  it("removeOwnerAction lets the Adviser and a StrataVerze admin through, and refuses an Adviser of another scheme", async () => {
     // Past the role check: refused only because the membership is not on the lot.
-    expect(r.error).toBe("Membership not found on this scheme.");
+    expect((await lotActions.removeOwnerAction(SCHEME_A, LOT_A.id, "membership-x")).error).toBe("Membership not found on this scheme.");
+    callerRoles = {};
+    caller.isPlatformAdmin = true;
+    expect((await lotActions.removeOwnerAction(SCHEME_A, LOT_A.id, "membership-x")).error).toBe("Membership not found on this scheme.");
+    caller.isPlatformAdmin = false;
+    callerRoles = { [SCHEME_B]: ["ADVISER"] };
+    expect((await lotActions.removeOwnerAction(SCHEME_A, LOT_A.id, "membership-x")).error).toMatch(/permission/);
+    expect(lots.removeOwnerFromLot).not.toHaveBeenCalled();
+  });
+
+  it("removeOwnerAction is refused while a change of owner of the lot waits for review", async () => {
+    model("SchemeMembership");
+    model("OwnerChangeRequest");
+    terminals.SchemeMembership.first.mockResolvedValueOnce({ id: "m-own", schemeId: SCHEME_A, lotId: LOT_A.id, role: "OWNER", profileId: "p-own" });
+    terminals.OwnerChangeRequest.first.mockResolvedValueOnce({ id: "req-1", schemeId: SCHEME_A, lotId: LOT_A.id, status: "PENDING" });
+    const r = await lotActions.removeOwnerAction(SCHEME_A, LOT_A.id, "m-own");
+    expect(r.error).toContain("waiting for review");
+    expect(lots.removeOwnerFromLot).not.toHaveBeenCalled();
   });
 
   it("an adviser of scheme B cannot act through scheme A's id", async () => {

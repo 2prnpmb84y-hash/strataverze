@@ -185,7 +185,10 @@ describe("a change of owner waiting for review", () => {
         { id: "m2", profileId: "chair-1", schemeId: "s1", lotId: null, role: "COMMITTEE", isActive: true },
         { id: "m3", profileId: "adviser-1", schemeId: "s1", lotId: null, role: "ADVISER", isActive: true },
       ],
-      Profile: [{ id: "chair-1", firstName: "Chris", lastName: "Chair", email: "chair@example.com" }],
+      Profile: [
+        { id: "chair-1", firstName: "Chris", lastName: "Chair", email: "chair@example.com" },
+        { id: "owner-1", firstName: "Olive", lastName: "Owner", email: "olive@example.org" },
+      ],
       OwnerChangeRequest: [
         {
           id: "9b2f4c3e-0000-4000-8000-000000000001",
@@ -213,6 +216,11 @@ describe("a change of owner waiting for review", () => {
     expect(html).toContain("Confirm change of owner");
     expect(html).toContain(">Reject<");
     expect(html).not.toContain("Change owner<");
+    // What confirming will do (review M2), and the address check (review L1).
+    expect(html).toContain("If you confirm");
+    expect(html).toContain("Olive Owner (olive@example.org)");
+    expect(html).toContain("Yes: an invitation is sent to new@example.com.");
+    expect(html).toContain("is at the same domain as the email of the committee member who recorded this change");
   });
 
   it("the committee's lot page says it is waiting for the Adviser, with no way to decide it", async () => {
@@ -221,6 +229,7 @@ describe("a change of owner waiting for review", () => {
     expect(html).toContain("Change of owner waiting for the Adviser");
     expect(html).toContain("Nothing changes until the Adviser confirms it");
     expect(html).not.toContain("Confirm change of owner");
+    expect(html).not.toContain("If you confirm");
     expect(html).not.toContain("Change owner<");
   });
 });

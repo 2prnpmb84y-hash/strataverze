@@ -5,7 +5,6 @@ import { requireRecentMfa } from "@/lib/auth/mfa-enforcement";
 import { revalidatePath } from "next/cache";
 import { searchProfiles } from "@/lib/queries/profiles";
 import { AuthorisationError } from "@/lib/auth/require-membership";
-import { requireSchemeAccess } from "@/lib/auth/require-access";
 import { requirePlatformAdmin } from "@/lib/auth/require-membership";
 import {
   LOCKED_LOT_FIELDS,
@@ -25,6 +24,7 @@ import {
   removeOwnerFromLot,
 } from "@/lib/queries/lots";
 import { logActivity } from "@/lib/queries/activity-log";
+import { getPendingOwnerChange } from "@/lib/owner/owner-change-requests";
 import { recordSecurityEvent } from "@/lib/audit/security-audit";
 import { revokeAllSessions } from "@/lib/auth/session-register";
 import { db } from "@/prisma/db";
@@ -326,7 +326,12 @@ export async function assignOwnerAction(
 }
 
 /**
- * Remove an owner from a lot.
+ * Remove an owner from a lot. The building's Adviser or StrataVerze only, as
+ * for assigning one (founder decision 31 Oct 2026, review finding M1): the
+ * committee could otherwise end any owner's access, and change who keeps a
+ * committee seat when a change of owner applies. Only an OWNER access of this
+ * lot can be removed here, and not while a change of owner of the lot is
+ * waiting for review (confirm or reject that first).
  */
 export async function removeOwnerAction(
   schemeId: string,
@@ -334,17 +339,18 @@ export async function removeOwnerAction(
   membershipId: string,
 ) {
   try {
-    const { profile: actor, roles } = await requireSchemeAccess(schemeId, "roll.manage");
+    const { profile: actor, isAdmin } = await requireRolesOrAdmin(schemeId, ["ADVISER"]);
     // A sensitive operation: needs an authenticator check in the last 15 minutes.
     await requireRecentMfa();
 
-    // Verify the membership belongs to this scheme before removing
+    // Verify the membership is an owner access of this lot of this scheme before removing
     const target = await db.orm.public.SchemeMembership
       .where((m) =>
         and(
           m.id.eq(membershipId),
           m.schemeId.eq(schemeId),
           m.lotId.eq(lotId),
+          m.role.eq("OWNER"),
         ),
       )
       .first();
@@ -352,13 +358,16 @@ export async function removeOwnerAction(
     if (!target) {
       return { error: "Membership not found on this scheme." };
     }
+    if (await getPendingOwnerChange(schemeId, lotId)) {
+      return { error: "A change of owner of this lot is waiting for review. Confirm or reject it before removing an owner." };
+    }
 
     await removeOwnerFromLot(membershipId);
     await recordSecurityEvent({
       action: "membership.owner_removed",
       outcome: "allowed",
       actorProfileId: actor.id,
-      actorRole: roles.includes("ADVISER") ? "ADVISER" : "COMMITTEE",
+      actorRole: isAdmin ? "platform_admin" : "ADVISER",
       schemeId,
       resourceType: "Lot",
       resourceId: lotId,

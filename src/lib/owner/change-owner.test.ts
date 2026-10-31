@@ -58,8 +58,8 @@ describe("applying a change of owner", () => {
 
   it("records the new owner, clears the outgoing owner's details, and ends only this lot's owner access", async () => {
     const { applyChangeOwner } = await import("./change-owner");
-    const r = await applyChangeOwner("S1", "L1", { ownerName: "Mr New Owner", email: "new@x.test", mobile: null, phone: null, address: null, settlementDate: "2026-10-24" });
-    expect(r).toEqual({ previousOwnerName: "Ms Cate Blanchett", endedMemberships: ["p-cate"], movedAccess: [], endedCommitteeSeats: ["p-cate"], keptCommitteeSeats: [], deliveryPreferencesUpdated: 1 });
+    const r = await applyChangeOwner(sharedFake.db.orm as never, "S1", "L1", { ownerName: "Mr New Owner", email: "new@x.test", mobile: null, phone: null, address: null, settlementDate: "2026-10-24" });
+    expect(r).toEqual({ previousOwnerName: "Ms Cate Blanchett", endedMemberships: ["p-cate"], endedCommitteeSeats: ["p-cate"], keptCommitteeSeats: [], deliveryPreferencesUpdated: 1 });
     expect(sharedFake.table("LotDetail")[0]).toMatchObject({ rollOwnerName: "Mr New Owner", ownerEmail: "new@x.test", ownerMobile: null, ownerAddress: null, isCommitteeMember: false, lastSettled: "2026-10-24T00:00:00.000Z" });
     const m = Object.fromEntries(sharedFake.table("SchemeMembership").map((x) => [x.id, x.isActive]));
     // The owner access and the committee seat end; another building and another lot are untouched.
@@ -72,21 +72,45 @@ describe("applying a change of owner", () => {
 
   const sale = { ownerName: "Mr New Owner", email: null, mobile: null, phone: null, address: null, settlementDate: "2026-10-24" };
 
-  it("keeps the committee seat when the roll shows the same owner on another lot", async () => {
-    sharedFake.table("LotDetail").push({ id: "ld15", lotId: "L15", rollOwnerName: "  ms cate   BLANCHETT ", ownerEmail: null });
+  // Review H1 (founder decision 31 Oct 2026): the roll's names and emails are text the committee can edit, so they never
+  // decide who keeps access or a seat. Access is never moved; the Adviser assigns an owner of another lot to it.
+  it("never moves the access, and ends the seat, when the roll shows the same owner on another lot", async () => {
+    sharedFake.table("LotDetail").push({ id: "ld15", lotId: "L15", rollOwnerName: "  ms cate   BLANCHETT ", ownerEmail: "Cate@Profile.test" });
     const { applyChangeOwner } = await import("./change-owner");
-    const r = await applyChangeOwner("S1", "L1", sale);
-    expect(r).toMatchObject({ endedMemberships: [], movedAccess: [{ profileId: "p-cate", lotNumber: "15" }], endedCommitteeSeats: [], keptCommitteeSeats: [{ profileId: "p-cate", lotNumbers: ["15"] }] });
-    expect(sharedFake.table("SchemeMembership").find((x) => x.id === "m2")?.isActive).toBe(true);
-    // Their owner access moves to the lot they still own, rather than ending.
-    expect(sharedFake.table("SchemeMembership").find((x) => x.id === "m1")).toMatchObject({ isActive: true, lotId: "L15" });
+    const r = await applyChangeOwner(sharedFake.db.orm as never, "S1", "L1", sale);
+    expect(r).toMatchObject({ endedMemberships: ["p-cate"], endedCommitteeSeats: ["p-cate"], keptCommitteeSeats: [] });
+    expect(sharedFake.table("SchemeMembership").find((x) => x.id === "m1")).toMatchObject({ isActive: false, lotId: "L1" });
+    expect(sharedFake.table("SchemeMembership").find((x) => x.id === "m2")?.isActive).toBe(false);
   });
 
-  it("keeps it when another lot carries the owner's email", async () => {
-    sharedFake.table("LotDetail").push({ id: "ld15", lotId: "L15", rollOwnerName: "C Blanchett Pty Ltd", ownerEmail: "Cate@Profile.test" });
-    const { applyChangeOwner } = await import("./change-owner");
-    const r = await applyChangeOwner("S1", "L1", sale);
-    expect(r.keptCommitteeSeats).toEqual([{ profileId: "p-cate", lotNumbers: ["15"] }]);
+  it("keeps a seat recorded against this lot when that member holds owner access to another lot (made by the Adviser)", async () => {
+    sharedFake.reset({
+      Lot: [{ id: "L1", schemeId: "S1", lotNumber: "1" }, { id: "L2", schemeId: "S1", lotNumber: "2" }],
+      Profile: [{ id: "p-a", email: "a@x.test", firstName: "Alex", lastName: "A" }],
+      LotDetail: [{ id: "ld1", lotId: "L1", rollOwnerName: "A Owner" }],
+      SchemeMembership: [
+        { id: "c1", schemeId: "S1", lotId: "L1", role: "COMMITTEE", isActive: true, profileId: "p-a" },
+        { id: "o2", schemeId: "S1", lotId: "L2", role: "OWNER", isActive: true, profileId: "p-a" },
+      ],
+      LotDeliveryPreference: [],
+    });
+    const { applyChangeOwner, previewChangeOwner } = await import("./change-owner");
+    const plan = await previewChangeOwner(sharedFake.db.orm as never, "S1", "L1");
+    expect(plan).toMatchObject({ accessEnding: [], seatsEnding: [], seatsKept: [{ membershipId: "c1", name: "Alex A", lotNumbers: ["2"] }] });
+    const r = await applyChangeOwner(sharedFake.db.orm as never, "S1", "L1", sale);
+    expect(r).toMatchObject({ endedMemberships: [], endedCommitteeSeats: [], keptCommitteeSeats: [{ profileId: "p-a", lotNumbers: ["2"] }] });
+    expect(sharedFake.table("SchemeMembership").map((x) => x.isActive)).toEqual([true, true]);
+  });
+
+  it("previews exactly what it then does, changing nothing", async () => {
+    const { applyChangeOwner, previewChangeOwner } = await import("./change-owner");
+    const before = JSON.stringify(sharedFake.table("SchemeMembership"));
+    const plan = await previewChangeOwner(sharedFake.db.orm as never, "S1", "L1");
+    expect(JSON.stringify(sharedFake.table("SchemeMembership"))).toBe(before);
+    expect(plan).toMatchObject({ rollOwnerName: "Ms Cate Blanchett", accessEnding: [{ membershipId: "m1", email: "cate@profile.test" }], seatsEnding: [{ membershipId: "m2" }], seatsKept: [] });
+    const r = await applyChangeOwner(sharedFake.db.orm as never, "S1", "L1", sale);
+    expect(r.endedMemberships).toEqual(plan.accessEnding.map((a) => a.profileId));
+    expect(r.endedCommitteeSeats).toEqual(plan.seatsEnding.map((a) => a.profileId));
   });
 
   it("ends a seat recorded against this lot even without owner access, and leaves other members alone", async () => {
@@ -101,7 +125,7 @@ describe("applying a change of owner", () => {
       LotDeliveryPreference: [],
     });
     const { applyChangeOwner } = await import("./change-owner");
-    const r = await applyChangeOwner("S1", "L1", sale);
+    const r = await applyChangeOwner(sharedFake.db.orm as never, "S1", "L1", sale);
     expect(r).toMatchObject({ endedMemberships: [], endedCommitteeSeats: ["p-a"], keptCommitteeSeats: [] });
     const m = Object.fromEntries(sharedFake.table("SchemeMembership").map((x) => [x.id, [x.isActive, x.isTreasurer]]));
     expect(m).toEqual({ c1: [false, false], c2: [true, undefined] });

@@ -51,16 +51,20 @@ export async function getInvitationByToken(token: string) {
 /**
  * Create a new invitation.
  */
-export async function createInvitation(data: {
-  schemeId: string;
-  email: string;
-  role: "OWNER" | "COMMITTEE" | "ACCOUNTANT";
-  lotId?: string;
-  invitedById: string;
-  expiresAt: string;
-}) {
+export async function createInvitation(
+  data: {
+    schemeId: string;
+    email: string;
+    role: "OWNER" | "COMMITTEE" | "ACCOUNTANT";
+    lotId?: string;
+    invitedById: string;
+    expiresAt: string;
+  },
+  /** A transaction's ORM, when the invitation must commit with other changes (change of owner, H-1 review L2). */
+  orm: typeof db.orm = db.orm,
+) {
   // Generate a UUID token for the invitation link
-  return db.orm.public.Invitation.create({
+  return orm.public.Invitation.create({
     schemeId: data.schemeId,
     email: data.email.toLowerCase(),
     role: data.role,

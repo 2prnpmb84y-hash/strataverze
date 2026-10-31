@@ -12,7 +12,7 @@
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const who = vi.hoisted(() => ({ profile: { id: "p-adviser", email: "adviser@x.test", firstName: "Ada", lastName: "Adviser", isPlatformAdmin: false } }));
+const who = vi.hoisted(() => ({ profile: { id: "p-adviser", authId: "a-adviser", email: "adviser@x.test", firstName: "Ada", lastName: "Adviser", isPlatformAdmin: false } }));
 
 vi.mock("@prisma/orm-postgres/orm-client", async () => (await import("@/test/fake-orm")).fakeOrmClient);
 vi.mock("@/prisma/db", async () => ({ db: (await import("@/test/fake-orm")).sharedFake.db }));
@@ -26,6 +26,10 @@ vi.mock("@/lib/notifications", () => ({ notifyInvitation: vi.fn(async () => {}) 
 vi.mock("@/lib/queries/schemes", () => ({ getSchemeNameById: async () => "Riverside" }));
 vi.mock("@/lib/jurisdiction/scheme-time", () => ({ schemeToday: async () => "2026-10-28" }));
 vi.mock("@/lib/vault/capture", () => ({ getTrialVault: async () => null }));
+// The recorder's Auth addresses, read when a held change is confirmed (review L1).
+vi.mock("@/lib/supabase/admin", () => ({
+  createAdminClient: () => ({ auth: { admin: { getUserById: async () => ({ data: { user: { email: "chair@x.test" } }, error: null }) } } }),
+}));
 vi.mock("@/lib/vault/sources", () => ({ captureLibraryDocument: vi.fn(), captureQuietly: vi.fn(async () => null) }));
 
 const { sharedFake } = await import("@/test/fake-orm");
@@ -33,7 +37,7 @@ const { changeOwnerAction } = await import("./change-owner");
 const { confirmOwnerChangeAction } = await import("./change-owner-review");
 
 const ADVISER = who.profile;
-const CHAIR = { id: "p-chair", email: "chair@x.test", firstName: "Chris", lastName: "Chair", isPlatformAdmin: false };
+const CHAIR = { id: "p-chair", authId: "a-chair", email: "chair@x.test", firstName: "Chris", lastName: "Chair", isPlatformAdmin: false };
 
 const form = (fields: Record<string, string>) => {
   const fd = new FormData();
@@ -86,7 +90,7 @@ describe.each([
     const r = await record(recorder);
     expect(r.error).toBeUndefined();
     expect(r.done).toContain("Mr New Owner is now the owner of Lot 1 on the strata roll, settled 27/10/2026.");
-    expect(r.done).toContain("Their seat on the committee has ended from the settlement date, as they are no longer an owner.");
+    expect(r.done).toContain("Their seat on the committee has ended from the settlement date, as they no longer hold owner access in this building.");
     expect(r.done).not.toMatch(/SSMA|s 35/);
     expect(r.done).toContain("An invitation has been sent to new@x.test.");
     expect(sharedFake.table("LotDetail")[0].rollOwnerName).toBe("Mr New Owner");
@@ -102,6 +106,6 @@ describe("a change of owner for an NSW lot", () => {
   it("still cites the provision that ends the committee seat", async () => {
     seed("NSW");
     const r = await record(ADVISER);
-    expect(r.done).toContain("Their seat on the strata committee has ended from the settlement date, as they are no longer an owner (s 35(1)(a) SSMA 2015).");
+    expect(r.done).toContain("Their seat on the strata committee has ended from the settlement date (s 35(1)(a) SSMA 2015), as they no longer hold owner access in this building.");
   });
 });

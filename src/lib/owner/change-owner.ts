@@ -1,27 +1,34 @@
 import { and } from "@prisma/orm-postgres/orm-client";
 import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
 import { db } from "@/prisma/db";
-import { upsertLotDetail } from "@/lib/queries/lot-workflows";
 
 /**
  * A change of owner on the strata roll (decided 25 Oct 2026), server side.
- * Callers authorise first (roll.manage: the Adviser and the committee) and
- * pass only a lot of this scheme.
+ * Callers authorise first and pass only a lot of this scheme. Who records it
+ * and when it applies: src/lib/actions/change-owner.ts (the Adviser or
+ * StrataVerze straight away; a committee member's held for review, H-1).
  *
- * What it does:
+ * What it does (founder decision 31 Oct 2026, review finding H1):
  *   - the strata roll shows the new owner's name, contact details and the
  *     settlement date; the outgoing owner's contact details are not kept on
  *     the lot (they stay in the activity log only as a name);
- *   - the outgoing owners' portal access to the lot ends on the settlement
- *     date (memberships are ended, never deleted), or moves to another lot
- *     of theirs if the roll shows they still own one in this scheme;
- *   - the outgoing owner's committee seat ends on the settlement date, unless
- *     they still own another lot in the scheme (s 35(1)(a) SSMA 2015: an
- *     elected member vacates office on ceasing to be eligible). Not covered:
- *     a non-owner member nominated by this owner (s 35(1)(b)); who nominated
+ *   - every active OWNER access to this lot ends on the settlement date
+ *     (memberships are ended, never deleted). It is never moved to another
+ *     lot: the roll's names and emails are text anyone with roll.manage can
+ *     edit, so they cannot decide who gets a lot. If the outgoing owner owns
+ *     another lot here, the Adviser assigns them to it (Adviser or StrataVerze
+ *     only, S-01);
+ *   - committee seats of the outgoing owners, and any seat recorded against
+ *     this lot, end on the settlement date (s 35(1)(a) SSMA 2015: an elected
+ *     member vacates office on ceasing to be eligible), unless that person
+ *     still holds active owner access to another lot of the scheme, an access
+ *     record only the Adviser or StrataVerze can make. Not covered: a
+ *     non-owner member nominated by this owner (s 35(1)(b)); who nominated
  *     whom is not recorded, so the Adviser handles that by hand;
  *   - delivery preferences addressed to the owner now go to the new owner.
- * The notice of transfer and the invitation are handled by the action.
+ * previewChangeOwner says, without changing anything, exactly what
+ * applyChangeOwner will do, so the reviewer sees it before confirming.
+ * The notice of transfer and the invitation are handled by the caller.
  */
 
 export interface ChangeOwnerInput {
@@ -69,56 +76,99 @@ export function checkChangeOwner(raw: Record<string, unknown>, today: string): C
 
 const ts = (v: string) => v as unknown as TimestampString<3>;
 
-/** Apply the change to the roll, memberships and delivery preferences. Returns what changed. */
-export async function applyChangeOwner(schemeId: string, lotId: string, input: ChangeOwnerInput) {
-  const previous = await db.orm.public.LotDetail.where((d) => d.lotId.eq(lotId)).first();
+type Orm = typeof db.orm;
+
+const personName = (p: { firstName?: string | null; lastName?: string | null; email?: string | null } | null | undefined) =>
+  [p?.firstName, p?.lastName].filter(Boolean).join(" ") || p?.email || "An owner";
+
+/** What applying the change would do to this lot's access and the committee, read now. */
+export async function previewChangeOwner(orm: Orm, schemeId: string, lotId: string) {
+  const detail = await orm.public.LotDetail.where((d) => d.lotId.eq(lotId)).first();
+  const access = await orm.public.SchemeMembership
+    .where((m) => and(m.schemeId.eq(schemeId), m.lotId.eq(lotId), m.role.eq("OWNER"), m.isActive.eq(true)))
+    .limit(50)
+    .all();
+  const outgoing = new Set(access.map((m) => m.profileId));
+  const seats = (
+    await orm.public.SchemeMembership
+      .where((m) => and(m.schemeId.eq(schemeId), m.role.eq("COMMITTEE"), m.isActive.eq(true)))
+      .limit(200)
+      .all()
+  ).filter((s) => outgoing.has(s.profileId) || s.lotId === lotId);
+  // Owner access to another lot of the scheme: made only by the Adviser or StrataVerze (S-01, M1).
+  const otherAccess = seats.length
+    ? (
+        await orm.public.SchemeMembership
+          .where((m) => and(m.schemeId.eq(schemeId), m.role.eq("OWNER"), m.isActive.eq(true), m.profileId.in(seats.map((s) => s.profileId))))
+          .limit(200)
+          .all()
+      ).filter((m) => m.lotId && m.lotId !== lotId)
+    : [];
+  const ids = [...new Set([...access.map((m) => m.profileId), ...seats.map((s) => s.profileId)])];
+  const profiles = ids.length ? await orm.public.Profile.where((p) => p.id.in(ids)).limit(200).all() : [];
+  const profile = (id: string) => profiles.find((p) => p.id === id);
+  const lotIds = [...new Set(otherAccess.map((m) => m.lotId!))];
+  const lots = lotIds.length ? await orm.public.Lot.where((l) => and(l.schemeId.eq(schemeId), l.id.in(lotIds))).limit(200).all() : [];
+  const lotNumber = (id: string) => String(lots.find((l) => l.id === id)?.lotNumber ?? "?");
+
+  const seatsEnding: Array<{ membershipId: string; profileId: string; name: string }> = [];
+  const seatsKept: Array<{ membershipId: string; profileId: string; name: string; lotNumbers: string[] }> = [];
+  for (const seat of seats) {
+    const elsewhere = otherAccess.filter((m) => m.profileId === seat.profileId).map((m) => lotNumber(m.lotId!));
+    const row = { membershipId: seat.id, profileId: seat.profileId, name: personName(profile(seat.profileId)) };
+    if (elsewhere.length) seatsKept.push({ ...row, lotNumbers: elsewhere.sort((a, b) => a.localeCompare(b, "en-AU", { numeric: true })) });
+    else seatsEnding.push(row);
+  }
+  return {
+    rollOwnerName: detail?.rollOwnerName ?? null,
+    previousOwnerEmail: detail?.ownerEmail ?? null,
+    accessEnding: access.map((m) => ({ membershipId: m.id, profileId: m.profileId, name: personName(profile(m.profileId)), email: profile(m.profileId)?.email ?? null })),
+    seatsEnding,
+    seatsKept,
+  };
+}
+
+export type ChangeOwnerPreview = Awaited<ReturnType<typeof previewChangeOwner>>;
+
+/**
+ * Apply the change to the roll, memberships and delivery preferences, through
+ * `orm` (the caller's transaction, holding the lot's row). Returns what changed.
+ */
+export async function applyChangeOwner(orm: Orm, schemeId: string, lotId: string, input: ChangeOwnerInput) {
+  const plan = await previewChangeOwner(orm, schemeId, lotId);
   const settledAt = `${input.settlementDate}T00:00:00.000Z`;
 
-  await upsertLotDetail(lotId, {
+  const roll = {
     rollOwnerName: input.ownerName,
     contactName: input.ownerName,
     ownerEmail: input.email,
     ownerMobile: input.mobile,
     ownerPhone: input.phone,
     ownerAddress: input.address,
-    lastSettled: settledAt,
+    lastSettled: settledAt as never,
     // Belonged to the outgoing owner.
     isCommitteeMember: false,
     paidToDate: null,
-  });
+  };
+  const existing = await orm.public.LotDetail.where((d) => d.lotId.eq(lotId)).first();
+  if (existing) await orm.public.LotDetail.where((d) => and(d.id.eq(existing.id), d.lotId.eq(lotId))).update(roll);
+  else await orm.public.LotDetail.create({ lotId, ...roll });
 
-  const stillOwns = await otherLotsLookup(schemeId, lotId, previous?.rollOwnerName ?? null, previous?.ownerEmail ?? null);
-
-  // The outgoing owner's access to this lot. An owner holds one owner access
-  // per scheme, on one lot: if the roll shows they still own another lot
-  // here, their access moves to that lot instead of ending.
-  const outgoing = await db.orm.public.SchemeMembership
-    .where((m) => and(m.schemeId.eq(schemeId), m.lotId.eq(lotId), m.role.eq("OWNER"), m.isActive.eq(true)))
-    .all();
-  const ended: string[] = [];
-  const movedAccess: Array<{ profileId: string; lotNumber: string }> = [];
-  for (const m of outgoing) {
-    const other = (await stillOwns(m.profileId))[0];
-    if (other) {
-      await db.orm.public.SchemeMembership.where((x) => and(x.id.eq(m.id), x.schemeId.eq(schemeId))).update({ lotId: other.lotId });
-      movedAccess.push({ profileId: m.profileId, lotNumber: other.lotNumber });
-    } else {
-      await db.orm.public.SchemeMembership
-        .where((x) => and(x.id.eq(m.id), x.schemeId.eq(schemeId)))
-        .update({ isActive: false, endDate: ts(settledAt) });
-      ended.push(m.profileId);
-    }
+  // Every owner access to this lot ends; none is moved to another lot (H1, 31 Oct 2026).
+  for (const m of plan.accessEnding) {
+    await orm.public.SchemeMembership
+      .where((x) => and(x.id.eq(m.membershipId), x.schemeId.eq(schemeId), x.isActive.eq(true)))
+      .update({ isActive: false, endDate: ts(settledAt) });
+  }
+  for (const seat of plan.seatsEnding) {
+    await orm.public.SchemeMembership
+      .where((x) => and(x.id.eq(seat.membershipId), x.schemeId.eq(schemeId), x.isActive.eq(true)))
+      .update({ isActive: false, isTreasurer: false, endDate: ts(settledAt) });
   }
 
-  const committee = await endCommitteeSeats(schemeId, lotId, {
-    outgoingProfileIds: outgoing.map((m) => m.profileId),
-    stillOwns,
-    settledAt,
-  });
-
-  const prefs = await db.orm.public.LotDeliveryPreference.where((p) => and(p.lotId.eq(lotId), p.recipientType.eq("OWNER"))).all();
+  const prefs = await orm.public.LotDeliveryPreference.where((p) => and(p.lotId.eq(lotId), p.recipientType.eq("OWNER"))).all();
   for (const p of prefs) {
-    await db.orm.public.LotDeliveryPreference.where((x) => and(x.id.eq(p.id), x.lotId.eq(lotId))).update({
+    await orm.public.LotDeliveryPreference.where((x) => and(x.id.eq(p.id), x.lotId.eq(lotId))).update({
       recipientName: input.ownerName,
       recipientEmail: input.email,
       // Never leave the outgoing owner's postal address in place.
@@ -130,79 +180,10 @@ export async function applyChangeOwner(schemeId: string, lotId: string, input: C
   }
 
   return {
-    previousOwnerName: previous?.rollOwnerName ?? null,
-    endedMemberships: ended,
-    movedAccess,
-    endedCommitteeSeats: committee.ended,
-    keptCommitteeSeats: committee.kept,
+    previousOwnerName: plan.rollOwnerName,
+    endedMemberships: plan.accessEnding.map((m) => m.profileId),
+    endedCommitteeSeats: plan.seatsEnding.map((s) => s.profileId),
+    keptCommitteeSeats: plan.seatsKept.map((k) => ({ profileId: k.profileId, lotNumbers: k.lotNumbers })),
     deliveryPreferencesUpdated: prefs.length,
   };
-}
-
-const sameName = (a: string | null | undefined, b: string | null | undefined) => {
-  const n = (v: string | null | undefined) => (v ?? "").trim().replace(/\s+/g, " ").toLowerCase();
-  return n(a) !== "" && n(a) === n(b);
-};
-const sameEmail = (a: string | null | undefined, b: string | null | undefined) => !!a && !!b && a.trim().toLowerCase() === b.trim().toLowerCase();
-
-/**
- * The outgoing owner's committee seat (decided 25 Oct 2026). Under s 35(1)(a)
- * of the Strata Schemes Management Act 2015 an elected member vacates office
- * on ceasing to be eligible; an owner who still owns another lot in the
- * scheme stays eligible. So the seat ends on the settlement date unless the
- * strata roll still shows them as the owner of another lot (same email, or
- * the same name as on this lot). The outgoing owner is whoever held this
- * lot's owner access, or a committee seat recorded against this lot.
- *
- * Not covered: a non-owner member nominated by this owner (s 35(1)(b)); who
- * nominated whom is not recorded, so the Adviser handles that by hand.
- */
-type OtherLot = { lotId: string; lotNumber: string };
-
-/**
- * Whether a person still owns another lot in the scheme, from the rest of the
- * strata roll: a lot carrying their email (profile or this lot's owner
- * email), or the same owner name as this lot had. Loaded once per change.
- */
-async function otherLotsLookup(schemeId: string, lotId: string, previousOwnerName: string | null, previousOwnerEmail: string | null) {
-  const otherLots = (await db.orm.public.Lot.where((l) => l.schemeId.eq(schemeId)).limit(5000).all()).filter((l) => l.id !== lotId);
-  const details = otherLots.length
-    ? await db.orm.public.LotDetail.where((d) => d.lotId.in(otherLots.map((l) => l.id))).limit(5000).all()
-    : [];
-  const lotNumber = new Map(otherLots.map((l) => [l.id, String(l.lotNumber)]));
-  return async (profileId: string): Promise<OtherLot[]> => {
-    const profile = await db.orm.public.Profile.where((p) => p.id.eq(profileId)).first();
-    return details
-      .filter((d) => sameEmail(d.ownerEmail, profile?.email) || sameEmail(d.ownerEmail, previousOwnerEmail) || sameName(d.rollOwnerName, previousOwnerName))
-      .map((d) => ({ lotId: d.lotId, lotNumber: lotNumber.get(d.lotId) ?? "?" }))
-      .sort((a, b) => a.lotNumber.localeCompare(b.lotNumber, "en-AU", { numeric: true }));
-  };
-}
-
-async function endCommitteeSeats(
-  schemeId: string,
-  lotId: string,
-  o: { outgoingProfileIds: string[]; stillOwns: (profileId: string) => Promise<OtherLot[]>; settledAt: string },
-): Promise<{ ended: string[]; kept: Array<{ profileId: string; lotNumbers: string[] }> }> {
-  const seats = await db.orm.public.SchemeMembership
-    .where((m) => and(m.schemeId.eq(schemeId), m.role.eq("COMMITTEE"), m.isActive.eq(true)))
-    .limit(200)
-    .all();
-  const outgoing = new Set(o.outgoingProfileIds);
-  const theirs = seats.filter((s) => outgoing.has(s.profileId) || s.lotId === lotId);
-
-  const ended: string[] = [];
-  const kept: Array<{ profileId: string; lotNumbers: string[] }> = [];
-  for (const seat of theirs) {
-    const others = await o.stillOwns(seat.profileId);
-    if (others.length) {
-      kept.push({ profileId: seat.profileId, lotNumbers: others.map((x) => x.lotNumber) });
-      continue;
-    }
-    await db.orm.public.SchemeMembership
-      .where((x) => and(x.id.eq(seat.id), x.schemeId.eq(schemeId)))
-      .update({ isActive: false, isTreasurer: false, endDate: ts(o.settledAt) });
-    ended.push(seat.profileId);
-  }
-  return { ended, kept };
 }

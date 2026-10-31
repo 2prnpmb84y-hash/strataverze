@@ -91,7 +91,7 @@ export function ChangeOwnerButton({
                   </p>
                 ) : (
                   <p className="text-sm text-ink-muted">
-                    Current owner on the roll: <span className="font-medium text-ink">{currentOwner || "none recorded"}</span>. Saving records the new owner, removes the outgoing owner&apos;s contact details from this lot, ends their portal access and any committee seat from the settlement date (unless they still own another lot here), and sends notices to the new owner.
+                    Current owner on the roll: <span className="font-medium text-ink">{currentOwner || "none recorded"}</span>. Saving records the new owner, removes the outgoing owner&apos;s contact details from this lot, ends their portal access to this lot and their committee seat from the settlement date, and sends notices to the new owner. Access is never moved: if they own another lot here, assign them to it from that lot&apos;s page.
                   </p>
                 )}
 
