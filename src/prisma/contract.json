@@ -21684,6 +21684,13 @@
                   "kind": "scalar"
                 }
               },
+              "issuedContent": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/jsonb@1",
+                  "kind": "scalar"
+                }
+              },
               "items": {
                 "nullable": false,
                 "type": {
@@ -21836,6 +21843,9 @@
                 },
                 "issuedBy": {
                   "column": "issued_by"
+                },
+                "issuedContent": {
+                  "column": "issued_content"
                 },
                 "items": {
                   "column": "items"
@@ -52491,6 +52501,11 @@
                   "dataType": "pg/uuid",
                   "nullable": true
                 },
+                "issued_content": {
+                  "codecId": "pg/jsonb@1",
+                  "dataType": "pg/jsonb",
+                  "nullable": true
+                },
                 "items": {
                   "codecId": "pg/jsonb@1",
                   "dataType": "pg/jsonb",
@@ -64474,7 +64489,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "0aa2a34f5e3aa32df4f0785250d8e2d44295e2a7c8f2931ee21618d73a9491b5"
+    "storageHash": "1301a290c0d271e8fb0480d0715adcf3d94df95b658e7168c48f5aa74b618ece"
   },
   "execution": {
     "executionHash": "454fa11779756be5e20f2ae540217fc9e337e78af6dbb69e34dc8ddf4d7262fe",

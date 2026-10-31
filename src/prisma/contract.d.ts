@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'0aa2a34f5e3aa32df4f0785250d8e2d44295e2a7c8f2931ee21618d73a9491b5'>;
+  StorageHashBase<'1301a290c0d271e8fb0480d0715adcf3d94df95b658e7168c48f5aa74b618ece'>;
 export type ExecutionHash =
   ExecutionHashBase<'454fa11779756be5e20f2ae540217fc9e337e78af6dbb69e34dc8ddf4d7262fe'>;
 export type ProfileHash =
@@ -2702,6 +2702,7 @@ export namespace Models {
     feeRepeat: FieldOutputTypes['public']['SaleCertificate']['feeRepeat'];
     id: FieldOutputTypes['public']['SaleCertificate']['id'];
     issuedBy: FieldOutputTypes['public']['SaleCertificate']['issuedBy'];
+    issuedContent: FieldOutputTypes['public']['SaleCertificate']['issuedContent'];
     items: FieldOutputTypes['public']['SaleCertificate']['items'];
     lotId: FieldOutputTypes['public']['SaleCertificate']['lotId'];
     number: FieldOutputTypes['public']['SaleCertificate']['number'];
@@ -18004,6 +18005,12 @@ type ContractBase = Omit<
                 readonly issued_by: {
                   readonly dataType: 'pg/uuid';
                   readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly issued_content: {
+                  readonly dataType: 'pg/jsonb';
+                  readonly codecId: 'pg/jsonb@1';
                   readonly nullable: true;
                   readonly many: false;
                 };
@@ -42426,6 +42433,10 @@ type ContractBase = Omit<
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
               };
+              readonly issuedContent: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/jsonb@1' };
+              };
               readonly items: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/jsonb@1' };
@@ -42517,6 +42528,7 @@ type ContractBase = Omit<
                 readonly feeRepeat: { readonly column: 'fee_repeat' };
                 readonly id: { readonly column: 'id' };
                 readonly issuedBy: { readonly column: 'issued_by' };
+                readonly issuedContent: { readonly column: 'issued_content' };
                 readonly items: { readonly column: 'items' };
                 readonly lotId: { readonly column: 'lot_id' };
                 readonly number: { readonly column: 'number' };
