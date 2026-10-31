@@ -76,6 +76,36 @@ describe("the app root", () => {
   });
 });
 
+describe("an email link that lands on the app root", () => {
+  it("is forwarded to /auth/callback with its query, signed out", async () => {
+    getUser.mockResolvedValue({ data: { user: null } });
+    const res = await proxy(request("/?code=abc-123&next=%2Fowner%2Fdashboard&type=signup"));
+    expect(res.status).toBe(307);
+    expect(res.headers.get("location")).toBe("https://app.strataverze.com/auth/callback?code=abc-123&next=%2Fowner%2Fdashboard&type=signup");
+    expect(res.headers.get("cache-control")).toBe("private, no-store");
+  });
+
+  it("is forwarded to /auth/callback signed in too, not to the dashboard", async () => {
+    getUser.mockResolvedValue({ data: { user: { id: "a1" } } });
+    loadSessionState.mockResolvedValue({ kind: "active", session: { profile: {} } });
+    const res = await proxy(request("/?code=abc-123"));
+    expect(res.status).toBe(307);
+    expect(res.headers.get("location")).toBe("https://app.strataverze.com/auth/callback?code=abc-123");
+  });
+
+  it("is let through by the proxy at /auth/callback", async () => {
+    getUser.mockResolvedValue({ data: { user: null } });
+    const res = await proxy(request("/auth/callback?code=abc-123"));
+    expect(res.headers.get("location")).toBeNull();
+  });
+
+  it("an empty code is not a link: the root redirects as usual", async () => {
+    getUser.mockResolvedValue({ data: { user: null } });
+    const res = await proxy(request("/?code="));
+    expect(res.headers.get("location")).toBe("https://www.strataverze.com/");
+  });
+});
+
 describe("the proxy matcher", () => {
   const matcher = new RegExp(`^${config.matcher[0]}$`);
   it("lets robots.txt through untouched, and matches the root", () => {

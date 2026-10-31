@@ -16,8 +16,9 @@ import { after, NextResponse, type NextRequest } from "next/server";
  *    server components always see a fresh token.
  * 3. Redirect unauthenticated visitors away from portal routes.
  * 4. Redirect authenticated visitors away from auth pages.
- * 5. Send the app root on: signed in to /dashboard, signed out to the
- *    marketing site.
+ * 5. Send the app root on: an email link carrying a `code` to
+ *    /auth/callback, otherwise signed in to /dashboard and signed out to
+ *    the marketing site.
  */
 
 const SUPABASE_HOST = "vtqovzfywfrizjufsrmj.supabase.co";
@@ -163,6 +164,16 @@ export async function proxy(request: NextRequest) {
   // never a permanent one: the target depends on the session, and browsers
   // cache permanent redirects. withCookies also marks it no-store.
   if (pathname === "/") {
+    // An email link (sign-up confirmation, recovery, invitation) that lands
+    // on the root, because Supabase fell back to its Site URL, carries a
+    // PKCE `code`. Hand it to /auth/callback with the whole query, before
+    // the marketing or dashboard redirect would drop it. Links that carry
+    // tokens in the URL fragment (implicit flow) never reach the server.
+    if (request.nextUrl.searchParams.get("code")) {
+      const callbackUrl = request.nextUrl.clone();
+      callbackUrl.pathname = "/auth/callback";
+      return withCookies(NextResponse.redirect(callbackUrl, 307), supabaseResponse);
+    }
     if (!user) {
       return withCookies(NextResponse.redirect(MARKETING_SITE_URL, 307), supabaseResponse);
     }
