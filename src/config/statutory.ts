@@ -22,6 +22,7 @@ import * as ACT from "./statutory/act";
 import * as NSW from "./statutory/nsw";
 import * as NT from "./statutory/nt";
 import * as QLD from "./statutory/qld";
+import * as SA from "./statutory/sa";
 import * as TAS from "./statutory/tas";
 import * as VIC from "./statutory/vic";
 import * as WA from "./statutory/wa";
@@ -875,6 +876,22 @@ export const PENDING_RULE_PACKS = {
     reviewedOn: null,
     rules: NT,
   } satisfies PendingRulePack<typeof NT>,
+  SA: {
+    code: "AU-SA",
+    state: "SA",
+    name: "South Australia",
+    // 2026.10.1 (31 Oct 2026): strata schemes, researched from the in-force Strata Titles Act 1988 (version 9.12.2021, read in
+    // full) and Strata Titles Regulations 2018 (version 1.9.2026, read in full), as a draft for review. Community schemes
+    // (Community Titles Act 1996, version 9.12.2021, read in part; Community Titles Regulations 2026, from 1.9.2026) are held
+    // apart in COMMUNITY_SCHEMES and not supported. No decisions: every product choice is a proposed decision in FOR_REVIEW,
+    // and the notice timing, the interest accrual and the lowest rate have no value, so the engine refuses them. Every
+    // FEATURES switch is off. The 2024 Bill (did not pass) is held as NOT_LAW in PENDING_REFORMS.
+    version: "2026.10.1",
+    status: "DRAFT",
+    reviewer: "Matthew Wrigley",
+    reviewedOn: null,
+    rules: SA,
+  } satisfies PendingRulePack<typeof SA>,
 } as const;
 
 /** How a pack is recorded on a notice, charge or case, for example "AU-NSW 2026.10.1". */

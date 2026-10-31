@@ -110,7 +110,7 @@ const NO_DASH_OR_SEMICOLON = /[;–—]/;
  * meeting rules yet: stage 2 adds them. Named here, so a pack that has meeting
  * rules can never lose them without this list changing.
  */
-const STAGE_1_PACKS_WITHOUT_MEETING_RULES: readonly string[] = ["NT", "TAS"];
+const STAGE_1_PACKS_WITHOUT_MEETING_RULES: readonly string[] = ["NT", "SA", "TAS"];
 /** The draft packs that hold meeting rules, as [state, rule set]. */
 const PENDING_MEETING_RULE_SETS = Object.values(PENDING_RULE_PACKS).flatMap((p) =>
   "MEETING_RULES" in p.rules && p.rules.MEETING_RULES ? [[p.state, p.rules.MEETING_RULES] as const] : [],
