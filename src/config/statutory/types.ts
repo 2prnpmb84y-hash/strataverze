@@ -749,6 +749,12 @@ export interface AccessKindRule {
   within: CheckedValue<{ days: number; count: "CALENDAR" }> | null;
   schedule?: { agreeWithinDays: number; setWithinDays: number; setBetween: readonly [string, string] };
   inspection: "FREE" | Readonly<Record<string, readonly DatedCap[]>>;
+  /**
+   * MM-DD: an inspection cap with no `to` is refused from the next such day
+   * after its `from`, until a pack version records the next determination
+   * (ACT "07-01", D13), as CertificateKindFee's.
+   */
+  refuseFromNextYear?: string;
   copies?: AccessCopies;
   /** The body may refuse copies (WA s 109(5)): recording none is always allowed. */
   copiesOptional?: boolean;

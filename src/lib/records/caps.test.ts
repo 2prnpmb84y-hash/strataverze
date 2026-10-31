@@ -5,7 +5,7 @@
  */
 import { describe, expect, it } from "vitest";
 import type { AccessKindRule, CertificateKindRule, CheckedValue, DatedCap, FeeUnitCap } from "@/config/statutory";
-import { accessCap, afterProblem, capOn, certificateBand, certificateCap, feeProblem, feeUnitCap, kindDue, kindQuestions, kindRequestProblem, startableKinds, withGst, type AccessGiven, type Cap } from "./caps";
+import { accessCap as accessCapFor, afterProblem, capListProblems, capOn, certificateBand, certificateCap, feeProblem, feeUnitCap, kindDue, kindQuestions, kindRequestProblem, startableKinds, withGst, type AccessGiven, type Cap } from "./caps";
 
 const confirmed = (value: number): CheckedValue<number> => ({ value, status: "CONFIRMED", source: "fixture" });
 const notConfirmed = (guidance: number): CheckedValue<number> => ({ value: null, status: "NOT_CONFIRMED", source: "fixture", note: "start date not read", guidance });
@@ -28,8 +28,10 @@ const bands = (unit: FeeUnitCap["centsPerFeeUnit"] = UNCHECKED_UNIT) => [
 ];
 const VIC_LIKE = (unit: FeeUnitCap["centsPerFeeUnit"] = UNCHECKED_UNIT): Pick<CertificateKindRule, "fee"> => ({ fee: { basis: "FEE_UNIT_BANDS", bands: bands(unit), bandUntilBusinessDaysDecided: 10, additionalQuestion: "Fixture question: an additional certificate?" } });
 
-const given = (o: Partial<AccessGiven> = {}): AccessGiven => ({ requestedOn: "2026-10-27", requesterType: "OWNER", byAgent: false, inspected: false, records: 0, pages: 0, medium: null, deviceCents: null, alsoSaleCertificate: null, gstRegistered: false, ...o });
+const given = (o: Partial<AccessGiven> = {}): AccessGiven => ({ requestedOn: "2026-10-27", requesterType: "OWNER", inspected: false, records: 0, pages: 0, medium: null, deviceCents: null, alsoSaleCertificate: null, gstRegistered: false, ...o });
 const cents = (c: Cap | { ok: false }) => (c.ok ? c.cents : c);
+/** The fixtures' agent type is AGENT (a representative). */
+const accessCap = (kind: Parameters<typeof accessCapFor>[1], g: AccessGiven) => accessCapFor({ agentType: "AGENT" }, kind, g);
 
 describe("capOn", () => {
   it("applies a cap from its first day (inclusive) to its end (exclusive)", () => {
@@ -91,15 +93,15 @@ describe("GST (D10)", () => {
 
 describe("fee unit caps (D6, D7)", () => {
   it("are the parts fixed in cents while a fee unit's value is not checked: a certificate $0", () => {
-    expect(feeUnitCap(fu(9.64), "2026-10-27", 0)).toEqual({ cents: 0, floor: "FEE_UNIT_NOT_CHECKED" });
+    expect(feeUnitCap(fu(9.64), "2026-10-27", 0)).toEqual({ ok: true, cents: 0, floor: "FEE_UNIT_NOT_CHECKED" });
     expect(certificateCap(VIC_LIKE(), { requestedOn: "2026-10-27", additional: false, gstRegistered: true })).toEqual({ ok: true, cents: 0, includesGst: true, floor: "FEE_UNIT_NOT_CHECKED" });
   });
 
   it("are in full with a checked fee unit value, rounded down, and the floor in a year without one", () => {
-    expect(feeUnitCap(fu(9.64, CHECKED_UNIT), "2026-10-27", 0)).toEqual({ cents: 16_648, floor: null }); // 9.64 × $17.27 = $166.4828
-    expect(feeUnitCap(fu(1.15, CHECKED_UNIT, 0, 20), "2026-10-27", 3)).toEqual({ cents: 1_986 + 60, floor: null }); // 1.15 × $17.27 = $19.8605
-    expect(feeUnitCap(fu(1.15, { value: { yearStartsOn: "07-01", byYear: { "2026-27": 1_000 } }, status: "STRATAVERZE", source: "fixture" }), "2026-10-27", 0).cents).toBe(1_150);
-    expect(feeUnitCap(fu(9.64, CHECKED_UNIT), "2027-07-01", 0)).toEqual({ cents: 0, floor: "NO_FEE_UNIT_FOR_YEAR" });
+    expect(feeUnitCap(fu(9.64, CHECKED_UNIT), "2026-10-27", 0)).toEqual({ ok: true, cents: 16_648, floor: null }); // 9.64 × $17.27 = $166.4828
+    expect(feeUnitCap(fu(1.15, CHECKED_UNIT, 0, 20), "2026-10-27", 3)).toEqual({ ok: true, cents: 1_986 + 60, floor: null }); // 1.15 × $17.27 = $19.8605
+    expect(feeUnitCap(fu(1.15, { value: { yearStartsOn: "07-01", byYear: { "2026-27": 1_000 } }, status: "STRATAVERZE", source: "fixture" }), "2026-10-27", 0)).toMatchObject({ cents: 1_150 });
+    expect(feeUnitCap(fu(9.64, CHECKED_UNIT), "2027-07-01", 0)).toEqual({ ok: true, cents: 0, floor: "NO_FEE_UNIT_FOR_YEAR" });
   });
 
   it("use the lowest-cap band until business days are decided, and the narrowest band that covers a turnaround", () => {
@@ -142,8 +144,8 @@ describe("records access caps", () => {
   });
 
   it("VIC: refuses register copies to a representative, but not the inspection", () => {
-    expect(accessCap(VIC_REGISTER, given({ byAgent: true, pages: 2 }))).toEqual({ ok: false, reason: "COPIES_TO_AGENT_REFUSED", message: "Fixture: copies of the register are not given to a representative yet." });
-    expect(accessCap(VIC_REGISTER, given({ byAgent: true, inspected: true }))).toMatchObject({ ok: true, cents: 0 });
+    expect(accessCap(VIC_REGISTER, given({ requesterType: "AGENT", pages: 2 }))).toEqual({ ok: false, reason: "COPIES_TO_AGENT_REFUSED", message: "Fixture: copies of the register are not given to a representative yet." });
+    expect(accessCap(VIC_REGISTER, given({ requesterType: "AGENT", inspected: true }))).toMatchObject({ ok: true, cents: 0 });
   });
 
   it("WA: the inspection fee by who asks, and copies by medium (5 pages $50, 6 pages $51, electronic $50, a device $50 plus its cost)", () => {
@@ -192,7 +194,7 @@ describe("the fee entered (D3)", () => {
     expect(feeProblem(cap, null)).toBe("Enter the fee charged, in dollars and cents (0 if none).");
   });
   it("says when the cap is only the part fixed in cents", () => {
-    expect(feeProblem({ ok: true, cents: 0, includesGst: false, floor: "FEE_UNIT_NOT_CHECKED" }, 1)).toBe("The fee is above $0.00, the most StrataVerze can record: the cap is in fee units, and their dollar value is not checked yet.");
+    expect(feeProblem({ ok: true, cents: 0, includesGst: false, floor: "FEE_UNIT_NOT_CHECKED" }, 1)).toBe("The fee is above $0.00, the most StrataVerze can record until the cap's dollar amount is checked.");
   });
 });
 
@@ -246,5 +248,87 @@ describe("deadlines, questions and what may be started", () => {
     expect(afterProblem(update, "2026-10-27", [sale(null, "DRAFT"), sale("2026-09-01", "CANCELLED"), { kind: "SALE_UPDATE", status: "ISSUED", certificateDate: "2026-09-01" }])).not.toBeNull();
     expect(afterProblem(update, "2026-10-27", [])).not.toBeNull();
     expect(afterProblem(kind({}), "2026-10-27", [])).toBeNull();
+  });
+});
+
+describe("review fixes (PR 10a review)", () => {
+  const ACT_INSPECTION: DatedCap[] = [{ from: "2026-07-01", to: null, cents: confirmed(13_400), gst: "INCLUDED", source: "f" }];
+  const ACT_RECORDS = (refuseFromNextYear?: string): Parameters<typeof accessCapFor>[1] => ({
+    inspection: { "*": ACT_INSPECTION },
+    ...(refuseFromNextYear ? { refuseFromNextYear } : {}),
+    copies: { basis: "INCLUDED" },
+    nilWhen: { key: "ALSO_SALE_CERTIFICATE", question: "Q?", source: "f" },
+  });
+
+  it("M1: refuses an access fee from the next 1 July after an open cap started (D13)", () => {
+    const later = given({ inspected: true, alsoSaleCertificate: false, requestedOn: "2027-07-15" });
+    expect(accessCap(ACT_RECORDS("07-01"), later)).toMatchObject({ ok: false, reason: "NEXT_YEAR_NOT_RECORDED" });
+    expect(accessCap(ACT_RECORDS("07-01"), { ...later, requestedOn: "2027-06-30" })).toMatchObject({ ok: true, cents: 13_400 });
+    expect(accessCap(ACT_RECORDS(), later)).toMatchObject({ ok: true, cents: 13_400 });
+  });
+
+  it("L1: a requester type named like an Object property has no cap, and nothing throws", () => {
+    const kind: Parameters<typeof accessCapFor>[1] = { inspection: { OWNER: ACT_INSPECTION } };
+    for (const requesterType of ["toString", "constructor", "__proto__", "hasOwnProperty"]) {
+      expect(accessCap(kind, given({ inspected: true, requesterType }))).toMatchObject({ ok: false, reason: "NO_CAP_FOR_REQUESTER" });
+    }
+    const byYear = { yearStartsOn: "07-01", byYear: { "2026-27": 1_727 } };
+    // A financial year key is built from a date, but an inherited one is never read either.
+    expect(feeUnitCap(fu(1, { value: byYear, status: "CONFIRMED", source: "f" }), "2026-10-27", 0)).toMatchObject({ ok: true, cents: 1_727 });
+  });
+
+  it("L2: a cap or a fee unit value that is not a whole number of cents is not checked, never NaN, a fraction or a negative", () => {
+    for (const bad of [Number.NaN, 100.5, -1, Number.POSITIVE_INFINITY]) {
+      expect(capOn([{ from: null, to: null, cents: confirmed(bad), gst: "INCLUDED", source: "f" }], "2026-10-27"), String(bad)).toMatchObject({ ok: false, reason: "CAP_NOT_CHECKED" });
+      expect(feeUnitCap(fu(1, { value: { yearStartsOn: "07-01", byYear: { "2026-27": bad } }, status: "CONFIRMED", source: "f" }), "2026-10-27", 0), String(bad)).toMatchObject({ ok: false, reason: "CAP_NOT_CHECKED" });
+      expect(feeUnitCap(fu(1, UNCHECKED_UNIT, bad), "2026-10-27", 0), String(bad)).toMatchObject({ ok: false, reason: "CAP_NOT_CHECKED" });
+      expect(feeUnitCap(fu(1, UNCHECKED_UNIT, 0, bad), "2026-10-27", 0), String(bad)).toMatchObject({ ok: false, reason: "CAP_NOT_CHECKED" });
+      expect(feeUnitCap(fu(bad === 100.5 ? Number.NaN : bad), "2026-10-27", 0), String(bad)).toMatchObject({ ok: false, reason: "CAP_NOT_CHECKED" });
+      expect(
+        accessCap({ inspection: "FREE", copies: { basis: "BY_MEDIUM", photocopy: { firstPages: 5, firstCents: bad, extraPageCents: 100 }, electronicCents: 5_000, storageDeviceCents: 5_000, plusDeviceCost: true, gst: "INCLUDED", source: "f" } }, given({ medium: "ELECTRONIC" })),
+        String(bad),
+      ).toMatchObject({ ok: false, reason: "CAP_NOT_CHECKED" });
+      expect(accessCap({ inspection: "FREE", copies: { basis: "PER_RECORD", first: fu(1.15, UNCHECKED_UNIT, 0, 20), additionalRecordCents: bad } }, given({ records: 2, pages: 2 })), String(bad)).toMatchObject({ ok: false, reason: "CAP_NOT_CHECKED" });
+    }
+    // A fee unit count may be a fraction (9.64), never negative or not a number.
+    expect(feeUnitCap(fu(9.64, CHECKED_UNIT), "2026-10-27", 0)).toMatchObject({ ok: true });
+    expect(certificateCap({ fee: { basis: "DATED_CENTS", caps: [{ from: null, to: null, cents: confirmed(Number.NaN), gst: "INCLUDED", source: "f" }] } }, { requestedOn: "2026-10-27", additional: null, gstRegistered: true })).toMatchObject({ ok: false, reason: "CAP_NOT_CHECKED" });
+  });
+
+  it("L3: a turnaround that is not a whole number of business days has no band", () => {
+    const fee = VIC_LIKE(CHECKED_UNIT).fee as Extract<CertificateKindRule["fee"], { basis: "FEE_UNIT_BANDS" }>;
+    for (const bad of [Number.NaN, -1, 2.5, Number.NEGATIVE_INFINITY]) expect(certificateBand(fee, bad), String(bad)).toBeNull();
+    expect(certificateBand(fee, 0)?.withinBusinessDays).toBe(2);
+    expect(certificateCap(VIC_LIKE(CHECKED_UNIT), { requestedOn: "2026-10-27", additional: false, gstRegistered: false, withinBusinessDays: Number.NaN })).toMatchObject({ ok: false, reason: "NO_BAND" });
+  });
+
+  it("L4: checks the copies before the nil fee, and the agent from the pack's agent type", () => {
+    const nil = ACT_RECORDS();
+    const { copies: _copies, ...noCopies } = nil;
+    expect(accessCap(noCopies, given({ pages: 3, alsoSaleCertificate: true }))).toMatchObject({ ok: false, reason: "COPIES_NOT_OFFERED" });
+    expect(accessCap(nil, given({ medium: "PHOTOCOPY", deviceCents: 5, alsoSaleCertificate: true }))).toMatchObject({ ok: false, reason: "DEVICE_COST_NOT_STORAGE" });
+    expect(accessCap({ ...nil, inspection: { OWNER: ACT_INSPECTION } }, given({ inspected: true, requesterType: "BUYER", alsoSaleCertificate: true }))).toMatchObject({ ok: false, reason: "NO_CAP_FOR_REQUESTER" });
+    expect(accessCap(nil, given({ inspected: true, pages: 3, alsoSaleCertificate: true }))).toEqual({ ok: true, cents: 0, includesGst: false, floor: null });
+    const register: Parameters<typeof accessCapFor>[1] = { inspection: "FREE", copies: { basis: "FEE_UNITS", cap: fu(3.03, UNCHECKED_UNIT, 0, 20) }, agentRefused: { words: "Refused to a representative.", source: "f" } };
+    expect(accessCapFor({ agentType: "AGENT" }, register, given({ requesterType: "AGENT", pages: 1 }))).toMatchObject({ reason: "COPIES_TO_AGENT_REFUSED" });
+    expect(accessCapFor({ agentType: "REPRESENTATIVE" }, register, given({ requesterType: "AGENT", pages: 1 }))).toMatchObject({ ok: true, cents: 20 });
+    expect(accessCapFor({ agentType: "REPRESENTATIVE" }, register, given({ requesterType: "REPRESENTATIVE", pages: 1 }))).toMatchObject({ reason: "COPIES_TO_AGENT_REFUSED" });
+  });
+
+  it("L4: finds what is wrong with a pack's list of dated caps", () => {
+    expect(capListProblems(ACT_LIKE, "07-01")).toEqual([]);
+    expect(capListProblems(WA_LIKE)).toEqual([]);
+    expect(capListProblems(ACT_LIKE, "7-1")).toEqual(["refuseFromNextYear 7-1 is not MM-DD"]);
+    expect(capListProblems([{ ...WA_LIKE[0], from: "2026-07-01", to: "2026-07-01" }])).toEqual(["cap 0: from 2026-07-01 is not before to 2026-07-01"]);
+    expect(capListProblems([{ ...WA_LIKE[0], from: "1/7/2026" }])).toEqual(["cap 0: from 1/7/2026 is not a day"]);
+    expect(capListProblems([...ACT_LIKE, { ...WA_LIKE[0], from: "2027-01-01" }])).toEqual(["caps 1 and 2 overlap"]);
+    expect(capListProblems([...WA_LIKE, ...ACT_LIKE])).toEqual(["caps 0 and 1 overlap", "caps 0 and 2 overlap"]);
+  });
+
+  it("afterProblem reads a certificate date given as a Date, and refuses a request date that is not a day", () => {
+    const update: Pick<CertificateKindRule, "after"> = { after: { kind: "SALE", withinMonths: 4, words: "Needs a sale certificate.", source: "f" } };
+    expect(afterProblem(update, "2026-10-27", [{ kind: "SALE", status: "ISSUED", certificateDate: new Date("2026-06-27T00:00:00Z") }])).toBeNull();
+    expect(afterProblem(update, "2026-10-27", [{ kind: "SALE", status: "ISSUED", certificateDate: new Date("2026-06-26T00:00:00Z") }])).toBe("Needs a sale certificate.");
+    expect(afterProblem(update, "27/10/2026", [{ kind: "SALE", status: "ISSUED", certificateDate: "2026-10-01" }])).toBe("Needs a sale certificate.");
   });
 });
