@@ -1,4 +1,6 @@
 import { getCurrentProfile } from "@/lib/queries/profiles";
+import { getCurrentSession } from "@/lib/auth/current-session";
+import { invitationAddressOf } from "@/lib/invitations/invitee-address";
 import { getPendingInvitationsForEmail } from "@/lib/queries/invitations";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
@@ -11,7 +13,10 @@ export default async function InvitationsPage() {
   const profile = await getCurrentProfile();
   if (!profile) return null;
 
-  const invitations = await getPendingInvitationsForEmail(profile.email);
+  // Listed by the session's Auth address, and only while the profile's copy
+  // agrees with it (review finding L7; keeping them in step is S2e).
+  const address = invitationAddressOf(await getCurrentSession());
+  const invitations = address ? await getPendingInvitationsForEmail(address) : [];
 
   // Fetch scheme names for each invitation
   const schemeIds = [...new Set(invitations.map((i) => i.schemeId))];

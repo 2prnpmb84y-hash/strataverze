@@ -28,17 +28,34 @@ function takeToken(): string {
   const fromHash = window.location.hash.replace(/^#/, "");
   if (fromHash) {
     window.history.replaceState(null, "", window.location.pathname);
-    try {
-      window.sessionStorage.setItem(STORE, fromHash);
-    } catch {
-      // Storage blocked: the page still works until it is reloaded.
-    }
+    rememberToken(fromHash);
     return fromHash;
   }
   try {
     return window.sessionStorage.getItem(STORE) ?? "";
   } catch {
     return "";
+  }
+}
+
+function rememberToken(token: string) {
+  try {
+    if (token) window.sessionStorage.setItem(STORE, token);
+  } catch {
+    // Storage blocked: the page still works until it is reloaded.
+  }
+}
+
+/**
+ * Forget the token (review finding L5): once the link has been used, is
+ * known not to work, or the page hands over to the sign-in page, nothing in
+ * this tab should still hold it.
+ */
+function forgetToken() {
+  try {
+    window.sessionStorage.removeItem(STORE);
+  } catch {
+    // Storage blocked: nothing was kept.
   }
 }
 
@@ -55,9 +72,13 @@ export function JoinFlow({ captchaSiteKey }: { captchaSiteKey: string | null }) 
     let cancelled = false;
     lookupJoinLinkAction(token)
       .then((view) => {
+        // A link that does not work is not kept. (One for an account that
+        // signs in is forgotten when the page hands over to the sign-in page.)
+        if (view.state === "invalid") forgetToken();
         if (!cancelled) setLink({ token, view });
       })
       .catch(() => {
+        forgetToken();
         if (!cancelled) setLink({ token, view: { state: "invalid", message: "Something went wrong. Please open the link from your email again." } });
       });
     return () => {
@@ -76,7 +97,7 @@ export function JoinFlow({ captchaSiteKey }: { captchaSiteKey: string | null }) 
         <h1 className="text-xl font-bold font-heading text-ink mb-2">Invitation link</h1>
         <p className="text-sm text-ink" role="alert">{view.message}</p>
         <p className="mt-4 text-sm text-ink-muted">
-          Already set up? <a className="text-turquoise underline" href="/login">Sign in</a>
+          Already set up? <a className="text-turquoise underline" href="/login" onClick={forgetToken}>Sign in</a>
         </p>
       </>
     );
@@ -106,6 +127,23 @@ function Summary({ details }: { details: JoinDetails }) {
   );
 }
 
+/**
+ * Keep the stored token in step with a form's answer. The token is
+ * forgotten when the form is sent (a success redirects away, and nothing
+ * comes back to forget it then), and kept again only if the answer leaves
+ * the link usable (a weak password, say), so a reload still works.
+ */
+function useTokenAfterAnswer(token: string, state: JoinFormState) {
+  useEffect(() => {
+    if (!state.error && !state.fieldErrors) return;
+    if (state.linkDone || state.signInInstead) {
+      forgetToken();
+      return;
+    }
+    rememberToken(token);
+  }, [token, state]);
+}
+
 function Problem({ state }: { state: JoinFormState }) {
   if (!state.error) return null;
   return (
@@ -113,7 +151,7 @@ function Problem({ state }: { state: JoinFormState }) {
       <p className="text-sm text-red-700">{state.error}</p>
       {state.signInInstead && (
         <p className="text-sm mt-2">
-          <a className="text-turquoise underline" href="/login?next=/invitations">Sign in</a>
+          <a className="text-turquoise underline" href="/login?next=/invitations" onClick={forgetToken}>Sign in</a>
         </p>
       )}
     </div>
@@ -123,8 +161,9 @@ function Problem({ state }: { state: JoinFormState }) {
 function SetPasswordForm({ token, captchaSiteKey, maskedEmail }: { token: string; captchaSiteKey: string | null; maskedEmail: string }) {
   const [state, formAction, pending] = useActionState<JoinFormState, FormData>(completeJoinAction, {});
   const [password, setPassword] = useState("");
+  useTokenAfterAnswer(token, state);
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form action={formAction} onSubmit={forgetToken} className="flex flex-col gap-4">
       <Problem state={state} />
       <p className="text-sm text-ink">
         Choose a password for your new StrataVerze account ({maskedEmail}). You will sign in with your email address and
@@ -176,9 +215,10 @@ function SetPasswordForm({ token, captchaSiteKey, maskedEmail }: { token: string
 
 function SignInToAccept({ token, signedIn }: { token: string; signedIn: "invitee" | "someone-else" | "nobody" }) {
   const [state, formAction, pending] = useActionState<JoinFormState, FormData>(acceptJoinAction, {});
+  useTokenAfterAnswer(token, state);
   if (signedIn === "invitee") {
     return (
-      <form action={formAction} className="flex flex-col gap-4">
+      <form action={formAction} onSubmit={forgetToken} className="flex flex-col gap-4">
         <Problem state={state} />
         <input type="hidden" name="token" value={token} />
         <button type="submit" disabled={pending} className={BUTTON}>
@@ -200,7 +240,7 @@ function SignInToAccept({ token, signedIn }: { token: string; signedIn: "invitee
           forgotten your password, you can reset it from the sign-in page.
         </p>
       )}
-      <a className={`${BUTTON} inline-flex items-center justify-center`} href="/login?next=/invitations">
+      <a className={`${BUTTON} inline-flex items-center justify-center`} href="/login?next=/invitations" onClick={forgetToken}>
         Sign in
       </a>
     </div>
