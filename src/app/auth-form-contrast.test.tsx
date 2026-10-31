@@ -9,7 +9,7 @@
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { classContrastProblems } from "@/test/class-contrast";
+import { classContrastProblems, elementContrastProblems } from "@/test/class-contrast";
 import { PRIMARY_ACTION_CLASS, QUIET_ACTION_CLASS, SECONDARY_ACTION_CLASS, TEXT_LINK_CLASS } from "@/components/ui/action-styles";
 
 vi.mock("./login/actions", () => ({ login: vi.fn(), signup: vi.fn() }));
@@ -37,12 +37,28 @@ const { VerifyForm, EnrolForm } = await import("./mfa/mfa-forms");
 
 afterEach(cleanup);
 
+/**
+ * A fixture: the Forgot password? link as it was before AR-037, turquoise
+ * (#00D4BF) on white, 1.88:1, set in an inline style the old class-only
+ * check never looked at.
+ */
+const ACCENT = "var(--color-turquoise)";
+function OldForgotPasswordLink() {
+  return (
+    <div className="flex justify-end">
+      <a href="/forgot-password" className="text-sm transition-colors" style={{ color: ACCENT }}>
+        Forgot password?
+      </a>
+    </div>
+  );
+}
+
 /** Every button and link on the page, with what is wrong with its classes. */
 function problems(container: HTMLElement) {
   const controls = [...container.querySelectorAll<HTMLElement>("button, a")];
   expect(controls.length).toBeGreaterThan(0);
   return controls
-    .map((el) => ({ control: `${el.tagName.toLowerCase()} "${el.textContent?.trim()}"`, problems: classContrastProblems(el.className) }))
+    .map((el) => ({ control: `${el.tagName.toLowerCase()} "${el.textContent?.trim()}"`, problems: elementContrastProblems(el) }))
     .filter((c) => c.problems.length > 0);
 }
 
@@ -64,6 +80,48 @@ describe("the checker", () => {
   it("catches white on turquoise and a faded disabled state", () => {
     expect(classContrastProblems("bg-turquoise text-white").length).toBeGreaterThan(0);
     expect(classContrastProblems("bg-ink text-white disabled:opacity-50").some((p) => p.startsWith("disabled:"))).toBe(true);
+  });
+
+  it("catches the old Forgot password? link: an inline turquoise colour and no text class", () => {
+    const { container } = render(<OldForgotPasswordLink />);
+    const link = screen.getByRole("link", { name: "Forgot password?" });
+    // The class list alone looks harmless: no colour at all.
+    expect(classContrastProblems(link.className)).toEqual([]);
+    const found = elementContrastProblems(link);
+    expect(found).toHaveLength(1);
+    expect(found[0]).toMatch(/^inline style sets a colour \(color: var\(--color-turquoise\)\)/);
+    expect(problems(container)).toHaveLength(1);
+  });
+
+  it("takes the text colour of a control with none from its nearest ancestor", () => {
+    render(
+      <p className="text-ink">
+        <span className="text-turquoise">
+          <a href="/forgot-password" className="text-sm transition-colors">
+            Forgot password?
+          </a>
+        </span>
+      </p>,
+    );
+    const found = elementContrastProblems(screen.getByRole("link"));
+    expect(found.some((p) => p.startsWith("default: text-turquoise on #FFFFFF is 1.88:1"))).toBe(true);
+    cleanup();
+    // An ancestor's inline colour is caught too.
+    render(
+      <p style={{ color: "var(--color-turquoise)" }}>
+        <a href="/x">Link</a>
+      </p>,
+    );
+    expect(elementContrastProblems(screen.getByRole("link"))[0]).toMatch(/^ancestor <p> inline style sets a colour/);
+  });
+
+  it("fails on a variant it does not understand instead of ignoring it", () => {
+    for (const cls of ["disabled:hover:text-white", "group-hover:bg-turquoise", "dark:text-white", "md:hover:text-turquoise"]) {
+      const found = classContrastProblems(`bg-white text-ink ${cls}`);
+      expect(found, cls).toEqual([expect.stringContaining(`unknown variant "${cls.slice(0, cls.lastIndexOf(":"))}:" in ${cls}`)]);
+    }
+    // Variants on classes that are not colours do not matter.
+    expect(classContrastProblems("bg-white text-ink md:px-6 group-hover:underline")).toEqual([]);
   });
 
   it("passes the shared button styles in every state", () => {
