@@ -354,6 +354,19 @@ S2 is shipped in slices. S2a is the first; S2b (supplier sign-up, then closing o
   - `20261130_invitation_plain_token_drop.sql`, applied after deploy;
   - the rolled-back rehearsal in `prisma/rehearsals/`.
 - **Not changed.** Open sign-up stays on until S2b. `owner-assignment` stays until S2c or S2d. The change-of-owner invitation still uses the old email, which needs an account, until S2c routes it through S2a.
+- **Review fixes (31 Oct, before deploy).** An independent review found no critical or high issues. Fixed:
+  - **M1.** An Auth user that already carries the address but was never confirmed or signed in to (one made through open sign-up by someone else, say) is adopted for the invitation. The link holder then sets the password, which replaces any password set at sign-up. Confirmed or signed-in users stay "existing". The lookup reads `auth.users` read-only (`src/lib/invitations/auth-users.ts`), then checks again through the admin API.
+  - **L1.** Security events that carry the building never say whether the invitee's account was new or existing; the detail is in `invitation.link_detail`, which has no building.
+  - **L2.** A password is set one account at a time: every pending invitation for the account is locked (in id order, 5 second lock timeout) while the link is claimed, the password set and the invitation accepted, in one transaction. A revoke waits, then finds the invitation accepted.
+  - **L4.** Part 2 is applied only after a soak period of at least 7 days; its header gives the SQL to re-add `token` before any rollback to a pre-S2a build, and the rehearsal runs it.
+  - **L5.** The `/join` page forgets the stored link on use, on a dead link and on hand-off to sign-in.
+  - **L6.** Only plain ASCII addresses can be invited.
+  - **L7.** `/join` and the Invitations page match the session's Auth address (`getUser`), and refuse if the profile's copy differs. Keeping `profiles.email` in step with Auth is for S2e.
+- **Residual risks (S2a).**
+  - If the database commit fails after Auth has set the password (a lost connection), the account has a password and the invitation stays pending with its link unused: the person signs in and accepts from Invitations. A revoke in that window leaves an account with no invitation and no building access.
+  - If acceptance itself fails inside the set-up (it should not for a new profile), the set-up still commits, and a later revoke leaves the account without the invitation.
+  - Until S2b switches off sign-up, someone can make an unconfirmed account for another person's address. If the real owner confirms it from Supabase's own sign-up email before using an invitation link, the sign-up password works and the account is no longer adopted. Turning off sign-up closes this.
+  - L3 (timing, and the exact-match search) is left for the branch that narrows the search.
 
 ## Storage design (stage S3, as built 23 Oct)
 
