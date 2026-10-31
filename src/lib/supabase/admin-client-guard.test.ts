@@ -12,6 +12,9 @@ const ALLOWED_USERS = new Set([
   "src/app/(portal)/admin/security/page.tsx",
   // The documents bucket (S3): every caller authorises first.
   "src/lib/storage/server-storage.ts",
+  // Invited people's accounts (S2a): the invitation is authorised, or its
+  // one-time link checked, before any call.
+  "src/lib/invitations/accounts.ts",
 ]);
 
 function walk(dir: string): string[] {
