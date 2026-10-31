@@ -15,6 +15,7 @@ import { schemeTimeZone, schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { localToInstant } from "@/lib/jurisdiction/time-zone";
 import { certificateDrafting, draftCertificateItems, type CertificateItem } from "./certificate-draft";
 import { certificateDocument, certificateFileStem, keepCertificate } from "./issued-certificate";
+import { certificateRulesOffered, inspectionRulesOffered } from "./offered";
 import { PdfFontsUnavailableError } from "@/lib/pdf/document";
 import { accessFee, certificateFeeFor, inspectionDeadlines, inspectionFee, type CertificateRule, type InspectionRule, type InspectorType } from "./fees";
 import { needRule, type StatutoryRules } from "@/config/statutory";
@@ -31,7 +32,7 @@ const ISO = /^\d{4}-\d{2}-\d{2}$/;
 
 /** The building's certificate rules, or RecordsError when its pack has no certificate. */
 function certificateRules(rules: StatutoryRules): CertificateRule {
-  if (!rules.FEATURES.strataInformationCertificate && !rules.FEATURES.bodyCorporateCertificate) throw new RecordsError("This is not available for this building.");
+  if (!certificateRulesOffered(rules.FEATURES)) throw new RecordsError("This is not available for this building.");
   return needRule(rules, "CERTIFICATE");
 }
 
@@ -247,7 +248,7 @@ export async function recordFeePaid(input: { schemeId: string; kind: "certificat
 
 /** The building's inspection rules, or RecordsError when its pack has no inspections. */
 function inspectionRules(rules: StatutoryRules): InspectionRule {
-  if (!rules.FEATURES.recordsInspections) throw new RecordsError("This is not available for this building.");
+  if (!inspectionRulesOffered(rules.FEATURES)) throw new RecordsError("This is not available for this building.");
   return needRule(rules, "INSPECTIONS");
 }
 
