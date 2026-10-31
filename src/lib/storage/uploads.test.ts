@@ -207,4 +207,20 @@ describe("removeExpiredUploads", () => {
     expect(storage.removed).toEqual(["schemes/s/library/a.pdf"]);
     expect(rows().find((r) => r.id === "a")).toMatchObject({ usedFor: "expired" });
   });
+
+  it("leaves a switched off scheme's uploads as they are", async () => {
+    const old = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
+    sharedFake.reset({
+      Scheme: [{ id: "on" }, { id: "off", isActive: false }],
+      StorageUpload: [
+        { id: "a", schemeId: "on", path: "schemes/on/library/a.pdf", usedAt: null, expiresAt: old },
+        { id: "z", schemeId: "off", path: "schemes/off/library/z.pdf", usedAt: null, expiresAt: old },
+      ],
+    });
+    expect(await removeExpiredUploads()).toBe(1);
+    expect(storage.removed).toEqual(["schemes/on/library/a.pdf"]);
+    expect(rows().find((r) => r.id === "a")).toMatchObject({ usedFor: "expired" });
+    expect(rows().find((r) => r.id === "z")).toMatchObject({ usedAt: null });
+    expect(rows().find((r) => r.id === "z")?.usedFor).toBeUndefined();
+  });
 });
