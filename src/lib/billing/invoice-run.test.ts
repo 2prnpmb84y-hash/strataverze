@@ -1,8 +1,8 @@
 /**
  * The monthly StrataVerze invoice run leaves a switched off scheme alone
  * (schemes.is_active = false, 31 Oct 2026): it is not invoiced, nothing is
- * written for it and it is not in the run's results, and the other schemes
- * are invoiced as before. Run against the in-memory database.
+ * written for it, and the run's results report it as skipped; the other
+ * schemes are invoiced as before. Run against the in-memory database.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { TEST_PRICE_BOOK } from "./test-price-book";
@@ -31,9 +31,12 @@ beforeEach(() => {
 const invoicesOf = (schemeId: string) => sharedFake.table("PlatformInvoice").filter((i) => i.schemeId === schemeId);
 
 describe("the monthly invoice run", () => {
-  it("does not invoice a switched off scheme, and invoices the others as before", async () => {
+  it("does not invoice a switched off scheme, reporting it as skipped, and invoices the others as before", async () => {
     const results = await runMonthlyInvoices("2026-11", new Date("2026-11-01T00:00:00.000Z"));
-    expect(results).toEqual([expect.objectContaining({ schemeId: "on", outcome: "ISSUED", totalCents: 5390 })]);
+    expect(results).toEqual([
+      expect.objectContaining({ schemeId: "on", outcome: "ISSUED", totalCents: 5390 }),
+      { schemeId: "off", outcome: "SKIPPED", reason: "Scheme switched off" },
+    ]);
     expect(invoicesOf("on")).toHaveLength(1);
     expect(invoicesOf("off")).toEqual([]);
     expect(sharedFake.table("PlatformFeeEvent").filter((e) => e.schemeId === "off")).toEqual([]);

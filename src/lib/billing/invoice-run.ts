@@ -246,13 +246,17 @@ function previousMonth(month: string): string {
   return m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, "0")}`;
 }
 
-/** Issue the month's invoice for every scheme with a subscription, except a switched off scheme. */
+/** Issue the month's invoice for every scheme with a subscription. A switched off scheme is skipped, and reported. */
 export async function runMonthlyInvoices(month: string, now: Date = new Date()): Promise<InvoiceRunOutcome[]> {
-  const inactive = await inactiveSchemeIds();
-  const subscriptions = await db.orm.public.SchemeSubscription.where((s) => s.schemeId.notIn(inactive)).limit(10000).all();
+  const inactive = new Set(await inactiveSchemeIds());
+  const subscriptions = await db.orm.public.SchemeSubscription.limit(10000).all();
   const results: InvoiceRunOutcome[] = [];
   // One scheme at a time keeps invoice numbers sequential.
   for (const s of subscriptions) {
+    if (inactive.has(s.schemeId)) {
+      results.push({ schemeId: s.schemeId, outcome: "SKIPPED", reason: "Scheme switched off" });
+      continue;
+    }
     try {
       results.push(await issueSchemeInvoice(s.schemeId, month, now));
     } catch (err) {
