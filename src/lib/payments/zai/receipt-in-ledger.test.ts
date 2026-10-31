@@ -32,7 +32,12 @@ const request = {
   actorId: "00000000-0000-4000-8000-000000000001",
   reference: "Zai npp_payin abc",
   debitFrom: "BANK" as const,
+  expectedZaiUpdatedAt: "2019-12-16T07:19:14.968Z",
+  lotId: "lot-7",
+  amountCents: 70000,
 };
+/** The row as the delivery assessed and wrote it. */
+const assessed = { id: "zt-1", direction: "IN", matchStatus: "NEEDS_REVIEW", journalEntryId: null, zaiState: "successful", zaiUpdatedAt: "2019-12-16T07:19:14.968Z", lotId: "lot-7", amount: "700.00" };
 
 const preparedPosting = (journalEntryId: string | null) => ({
   run: vi.fn(async (tx: { orm: typeof sharedFake.db.orm }) => {
@@ -45,7 +50,7 @@ const preparedPosting = (journalEntryId: string | null) => ({
 beforeEach(() => {
   for (const [k, v] of Object.entries(TEST_ENV)) vi.stubEnv(k, v);
   vi.clearAllMocks();
-  sharedFake.reset({ ZaiTransaction: [{ id: "zt-1", direction: "IN", matchStatus: "NEEDS_REVIEW", journalEntryId: null }] });
+  sharedFake.reset({ ZaiTransaction: [{ ...assessed }] });
 });
 afterEach(() => vi.unstubAllEnvs());
 
@@ -67,13 +72,35 @@ describe("receiptInLedger", () => {
       { matchStatus: "NEEDS_REVIEW", journalEntryId: "je-1" },
       { matchStatus: "REVERSAL_REVIEW", journalEntryId: null },
     ]) {
-      sharedFake.reset({ ZaiTransaction: [{ id: "zt-1", direction: "IN", ...row }] });
+      sharedFake.reset({ ZaiTransaction: [{ ...assessed, ...row }] });
       const prepared = preparedPosting("je-9");
       prepareLevyReceipt.mockResolvedValue(prepared);
       await expect(receiptInLedger(request), JSON.stringify(row)).rejects.toBeInstanceOf(ZaiAlreadyReceiptedError);
       expect(prepared.run).not.toHaveBeenCalled();
       expect(sharedFake.tables.LevyPayment ?? []).toHaveLength(0);
     }
+  });
+
+  it("refuses, writing nothing, when the row is no longer the one assessed (second review, MEDIUM-1)", async () => {
+    for (const [change, why] of [
+      [{ zaiUpdatedAt: "2019-12-16T07:25:00.000Z" }, "a newer update from Zai"],
+      [{ zaiState: "returned" }, "Zai now shows returned"],
+      [{ matchStatus: "UNMATCHED" }, "now UNMATCHED"],
+      [{ lotId: "lot-8" }, "another lot"],
+      [{ amount: "800.00" }, "another amount"],
+    ] as const) {
+      sharedFake.reset({ ZaiTransaction: [{ ...assessed, ...change }] });
+      const prepared = preparedPosting("je-9");
+      prepareLevyReceipt.mockResolvedValue(prepared);
+      await expect(receiptInLedger(request), why).rejects.toThrow(`(${why})`);
+      expect(prepared.run).not.toHaveBeenCalled();
+      expect(sharedFake.tables.ZaiTransaction[0]).toMatchObject({ ...change, journalEntryId: null });
+    }
+  });
+
+  it("refuses receipts that do not add up to the payment", async () => {
+    await expect(receiptInLedger({ ...request, amountCents: 70001 })).rejects.toBeInstanceOf(LevyReceiptError);
+    expect(prepareLevyReceipt).not.toHaveBeenCalled();
   });
 
   it("refuses without the explicit debit account (review M5), before preparing anything", async () => {

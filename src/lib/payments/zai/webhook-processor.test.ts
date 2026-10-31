@@ -122,6 +122,9 @@ describe("a payin matched to a lot", () => {
       actorId: ACTOR,
       reference: `Zai npp_payin ${NPP_PAYIN_EXAMPLE.transactions.id}`,
       debitFrom: "BANK",
+      expectedZaiUpdatedAt: NPP_PAYIN_EXAMPLE.transactions.updated_at,
+      lotId: "lot-7",
+      amountCents: 70000,
     });
     expect(rows("ZaiTransaction")[0]).toMatchObject({ direction: "IN", schemeId: "s1", lotId: "lot-7", matchStatus: "RECEIPTED", journalEntryId: "je-1", amount: "700.00", currency: "AUD", referenceValue: "lot7.payid@example.com", zaiState: "successful" });
   });

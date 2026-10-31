@@ -108,6 +108,15 @@ export interface ReceiptRequest {
   reference: string;
   /** The account the receipt debits, as set explicitly (ZAI_RECEIPT_DEBIT_ACCOUNT). */
   debitFrom: "BANK";
+  /**
+   * The row as this delivery assessed and wrote it (second review, MEDIUM-1):
+   * the receipt is refused under the row's lock unless the row still has this
+   * updated_at, Zai's state successful, NEEDS_REVIEW, this lot and this amount,
+   * so a newer delivery landing in between is never receipted over.
+   */
+  expectedZaiUpdatedAt: string;
+  lotId: string;
+  amountCents: number;
 }
 
 export interface ProcessorDeps {
@@ -268,7 +277,7 @@ async function applyPayin(t: Payin, deps: ProcessorDeps, mark: Mark): Promise<Pr
   if (written === "RACE") return mark("FAILED", "the transaction was being stored by another delivery; it is applied on Zai's retry");
   if (!written) return mark("STALE", "an update as new or newer is already applied");
 
-  if (written.receipts && assessment.schemeId && deps.receiptActorId && deps.receiptDebitFrom) {
+  if (written.receipts && assessment.schemeId && assessment.lotId && deps.receiptActorId && deps.receiptDebitFrom) {
     try {
       const timeZone = await deps.timeZoneOf(assessment.schemeId);
       await deps.receipt({
@@ -279,12 +288,16 @@ async function applyPayin(t: Payin, deps: ProcessorDeps, mark: Mark): Promise<Pr
         actorId: deps.receiptActorId,
         reference: clip(`Zai ${t.typeMethod} ${t.id}`, 200),
         debitFrom: deps.receiptDebitFrom,
+        expectedZaiUpdatedAt: t.updatedAt.toISOString(),
+        lotId: assessment.lotId,
+        amountCents: t.amountCents,
       });
     } catch (err) {
       // Receipting refused (a period closed, a notice paid meanwhile, the chart not set up, already
-      // receipted by another delivery): a person looks at it. Never over a receipted row.
+      // receipted, or a newer delivery landed meanwhile): a person looks at it. Never over a receipted
+      // row, and only while the row is still this delivery's (its updated_at; second review, LOW-4).
       const reason = err instanceof Error ? err.message : "The receipt could not be written.";
-      await deps.orm.public.ZaiTransaction.where((x) => and(x.id.eq(written.rowId), x.journalEntryId.isNull(), x.matchStatus.notIn([...RECEIPTED_STATUSES]))).updateAndCount({
+      await deps.orm.public.ZaiTransaction.where((x) => and(x.id.eq(written.rowId), x.zaiUpdatedAt.eq(ts(t.updatedAt)), x.journalEntryId.isNull(), x.matchStatus.notIn([...RECEIPTED_STATUSES]))).updateAndCount({
         matchStatus: "NEEDS_REVIEW",
         matchReason: clip(reason, 200),
         updatedAt: ts(new Date()),
