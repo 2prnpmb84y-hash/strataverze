@@ -252,6 +252,7 @@ model Scheme {
   selectorValues     SchemeSelectorValue[]
   lateChargeWaivers           LateChargeWaiver[]
   pendingResolutions          PendingResolution[]
+  ownerChangeRequests         OwnerChangeRequest[]
   debtRecoveryRecords         DebtRecoveryRecord[]
   saleCertificates            SaleCertificate[]
   recordsInspections          RecordsInspection[]
@@ -322,6 +323,7 @@ model Lot {
 
   saleCertificates   SaleCertificate[]
   recordsInspections RecordsInspection[]
+  ownerChangeRequests OwnerChangeRequest[]
   @@unique([schemeId, lotNumber])
   @@map("lots")
 }
@@ -346,6 +348,41 @@ model LotDetail {
   lot               Lot       @relation(fields: [lotId], references: [id], onDelete: Cascade)
 
   @@map("lot_details")
+}
+
+// ─── Change of owner held for review (finding H-1, 31 Oct 2026) ──
+// A change of owner recorded by a committee member, held until the scheme's
+// Adviser or StrataVerze confirms or rejects it. Nothing is applied while it
+// is PENDING: the strata roll, the outgoing owner's access and committee seat
+// and the delivery preferences are unchanged and no invitation exists.
+// Confirming applies exactly what an Adviser's change of owner applies.
+// Migration 20261201_owner_change_requests (one PENDING row per lot, a decided
+// row never changes). The notice of transfer, if attached, is filed when the
+// change is recorded (noticeDocumentId; the key is in the database only).
+model OwnerChangeRequest {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId         String    @map("scheme_id") @db.Uuid
+  lotId            String    @map("lot_id") @db.Uuid
+  status           String    @default("PENDING") // PENDING, CONFIRMED, REJECTED
+  ownerName        String    @map("owner_name")
+  ownerEmail       String?   @map("owner_email") // lower case
+  ownerMobile      String?   @map("owner_mobile")
+  ownerPhone       String?   @map("owner_phone")
+  ownerAddress     String?   @map("owner_address")
+  settlementDate   DateTime  @db.Date @map("settlement_date")
+  invite           Boolean   @default(false) // invite the new owner by email once confirmed
+  noticeDocumentId String?   @map("notice_document_id") @db.Uuid
+  recordedBy       String    @map("recorded_by") @db.Uuid
+  recordedAt       DateTime  @default(now()) @db.Timestamptz @map("recorded_at")
+  decidedBy        String?   @map("decided_by") @db.Uuid
+  decidedAt        DateTime? @db.Timestamptz @map("decided_at")
+
+  scheme           Scheme    @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  lot              Lot       @relation(fields: [lotId], references: [id], onDelete: Cascade)
+
+  @@index([schemeId, status])
+  @@index([lotId])
+  @@map("owner_change_requests")
 }
 
 // ─── Lot Tenancy ──────────────────────────────────────────────────

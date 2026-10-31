@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'1301a290c0d271e8fb0480d0715adcf3d94df95b658e7168c48f5aa74b618ece'>;
+  StorageHashBase<'e9bf2b149612c1af3fd56f6e992e8aad7198f3f6688f61266974e8a8177b02b2'>;
 export type ExecutionHash =
   ExecutionHashBase<'454fa11779756be5e20f2ae540217fc9e337e78af6dbb69e34dc8ddf4d7262fe'>;
 export type ProfileHash =
@@ -1756,6 +1756,7 @@ export namespace Models {
     levyNotices: public_LevyNotice[];
     lotDetail: public_LotDetail | null;
     memberships: public_SchemeMembership[];
+    ownerChangeRequests: public_OwnerChangeRequest[];
     paymentPlanRequests: public_PaymentPlanRequest[];
     powersOfAttorney: public_LotPowerOfAttorney[];
     proceedingsDeadlineReminders: public_ProceedingsDeadlineReminder[];
@@ -1776,6 +1777,7 @@ export namespace Models {
       | 'levyNotices'
       | 'lotDetail'
       | 'memberships'
+      | 'ownerChangeRequests'
       | 'paymentPlanRequests'
       | 'powersOfAttorney'
       | 'proceedingsDeadlineReminders'
@@ -2145,6 +2147,27 @@ export namespace Models {
     organisation: public_Organisation;
     profile: public_Profile;
     readonly [RelationKeys]?: 'organisation' | 'profile';
+  };
+  export type public_OwnerChangeRequest = {
+    decidedAt: FieldOutputTypes['public']['OwnerChangeRequest']['decidedAt'];
+    decidedBy: FieldOutputTypes['public']['OwnerChangeRequest']['decidedBy'];
+    id: FieldOutputTypes['public']['OwnerChangeRequest']['id'];
+    invite: FieldOutputTypes['public']['OwnerChangeRequest']['invite'];
+    lotId: FieldOutputTypes['public']['OwnerChangeRequest']['lotId'];
+    noticeDocumentId: FieldOutputTypes['public']['OwnerChangeRequest']['noticeDocumentId'];
+    ownerAddress: FieldOutputTypes['public']['OwnerChangeRequest']['ownerAddress'];
+    ownerEmail: FieldOutputTypes['public']['OwnerChangeRequest']['ownerEmail'];
+    ownerMobile: FieldOutputTypes['public']['OwnerChangeRequest']['ownerMobile'];
+    ownerName: FieldOutputTypes['public']['OwnerChangeRequest']['ownerName'];
+    ownerPhone: FieldOutputTypes['public']['OwnerChangeRequest']['ownerPhone'];
+    recordedAt: FieldOutputTypes['public']['OwnerChangeRequest']['recordedAt'];
+    recordedBy: FieldOutputTypes['public']['OwnerChangeRequest']['recordedBy'];
+    schemeId: FieldOutputTypes['public']['OwnerChangeRequest']['schemeId'];
+    settlementDate: FieldOutputTypes['public']['OwnerChangeRequest']['settlementDate'];
+    status: FieldOutputTypes['public']['OwnerChangeRequest']['status'];
+    lot: public_Lot;
+    scheme: public_Scheme;
+    readonly [RelationKeys]?: 'lot' | 'scheme';
   };
   export type public_OwnerCreditBalance = {
     balance: FieldOutputTypes['public']['OwnerCreditBalance']['balance'];
@@ -2793,6 +2816,7 @@ export namespace Models {
     memberships: public_SchemeMembership[];
     motions: public_Motion[];
     organisation: public_Organisation | null;
+    ownerChangeRequests: public_OwnerChangeRequest[];
     paymentPlanRequests: public_PaymentPlanRequest[];
     pendingResolutions: public_PendingResolution[];
     proceedingsDeadlineReminders: public_ProceedingsDeadlineReminder[];
@@ -2856,6 +2880,7 @@ export namespace Models {
       | 'memberships'
       | 'motions'
       | 'organisation'
+      | 'ownerChangeRequests'
       | 'paymentPlanRequests'
       | 'pendingResolutions'
       | 'proceedingsDeadlineReminders'
@@ -4468,6 +4493,7 @@ export declare const models: {
     NoticeRecipient: Models.public_NoticeRecipient;
     Organisation: Models.public_Organisation;
     OrganisationMembership: Models.public_OrganisationMembership;
+    OwnerChangeRequest: Models.public_OwnerChangeRequest;
     OwnerCreditBalance: Models.public_OwnerCreditBalance;
     OwnerCreditRefund: Models.public_OwnerCreditRefund;
     OwnerCreditTransaction: Models.public_OwnerCreditTransaction;
@@ -15162,6 +15188,159 @@ type ContractBase = Omit<
               uniques: readonly [];
               indexes: readonly [];
               foreignKeys: readonly [];
+            };
+            readonly owner_change_requests: {
+              columns: {
+                readonly decided_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly decided_by: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly invite: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
+                  readonly many: false;
+                };
+                readonly lot_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly notice_document_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly owner_address: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly owner_email: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly owner_mobile: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly owner_name: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly owner_phone: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly recorded_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly recorded_by: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly scheme_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly settlement_date: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly status: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'PENDING'>;
+                  };
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'owner_change_requests_lot_id_idx';
+                  readonly columns: readonly ['lot_id'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'owner_change_requests_scheme_id_status_idx';
+                  readonly columns: readonly ['scheme_id', 'status'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'owner_change_requests';
+                    readonly columns: readonly ['scheme_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'schemes';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'owner_change_requests';
+                    readonly columns: readonly ['lot_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'lots';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
             };
             readonly owner_credit_balances: {
               columns: {
@@ -28776,6 +28955,10 @@ type ContractBase = Omit<
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'Organisation';
     };
+    readonly owner_change_requests: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'OwnerChangeRequest';
+    };
     readonly owner_credit_balances: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'OwnerCreditBalance';
@@ -37044,6 +37227,17 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['lotId'];
                 };
               };
+              readonly ownerChangeRequests: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'OwnerChangeRequest';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['lotId'];
+                };
+              };
               readonly paymentPlanRequests: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -39260,6 +39454,125 @@ type ContractBase = Omit<
                 readonly profileId: { readonly column: 'profile_id' };
                 readonly role: { readonly column: 'role' };
                 readonly startDate: { readonly column: 'start_date' };
+              };
+            };
+          };
+          readonly OwnerChangeRequest: {
+            readonly fields: {
+              readonly decidedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly decidedBy: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly invite: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly lotId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly noticeDocumentId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly ownerAddress: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly ownerEmail: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly ownerMobile: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly ownerName: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly ownerPhone: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly recordedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly recordedBy: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly schemeId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly settlementDate: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+              readonly status: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: {
+              readonly lot: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'Lot' };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['lotId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly scheme: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Scheme';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['schemeId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'owner_change_requests';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly decidedAt: { readonly column: 'decided_at' };
+                readonly decidedBy: { readonly column: 'decided_by' };
+                readonly id: { readonly column: 'id' };
+                readonly invite: { readonly column: 'invite' };
+                readonly lotId: { readonly column: 'lot_id' };
+                readonly noticeDocumentId: { readonly column: 'notice_document_id' };
+                readonly ownerAddress: { readonly column: 'owner_address' };
+                readonly ownerEmail: { readonly column: 'owner_email' };
+                readonly ownerMobile: { readonly column: 'owner_mobile' };
+                readonly ownerName: { readonly column: 'owner_name' };
+                readonly ownerPhone: { readonly column: 'owner_phone' };
+                readonly recordedAt: { readonly column: 'recorded_at' };
+                readonly recordedBy: { readonly column: 'recorded_by' };
+                readonly schemeId: { readonly column: 'scheme_id' };
+                readonly settlementDate: { readonly column: 'settlement_date' };
+                readonly status: { readonly column: 'status' };
               };
             };
           };
@@ -43110,6 +43423,17 @@ type ContractBase = Omit<
                 readonly on: {
                   readonly localFields: readonly ['organisationId'];
                   readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly ownerChangeRequests: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'OwnerChangeRequest';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['schemeId'];
                 };
               };
               readonly paymentPlanRequests: {
