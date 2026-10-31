@@ -37,8 +37,8 @@
 -- not, and the old build never sets a password for an account the server
 -- made, so those invitees need the password reset email to sign in.
 --
--- Why: the column held a plain uuid "token" that nothing ever used as a
--- credential, but a reader could mistake it for one. The S2a link token is
+-- Why: the column held a plain "token" (text, a random uuid string) that
+-- nothing ever used as a credential, but a reader could mistake it for one. The S2a link token is
 -- stored only as a SHA-256 (token_hash, part 1). Dropping the column also
 -- drops its unique index (invitations_token_key).
 

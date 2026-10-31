@@ -34,11 +34,21 @@
 --   from a link locks every pending invitation for the account at once
 --   (review finding L2), and deleting an Auth user clears the column.
 --
--- The old plain `token` column (a uuid, unique) is left in place here,
+-- The old plain `token` column (text holding a random uuid string, not null,
+-- unique) is left in place here,
 -- because the code deployed now still lists it. Nothing has ever used it as
 -- a credential: the emailed link went to /invitations, and acceptance there
 -- checks the signed-in person's email. It is dropped by part 2
 -- (20261130_invitation_plain_token_drop.sql) once S2a is deployed.
+--
+-- Locks: adding the foreign key takes a SHARE ROW EXCLUSIVE lock on
+-- auth.users (and on invitations) for as long as it runs, including the
+-- check of the existing rows. While it is held, Supabase Auth cannot create,
+-- update or delete users, so sign-ups, sign-ins that write last_sign_in_at,
+-- password changes and confirmations wait. The tables are small, so it
+-- should take well under a second, but apply this (and run the rehearsal,
+-- which takes the same lock) at a time of low traffic. lock_timeout below
+-- makes it give up rather than queue behind a long-running transaction.
 --
 -- Data API: invitations has RLS on and no grants to anon or authenticated
 -- since S0 (SEC-005). New columns follow the table's grants; nothing here

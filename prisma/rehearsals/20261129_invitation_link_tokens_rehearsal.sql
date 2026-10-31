@@ -14,8 +14,16 @@
 -- It needs one existing building and one existing profile to insert test
 -- invitations against (inside the rolled-back transaction). The test rows
 -- use made-up addresses at example.invalid.
+--
+-- Locks: like part 1, it adds the foreign key to auth.users, which holds a
+-- SHARE ROW EXCLUSIVE lock on auth.users (and invitations) until the
+-- rollback. Supabase Auth cannot write users meanwhile (sign-ups, sign-ins,
+-- password changes wait), so run it at a time of low traffic. The lock and
+-- statement timeouts below make it give up rather than wait or run on.
 
 BEGIN;
+SET LOCAL lock_timeout = '5s';
+SET LOCAL statement_timeout = '60s';
 
 DO $rehearsal$
 DECLARE
@@ -132,11 +140,34 @@ BEGIN
   v_checks := array_append(v_checks, 'account set-up lock');
 
   -- 6c. The read the app makes of auth.users when an address already has an
-  --     Auth user (accounts.ts, adoption of a never-confirmed account): the
-  --     columns it names exist and the app's role can read them.
-  PERFORM id::text, (email_confirmed_at IS NOT NULL), (last_sign_in_at IS NOT NULL)
-    FROM auth.users WHERE lower(email::text) = 'rehearsal-a@example.invalid' ORDER BY created_at LIMIT 2;
+  --     Auth user (src/lib/invitations/auth-users.ts, replacing a
+  --     never-confirmed account): every column it names exists, and the
+  --     statement runs as written.
+  SELECT count(*) INTO v_n FROM information_schema.columns
+   WHERE table_schema = 'auth' AND table_name = 'users'
+     AND column_name IN ('id', 'email', 'email_confirmed_at', 'phone_confirmed_at', 'confirmed_at',
+                         'last_sign_in_at', 'banned_until', 'is_sso_user', 'is_anonymous', 'deleted_at', 'created_at');
+  IF v_n <> 11 THEN
+    RAISE EXCEPTION 'STOP: auth.users has % of the 11 columns the app reads (src/lib/invitations/auth-users.ts)', v_n;
+  END IF;
+  PERFORM id::text,
+          (email_confirmed_at IS NOT NULL OR confirmed_at IS NOT NULL OR phone_confirmed_at IS NOT NULL),
+          (last_sign_in_at IS NOT NULL),
+          (banned_until IS NOT NULL AND banned_until > now())
+    FROM auth.users
+   WHERE lower(email::text) = 'rehearsal-a@example.invalid'
+     AND NOT is_sso_user
+     AND NOT coalesce(is_anonymous, false)
+     AND deleted_at IS NULL
+   ORDER BY created_at
+   LIMIT 2;
   v_checks := array_append(v_checks, 'auth.users read');
+
+  -- 6d. The timeouts the app sets in the set-up transaction are accepted
+  --     inside a transaction (claimLinkForAccountSetUp).
+  PERFORM set_config('idle_in_transaction_session_timeout', '20s', true);
+  PERFORM set_config('statement_timeout', '60s', true);
+  v_checks := array_append(v_checks, 'set-up timeouts');
 
   -- 7. The browser roles still have no access to the table or the new columns (SEC-005).
   IF has_table_privilege('anon', 'public.invitations', 'SELECT')
