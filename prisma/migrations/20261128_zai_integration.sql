@@ -5,6 +5,13 @@
 -- Status: NOT APPLIED. Written only: not applied or rehearsed anywhere. It is
 -- applied only with Matthew Wrigley's approval, after a rolled-back rehearsal.
 --
+-- No version of this file has ever been applied anywhere (it changed through
+-- two reviews before any approval). Re-running it is safe, but CREATE TABLE
+-- IF NOT EXISTS does not add constraints, indexes or columns to a table that
+-- already exists: if an earlier draft had ever been applied, its tables would
+-- have to be dropped first (they would hold no rows that matter, as nothing
+-- reads or writes them while ZAI_PAYMENTS is off), and then this applied.
+--
 -- When to apply: NOT needed before the code deploys. Nothing reads or writes
 -- these tables while ZAI_PAYMENTS is off (src/lib/payments/zai/config.ts),
 -- and it is off everywhere: no environment sets it. It MUST be applied before
@@ -45,16 +52,25 @@
 -- the idempotency key sent to Zai. The ledger (journal_entries and
 -- journal_lines) stays the system of record. A payment received has a
 -- journal exactly when it is RECEIPTED or REVERSAL_REVIEW, so a receipted
--- payment can never be put back in a queue to be receipted again (review H2). zai_updated_at is the updated_at
--- of the newest payload applied, so an older one delivered later is not
--- applied (Zai does not guarantee the order of delivery,
--- https://developer.hellozai.com/docs/webhooks, read 31 Oct 2026).
+-- payment can never be put back in a queue to be receipted again (review H2).
+-- A check cannot stop one write that clears the journal and the status
+-- together, so a trigger (zai_transactions_journal_guard, BEFORE UPDATE) also
+-- refuses any change to a payment received's journal_entry_id once it is set
+-- (second review, LOW-1). The app's only write of journal_entry_id is the
+-- receipt setting it from NULL (receiptInLedger), which the trigger allows;
+-- no foreign key to the table updates it (journal_entries' key is NO ACTION).
+-- zai_updated_at is the updated_at of the newest payload applied, so an
+-- older one delivered later is not applied (Zai does not guarantee the order
+-- of delivery, https://developer.hellozai.com/docs/webhooks, read
+-- 31 Oct 2026).
 --
 -- zai_webhook_events: every webhook whose signature verified, stored once:
 -- dedupe_key is the SHA-256 of the body as received, so a repeated delivery of
--- the same payload is one row. stored_body is the body with the payer's name,
--- BSB and account number removed (payin_details is cut down to the PayID), so
--- no payer bank details are kept (decision D7 for how long the rest is kept).
+-- the same payload is one row. stored_body is an allowlisted copy of the body
+-- (bodyToStore): for a transaction only the fields processing reads, with
+-- payin_details cut down to the PayID; for any other object only its type,
+-- id, updated_at and state. No payer or user names, bank details, contact or
+-- KYC fields are kept (decision D7 for how long the rest is kept).
 --
 -- Keys: the scheme, lot, fund, supplier, supplier invoice and journal keys are
 -- foreign keys here and not declared in the contract, so no existing model
@@ -69,9 +85,18 @@
 -- deleting only a lot, fund, supplier, invoice, journal, Zai user or wallet
 -- that a remaining Zai row relies on is blocked.
 --
+-- Checked by the app, not the database (second review, LOW-5): that a
+-- sub-wallet's fund (zai_wallet_accounts.fund_id), a payment reference's lot
+-- (zai_payment_references.lot_id) and a payment's lot and journal
+-- (zai_transactions.lot_id, journal_entry_id) belong to the row's own
+-- building. funds, lots and journal_entries have no (id, scheme_id) key for a
+-- composite foreign key, and this migration changes no existing table. The
+-- lot comes from a payment reference of the building, and the journal from
+-- the building's own receipt (receiptInLedger), so the app never mixes them.
+--
 -- Every existing row passes, by construction (not by reading the data): the
 -- tables are new and start empty, and no existing table gains a column, a
--- check or a trigger. No NSW, Queensland or draft pack row changes.
+-- check or a trigger (the one trigger is on the new zai_transactions). No NSW, Queensland or draft pack row changes.
 --
 -- RLS on, no policies: the Data API is denied; the app connects as the owner.
 -- The index and key names are the ones the emitted contract
@@ -224,6 +249,25 @@ CREATE TABLE IF NOT EXISTS public.zai_transactions (
     OR (supplier_invoice_id IS NULL AND idempotency_key IS NULL AND initiated_by IS NULL AND released_by IS NULL AND released_at IS NULL))
 );
 CREATE INDEX IF NOT EXISTS zai_transactions_scheme_id_match_status_idx ON public.zai_transactions (scheme_id, match_status);
+
+-- A payment received's journal, once set, never changes or is cleared (second review, LOW-1).
+CREATE OR REPLACE FUNCTION public.zai_transactions_journal_guard()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  IF OLD.direction = 'IN' AND OLD.journal_entry_id IS NOT NULL
+     AND (NEW.journal_entry_id IS DISTINCT FROM OLD.journal_entry_id OR NEW.direction IS DISTINCT FROM OLD.direction) THEN
+    RAISE EXCEPTION 'StrataVerze: Zai payment % is receipted and its journal cannot change', OLD.id USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+REVOKE EXECUTE ON FUNCTION public.zai_transactions_journal_guard() FROM PUBLIC, anon, authenticated, service_role;
+DROP TRIGGER IF EXISTS zai_transactions_journal_guard ON public.zai_transactions;
+CREATE TRIGGER zai_transactions_journal_guard BEFORE UPDATE ON public.zai_transactions
+  FOR EACH ROW EXECUTE FUNCTION public.zai_transactions_journal_guard();
 ALTER TABLE public.zai_transactions ENABLE ROW LEVEL SECURITY;
 
 CREATE TABLE IF NOT EXISTS public.zai_webhook_events (

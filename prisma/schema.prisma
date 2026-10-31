@@ -4769,7 +4769,7 @@ model ZaiTransaction {
   lotId            String?   @map("lot_id") @db.Uuid
   matchStatus      String    @map("match_status") @db.VarChar(30) // IN: UNMATCHED, NEEDS_REVIEW, RECEIPTED, REVERSAL_REVIEW (an IN row has a journal exactly when RECEIPTED or REVERSAL_REVIEW); OUT: AWAITING_RELEASE, RELEASED, SENT, FAILED, OUTCOME_UNKNOWN
   matchReason      String?   @map("match_reason") @db.VarChar(200)
-  journalEntryId   String?   @map("journal_entry_id") @db.Uuid // the receipt or payment journal
+  journalEntryId   String?   @map("journal_entry_id") @db.Uuid // the receipt or payment journal; an IN row's never changes once set (trigger zai_transactions_journal_guard)
   supplierInvoiceId String?  @map("supplier_invoice_id") @db.Uuid // OUT only
   idempotencyKey   String?   @unique @map("idempotency_key") @db.VarChar(100) // OUT only: sent as Zai's reference_id, or the Item id
   initiatedBy      String?   @map("initiated_by") @db.Uuid // OUT only: who asked for the payout
