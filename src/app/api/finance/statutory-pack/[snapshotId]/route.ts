@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { NO_STORE } from "@/lib/http/no-store";
+import { UUID } from "@/lib/pdf/response";
 import { recordSecurityEventLater } from "@/lib/audit/security-audit";
 import { db } from "@/prisma/db";
 import { getCurrentProfile } from "@/lib/queries/profiles";
@@ -11,6 +12,8 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   const profile = await getCurrentProfile();
   if (!profile) return new NextResponse("Sign in to view this document.", { status: 401, headers: NO_STORE });
   const { snapshotId } = await params;
+  // A malformed id is not found, as a missing one is, not a database error (S-08).
+  if (!UUID.test(snapshotId)) return new NextResponse("Not found", { status: 404, headers: NO_STORE });
   const snapshot = await db.orm.public.StatutoryPackSnapshot.where((s) => s.id.eq(snapshotId)).first();
   if (!snapshot) return new NextResponse("Not found", { status: 404, headers: NO_STORE });
   if (!(await canReadSchemeFinance(profile, snapshot.schemeId))) {
