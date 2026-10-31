@@ -18,7 +18,8 @@
  *   are recorded (src/lib/debt-recovery/proceedings-reminder-run.ts).
  *
  * Each kind runs only for buildings whose rule pack has the workflow (FEATURES)
- * or, for the proceedings deadline, the rule (DEBT_RECOVERY.mustStartProceedings).
+ * or, for the proceedings deadline, the rule (DEBT_RECOVERY.mustStartProceedings),
+ * and never for a switched off scheme (schemes.is_active = false).
  */
 import { and, or } from "@prisma/orm-postgres/orm-client";
 import { db } from "@/prisma/db";
@@ -34,6 +35,7 @@ import { notifyTrainingDue, notifyTrainingOverdue } from "@/lib/governance/train
 import { annualReportOverview, claimReportReminder } from "./annual-report-store";
 import { notifyAnnualReportDue } from "./report-notify";
 import { runProceedingsDeadlineReminders } from "@/lib/debt-recovery/proceedings-reminder-run";
+import { activeSchemesOnly, inactiveSchemeIds } from "@/lib/schemes/inactive";
 
 const day = (v: unknown) => (v instanceof Date ? v.toISOString() : String(v ?? "")).slice(0, 10);
 
@@ -41,7 +43,8 @@ export async function runComplianceDay(now: Date = new Date()) {
   let paymentPlanReminders = 0;
   try {
     // Requests not yet decided, and decided ones with no reply date recorded.
-    const open = await db.orm.public.PaymentPlanRequest.where((r) => r.repliedOn.isNull()).orderBy((r) => r.createdAt.asc()).limit(5000).all();
+    const inactive = await inactiveSchemeIds();
+    const open = await db.orm.public.PaymentPlanRequest.where((r) => and(r.repliedOn.isNull(), ...activeSchemesOnly(r.schemeId, inactive))).orderBy((r) => r.createdAt.asc()).limit(5000).all();
     const waiting = open.filter((r) => r.status === "RECEIVED" || r.status === "APPROVED" || r.status === "REFUSED");
     const ids = [...new Set(waiting.map((r) => r.schemeId))];
     const zones = await schemeTimeZones(ids);
@@ -106,7 +109,8 @@ async function annualReportReminders_(now: Date) {
 async function committeeTrainingReminders(now: Date) {
   let sent = 0;
   try {
-    const members = await db.orm.public.SchemeMembership.where((m) => and(m.role.eq("COMMITTEE"), m.isActive.eq(true))).limit(10000).all();
+    const inactive = await inactiveSchemeIds();
+    const members = await db.orm.public.SchemeMembership.where((m) => and(m.role.eq("COMMITTEE"), m.isActive.eq(true), ...activeSchemesOnly(m.schemeId, inactive))).limit(10000).all();
     for (const schemeId of new Set(members.map((m) => m.schemeId))) {
       try {
         const data = await committeeTrainingRows(schemeId, now);

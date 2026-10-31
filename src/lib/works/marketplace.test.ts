@@ -265,6 +265,25 @@ describe("deadlines", () => {
     expect((await sweepDeadlines(after)).quotesClosed).toEqual([]);
   });
 
+  it("the daily sweep leaves a switched off scheme's RFQs as they are", async () => {
+    const B = "22222222-2222-4222-8222-222222222222";
+    sharedFake.table("Scheme").push({ ...sharedFake.table("Scheme")[0], id: B, planNumber: "SP 90001", isActive: false });
+    await open();
+    sharedFake.table("WorksRfq").push({ ...rfq(), id: "rfq-b", schemeId: B, requestId: null, rfqNumber: "RFQ-B" });
+    const rfqB = () => sharedFake.table("WorksRfq").find((r) => r.id === "rfq-b")!;
+    const later = new Date(Date.now() + 4 * DAY);
+    expect((await sweepDeadlines(later)).interestClosed).toEqual([expect.objectContaining({ schemeId: A, rfqNumber: "RFQ-0001" })]);
+    expect(rfq().noInterestNotifiedAt).toBeTruthy();
+    expect(rfqB().noInterestNotifiedAt ?? null).toBeNull();
+
+    for (const r of [rfq(), rfqB()]) Object.assign(r, { status: "QUOTING", quoteClosesAt: later.toISOString() });
+    const after = new Date(Date.now() + 8 * DAY);
+    expect((await sweepDeadlines(after)).quotesClosed).toEqual([expect.objectContaining({ schemeId: A, rfqNumber: "RFQ-0001" })]);
+    expect(rfq().status).toBe("CLOSED");
+    expect(rfqB()).toMatchObject({ status: "QUOTING" });
+    expect(rfqB().quotesClosedNotifiedAt ?? null).toBeNull();
+  });
+
   it("the committee can extend them, reopening closed quotes", async () => {
     await toQuoting();
     rfq().status = "CLOSED";

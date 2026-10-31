@@ -45,6 +45,7 @@ import { RULE_PACKS, UnsupportedJurisdictionError } from "@/config/statutory";
 import { messageTermsFor, rulesForScheme, rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { platformToday, storedDayIn, todayIn } from "@/lib/jurisdiction/time-zone";
 import { schemeTimeZone, timeZoneOf } from "@/lib/jurisdiction/scheme-time";
+import { activeSchemesOnly, inactiveSchemeIds } from "@/lib/schemes/inactive";
 
 const ts = (v: string) => v as unknown as TimestampString<3>;
 const PAGE = 1000;
@@ -254,12 +255,13 @@ const PENDING_GRACE_MS = 30 * 60 * 1000;
  * Post the levy for notices a run issued but did not get to post (it was
  * stopped part way). Each is taken over with one conditional UPDATE, so two
  * sweeps at once do not both post it; if posting fails it is marked pending
- * again for the next run.
+ * again for the next run. A switched off scheme's notices are left as they are.
  */
 export async function postPendingLevies(now = new Date()): Promise<number> {
   const before = new Date(now.getTime() - PENDING_GRACE_MS).toISOString();
+  const inactive = await inactiveSchemeIds();
   const pending = await db.orm.public.LevyNotice
-    .where((n) => and(n.levyPostPending.eq(true), n.issuedAt.lte(ts(before))))
+    .where((n) => and(n.levyPostPending.eq(true), n.issuedAt.lte(ts(before)), ...activeSchemesOnly(n.schemeId, inactive)))
     .limit(2000)
     .all();
   let posted = 0;
@@ -335,10 +337,11 @@ async function draftNoticesDue(scheduleIds: string[], horizon: string) {
 /**
  * Issue every planned notice of an active schedule whose day has come. Each
  * building's day is today in its own time zone at `now`. Safe to run more
- * than once a day.
+ * than once a day. A switched off scheme's schedules are left as they are.
  */
 export async function issueDueNotices(now: Date = new Date()): Promise<DueRunResult[]> {
-  const schedules = await db.orm.public.LevySchedule.where((s) => s.status.eq("ACTIVE")).limit(5000).all();
+  const inactive = await inactiveSchemeIds();
+  const schedules = await db.orm.public.LevySchedule.where((s) => and(s.status.eq("ACTIVE"), ...activeSchemesOnly(s.schemeId, inactive))).limit(5000).all();
   if (!schedules.length) return [];
   // Read far enough ahead for every rule pack; each building's own rule decides below.
   const lookAhead = Math.max(...Object.values(RULE_PACKS).map((p) => noticeTimingFor(p.rules.NOTICE_RULES).leadDays));
@@ -512,13 +515,15 @@ export async function issueOverdueDrafts(input: { schemeId: string; scheduleId: 
 
 // ─── 2. Sending failed emails again ─────────────────────────────────────────
 
-/** Email again any notice issued in the last few days (by this process) whose email did not go. */
+/** Email again any notice issued in the last few days (by this process) whose email did not go, except a switched off scheme's. */
 export async function retryNoticeEmails(now: Date = new Date()): Promise<number> {
   // A day of margin before StrataVerze's own day, for buildings in other time zones.
   const since = addDays(platformToday(now), -EMAIL_RETRY_DAYS - 1);
+  const inactive = await inactiveSchemeIds();
   const notices = await db.orm.public.LevyNotice
     .where((n) =>
       and(
+        ...activeSchemesOnly(n.schemeId, inactive),
         n.status.in(["ISSUED", "PARTIALLY_PAID", "PAID", "OVERDUE"]),
         n.emailedAt.isNull(),
         n.levyPostPending.eq(false),
