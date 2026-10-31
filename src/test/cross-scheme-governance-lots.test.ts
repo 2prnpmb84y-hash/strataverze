@@ -288,6 +288,50 @@ describe("lots (C1)", () => {
     expect(lots.assignOwnerToLot).not.toHaveBeenCalled();
   });
 
+  // S-01 (founder decision, 31 Oct 2026): only the Adviser or StrataVerze assigns an owner directly.
+  it("assignOwnerAction refuses a committee member of the scheme, including assigning themselves", async () => {
+    callerRoles = { [SCHEME_A]: ["COMMITTEE"] };
+    for (const profileId of [caller.id, "someone-else"]) {
+      const r = await lotActions.assignOwnerAction(SCHEME_A, LOT_A.id, profileId);
+      expect(r.error).toMatch(/permission/);
+    }
+    // A committee member who is also an owner on the scheme is refused too.
+    callerRoles = { [SCHEME_A]: ["COMMITTEE", "OWNER"] };
+    expect((await lotActions.assignOwnerAction(SCHEME_A, LOT_A.id, caller.id)).error).toMatch(/permission/);
+    expect(lots.assignOwnerToLot).not.toHaveBeenCalled();
+    // Refused before the step-up check, so the refusal does not depend on MFA.
+    expect(stepUp.requireRecentMfa).not.toHaveBeenCalled();
+  });
+
+  it("assignOwnerAction lets the scheme's Adviser assign an owner", async () => {
+    const r = await lotActions.assignOwnerAction(SCHEME_A, LOT_A.id, "new-owner");
+    expect(r.error).toBeUndefined();
+    expect(stepUp.requireRecentMfa).toHaveBeenCalled();
+    expect(lots.assignOwnerToLot).toHaveBeenCalledWith({ schemeId: SCHEME_A, lotId: LOT_A.id, profileId: "new-owner" });
+  });
+
+  it("assignOwnerAction lets a StrataVerze admin assign an owner without a role on the scheme", async () => {
+    callerRoles = {};
+    caller.isPlatformAdmin = true;
+    const r = await lotActions.assignOwnerAction(SCHEME_A, LOT_A.id, "new-owner");
+    expect(r.error).toBeUndefined();
+    expect(lots.assignOwnerToLot).toHaveBeenCalledWith({ schemeId: SCHEME_A, lotId: LOT_A.id, profileId: "new-owner" });
+  });
+
+  it("assignOwnerAction refuses an Adviser of another scheme acting through scheme A's id", async () => {
+    callerRoles = { [SCHEME_B]: ["ADVISER"] };
+    const r = await lotActions.assignOwnerAction(SCHEME_A, LOT_A.id, caller.id);
+    expect(r.error).toMatch(/permission/);
+    expect(lots.assignOwnerToLot).not.toHaveBeenCalled();
+  });
+
+  it("the committee keeps the other roll actions: removeOwnerAction is still open to it", async () => {
+    callerRoles = { [SCHEME_A]: ["COMMITTEE"] };
+    const r = await lotActions.removeOwnerAction(SCHEME_A, LOT_A.id, "membership-x");
+    // Past the role check: refused only because the membership is not on the lot.
+    expect(r.error).toBe("Membership not found on this scheme.");
+  });
+
   it("an adviser of scheme B cannot act through scheme A's id", async () => {
     callerRoles = { [SCHEME_B]: ["ADVISER"], [SCHEME_A]: ["OWNER"] };
     const r = await lotActions.updateLotAction(SCHEME_A, LOT_A.id, {}, lotForm());

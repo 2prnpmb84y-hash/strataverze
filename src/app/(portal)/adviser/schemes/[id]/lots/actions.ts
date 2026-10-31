@@ -11,6 +11,7 @@ import {
   LOCKED_LOT_FIELDS,
   LOCKED_MESSAGE,
   changedLockedFields,
+  requireRolesOrAdmin,
   requireSchemeAccessOrAdmin,
 } from "@/lib/auth/building-lock";
 import { db as schemeDb } from "@/prisma/db";
@@ -289,8 +290,12 @@ export async function assignOwnerAction(
   profileId: string,
 ) {
   try {
-    // The strata roll's owners: the Adviser and the committee (24 Oct).
-    const { profile: actor, roles } = await requireSchemeAccess(schemeId, "roll.manage");
+    // Assigning an owner directly: the building's Adviser or StrataVerze only
+    // (founder decision, 31 Oct 2026, finding S-01). The committee keeps every
+    // other roll.manage action, but cannot make anyone (themselves included)
+    // an owner of a lot, which would give that person the lot's vote and
+    // documents.
+    const { profile: actor, isAdmin } = await requireRolesOrAdmin(schemeId, ["ADVISER"]);
     // A sensitive operation: needs an authenticator check in the last 15 minutes.
     await requireRecentMfa();
 
@@ -302,7 +307,7 @@ export async function assignOwnerAction(
       action: "membership.owner_assigned",
       outcome: "allowed",
       actorProfileId: actor.id,
-      actorRole: roles.includes("ADVISER") ? "ADVISER" : "COMMITTEE",
+      actorRole: isAdmin ? "platform_admin" : "ADVISER",
       schemeId,
       resourceType: "Lot",
       resourceId: lotId,

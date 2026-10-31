@@ -272,6 +272,7 @@ export default async function LotDetailPage({
                     <OwnerAssignment
                       schemeId={id}
                       lotId={lotId}
+                      canAssign={isAdviser || !!profile.isPlatformAdmin}
                       owners={lot.owners.map((o) => ({
                         id: o.membershipId,
                         profile: {
