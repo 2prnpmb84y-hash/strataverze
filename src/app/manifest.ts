@@ -5,7 +5,9 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "StrataVerze",
     short_name: "StrataVerze",
     description: "Strata management platform",
-    start_url: "/",
+    // The installed app opens on the dashboard (or sign-in), not the root,
+    // which sends signed-out visitors to the public site.
+    start_url: "/dashboard",
     display: "standalone",
     theme_color: "#1A2028",
     background_color: "#FFFFFF",

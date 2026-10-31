@@ -4,6 +4,7 @@ import { loadSessionState } from "@/lib/auth/session-state";
 import { contextFromHeaders } from "@/lib/audit/security-audit";
 import { canonicalUuid, isPrefetch, viewTargetFor } from "@/lib/audit/view-audit";
 import { recordPageView } from "@/lib/audit/page-views";
+import { MARKETING_SITE_URL } from "@/lib/site-url";
 import { after, NextResponse, type NextRequest } from "next/server";
 
 /**
@@ -15,6 +16,8 @@ import { after, NextResponse, type NextRequest } from "next/server";
  *    server components always see a fresh token.
  * 3. Redirect unauthenticated visitors away from portal routes.
  * 4. Redirect authenticated visitors away from auth pages.
+ * 5. Send the app root on: signed in to /dashboard, signed out to the
+ *    marketing site.
  */
 
 const SUPABASE_HOST = "vtqovzfywfrizjufsrmj.supabase.co";
@@ -153,6 +156,21 @@ export async function proxy(request: NextRequest) {
   }
 
   const { pathname } = request.nextUrl;
+
+  // --- The app root (AR-008) ---
+  // The old landing page here was retired on 31 Oct 2026; the public site is
+  // www.strataverze.com, a separate project. A temporary redirect (307),
+  // never a permanent one: the target depends on the session, and browsers
+  // cache permanent redirects. withCookies also marks it no-store.
+  if (pathname === "/") {
+    if (!user) {
+      return withCookies(NextResponse.redirect(MARKETING_SITE_URL, 307), supabaseResponse);
+    }
+    const dashboardUrl = request.nextUrl.clone();
+    dashboardUrl.pathname = "/dashboard";
+    dashboardUrl.search = "";
+    return withCookies(NextResponse.redirect(dashboardUrl, 307), supabaseResponse);
+  }
 
   // --- Protected portal routes ---
   const isProtected = protectedPrefixes.some((prefix) =>
