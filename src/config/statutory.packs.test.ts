@@ -21,6 +21,7 @@ import {
 import { schemeStateProblem, SUPPORTED_SCHEME_STATES } from "./jurisdictions";
 import { fundConditionSelectors } from "@/lib/jurisdiction/funds";
 import { noticeRuleProblems, noticeTimingFor } from "@/lib/levies/notice-rule-check";
+import { annualLateChargeMissing, annualLateChargeRate, annualRateProblem, effectiveLateChargeMode, interestSettingProblem, lateCharge, lateChargeApplies, lateChargeWaiverProblem } from "@/lib/finance/statutory-interest";
 import type { BuildingSelector, EntitlementScheduleDefinition, FundDefinition, RuleStatus, SelectorCondition } from "./statutory/types";
 
 const STATUSES: RuleStatus[] = ["CONFIRMED", "GUIDANCE", "STRATAVERZE", "NOT_CONFIRMED"];
@@ -788,7 +789,321 @@ describe("Western Australia pack (pending)", () => {
   });
 });
 
+describe("Tasmanian pack (pending, stage 1)", () => {
+  const pack = PENDING_RULE_PACKS.TAS;
+  const tas = pack.rules;
+  const STATUSES_WITH_VALUE = ["CONFIRMED", "STRATAVERZE"];
+
+  it("is a draft for review, not signed off, with no decisions", () => {
+    expect(pack.code).toBe("AU-TAS");
+    expect(pack.state).toBe("TAS");
+    expect(pack.name).toBe("Tasmania");
+    expect(pack.version).toBe("2026.10.1");
+    expect(pack.status).toBe("DRAFT");
+    expect(pack.reviewedOn).toBeNull();
+    expect(pack.reviewer).toBe("Matthew Wrigley");
+    expect(tas.DECISIONS).toHaveLength(0);
+    expect(tas.NOT_CONFIRMED.length).toBeGreaterThan(0);
+    expect(tas.FOR_REVIEW.length).toBeGreaterThan(0);
+    // Every product choice is a proposal, not a decision.
+    expect(tas.FOR_REVIEW.filter((p) => p.includes("proposed decision")).length).toBeGreaterThan(0);
+    expect(packs.map(([code]) => code)).toContain("AU-TAS");
+  });
+
+  it("switches every workflow off, with the NSW keys", () => {
+    expect(Object.keys(tas.FEATURES).sort()).toEqual(Object.keys(RULE_PACKS.NSW.rules.FEATURES).sort());
+    expect(Object.values(tas.FEATURES).every((on) => on === false)).toBe(true);
+  });
+
+  it("holds no shared shape the engine would run beyond the fail-closed notice and late charge rules", () => {
+    for (const key of ["MEETING_RULES", "PAYMENT_ALLOCATION_ORDER", "DEBT_RECOVERY", "DEBT_RECOVERY_STEPS", "DATED_RULES", "BUILDING_SELECTORS", "CERTIFICATE", "INSPECTIONS", "DOCUMENT_RETENTION", "WORKS_QUOTES"]) {
+      expect(key in tas, key).toBe(false);
+    }
+    expect(tas.PAYMENT_ALLOCATION.statutoryOrder).toBe("NO_STATUTORY_RULE");
+  });
+
+  it("requires the single fund and holds its capital expenditure part as optional", () => {
+    const fund = tas.FUND_CATALOGUE.find((f) => f.ledgerFund === "ADMINISTRATIVE");
+    const capital = tas.FUND_CATALOGUE.find((f) => f.ledgerFund === "CAPITAL_WORKS");
+    expect(fund).toMatchObject({ key: "FUND", required: true, status: "CONFIRMED" });
+    expect(capital).toMatchObject({ key: "CAPITAL_EXPENDITURE", required: false, status: "CONFIRMED" });
+    expect(tas.FUND_CATALOGUE.every((f) => f.requiredWhen === undefined)).toBe(true);
+    expect(tas.FUND_NAMING.status).toBe("STRATAVERZE");
+  });
+
+  it("holds the general unit entitlement on each lot, the only schedule", () => {
+    expect(tas.ENTITLEMENT_SCHEDULES.map((s) => [s.key, s.onLot])).toEqual([["UNIT_ENTITLEMENT", true]]);
+    expect(tas.UNIT_ENTITLEMENT_RULES.specialEntitlementsSupported).toMatchObject({ value: false, status: "STRATAVERZE" });
+  });
+
+  it("gives every shared term, in the Act's words", () => {
+    const shared = Object.keys(RULE_PACKS.NSW.rules.TERMINOLOGY).filter((k) => k !== "source");
+    for (const k of shared) expect(tas.TERMINOLOGY, k).toHaveProperty(k);
+    const t = tas.TERMINOLOGY;
+    expect([t.ownersCorporation, t.committee, t.levy, t.levies, t.lateCharge, t.jurisdictionShort]).toEqual(["body corporate", "committee of management", "contribution", "contributions", "interest", "Tas"]);
+    expect(t.bodyCorporateNameStatus).toBe("GUIDANCE");
+  });
+
+  it("checks every notice value: none has a value, so every notice is refused", () => {
+    const rule = tas.NOTICE_RULES;
+    const c = rule.checked!;
+    const values = [c.minimumNoticeDays, c.issueDaysBeforeDue, c.dueDateMayMove, ...(c.maximumNoticeDays ? [c.maximumNoticeDays] : []), ...Object.values(c.noticeMode)];
+    for (const v of values) {
+      if (v!.value != null) expect(STATUSES_WITH_VALUE).toContain(v!.status);
+      else expect(v!.note!.length).toBeGreaterThan(10);
+      expect(v!.source.length).toBeGreaterThan(5);
+    }
+    expect(values.every((v) => v!.value == null && v!.status === "NOT_CONFIRMED")).toBe(true);
+    expect(c.maximumNoticeDays).toBeNull();
+    expect(c.form).toBeNull();
+    expect(c.requiredContents).toEqual([]);
+    expect(rule.urgentNoticeDays).toBeNull();
+    expect(rule.hardship).toBeNull();
+    expect(rule.issueDaysBeforeDue).toBeGreaterThanOrEqual(rule.minimumNoticeDays);
+    for (const ledgerFund of ["ADMINISTRATIVE", "CAPITAL_WORKS"] as const) {
+      const points = noticeRuleProblems(rule, { ledgerFund }).map((p) => p.point);
+      expect(points, ledgerFund).toEqual(["minimumNoticeDays", "issueDaysBeforeDue", "dueDateMayMove", "noticeMode"]);
+    }
+  });
+
+  it("checks every late charge value: no statutory rate, no interest by default, and nothing that can be charged", () => {
+    const lc = tas.LATE_CHARGE;
+    expect(lc.method).toBe("ANNUAL_RATE");
+    expect(lc.defaultMode).toBe("NONE");
+    expect([lc.annualRatePercent, lc.maxMonthlyRatePercent, lc.graceMonths]).toEqual([null, null, 0]);
+    const a = lc.annual!;
+    expect(a.statutoryRatePercent).toBeNull();
+    expect(a.waiver).toBeNull();
+    const values = [a.resolvedRate!.resolution, a.resolvedRate!.minPercent, a.resolvedRate!.maxPercent, a.accrual.from, a.accrual.graceMonths, a.accrual.simple, a.accrual.daysInYear];
+    for (const v of values) {
+      expect(v.value).toBeNull();
+      expect(v.status).toBe("NOT_CONFIRMED");
+      expect(v.note!.length).toBeGreaterThan(10);
+      expect(v.source.length).toBeGreaterThan(5);
+    }
+    expect(tas.INTEREST_ON_OVERDUE_CONTRIBUTIONS.statutoryRatePercent).toBeNull();
+  });
+
+  it("refuses every notice through the notice rule check, so the 0-day numbers outside `checked` are never relied on", () => {
+    const rule = tas.NOTICE_RULES;
+    // 0 because the Act gives no number: the most permissive values, never used.
+    expect([rule.minimumNoticeDays, rule.issueDaysBeforeDue]).toEqual([0, 0]);
+    for (const ledgerFund of ["ADMINISTRATIVE", "CAPITAL_WORKS"] as const) {
+      const problems = noticeRuleProblems(rule, { ledgerFund });
+      expect(problems.length, ledgerFund).toBeGreaterThan(0);
+      for (const p of problems) expect(p.code).toBe("NOTICE_RULES_NOT_CONFIRMED");
+      expect(problems.some((p) => p.message.includes("No notice can be issued")), ledgerFund).toBe(true);
+    }
+    // Even a notice that states everything is refused.
+    const all = { EVERY_LOT_CONTRIBUTION: true, FUND_TOTAL: true, PROPORTION_AND_METHOD: true, INSTALMENT_DATES: true, EARLY_PAYMENT_DISCOUNT: true, LATE_CHARGE_STATEMENT: true, PAY_WITHIN_DAYS_STATEMENT: true, DISPUTE_PROCESS: true };
+    expect(noticeRuleProblems(rule, { ledgerFund: "ADMINISTRATIVE", states: all }).length).toBeGreaterThan(0);
+  });
+
+  it("charges nothing through the late charge engine, and refuses a resolved rate and a waiver", () => {
+    const rule = tas.LATE_CHARGE;
+    const input = { levyCents: 100_000, dueDate: "2026-07-01", payments: [], asAt: "2026-10-01" };
+    const resolved = lateCharge(input, rule, { mode: "RESOLVED_ANNUAL_RATE", annualRatePercent: 10 });
+    expect(resolved.interestCents).toBe(0);
+    expect(resolved.reason).toBe("RULE_NOT_CONFIRMED");
+    expect(lateCharge(input, rule, { mode: "NONE" }).interestCents).toBe(0);
+    for (const mode of [...rule.modes, "STATUTORY", "NO_INTEREST", "RESOLVED_RATE"]) {
+      expect(lateChargeApplies(rule, { mode, annualRatePercent: 10, monthlyRatePercent: 1 }), mode).toBe(false);
+    }
+    const terms = { lateCharge: tas.TERMINOLOGY.lateCharge, ownersCorporation: tas.TERMINOLOGY.ownersCorporation };
+    expect(interestSettingProblem({ mode: "RESOLVED_ANNUAL_RATE", annualRatePercent: 10, resolutionMeetingId: "m", resolutionMotionId: "x" }, rule, terms)).toMatch(/not confirmed/);
+    expect(lateChargeWaiverProblem({ kind: "WHOLE", reasons: "r", resolutionMeetingId: "m", resolutionMotionId: "x" }, rule, terms)).toMatch(/give no waiver/);
+  });
+
+  it("holds the values read in the Act", () => {
+    expect(tas.MEETINGS.noticeDays).toBe(7);
+    expect(tas.MEETINGS.agmWithinMonthsOfLastAgm).toBe(15);
+    expect(tas.MEETINGS.firstAgm).toMatchObject({ withinMonthsAfterRegistration: 3, orOnSaleOfFractionOfLots: 1 / 2, whicheverEarlier: true });
+    expect(tas.MEETINGS.specialGeneralMeeting.mustOnRequisitionOfNotLessThanFractionOfMembers).toBe(1 / 3);
+    expect(tas.MEETINGS.quorum).toMatchObject({ defaultByLaw: true, status: "CONFIRMED" });
+    expect(tas.RESOLUTIONS.UNANIMOUS.laterWrittenVoteWithinDaysAfterMeeting).toBe(28);
+    expect(tas.RESOLUTIONS.specialResolutionInAct).toBe(false);
+    expect(tas.COMMITTEE).toMatchObject({ required: false, minMembers: 3, appointedBy: "ORDINARY" });
+    expect(tas.INSURANCE.publicRiskMinimumCents).toBe(1_000_000_000);
+    expect(tas.LEVY_RECOVERY.forum.applicationFeeCents).toBe(2_500);
+    expect(tas.LEVY_RECOVERY.appeal).toMatchObject({ withinDaysAfterOrder: 30, feeCents: 25_200 });
+    expect(tas.LEVY_RECOVERY.courtDebtClaim.status).toBe("NOT_CONFIRMED");
+    expect(tas.LEVY_RECOVERY.authority.status).toBe("NOT_CONFIRMED");
+    expect(tas.SECTION_83_CERTIFICATE.items).toHaveLength(7);
+    expect(tas.AUDIT_AND_ACCOUNTS).toMatchObject({ auditRequired: false, financialYearInAct: null });
+    expect(tas.POSTCODES.ranges).toBeNull();
+    expect(tas.PENDING_REVIEW.enactedNotInForce).toEqual([]);
+    expect(tas.BY_LAWS).toMatchObject({ exclusiveUseLapsesAfterYearsUnlessConfirmed: 5, exclusiveUsePermanentEffectExempt: true });
+    expect(tas.NOT_CONFIRMED.some((p) => p.startsWith("Any deadline for giving a s 83(5) certificate"))).toBe(true);
+    expect(tas.NOT_CONFIRMED.some((p) => p.startsWith("Records inspection beyond committee minutes"))).toBe(true);
+  });
+
+  it("supports a strata scheme with one body corporate only, as a proposal", () => {
+    expect(tas.SCHEME_TYPE.options.filter((o) => o.supported).map((o) => o.value)).toEqual(["STRATA_SINGLE_BODY_CORPORATE"]);
+  });
+
+  it("is the rules recorded for review", () => {
+    expect(tas).toMatchSnapshot();
+  });
+});
+
+describe("Northern Territory pack (pending)", () => {
+  const pack = PENDING_RULE_PACKS.NT;
+  const nt = pack.rules;
+
+  it("is a draft for review, not signed off, with no decisions yet", () => {
+    expect(pack.code).toBe("AU-NT");
+    expect(pack.state).toBe("NT");
+    expect(pack.version).toBe("2026.10.1");
+    expect(pack.status).toBe("DRAFT");
+    expect(pack.reviewedOn).toBeNull();
+    expect(pack.reviewer).toBe("Matthew Wrigley");
+    expect(nt.DECISIONS).toEqual([]);
+    expect(nt.NOT_CONFIRMED.length).toBeGreaterThan(0);
+    expect(nt.FOR_REVIEW.length).toBeGreaterThan(0);
+    // Every product choice the draft had to make is a proposal in FOR_REVIEW, not a decision.
+    expect(nt.FOR_REVIEW.filter((p) => p.startsWith("Proposed decision")).length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("supports unit title schemes under the 2009 Act on management modules 1 and 2 only", () => {
+    expect(nt.SCHEME_ACT.options.filter((o) => o.supported).map((o) => o.value)).toEqual(["UTSA"]);
+    expect(nt.MANAGEMENT_MODULE.options.filter((o) => o.supported).map((o) => o.value)).toEqual(["MODULE_2", "MODULE_1"]);
+    expect(nt.SCHEME_CLASSES.standardFromUnitOwners).toBe(4);
+    expect(nt.SCHEME_CLASSES.counts).toBe("unit owners");
+  });
+
+  it("switches every NSW workflow off", () => {
+    expect(Object.keys(nt.FEATURES).sort()).toEqual(Object.keys(RULE_PACKS.NSW.rules.FEATURES).sort());
+    expect(Object.values(nt.FEATURES).every((on) => on === false)).toBe(true);
+  });
+
+  it("gives every shared term", () => {
+    const shared = Object.keys(RULE_PACKS.NSW.rules.TERMINOLOGY).filter((k) => k !== "source");
+    for (const k of shared) expect(nt.TERMINOLOGY, k).toHaveProperty(k);
+    expect(nt.TERMINOLOGY.jurisdictionShort).toBe("NT");
+    expect(nt.TERMINOLOGY.tribunal).toBe("NTCAT");
+    expect(nt.TERMINOLOGY.bodyCorporateNameStatus).toBe("STRATAVERZE");
+  });
+
+  it("requires no fund: both ledger funds are StrataVerze choices, neither required", () => {
+    for (const f of nt.FUND_CATALOGUE) {
+      expect(f.required, f.key).toBe(false);
+      expect(f.status, f.key).toBe("STRATAVERZE");
+      expect(f.requiredWhen, f.key).toBeUndefined();
+    }
+  });
+
+  it("holds contribution entitlement on each unit and interest entitlement separately", () => {
+    expect(nt.ENTITLEMENT_SCHEDULES.map((s) => [s.key, s.onLot, s.decides])).toEqual([
+      ["CONTRIBUTION", true, ["CONTRIBUTIONS", "SPECIAL_RESOLUTION"]],
+      ["INTEREST", false, ["COMMON_PROPERTY_SHARE"]],
+    ]);
+  });
+
+  it("holds the s 79 resolution tests and the debtor rule", () => {
+    expect(nt.RESOLUTIONS.SPECIAL.forAtLeastFractionOfVotesCast).toBe(2 / 3);
+    expect(nt.RESOLUTIONS.SPECIAL.againstNotMoreThanFractionOfAllContributionEntitlements).toBe(0.25);
+    expect(nt.RESOLUTIONS.MAJORITY.moreThanFractionOfAllUnits).toBe(0.5);
+    expect(nt.RESOLUTIONS.ORDINARY.modulesApplyEntitlementCount).toBe(false);
+    // s 79(10): only a motion the Act requires to be passed that way, not every motion put that way.
+    expect(nt.DEBT_RECOVERY.debtorMayVoteOnlyOnMotionsRequiredByActToBe).toEqual(["UNANIMOUS", "WITHOUT_DISSENT"]);
+    expect(nt.DEBT_RECOVERY.debtorExceptionIncludesModulesStatus).toBe("NOT_CONFIRMED");
+    expect("debtorMayVoteOnlyOn" in nt.DEBT_RECOVERY).toBe(false);
+    expect(nt.NOT_CONFIRMED.some((p) => p.includes("\"required by this Act\""))).toBe(true);
+  });
+
+  it("counts meeting notice in working days: 14, or 21 for without dissent, unanimous or termination resolutions", () => {
+    expect(nt.MEETINGS.noticeCountsWorkingDays).toBe(true);
+    expect(nt.MEETINGS.noticeWorkingDays).toEqual({ general: 14, withoutDissentUnanimousOrTermination: 21, smallScheme: 14 });
+    expect(nt.MEETINGS.quorumPercentOfInterestEntitlements).toBe(50);
+    expect(nt.MEETINGS.agmWithinMonthsOfLast).toBe(15);
+    expect(nt.RECORDS.accessWithinWorkingDays).toBe(10);
+    expect(nt.RECORDS.accessFeeCents).toBe(3_000);
+    expect(nt.RECORDS.retentionYears).toBe(7);
+  });
+
+  it("charges no interest: optional in law, and every value the engine needs is not confirmed", () => {
+    const lc = nt.LATE_CHARGE;
+    expect(lc.defaultMode).toBe("NONE");
+    // STATUTORY is left out until the Supreme Court Act s 85 rate is confirmed, so it cannot be saved.
+    expect(lc.modes).toEqual(["NONE", "RESOLVED_ANNUAL_RATE"]);
+    expect(lc.resolutionRequiredFor).toEqual(["RESOLVED_ANNUAL_RATE"]);
+    expect(lc.annualRatePercent).toBeNull();
+    expect(lc.maxMonthlyRatePercent).toBeNull();
+    const a = lc.annual!;
+    const values = [a.statutoryRatePercent!, a.resolvedRate!.resolution, a.resolvedRate!.minPercent, a.resolvedRate!.maxPercent, a.accrual.from, a.accrual.graceMonths, a.accrual.simple, a.accrual.daysInYear, a.waiver!.decidedBy];
+    for (const v of values) {
+      expect(v.value).toBeNull();
+      expect(v.status).toBe("NOT_CONFIRMED");
+      expect(v.note!.length).toBeGreaterThan(10);
+    }
+    expect(nt.INTEREST_ON_LATE_PAYMENT.mayCharge).toBe(true);
+    expect(nt.INTEREST_ON_LATE_PAYMENT.section85RatePercent).toBeNull();
+    expect(nt.FOR_REVIEW.some((p) => p.includes("left out of LATE_CHARGE.modes"))).toBe(true);
+  });
+
+  it("is refused by the engine: no rate, no resolved rate, no waiver, no forum, no meeting rules, no notice", () => {
+    const lc = nt.LATE_CHARGE;
+    const t = { lateCharge: nt.TERMINOLOGY.lateCharge, ownersCorporation: nt.TERMINOLOGY.ownersCorporation };
+    // STATUTORY is not one of the pack's modes, so a stored STATUTORY is read as the default (NONE): no rate, nothing charged.
+    expect(effectiveLateChargeMode(lc, "STATUTORY")).toBe("NONE");
+    expect(annualLateChargeRate(lc, { mode: "STATUTORY" })).toBeNull();
+    // The resolved rate has no rate, and says what is missing.
+    expect(annualLateChargeRate(lc, { mode: "RESOLVED_ANNUAL_RATE", annualRatePercent: 5 })).toBeNull();
+    expect(annualLateChargeMissing(lc, { mode: "RESOLVED_ANNUAL_RATE", annualRatePercent: 5 })).toEqual(
+      expect.arrayContaining(["resolvedRate.resolution", "resolvedRate.minPercent", "resolvedRate.maxPercent", "accrual.from", "accrual.graceMonths", "accrual.simple", "accrual.daysInYear"]),
+    );
+    expect(annualRateProblem(lc.annual, 5, t)).toMatch(/not confirmed/);
+    const resolution = { resolutionMeetingId: "m", resolutionMotionId: "x" };
+    expect(lateChargeWaiverProblem({ kind: "WHOLE", reasons: "Hardship", ...resolution }, lc, t)).toMatch(/not confirmed/);
+    expect(nt.DEBT_RECOVERY.forum).toBeNull();
+    expect("MEETING_RULES" in nt).toBe(false);
+    // Every notice is refused while the timing values have no value.
+    for (const ledgerFund of ["ADMINISTRATIVE", "CAPITAL_WORKS"] as const) {
+      const points = noticeRuleProblems(nt.NOTICE_RULES, { ledgerFund }).map((p) => p.point);
+      expect(points, ledgerFund).toEqual(["minimumNoticeDays", "issueDaysBeforeDue", "dueDateMayMove", "noticeMode"]);
+    }
+  });
+
+  it("holds the notice timing with no value, the proposal kept in FOR_REVIEW only", () => {
+    const c = nt.NOTICE_RULES.checked!;
+    for (const v of [c.minimumNoticeDays, c.issueDaysBeforeDue, c.dueDateMayMove, ...Object.values(c.noticeMode)]) {
+      expect(v!.value).toBeNull();
+      expect(v!.status).toBe("NOT_CONFIRMED");
+      expect(v!.note!.length).toBeGreaterThan(10);
+    }
+    expect(c.maximumNoticeDays).toBeNull();
+    expect(nt.NOTICE_RULES.urgentNoticeDays).toBeNull();
+    expect(nt.NOTICE_RULES.hardship).toBeNull();
+    const proposal = nt.FOR_REVIEW.find((p) => p.startsWith("Proposed decision (notice timing)"));
+    for (const words of ["14 days", "35 days", "never moved", "one notice per instalment"]) expect(proposal, words).toContain(words);
+    expect(nt.FOR_REVIEW.some((p) => p.startsWith("Proposed decision (payment allocation order)"))).toBe(true);
+    expect("PAYMENT_ALLOCATION_ORDER" in nt).toBe(false);
+  });
+
+  it("holds STRATAVERZE status only on names and labels, never on a rule the engine applies", () => {
+    // Every STRATAVERZE value in the pack, by where it is: the ledger fund names, the name template and the time zone.
+    const found: string[] = [];
+    const walk = (v: unknown, path: string): void => {
+      if (Array.isArray(v)) v.forEach((x, i) => walk(x, `${path}[${i}]`));
+      else if (v && typeof v === "object") for (const [k, x] of Object.entries(v)) walk(x, path ? `${path}.${k}` : k);
+      else if (v === "STRATAVERZE") found.push(path);
+    };
+    walk(nt, "");
+    expect(found.sort()).toEqual(["FUND_CATALOGUE[0].status", "FUND_CATALOGUE[1].status", "TERMINOLOGY.bodyCorporateNameStatus", "TIME_ZONE.status"]);
+    expect(nt.FOR_REVIEW.some((p) => p.includes("\"may\" specify a body corporate name"))).toBe(true);
+  });
+
+  it("uses the Darwin time zone, with no daylight saving", () => {
+    expect(nt.TIME_ZONE).toMatchObject({ zone: "Australia/Darwin", utcOffset: "+09:30", daylightSaving: false });
+  });
+
+  it("is the rules recorded for review", () => {
+    expect(nt).toMatchSnapshot();
+  });
+});
+
 describe("the checked notice rules of the pending packs (stage 2, PR 6a)", () => {
+  // The Northern Territory holds no timing value yet (every notice refused), so its own block checks it.
   const pending = [PENDING_RULE_PACKS.ACT, PENDING_RULE_PACKS.VIC, PENDING_RULE_PACKS.WA] as const;
   const STATUSES_WITH_VALUE = ["CONFIRMED", "STRATAVERZE"];
 

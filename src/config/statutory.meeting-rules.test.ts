@@ -105,6 +105,27 @@ const NEW_KEYS = [
 const PACK_RULES = { VIC: PENDING_RULE_PACKS.VIC.rules, ACT: PENDING_RULE_PACKS.ACT.rules, WA: PENDING_RULE_PACKS.WA.rules };
 const NO_DASH_OR_SEMICOLON = /[;–—]/;
 
+/**
+ * Draft packs at stage 1 (research notes and a draft pack, 31 Oct 2026) hold no
+ * meeting rules yet: stage 2 adds them. Named here, so a pack that has meeting
+ * rules can never lose them without this list changing.
+ */
+const STAGE_1_PACKS_WITHOUT_MEETING_RULES: readonly string[] = ["NT", "TAS"];
+/** The draft packs that hold meeting rules, as [state, rule set]. */
+const PENDING_MEETING_RULE_SETS = Object.values(PENDING_RULE_PACKS).flatMap((p) =>
+  "MEETING_RULES" in p.rules && p.rules.MEETING_RULES ? [[p.state, p.rules.MEETING_RULES] as const] : [],
+);
+
+describe("draft packs without meeting rules", () => {
+  it("are only the stage 1 packs named here", () => {
+    const without = Object.values(PENDING_RULE_PACKS)
+      .filter((p) => !("MEETING_RULES" in p.rules && p.rules.MEETING_RULES))
+      .map((p) => p.state)
+      .sort();
+    expect(without).toEqual([...STAGE_1_PACKS_WITHOUT_MEETING_RULES].sort());
+  });
+});
+
 describe.each(DRAFTS)("%s quorum attestation, counting refusal and debtor condition (stage 2, PR 8a-ii)", (state, rs) => {
   const selectors = PACK_RULES[state].BUILDING_SELECTORS as readonly BuildingSelector[];
 
@@ -155,7 +176,7 @@ describe.each(DRAFTS)("%s quorum attestation, counting refusal and debtor condit
 describe("every rule set, live and draft: the conduct screen asks whatever the action requires (PR 8a-ii review)", () => {
   const ALL = [
     ...Object.values(RULE_PACKS).map((p) => [p.state, p.rules.MEETING_RULES] as const),
-    ...Object.values(PENDING_RULE_PACKS).map((p) => [p.state, p.rules.MEETING_RULES] as const),
+    ...PENDING_MEETING_RULE_SETS,
   ];
 
   it.each(ALL)("%s words the quorum question for every category that can need it, and the units present for every one that measures them", (state, rs) => {
@@ -373,7 +394,7 @@ describe("pending resolutions are wired to the categories that give them (stage 
   it("offers Record the votes on the conduct screen for an item with a voting period, and nowhere else (PR 8b-ii)", () => {
     const all = [
       ...Object.values(RULE_PACKS).map((p) => [p.state, p.rules.MEETING_RULES] as const),
-      ...Object.values(PENDING_RULE_PACKS).map((p) => [p.state, p.rules.MEETING_RULES] as const),
+      ...PENDING_MEETING_RULE_SETS,
     ];
     for (const [state, rs] of all) {
       const items = Object.keys(rs.resolutionCategories).map((c) => ({ id: c, resolutionCategory: c }));
@@ -390,7 +411,7 @@ describe("pending resolutions are wired to the categories that give them (stage 
   it("asks the reduced quorum on the conduct screen wherever the action reads it, and nowhere else", () => {
     const all = [
       ...Object.values(RULE_PACKS).map((p) => [p.state, p.rules.MEETING_RULES] as const),
-      ...Object.values(PENDING_RULE_PACKS).map((p) => [p.state, p.rules.MEETING_RULES] as const),
+      ...PENDING_MEETING_RULE_SETS,
     ];
     for (const [state, rs] of all) {
       const items = Object.keys(rs.resolutionCategories).map((c) => ({ id: c, resolutionCategory: c }));
