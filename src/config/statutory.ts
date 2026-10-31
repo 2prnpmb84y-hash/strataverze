@@ -21,6 +21,7 @@
 import * as ACT from "./statutory/act";
 import * as NSW from "./statutory/nsw";
 import * as QLD from "./statutory/qld";
+import * as TAS from "./statutory/tas";
 import * as VIC from "./statutory/vic";
 import * as WA from "./statutory/wa";
 import type { MeetingRuleSet } from "@/lib/meetings/rules";
@@ -810,6 +811,21 @@ export const PENDING_RULE_PACKS = {
     reviewedOn: null,
     rules: WA,
   } satisfies PendingRulePack<typeof WA>,
+  TAS: {
+    code: "AU-TAS",
+    state: "TAS",
+    name: "Tasmania",
+    // 2026.10.1 (31 Oct 2026): strata schemes with one body corporate, researched from the in-force STA (version from
+    // 5 Nov 2021) and the Strata Titles (Insurance) Regulations 2019 (version from 26 Aug 2019), as a draft for Matthew
+    // Wrigley to review; not signed off, no decisions yet. Every FEATURES switch is off. NOTICE_RULES and LATE_CHARGE
+    // hold no value the Act does not give (no notice timing, no statutory interest rate), so both fail closed. No
+    // MEETING_RULES, recovery steps or dated rules yet (no enacted reform found).
+    version: "2026.10.1",
+    status: "DRAFT",
+    reviewer: "Matthew Wrigley",
+    reviewedOn: null,
+    rules: TAS,
+  } satisfies PendingRulePack<typeof TAS>,
 } as const;
 
 /** How a pack is recorded on a notice, charge or case, for example "AU-NSW 2026.10.1". */
