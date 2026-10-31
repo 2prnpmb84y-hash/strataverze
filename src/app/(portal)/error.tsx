@@ -1,33 +1,25 @@
-'use client'
+"use client";
 
-import { useEffect } from 'react'
+import { useEffect } from "react";
+import { StatusPage, digestOf } from "@/components/status-page";
 
-export default function PortalError({
-  error,
-  retry,
-}: {
-  error: Error & { digest?: string }
-  retry: () => void
-}) {
+/**
+ * An unexpected error inside the portal (AR-038). Besides Try again it
+ * offers the dashboard, sign in and support, so it is never a dead end
+ * (for example when the session ended). The message is never shown.
+ */
+export default function PortalError({ error, retry }: { error: unknown; retry: () => void }) {
   useEffect(() => {
-    console.error(error)
-  }, [error])
+    console.error(error);
+  }, [error]);
 
   return (
-    <div className="flex min-h-[50vh] items-center justify-center p-6">
-      <div className="w-full max-w-md rounded-[var(--radius-card)] border border-line bg-white p-6 text-center">
-        <h2 className="text-lg font-semibold text-ink">Something went wrong</h2>
-        <p className="mt-2 text-sm text-ink-muted">
-          An unexpected error occurred. Please try again or contact support if the
-          problem persists.
-        </p>
-        <button
-          onClick={() => retry()}
-          className="mt-6 rounded-full bg-turquoise px-6 py-2.5 text-sm font-semibold text-white uppercase tracking-[0.04em] hover:bg-turquoise/90 transition-colors"
-        >
-          Try again
-        </button>
-      </div>
-    </div>
-  )
+    <StatusPage
+      layout="inline"
+      title="Something went wrong"
+      description="This page couldn't be loaded. Please try again. If it keeps happening, email support and quote the reference below."
+      digest={digestOf(error)}
+      retry={retry}
+    />
+  );
 }
