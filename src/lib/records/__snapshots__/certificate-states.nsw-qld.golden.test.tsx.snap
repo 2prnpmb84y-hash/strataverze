@@ -1,0 +1,1319 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`NSW certificate PDF route refusals > are as recorded 1`] = `
+{
+  "badCertificateId": {
+    "body": "Not found",
+    "contentType": "text/plain;charset=UTF-8",
+    "disposition": null,
+    "status": 404,
+  },
+  "badSchemeId": {
+    "body": "Not found",
+    "contentType": "text/plain;charset=UTF-8",
+    "disposition": null,
+    "status": 404,
+  },
+  "cancelled": {
+    "body": "Not found",
+    "contentType": "text/plain;charset=UTF-8",
+    "disposition": null,
+    "status": 404,
+  },
+  "missing": {
+    "body": "Not found",
+    "contentType": "text/plain;charset=UTF-8",
+    "disposition": null,
+    "status": 404,
+  },
+  "notAnAdviser": {
+    "body": "Not found",
+    "contentType": "text/plain;charset=UTF-8",
+    "disposition": null,
+    "status": 404,
+  },
+  "otherBuilding": {
+    "body": "Not found",
+    "contentType": "text/plain;charset=UTF-8",
+    "disposition": null,
+    "status": 404,
+  },
+  "signedOut": {
+    "body": "Sign in to view this document.",
+    "contentType": "text/plain;charset=UTF-8",
+    "disposition": null,
+    "status": 401,
+  },
+}
+`;
+
+exports[`NSW certificate PDF route refusals > refuse a draft, and an issued certificate with nothing kept, for a pack without the certificate 1`] = `
+{
+  "draft": {
+    "body": "Not found",
+    "contentType": "text/plain;charset=UTF-8",
+    "disposition": null,
+    "status": 404,
+  },
+  "issued": {
+    "body": "Not found",
+    "contentType": "text/plain;charset=UTF-8",
+    "disposition": null,
+    "status": 404,
+  },
+}
+`;
+
+exports[`NSW certificate pages > a cancelled draft 1`] = `"<div class="space-y-6 max-w-4xl"><div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8"><div><a class="inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink transition-colors mb-2" href="/adviser/schemes/aaaaaaaa-0000-4000-8000-000000000001/lots/bbbbbbbb-0000-4000-8000-000000000001/certificates"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="shrink-0" aria-hidden="true"><path d="M10 12L6 8L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>Certificates</a><h1 class="text-2xl font-bold font-heading text-ink mb-1">Strata information certificate 4: Lot 7</h1><p class="text-sm text-ink-muted">Requested by Jo Citizen, received 2026-08-01.</p></div></div><div class="rounded-[var(--radius-card)] bg-white border border-line p-6 "><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Cancelled draft</h2></div><div class="shrink-0"><span class="inline-flex items-center rounded-full h-[22px] px-2.5 text-[11px] font-medium whitespace-nowrap bg-[#F1F5F9] text-ink-muted ">Cancelled</span></div></div></div></div>"`;
+
+exports[`NSW certificate pages > a draft whose figures are out of date 1`] = `"<div class="space-y-6 max-w-4xl"><div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8"><div><a class="inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink transition-colors mb-2" href="/adviser/schemes/aaaaaaaa-0000-4000-8000-000000000001/lots/bbbbbbbb-0000-4000-8000-000000000001/certificates"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="shrink-0" aria-hidden="true"><path d="M10 12L6 8L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>Certificates</a><h1 class="text-2xl font-bold font-heading text-ink mb-1">Strata information certificate 1: Lot 7</h1><p class="text-sm text-ink-muted">Requested by Jo Citizen, received 2026-10-26.</p></div></div><div class="rounded-[var(--radius-card)] bg-white border border-line p-6 "><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Check and complete every item</h2><p class="text-sm text-ink-muted mt-0.5">Figures from the records as at 2026-10-20 (refresh them before issuing). Every item has been completed. Check them once more before issuing. Issuing dates the certificate today (2026-10-27), fixes its items and records the fee due.</p></div><div class="shrink-0"><span class="inline-flex items-center rounded-full h-[22px] px-2.5 text-[11px] font-medium whitespace-nowrap bg-[#FFF3E0] text-[#A16207] ">Draft</span></div></div><form class="space-y-4" action="javascript:throw new Error(&#x27;React form unexpectedly submitted.&#x27;)"><div class="grid gap-3 sm:grid-cols-2"><label class="text-sm "><span class="block mb-1 font-medium text-ink">Date the request was received</span><input type="date" max="2026-10-27" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise" required="" name="requestedOn" value="2026-10-26"/></label><label class="text-sm "><span class="block mb-1 font-medium text-ink">Who is asking</span><select name="requesterType" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise" required=""><option value="OWNER" selected="">Owner</option><option value="MORTGAGEE">Mortgagee</option><option value="COVENANT_CHARGEE">Covenant chargee</option><option value="AUTHORISED_PERSON">Person authorised by the owner, mortgagee or covenant chargee</option></select></label><label class="text-sm "><span class="block mb-1 font-medium text-ink">Their name</span><input type="text" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise" required="" name="requesterName" value="Jo Citizen"/></label><label class="text-sm "><span class="block mb-1 font-medium text-ink">Their address</span><input type="text" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise" required="" name="requesterAddress" value="7/1 Example St"/></label><label class="text-sm "><span class="block mb-1 font-medium text-ink">If authorised: who authorised them</span><select name="authorisedByType" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise"><option value="" selected="">None</option><option value="OWNER">Owner</option><option value="MORTGAGEE">Mortgagee</option><option value="COVENANT_CHARGEE">Covenant chargee</option></select></label><label class="text-sm "><span class="block mb-1 font-medium text-ink">If authorised: that person&#x27;s name</span><input type="text" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise" name="authorisedByName" value=""/></label><label class="text-sm sm:col-span-2"><span class="block mb-1 font-medium text-ink">If authorised: that person&#x27;s address</span><input type="text" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise" name="authorisedByAddress" value=""/></label></div><div class="space-y-3"><label class="block text-sm"><span class="block mb-1 font-medium text-ink">1. Strata renewal committee</span><textarea name="item_1" rows="2" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise">Item 1: Nil.</textarea></label><label class="block text-sm"><span class="block mb-1 font-medium text-ink">2. Exclusive supply network (s 184(8))</span><textarea name="item_2" rows="2" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise">Item 2: Nil.</textarea></label><label class="block text-sm"><span class="block mb-1 font-medium text-ink">3. Administrative fund contributions (s 73)</span><textarea name="item_3" rows="2" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise">Item 3: Nil.</textarea></label><label class="block text-sm"><span class="block mb-1 font-medium text-ink">4. Capital works fund contributions (s 74)</span><textarea name="item_4" rows="2" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise">Item 4: Nil.</textarea></label><label class="block text-sm"><span class="block mb-1 font-medium text-ink">5. Amounts for additional amenities or services (s 117)</span><textarea name="item_5" rows="2" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise">Item 5: Nil.</textarea></label><label class="block text-sm"><span class="block mb-1 font-medium text-ink">6. Special contributions to the administrative or capital works fund (s 81(4))</span><textarea name="item_6" rows="2" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise">Item 6: Nil.</textarea></label><label class="block text-sm"><span class="block mb-1 font-medium text-ink">7. Money unpaid under a by-law conferring a right or privilege</span><textarea name="item_7" rows="2" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise">Item 7: Nil.</textarea></label><label class="block text-sm"><span class="block mb-1 font-medium text-ink">8. Proposals for funding matters in the 10-year capital works fund plan</span><textarea name="item_8" rows="2" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise">Item 8: Nil.</textarea></label><label class="block text-sm"><span class="block mb-1 font-medium text-ink">9. Contributions towards legal proceedings (s 90)</span><textarea name="item_9" rows="2" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise">Item 9: Nil.</textarea></label><label class="block text-sm"><span class="block mb-1 font-medium text-ink">10. Amount recoverable for work carried out by the owners corporation (s 120)</span><textarea name="item_10" rows="2" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise">Item 10: Nil.</textarea></label><label class="block text-sm"><span class="block mb-1 font-medium text-ink">11. Interest on contributions (s 85)</span><textarea name="item_11" rows="2" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise">Item 11: Nil.</textarea></label><label class="block text-sm"><span class="block mb-1 font-medium text-ink">12. Unpaid contributions and penalties</span><textarea name="item_12" rows="2" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise">Item 12: Nil.</textarea></label><label class="block text-sm"><span class="block mb-1 font-medium text-ink">12A. Outstanding orders and compliance action</span><textarea name="item_12A" rows="2" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise">Item 12A: Nil.</textarea></label><label class="block text-sm"><span class="block mb-1 font-medium text-ink">13. General and strata committee meetings held in the 12 months before the date of this certificate</span><textarea name="item_13" rows="2" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise">Item 13: Nil.</textarea></label><label class="block text-sm"><span class="block mb-1 font-medium text-ink">14. Meetings notified but not yet held</span><textarea name="item_14" rows="2" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise">Item 14: Nil.</textarea></label><label class="block text-sm"><span class="block mb-1 font-medium text-ink">15. Strata roll for the lot</span><textarea name="item_15" rows="2" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise">Item 15: Nil.</textarea></label><label class="block text-sm"><span class="block mb-1 font-medium text-ink">16. Strata managing agent (s 49) and building manager (s 67)</span><textarea name="item_16" rows="2" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise">Item 16: Nil.</textarea></label><label class="block text-sm"><span class="block mb-1 font-medium text-ink">17. Strata committee</span><textarea name="item_17" rows="2" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise">Item 17: Nil.</textarea></label><label class="block text-sm"><span class="block mb-1 font-medium text-ink">18. By-laws made in the previous six months not yet lodged with the Registrar-General (s 141)</span><textarea name="item_18" rows="2" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise">Item 18: Nil.</textarea></label><label class="block text-sm"><span class="block mb-1 font-medium text-ink">19. Insurance policies</span><textarea name="item_19" rows="2" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise">Item 19: Nil.</textarea></label><label class="block text-sm"><span class="block mb-1 font-medium text-ink">20. Community association administrative fund contributions (community schemes only)</span><textarea name="item_20" rows="2" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise">Item 20: Nil.</textarea></label><label class="block text-sm"><span class="block mb-1 font-medium text-ink">21. Community association sinking fund contributions (community schemes only)</span><textarea name="item_21" rows="2" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise">Item 21: Nil.</textarea></label><label class="block text-sm"><span class="block mb-1 font-medium text-ink">22. Building management committee contributions (members only)</span><textarea name="item_22" rows="2" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise">Item 22: Nil.</textarea></label><label class="block text-sm"><span class="block mb-1 font-medium text-ink">23. Amounts payable to any other person or body not connected to maintenance or insurance of common property</span><textarea name="item_23" rows="2" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise">Item 23: Nil.</textarea></label></div><label class="flex items-start gap-2 text-sm text-ink"><input type="checkbox" class="mt-1" name="checkedAll"/><span>To issue: I have checked and completed every item against the owners corporation&#x27;s records.</span></label><div class="flex flex-wrap justify-end gap-3"><button class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " type="submit" value="save" name="intent">Save draft</button><button class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-turquoise text-white hover:bg-turquoise/90 focus:ring-turquoise " type="submit" value="issue" name="intent">Save and issue</button></div></form><p class="mt-3 text-xs text-ink-muted">StrataVerze lays the certificate out itself, following the items of the Approved form: Section 184 certificate – strata schemes (NSW Fair Trading, version March 2026). Check it against the current approved form. <a class="underline" href="https://www.nsw.gov.au/housing-and-construction/strata/factsheets-forms-resources/section-184-certificate-strata-schemes" target="_blank" rel="noreferrer">The approved form</a></p></div><div class="rounded-[var(--radius-card)] bg-white border border-line p-6 "><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">More</h2></div></div><div class="flex flex-wrap items-center gap-3"><button class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none text-ink-muted hover:text-ink hover:bg-muted focus:ring-turquoise " type="button">Refresh figures from the records</button><a href="/api/records/certificate/cccccccc-0000-4000-8000-000000000011?schemeId=aaaaaaaa-0000-4000-8000-000000000001" target="_blank" rel="noreferrer" class="text-sm text-turquoise underline">Preview (PDF, marked draft)</a><button class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none text-ink-muted hover:text-ink hover:bg-muted focus:ring-turquoise " type="button">Cancel draft</button></div></div></div><script>addEventListener("submit",function(a){if(!a.defaultPrevented){var b=a.target,d=a.submitter,c=b.action,e=d;if(d){var f=d.getAttribute("formAction");null!=f&&(c=f,e=null)}"javascript:throw new Error('React form unexpectedly submitted.')"===c&&(a.preventDefault(),a=new FormData(b,e),c=b.ownerDocument||b,(c.$$reactFormReplay=c.$$reactFormReplay||[]).push(b,d,a))}});</script>"`;
+
+exports[`NSW certificate pages > an issued certificate, paid, with the repeat fee 1`] = `"<div class="space-y-6 max-w-4xl"><div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8"><div><a class="inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink transition-colors mb-2" href="/adviser/schemes/aaaaaaaa-0000-4000-8000-000000000001/lots/bbbbbbbb-0000-4000-8000-000000000001/certificates"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="shrink-0" aria-hidden="true"><path d="M10 12L6 8L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>Certificates</a><h1 class="text-2xl font-bold font-heading text-ink mb-1">Strata information certificate 3: Lot 7</h1><p class="text-sm text-ink-muted">Requested by Jo Citizen, received 2026-09-01.</p></div></div><div class="rounded-[var(--radius-card)] bg-white border border-line p-6 "><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Issued 2026-09-02</h2></div><div class="shrink-0"><span class="inline-flex items-center rounded-full h-[22px] px-2.5 text-[11px] font-medium whitespace-nowrap bg-[#E6F7F3] text-[#1A7A63] ">Issued</span></div></div><div class="space-y-3 text-sm"><a href="/api/records/certificate/cccccccc-0000-4000-8000-000000000013?schemeId=aaaaaaaa-0000-4000-8000-000000000001" target="_blank" rel="noreferrer" class="text-turquoise underline">Certificate (PDF)</a><p>Fee: $94.00 (a further certificate within the repeat period). Paid 2026-09-05.</p><p class="text-xs text-amber-700">Issued before StrataVerze kept each certificate as issued: its PDF is laid out again from the current wording and the building&#x27;s current details. Check it against the certificate given.</p><p class="text-xs text-ink-muted">Common seal of the owners corporation, affixed in the presence of the persons authorised by s 273. A strata information certificate is conclusive evidence, as at its date, of the matters it certifies, for a purchaser or lessee for valuable consideration (s 185).</p></div></div></div>"`;
+
+exports[`NSW certificate pages > are refused for a pack without the certificate 1`] = `
+{
+  "cancelled": {
+    "thrown": "NOT_FOUND",
+  },
+  "draft": {
+    "thrown": "NOT_FOUND",
+  },
+  "issued": {
+    "thrown": "NOT_FOUND",
+  },
+  "list": {
+    "thrown": "NOT_FOUND",
+  },
+}
+`;
+
+exports[`NSW certificate pages > the lot's certificates: a draft, issued unpaid, issued paid and cancelled 1`] = `"<div class="space-y-6 max-w-4xl"><div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8"><div><a class="inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink transition-colors mb-2" href="/adviser/schemes/aaaaaaaa-0000-4000-8000-000000000001/lots/bbbbbbbb-0000-4000-8000-000000000001"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="shrink-0" aria-hidden="true"><path d="M10 12L6 8L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>Lot</a><h1 class="text-2xl font-bold font-heading text-ink mb-1">Strata information certificate: Lot 7</h1><p class="text-sm text-ink-muted">Strata Schemes Management Act 2015 (NSW) s 184. Approved form: Section 184 certificate – strata schemes (NSW Fair Trading, version March 2026).</p></div></div><div class="rounded-[var(--radius-card)] bg-white border border-line p-6 "><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Certificates for this lot</h2></div></div><div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="text-left text-xs text-ink-muted border-b border-line"><th class="py-2 pr-3">No.</th><th class="py-2 pr-3">Requested by</th><th class="py-2 pr-3">Received</th><th class="py-2 pr-3">Issued</th><th class="py-2 pr-3 text-right">Fee</th><th class="py-2 pr-3">Status</th></tr></thead><tbody><tr class="border-b border-line last:border-0"><td class="py-2 pr-3"><a class="text-turquoise underline" href="/adviser/schemes/aaaaaaaa-0000-4000-8000-000000000001/lots/bbbbbbbb-0000-4000-8000-000000000001/certificates/cccccccc-0000-4000-8000-000000000011">1</a></td><td class="py-2 pr-3">Jo Citizen</td><td class="py-2 pr-3 tabular-nums">2026-10-26</td><td class="py-2 pr-3 tabular-nums"></td><td class="py-2 pr-3 tabular-nums text-right"></td><td class="py-2 pr-3"><span class="inline-flex items-center rounded-full h-[22px] px-2.5 text-[11px] font-medium whitespace-nowrap bg-[#FFF3E0] text-[#A16207] ">Draft</span></td></tr><tr class="border-b border-line last:border-0"><td class="py-2 pr-3"><a class="text-turquoise underline" href="/adviser/schemes/aaaaaaaa-0000-4000-8000-000000000001/lots/bbbbbbbb-0000-4000-8000-000000000001/certificates/cccccccc-0000-4000-8000-000000000012">2</a></td><td class="py-2 pr-3">Jo Citizen</td><td class="py-2 pr-3 tabular-nums">2026-10-01</td><td class="py-2 pr-3 tabular-nums">2026-10-02</td><td class="py-2 pr-3 tabular-nums text-right">$109.00 due</td><td class="py-2 pr-3"><span class="inline-flex items-center rounded-full h-[22px] px-2.5 text-[11px] font-medium whitespace-nowrap bg-[#E6F7F3] text-[#1A7A63] ">Issued</span></td></tr><tr class="border-b border-line last:border-0"><td class="py-2 pr-3"><a class="text-turquoise underline" href="/adviser/schemes/aaaaaaaa-0000-4000-8000-000000000001/lots/bbbbbbbb-0000-4000-8000-000000000001/certificates/cccccccc-0000-4000-8000-000000000013">3</a></td><td class="py-2 pr-3">Jo Citizen</td><td class="py-2 pr-3 tabular-nums">2026-09-01</td><td class="py-2 pr-3 tabular-nums">2026-09-02</td><td class="py-2 pr-3 tabular-nums text-right">$94.00 paid</td><td class="py-2 pr-3"><span class="inline-flex items-center rounded-full h-[22px] px-2.5 text-[11px] font-medium whitespace-nowrap bg-[#E6F7F3] text-[#1A7A63] ">Issued</span></td></tr><tr class="border-b border-line last:border-0"><td class="py-2 pr-3"><a class="text-turquoise underline" href="/adviser/schemes/aaaaaaaa-0000-4000-8000-000000000001/lots/bbbbbbbb-0000-4000-8000-000000000001/certificates/cccccccc-0000-4000-8000-000000000014">4</a></td><td class="py-2 pr-3">Jo Citizen</td><td class="py-2 pr-3 tabular-nums">2026-08-01</td><td class="py-2 pr-3 tabular-nums"></td><td class="py-2 pr-3 tabular-nums text-right"></td><td class="py-2 pr-3"><span class="inline-flex items-center rounded-full h-[22px] px-2.5 text-[11px] font-medium whitespace-nowrap bg-[#F1F5F9] text-ink-muted ">Cancelled</span></td></tr></tbody></table></div></div><div class="rounded-[var(--radius-card)] bg-white border border-line p-6 "><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">New certificate</h2><p class="text-sm text-ink-muted mt-0.5">StrataVerze drafts each item from its records; you check and complete every item before issuing. Fee: $109.00, or $94.00 for a further certificate for the lot within 3 months (Strata Schemes Management Regulation 2016 Sch 4 item 3, as consolidated on AustLII (in-force amount not confirmed)). It is recorded on issue and collected outside StrataVerze.</p></div></div><form class="space-y-3" action="javascript:throw new Error(&#x27;React form unexpectedly submitted.&#x27;)"><div class="grid gap-3 sm:grid-cols-2"><label class="text-sm "><span class="block mb-1 font-medium text-ink">Date the request was received</span><input type="date" max="2026-10-27" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise" required="" name="requestedOn" value="2026-10-27"/></label><label class="text-sm "><span class="block mb-1 font-medium text-ink">Who is asking</span><select name="requesterType" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise" required=""><option value="OWNER" selected="">Owner</option><option value="MORTGAGEE">Mortgagee</option><option value="COVENANT_CHARGEE">Covenant chargee</option><option value="AUTHORISED_PERSON">Person authorised by the owner, mortgagee or covenant chargee</option></select></label><label class="text-sm "><span class="block mb-1 font-medium text-ink">Their name</span><input type="text" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise" required="" name="requesterName" value=""/></label><label class="text-sm "><span class="block mb-1 font-medium text-ink">Their address</span><input type="text" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise" required="" name="requesterAddress" value=""/></label><label class="text-sm "><span class="block mb-1 font-medium text-ink">If authorised: who authorised them</span><select name="authorisedByType" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise"><option value="" selected="">None</option><option value="OWNER">Owner</option><option value="MORTGAGEE">Mortgagee</option><option value="COVENANT_CHARGEE">Covenant chargee</option></select></label><label class="text-sm "><span class="block mb-1 font-medium text-ink">If authorised: that person&#x27;s name</span><input type="text" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise" name="authorisedByName" value=""/></label><label class="text-sm sm:col-span-2"><span class="block mb-1 font-medium text-ink">If authorised: that person&#x27;s address</span><input type="text" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise" name="authorisedByAddress" value=""/></label></div><div class="flex justify-end"><button class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " type="submit">Start draft</button></div></form></div></div><script>addEventListener("submit",function(a){if(!a.defaultPrevented){var b=a.target,d=a.submitter,c=b.action,e=d;if(d){var f=d.getAttribute("formAction");null!=f&&(c=f,e=null)}"javascript:throw new Error('React form unexpectedly submitted.')"===c&&(a.preventDefault(),a=new FormData(b,e),c=b.ownerDocument||b,(c.$$reactFormReplay=c.$$reactFormReplay||[]).push(b,d,a))}});</script>"`;
+
+exports[`QLD certificate PDF route refusals > are as recorded 1`] = `
+{
+  "badCertificateId": {
+    "body": "Not found",
+    "contentType": "text/plain;charset=UTF-8",
+    "disposition": null,
+    "status": 404,
+  },
+  "badSchemeId": {
+    "body": "Not found",
+    "contentType": "text/plain;charset=UTF-8",
+    "disposition": null,
+    "status": 404,
+  },
+  "cancelled": {
+    "body": "Not found",
+    "contentType": "text/plain;charset=UTF-8",
+    "disposition": null,
+    "status": 404,
+  },
+  "missing": {
+    "body": "Not found",
+    "contentType": "text/plain;charset=UTF-8",
+    "disposition": null,
+    "status": 404,
+  },
+  "notAnAdviser": {
+    "body": "Not found",
+    "contentType": "text/plain;charset=UTF-8",
+    "disposition": null,
+    "status": 404,
+  },
+  "otherBuilding": {
+    "body": "Not found",
+    "contentType": "text/plain;charset=UTF-8",
+    "disposition": null,
+    "status": 404,
+  },
+  "signedOut": {
+    "body": "Sign in to view this document.",
+    "contentType": "text/plain;charset=UTF-8",
+    "disposition": null,
+    "status": 401,
+  },
+}
+`;
+
+exports[`QLD certificate PDF route refusals > refuse a draft, and an issued certificate with nothing kept, for a pack without the certificate 1`] = `
+{
+  "draft": {
+    "body": "Not found",
+    "contentType": "text/plain;charset=UTF-8",
+    "disposition": null,
+    "status": 404,
+  },
+  "issued": {
+    "body": "Not found",
+    "contentType": "text/plain;charset=UTF-8",
+    "disposition": null,
+    "status": 404,
+  },
+}
+`;
+
+exports[`QLD certificate pages > a cancelled draft 1`] = `"<div class="space-y-6 max-w-4xl"><div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8"><div><a class="inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink transition-colors mb-2" href="/adviser/schemes/aaaaaaaa-0000-4000-8000-000000000002/lots/bbbbbbbb-0000-4000-8000-000000000002/certificates"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="shrink-0" aria-hidden="true"><path d="M10 12L6 8L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>Certificates</a><h1 class="text-2xl font-bold font-heading text-ink mb-1">Body corporate certificate 4: Lot 3</h1><p class="text-sm text-ink-muted">Requested by Jo Citizen, received 2026-08-01.</p></div></div><div class="rounded-[var(--radius-card)] bg-white border border-line p-6 "><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Cancelled draft</h2></div><div class="shrink-0"><span class="inline-flex items-center rounded-full h-[22px] px-2.5 text-[11px] font-medium whitespace-nowrap bg-[#F1F5F9] text-ink-muted ">Cancelled</span></div></div></div></div>"`;
+
+exports[`QLD certificate pages > a draft whose figures are out of date 1`] = `"<div class="space-y-6 max-w-4xl"><div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8"><div><a class="inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink transition-colors mb-2" href="/adviser/schemes/aaaaaaaa-0000-4000-8000-000000000002/lots/bbbbbbbb-0000-4000-8000-000000000002/certificates"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="shrink-0" aria-hidden="true"><path d="M10 12L6 8L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>Certificates</a><h1 class="text-2xl font-bold font-heading text-ink mb-1">Body corporate certificate 1: Lot 3</h1><p class="text-sm text-ink-muted">Requested by Jo Citizen, received 2026-10-26.</p></div></div><div class="rounded-[var(--radius-card)] bg-white border border-line p-6 "><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Check and complete every item</h2><p class="text-sm text-ink-muted mt-0.5">Give it within 5 business days after the written request and fee: by 2026-11-02. This skips weekends but not public holidays, so check. Figures from the records as at 2026-10-20 (refresh them before issuing). Every item has been completed. Check them once more before issuing. Issuing dates the certificate today (2026-10-27), fixes its items and records the fee due.</p></div><div class="shrink-0"><span class="inline-flex items-center rounded-full h-[22px] px-2.5 text-[11px] font-medium whitespace-nowrap bg-[#FFF3E0] text-[#A16207] ">Draft</span></div></div><form class="space-y-4" action="javascript:throw new Error(&#x27;React form unexpectedly submitted.&#x27;)"><div class="grid gap-3 sm:grid-cols-2"><label class="text-sm "><span class="block mb-1 font-medium text-ink">Date the request was received</span><input type="date" max="2026-10-27" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise" required="" name="requestedOn" value="2026-10-26"/></label><label class="text-sm "><span class="block mb-1 font-medium text-ink">Who is asking</span><select name="requesterType" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise" required=""><option value="OWNER" selected="">Owner</option><option value="MORTGAGEE">Mortgagee</option><option value="BUYER">Buyer</option><option value="DISCLOSURE_RECIPIENT">Person given a seller&#x27;s disclosure statement</option><option value="PROPER_INTEREST">Person with a proper interest</option><option value="AGENT">Agent</option></select></label><label class="text-sm "><span class="block mb-1 font-medium text-ink">Their name</span><input type="text" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise" required="" name="requesterName" value="Jo Citizen"/></label><label class="text-sm "><span class="block mb-1 font-medium text-ink">Their address</span><input type="text" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise" required="" name="requesterAddress" value="7/1 Example St"/></label><label class="text-sm "><span class="block mb-1 font-medium text-ink">If authorised: who authorised them</span><select name="authorisedByType" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise"><option value="" selected="">None</option><option value="OWNER">Owner</option><option value="MORTGAGEE">Mortgagee</option><option value="BUYER">Buyer</option><option value="DISCLOSURE_RECIPIENT">Person given a seller&#x27;s disclosure statement</option><option value="PROPER_INTEREST">Person with a proper interest</option></select></label><label class="text-sm "><span class="block mb-1 font-medium text-ink">If authorised: that person&#x27;s name</span><input type="text" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise" name="authorisedByName" value=""/></label><label class="text-sm sm:col-span-2"><span class="block mb-1 font-medium text-ink">If authorised: that person&#x27;s address</span><input type="text" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise" name="authorisedByAddress" value=""/></label></div><div class="space-y-3"><label class="block text-sm"><span class="block mb-1 font-medium text-ink">1. Lot and plan type</span><textarea name="item_1" rows="2" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise">Item 1: Nil.</textarea></label><label class="block text-sm"><span class="block mb-1 font-medium text-ink">2. Scheme name and regulation module</span><textarea name="item_2" rows="2" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise">Item 2: Nil.</textarea></label><label class="block text-sm"><span class="block mb-1 font-medium text-ink">3. Body corporate manager and the person who keeps the records</span><textarea name="item_3" rows="2" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise">Item 3: Nil.</textarea></label><label class="block text-sm"><span class="block mb-1 font-medium text-ink">4. Contributions, discounts and penalties</span><textarea name="item_4" rows="2" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise">Item 4: Nil.</textarea></label><label class="block text-sm"><span class="block mb-1 font-medium text-ink">5. Lot entitlements (contribution schedule and interest schedule)</span><textarea name="item_5" rows="2" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise">Item 5: Nil.</textarea></label><label class="block text-sm"><span class="block mb-1 font-medium text-ink">6. Amounts owing for the lot</span><textarea name="item_6" rows="2" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise">Item 6: Nil.</textarea></label><label class="block text-sm"><span class="block mb-1 font-medium text-ink">7. Sinking fund balance</span><textarea name="item_7" rows="2" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise">Item 7: Nil.</textarea></label><label class="block text-sm"><span class="block mb-1 font-medium text-ink">8. Insurance</span><textarea name="item_8" rows="2" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise">Item 8: Nil.</textarea></label><label class="block text-sm"><span class="block mb-1 font-medium text-ink">9. Caretaking service contractor and letting agent</span><textarea name="item_9" rows="2" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise">Item 9: Nil.</textarea></label><label class="block text-sm"><span class="block mb-1 font-medium text-ink">10. Building management statement</span><textarea name="item_10" rows="2" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise">Item 10: Nil.</textarea></label><label class="block text-sm"><span class="block mb-1 font-medium text-ink">11. Improvements</span><textarea name="item_11" rows="2" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise">Item 11: Nil.</textarea></label><label class="block text-sm"><span class="block mb-1 font-medium text-ink">12. Body corporate assets</span><textarea name="item_12" rows="2" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise">Item 12: Nil.</textarea></label><label class="block text-sm"><span class="block mb-1 font-medium text-ink">13. Embedded electricity network</span><textarea name="item_13" rows="2" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise">Item 13: Nil.</textarea></label><label class="block text-sm"><span class="block mb-1 font-medium text-ink">14. Layered arrangement of community titles schemes</span><textarea name="item_14" rows="2" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise">Item 14: Nil.</textarea></label><label class="block text-sm"><span class="block mb-1 font-medium text-ink">15. Latest statement of accounts</span><textarea name="item_15" rows="2" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise">Item 15: Nil.</textarea></label><label class="block text-sm"><span class="block mb-1 font-medium text-ink">16. Other matters in the approved form</span><textarea name="item_16" rows="2" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise">Item 16: Nil.</textarea></label></div><label class="flex items-start gap-2 text-sm text-ink"><input type="checkbox" class="mt-1" name="checkedAll"/><span>To issue: I have checked and completed every item against the body corporate&#x27;s records.</span></label><div class="flex flex-wrap justify-end gap-3"><button class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " type="submit" value="save" name="intent">Save draft</button><button class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-turquoise text-white hover:bg-turquoise/90 focus:ring-turquoise " type="submit" value="issue" name="intent">Save and issue</button></div></form><p class="mt-3 text-xs text-ink-muted">StrataVerze lays the certificate out itself, following the contents listed in Standard Module s 233AA(1). Check it against the current approved form.</p></div><div class="rounded-[var(--radius-card)] bg-white border border-line p-6 "><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">More</h2></div></div><div class="flex flex-wrap items-center gap-3"><button class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none text-ink-muted hover:text-ink hover:bg-muted focus:ring-turquoise " type="button">Refresh figures from the records</button><a href="/api/records/certificate/cccccccc-0000-4000-8000-000000000021?schemeId=aaaaaaaa-0000-4000-8000-000000000002" target="_blank" rel="noreferrer" class="text-sm text-turquoise underline">Preview (PDF, marked draft)</a><button class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none text-ink-muted hover:text-ink hover:bg-muted focus:ring-turquoise " type="button">Cancel draft</button></div></div></div><script>addEventListener("submit",function(a){if(!a.defaultPrevented){var b=a.target,d=a.submitter,c=b.action,e=d;if(d){var f=d.getAttribute("formAction");null!=f&&(c=f,e=null)}"javascript:throw new Error('React form unexpectedly submitted.')"===c&&(a.preventDefault(),a=new FormData(b,e),c=b.ownerDocument||b,(c.$$reactFormReplay=c.$$reactFormReplay||[]).push(b,d,a))}});</script>"`;
+
+exports[`QLD certificate pages > an issued certificate, paid, with the repeat fee 1`] = `"<div class="space-y-6 max-w-4xl"><div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8"><div><a class="inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink transition-colors mb-2" href="/adviser/schemes/aaaaaaaa-0000-4000-8000-000000000002/lots/bbbbbbbb-0000-4000-8000-000000000002/certificates"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="shrink-0" aria-hidden="true"><path d="M10 12L6 8L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>Certificates</a><h1 class="text-2xl font-bold font-heading text-ink mb-1">Body corporate certificate 3: Lot 3</h1><p class="text-sm text-ink-muted">Requested by Jo Citizen, received 2026-09-01.</p></div></div><div class="rounded-[var(--radius-card)] bg-white border border-line p-6 "><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Issued 2026-09-02</h2></div><div class="shrink-0"><span class="inline-flex items-center rounded-full h-[22px] px-2.5 text-[11px] font-medium whitespace-nowrap bg-[#E6F7F3] text-[#1A7A63] ">Issued</span></div></div><div class="space-y-3 text-sm"><a href="/api/records/certificate/cccccccc-0000-4000-8000-000000000023?schemeId=aaaaaaaa-0000-4000-8000-000000000002" target="_blank" rel="noreferrer" class="text-turquoise underline">Certificate (PDF)</a><p>Fee: $94.00 (a further certificate within the repeat period). Paid 2026-09-05.</p><p class="text-xs text-amber-700">Issued before StrataVerze kept each certificate as issued: its PDF is laid out again from the current wording and the building&#x27;s current details. Check it against the certificate given.</p><p class="text-xs text-ink-muted">Given by the body corporate. A body corporate certificate is conclusive evidence against the body corporate of the matters it states, except for a reasonably apparent error (BCCMA s 205).</p></div></div></div>"`;
+
+exports[`QLD certificate pages > are refused for a pack without the certificate 1`] = `
+{
+  "cancelled": {
+    "thrown": "NOT_FOUND",
+  },
+  "draft": {
+    "thrown": "NOT_FOUND",
+  },
+  "issued": {
+    "thrown": "NOT_FOUND",
+  },
+  "list": {
+    "thrown": "NOT_FOUND",
+  },
+}
+`;
+
+exports[`QLD certificate pages > the lot's certificates: a draft, issued unpaid, issued paid and cancelled 1`] = `"<div class="space-y-6 max-w-4xl"><div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8"><div><a class="inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink transition-colors mb-2" href="/adviser/schemes/aaaaaaaa-0000-4000-8000-000000000002/lots/bbbbbbbb-0000-4000-8000-000000000002"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="shrink-0" aria-hidden="true"><path d="M10 12L6 8L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>Lot</a><h1 class="text-2xl font-bold font-heading text-ink mb-1">Body corporate certificate: Lot 3</h1><p class="text-sm text-ink-muted">Body Corporate and Community Management Act 1997 (Qld) s 205(4). Approved form: BCCM Form 33 (form number from Queensland Government guidance).</p></div></div><div class="rounded-[var(--radius-card)] bg-white border border-line p-6 "><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Certificates for this lot</h2></div></div><div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="text-left text-xs text-ink-muted border-b border-line"><th class="py-2 pr-3">No.</th><th class="py-2 pr-3">Requested by</th><th class="py-2 pr-3">Received</th><th class="py-2 pr-3">Issued</th><th class="py-2 pr-3 text-right">Fee</th><th class="py-2 pr-3">Status</th></tr></thead><tbody><tr class="border-b border-line last:border-0"><td class="py-2 pr-3"><a class="text-turquoise underline" href="/adviser/schemes/aaaaaaaa-0000-4000-8000-000000000002/lots/bbbbbbbb-0000-4000-8000-000000000002/certificates/cccccccc-0000-4000-8000-000000000021">1</a></td><td class="py-2 pr-3">Jo Citizen</td><td class="py-2 pr-3 tabular-nums">2026-10-26</td><td class="py-2 pr-3 tabular-nums"></td><td class="py-2 pr-3 tabular-nums text-right"></td><td class="py-2 pr-3"><span class="inline-flex items-center rounded-full h-[22px] px-2.5 text-[11px] font-medium whitespace-nowrap bg-[#FFF3E0] text-[#A16207] ">Draft</span></td></tr><tr class="border-b border-line last:border-0"><td class="py-2 pr-3"><a class="text-turquoise underline" href="/adviser/schemes/aaaaaaaa-0000-4000-8000-000000000002/lots/bbbbbbbb-0000-4000-8000-000000000002/certificates/cccccccc-0000-4000-8000-000000000022">2</a></td><td class="py-2 pr-3">Jo Citizen</td><td class="py-2 pr-3 tabular-nums">2026-10-01</td><td class="py-2 pr-3 tabular-nums">2026-10-02</td><td class="py-2 pr-3 tabular-nums text-right">$109.00 due</td><td class="py-2 pr-3"><span class="inline-flex items-center rounded-full h-[22px] px-2.5 text-[11px] font-medium whitespace-nowrap bg-[#E6F7F3] text-[#1A7A63] ">Issued</span></td></tr><tr class="border-b border-line last:border-0"><td class="py-2 pr-3"><a class="text-turquoise underline" href="/adviser/schemes/aaaaaaaa-0000-4000-8000-000000000002/lots/bbbbbbbb-0000-4000-8000-000000000002/certificates/cccccccc-0000-4000-8000-000000000023">3</a></td><td class="py-2 pr-3">Jo Citizen</td><td class="py-2 pr-3 tabular-nums">2026-09-01</td><td class="py-2 pr-3 tabular-nums">2026-09-02</td><td class="py-2 pr-3 tabular-nums text-right">$94.00 paid</td><td class="py-2 pr-3"><span class="inline-flex items-center rounded-full h-[22px] px-2.5 text-[11px] font-medium whitespace-nowrap bg-[#E6F7F3] text-[#1A7A63] ">Issued</span></td></tr><tr class="border-b border-line last:border-0"><td class="py-2 pr-3"><a class="text-turquoise underline" href="/adviser/schemes/aaaaaaaa-0000-4000-8000-000000000002/lots/bbbbbbbb-0000-4000-8000-000000000002/certificates/cccccccc-0000-4000-8000-000000000024">4</a></td><td class="py-2 pr-3">Jo Citizen</td><td class="py-2 pr-3 tabular-nums">2026-08-01</td><td class="py-2 pr-3 tabular-nums"></td><td class="py-2 pr-3 tabular-nums text-right"></td><td class="py-2 pr-3"><span class="inline-flex items-center rounded-full h-[22px] px-2.5 text-[11px] font-medium whitespace-nowrap bg-[#F1F5F9] text-ink-muted ">Cancelled</span></td></tr></tbody></table></div></div><div class="rounded-[var(--radius-card)] bg-white border border-line p-6 "><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">New certificate</h2><p class="text-sm text-ink-muted mt-0.5">StrataVerze drafts each item from its records; you check and complete every item before issuing. Fee: $86.95 (76.75 fee units), or $73.90 (65.24 fee units) for a further certificate for the same person and lot within 3 months, at the amounts for 2026-27 (Body Corporate and Community Management (Standard Module) Regulation 2020 (Qld) s 233, in fee units. Dollar amounts: Queensland Government, Fees for accessing body corporate records (updated 1 Jul 2026)). It is recorded on issue and collected outside StrataVerze.</p></div></div><form class="space-y-3" action="javascript:throw new Error(&#x27;React form unexpectedly submitted.&#x27;)"><div class="grid gap-3 sm:grid-cols-2"><label class="text-sm "><span class="block mb-1 font-medium text-ink">Date the request was received</span><input type="date" max="2026-10-27" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise" required="" name="requestedOn" value="2026-10-27"/></label><label class="text-sm "><span class="block mb-1 font-medium text-ink">Who is asking</span><select name="requesterType" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise" required=""><option value="OWNER" selected="">Owner</option><option value="MORTGAGEE">Mortgagee</option><option value="BUYER">Buyer</option><option value="DISCLOSURE_RECIPIENT">Person given a seller&#x27;s disclosure statement</option><option value="PROPER_INTEREST">Person with a proper interest</option><option value="AGENT">Agent</option></select></label><label class="text-sm "><span class="block mb-1 font-medium text-ink">Their name</span><input type="text" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise" required="" name="requesterName" value=""/></label><label class="text-sm "><span class="block mb-1 font-medium text-ink">Their address</span><input type="text" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise" required="" name="requesterAddress" value=""/></label><label class="text-sm "><span class="block mb-1 font-medium text-ink">If authorised: who authorised them</span><select name="authorisedByType" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise"><option value="" selected="">None</option><option value="OWNER">Owner</option><option value="MORTGAGEE">Mortgagee</option><option value="BUYER">Buyer</option><option value="DISCLOSURE_RECIPIENT">Person given a seller&#x27;s disclosure statement</option><option value="PROPER_INTEREST">Person with a proper interest</option></select></label><label class="text-sm "><span class="block mb-1 font-medium text-ink">If authorised: that person&#x27;s name</span><input type="text" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise" name="authorisedByName" value=""/></label><label class="text-sm sm:col-span-2"><span class="block mb-1 font-medium text-ink">If authorised: that person&#x27;s address</span><input type="text" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise" name="authorisedByAddress" value=""/></label></div><div class="flex justify-end"><button class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " type="submit">Start draft</button></div></form></div></div><script>addEventListener("submit",function(a){if(!a.defaultPrevented){var b=a.target,d=a.submitter,c=b.action,e=d;if(d){var f=d.getAttribute("formAction");null!=f&&(c=f,e=null)}"javascript:throw new Error('React form unexpectedly submitted.')"===c&&(a.preventDefault(),a=new FormData(b,e),c=b.ownerDocument||b,(c.$$reactFormReplay=c.$$reactFormReplay||[]).push(b,d,a))}});</script>"`;
+
+exports[`the Queensland certificate PDF blocks > draft, an agent 1`] = `
+[
+  {
+    "kind": "heading",
+    "text": "Body corporate certificate (Body Corporate and Community Management Act 1997 (Qld) s 205(4))",
+  },
+  {
+    "kind": "box",
+    "lines": [
+      "This is a draft. It is not a certificate until it is issued.",
+    ],
+    "title": "Draft",
+    "tone": "warning",
+  },
+  {
+    "kind": "keyValues",
+    "rows": [
+      [
+        "Certificate number",
+        "3",
+      ],
+      [
+        "Date of certificate",
+        "Not yet issued",
+      ],
+      [
+        "Lot",
+        "Lot 3",
+      ],
+      [
+        "Community titles scheme",
+        "4567",
+      ],
+      [
+        "Requested by",
+        "Pat Agent (Agent), 3 Agent Rd",
+      ],
+      [
+        "Authorised by",
+        "Sam Buyer (Buyer), 1 Sea St",
+      ],
+    ],
+  },
+  {
+    "kind": "text",
+    "text": "The body corporate certifies the following for the lot.",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "1. Lot and plan type",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 1",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "2. Scheme name and regulation module",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 2",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "3. Body corporate manager and the person who keeps the records",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 3",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "4. Contributions, discounts and penalties",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 4",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "5. Lot entitlements (contribution schedule and interest schedule)",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 5",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "6. Amounts owing for the lot",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 6",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "7. Sinking fund balance",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 7",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "8. Insurance",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 8",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "9. Caretaking service contractor and letting agent",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 9",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "10. Building management statement",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 10",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "11. Improvements",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 11",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "12. Body corporate assets",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 12",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "13. Embedded electricity network",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 13",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "14. Layered arrangement of community titles schemes",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 14",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "15. Latest statement of accounts",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 15",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "16. Other matters in the approved form",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 16",
+  },
+  {
+    "kind": "spacer",
+  },
+  {
+    "kind": "box",
+    "lines": [
+      "Given by the body corporate",
+      "Signature: ____________   Name: ____________",
+      "Date: ____________",
+    ],
+    "title": "Execution",
+  },
+  {
+    "kind": "text",
+    "muted": true,
+    "size": 8,
+    "text": "A body corporate certificate is conclusive evidence against the body corporate of the matters it states, except for a reasonably apparent error (BCCMA s 205).",
+  },
+  {
+    "kind": "text",
+    "muted": true,
+    "size": 8,
+    "text": "Laid out by StrataVerze following the contents listed in Standard Module s 233AA(1).",
+  },
+]
+`;
+
+exports[`the Queensland certificate PDF blocks > draft, no agent 1`] = `
+[
+  {
+    "kind": "heading",
+    "text": "Body corporate certificate (Body Corporate and Community Management Act 1997 (Qld) s 205(4))",
+  },
+  {
+    "kind": "box",
+    "lines": [
+      "This is a draft. It is not a certificate until it is issued.",
+    ],
+    "title": "Draft",
+    "tone": "warning",
+  },
+  {
+    "kind": "keyValues",
+    "rows": [
+      [
+        "Certificate number",
+        "3",
+      ],
+      [
+        "Date of certificate",
+        "Not yet issued",
+      ],
+      [
+        "Lot",
+        "Lot 3",
+      ],
+      [
+        "Community titles scheme",
+        "4567",
+      ],
+      [
+        "Requested by",
+        "Sam Buyer (Buyer), 1 Sea St",
+      ],
+    ],
+  },
+  {
+    "kind": "text",
+    "text": "The body corporate certifies the following for the lot.",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "1. Lot and plan type",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 1",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "2. Scheme name and regulation module",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 2",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "3. Body corporate manager and the person who keeps the records",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 3",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "4. Contributions, discounts and penalties",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 4",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "5. Lot entitlements (contribution schedule and interest schedule)",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 5",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "6. Amounts owing for the lot",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 6",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "7. Sinking fund balance",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 7",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "8. Insurance",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 8",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "9. Caretaking service contractor and letting agent",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 9",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "10. Building management statement",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 10",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "11. Improvements",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 11",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "12. Body corporate assets",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 12",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "13. Embedded electricity network",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 13",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "14. Layered arrangement of community titles schemes",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 14",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "15. Latest statement of accounts",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 15",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "16. Other matters in the approved form",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 16",
+  },
+  {
+    "kind": "spacer",
+  },
+  {
+    "kind": "box",
+    "lines": [
+      "Given by the body corporate",
+      "Signature: ____________   Name: ____________",
+      "Date: ____________",
+    ],
+    "title": "Execution",
+  },
+  {
+    "kind": "text",
+    "muted": true,
+    "size": 8,
+    "text": "A body corporate certificate is conclusive evidence against the body corporate of the matters it states, except for a reasonably apparent error (BCCMA s 205).",
+  },
+  {
+    "kind": "text",
+    "muted": true,
+    "size": 8,
+    "text": "Laid out by StrataVerze following the contents listed in Standard Module s 233AA(1).",
+  },
+]
+`;
+
+exports[`the Queensland certificate PDF blocks > issued, an agent 1`] = `
+[
+  {
+    "kind": "heading",
+    "text": "Body corporate certificate (Body Corporate and Community Management Act 1997 (Qld) s 205(4))",
+  },
+  {
+    "kind": "keyValues",
+    "rows": [
+      [
+        "Certificate number",
+        "3",
+      ],
+      [
+        "Date of certificate",
+        "26 October 2026",
+      ],
+      [
+        "Lot",
+        "Lot 3",
+      ],
+      [
+        "Community titles scheme",
+        "4567",
+      ],
+      [
+        "Requested by",
+        "Pat Agent (Agent), 3 Agent Rd",
+      ],
+      [
+        "Authorised by",
+        "Sam Buyer (Buyer), 1 Sea St",
+      ],
+    ],
+  },
+  {
+    "kind": "text",
+    "text": "The body corporate certifies the following for the lot.",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "1. Lot and plan type",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 1",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "2. Scheme name and regulation module",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 2",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "3. Body corporate manager and the person who keeps the records",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 3",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "4. Contributions, discounts and penalties",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 4",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "5. Lot entitlements (contribution schedule and interest schedule)",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 5",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "6. Amounts owing for the lot",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 6",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "7. Sinking fund balance",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 7",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "8. Insurance",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 8",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "9. Caretaking service contractor and letting agent",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 9",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "10. Building management statement",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 10",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "11. Improvements",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 11",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "12. Body corporate assets",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 12",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "13. Embedded electricity network",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 13",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "14. Layered arrangement of community titles schemes",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 14",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "15. Latest statement of accounts",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 15",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "16. Other matters in the approved form",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 16",
+  },
+  {
+    "kind": "spacer",
+  },
+  {
+    "kind": "box",
+    "lines": [
+      "Given by the body corporate",
+      "Signature: ____________   Name: ____________",
+      "Date: ____________",
+    ],
+    "title": "Execution",
+  },
+  {
+    "kind": "text",
+    "muted": true,
+    "size": 8,
+    "text": "A body corporate certificate is conclusive evidence against the body corporate of the matters it states, except for a reasonably apparent error (BCCMA s 205).",
+  },
+  {
+    "kind": "text",
+    "muted": true,
+    "size": 8,
+    "text": "Laid out by StrataVerze following the contents listed in Standard Module s 233AA(1).",
+  },
+]
+`;
+
+exports[`the Queensland certificate PDF blocks > issued, no agent 1`] = `
+[
+  {
+    "kind": "heading",
+    "text": "Body corporate certificate (Body Corporate and Community Management Act 1997 (Qld) s 205(4))",
+  },
+  {
+    "kind": "keyValues",
+    "rows": [
+      [
+        "Certificate number",
+        "3",
+      ],
+      [
+        "Date of certificate",
+        "26 October 2026",
+      ],
+      [
+        "Lot",
+        "Lot 3",
+      ],
+      [
+        "Community titles scheme",
+        "4567",
+      ],
+      [
+        "Requested by",
+        "Sam Buyer (Buyer), 1 Sea St",
+      ],
+    ],
+  },
+  {
+    "kind": "text",
+    "text": "The body corporate certifies the following for the lot.",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "1. Lot and plan type",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 1",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "2. Scheme name and regulation module",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 2",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "3. Body corporate manager and the person who keeps the records",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 3",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "4. Contributions, discounts and penalties",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 4",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "5. Lot entitlements (contribution schedule and interest schedule)",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 5",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "6. Amounts owing for the lot",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 6",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "7. Sinking fund balance",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 7",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "8. Insurance",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 8",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "9. Caretaking service contractor and letting agent",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 9",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "10. Building management statement",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 10",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "11. Improvements",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 11",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "12. Body corporate assets",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 12",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "13. Embedded electricity network",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 13",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "14. Layered arrangement of community titles schemes",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 14",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "15. Latest statement of accounts",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 15",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "16. Other matters in the approved form",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 16",
+  },
+  {
+    "kind": "spacer",
+  },
+  {
+    "kind": "box",
+    "lines": [
+      "Given by the body corporate",
+      "Signature: ____________   Name: ____________",
+      "Date: ____________",
+    ],
+    "title": "Execution",
+  },
+  {
+    "kind": "text",
+    "muted": true,
+    "size": 8,
+    "text": "A body corporate certificate is conclusive evidence against the body corporate of the matters it states, except for a reasonably apparent error (BCCMA s 205).",
+  },
+  {
+    "kind": "text",
+    "muted": true,
+    "size": 8,
+    "text": "Laid out by StrataVerze following the contents listed in Standard Module s 233AA(1).",
+  },
+]
+`;
+
+exports[`the Queensland request fields and editor > are as recorded 1`] = `
+[
+  {
+    "defaultValue": "2026-10-20",
+    "label": "Date the request was received",
+    "max": "2026-10-27",
+    "name": "requestedOn",
+    "type": "date",
+  },
+  {
+    "defaultValue": "AGENT",
+    "label": "Who is asking",
+    "name": "requesterType",
+    "options": [
+      {
+        "label": "Owner",
+        "value": "OWNER",
+      },
+      {
+        "label": "Mortgagee",
+        "value": "MORTGAGEE",
+      },
+      {
+        "label": "Buyer",
+        "value": "BUYER",
+      },
+      {
+        "label": "Person given a seller's disclosure statement",
+        "value": "DISCLOSURE_RECIPIENT",
+      },
+      {
+        "label": "Person with a proper interest",
+        "value": "PROPER_INTEREST",
+      },
+      {
+        "label": "Agent",
+        "value": "AGENT",
+      },
+    ],
+    "type": "select",
+  },
+  {
+    "defaultValue": "Pat Agent",
+    "label": "Their name",
+    "name": "requesterName",
+    "type": "text",
+  },
+  {
+    "defaultValue": "",
+    "label": "Their address",
+    "name": "requesterAddress",
+    "type": "text",
+  },
+  {
+    "defaultValue": "BUYER",
+    "label": "If authorised: who authorised them",
+    "name": "authorisedByType",
+    "options": [
+      {
+        "label": "Owner",
+        "value": "OWNER",
+      },
+      {
+        "label": "Mortgagee",
+        "value": "MORTGAGEE",
+      },
+      {
+        "label": "Buyer",
+        "value": "BUYER",
+      },
+      {
+        "label": "Person given a seller's disclosure statement",
+        "value": "DISCLOSURE_RECIPIENT",
+      },
+      {
+        "label": "Person with a proper interest",
+        "value": "PROPER_INTEREST",
+      },
+    ],
+    "required": false,
+    "type": "select",
+  },
+  {
+    "defaultValue": "Sam Buyer",
+    "label": "If authorised: that person's name",
+    "name": "authorisedByName",
+    "required": false,
+    "type": "text",
+  },
+  {
+    "defaultValue": "",
+    "label": "If authorised: that person's address",
+    "name": "authorisedByAddress",
+    "required": false,
+    "type": "text",
+    "wide": true,
+  },
+]
+`;
+
+exports[`the Queensland request fields and editor > are as recorded 2`] = `
+[
+  {
+    "defaultValue": "2026-10-27",
+    "label": "Date the request was received",
+    "max": "2026-10-27",
+    "name": "requestedOn",
+    "type": "date",
+  },
+  {
+    "defaultValue": "OWNER",
+    "label": "Who is asking",
+    "name": "requesterType",
+    "options": [
+      {
+        "label": "Owner",
+        "value": "OWNER",
+      },
+      {
+        "label": "Mortgagee",
+        "value": "MORTGAGEE",
+      },
+      {
+        "label": "Buyer",
+        "value": "BUYER",
+      },
+      {
+        "label": "Person given a seller's disclosure statement",
+        "value": "DISCLOSURE_RECIPIENT",
+      },
+      {
+        "label": "Person with a proper interest",
+        "value": "PROPER_INTEREST",
+      },
+      {
+        "label": "Agent",
+        "value": "AGENT",
+      },
+    ],
+    "type": "select",
+  },
+  {
+    "defaultValue": "",
+    "label": "Their name",
+    "name": "requesterName",
+    "type": "text",
+  },
+  {
+    "defaultValue": "",
+    "label": "Their address",
+    "name": "requesterAddress",
+    "type": "text",
+  },
+  {
+    "defaultValue": "",
+    "label": "If authorised: who authorised them",
+    "name": "authorisedByType",
+    "options": [
+      {
+        "label": "Owner",
+        "value": "OWNER",
+      },
+      {
+        "label": "Mortgagee",
+        "value": "MORTGAGEE",
+      },
+      {
+        "label": "Buyer",
+        "value": "BUYER",
+      },
+      {
+        "label": "Person given a seller's disclosure statement",
+        "value": "DISCLOSURE_RECIPIENT",
+      },
+      {
+        "label": "Person with a proper interest",
+        "value": "PROPER_INTEREST",
+      },
+    ],
+    "required": false,
+    "type": "select",
+  },
+  {
+    "defaultValue": "",
+    "label": "If authorised: that person's name",
+    "name": "authorisedByName",
+    "required": false,
+    "type": "text",
+  },
+  {
+    "defaultValue": "",
+    "label": "If authorised: that person's address",
+    "name": "authorisedByAddress",
+    "required": false,
+    "type": "text",
+    "wide": true,
+  },
+]
+`;
+
+exports[`the Queensland request fields and editor > are as recorded 3`] = `"<form class="space-y-4" action="javascript:throw new Error(&#x27;React form unexpectedly submitted.&#x27;)"><div class="grid gap-3 sm:grid-cols-2"><label class="text-sm "><span class="block mb-1 font-medium text-ink">Date the request was received</span><input type="date" max="2026-10-27" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise" required="" name="requestedOn" value="2026-10-20"/></label><label class="text-sm "><span class="block mb-1 font-medium text-ink">Who is asking</span><select name="requesterType" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise" required=""><option value="OWNER">Owner</option><option value="MORTGAGEE">Mortgagee</option><option value="BUYER">Buyer</option><option value="DISCLOSURE_RECIPIENT">Person given a seller&#x27;s disclosure statement</option><option value="PROPER_INTEREST">Person with a proper interest</option><option value="AGENT" selected="">Agent</option></select></label><label class="text-sm "><span class="block mb-1 font-medium text-ink">Their name</span><input type="text" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise" required="" name="requesterName" value="Pat Agent"/></label><label class="text-sm "><span class="block mb-1 font-medium text-ink">Their address</span><input type="text" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise" required="" name="requesterAddress" value=""/></label><label class="text-sm "><span class="block mb-1 font-medium text-ink">If authorised: who authorised them</span><select name="authorisedByType" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise"><option value="">None</option><option value="OWNER">Owner</option><option value="MORTGAGEE">Mortgagee</option><option value="BUYER" selected="">Buyer</option><option value="DISCLOSURE_RECIPIENT">Person given a seller&#x27;s disclosure statement</option><option value="PROPER_INTEREST">Person with a proper interest</option></select></label><label class="text-sm "><span class="block mb-1 font-medium text-ink">If authorised: that person&#x27;s name</span><input type="text" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise" name="authorisedByName" value="Sam Buyer"/></label><label class="text-sm sm:col-span-2"><span class="block mb-1 font-medium text-ink">If authorised: that person&#x27;s address</span><input type="text" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise" name="authorisedByAddress" value=""/></label></div><div class="space-y-3"><label class="block text-sm"><span class="block mb-1 font-medium text-ink">1. Lot and plan type<span class="ml-2 text-xs font-normal text-amber-700">To complete</span></span><textarea name="item_1" rows="2" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise">Check and complete.</textarea></label><label class="block text-sm"><span class="block mb-1 font-medium text-ink">2. Scheme name and regulation module<span class="ml-2 text-xs font-normal text-amber-700">To complete</span></span><textarea name="item_2" rows="2" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise">Check and complete.</textarea></label><label class="block text-sm"><span class="block mb-1 font-medium text-ink">3. Body corporate manager and the person who keeps the records<span class="ml-2 text-xs font-normal text-amber-700">To complete</span></span><textarea name="item_3" rows="2" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise">Check and complete.</textarea></label></div><label class="flex items-start gap-2 text-sm text-ink"><input type="checkbox" class="mt-1" name="checkedAll"/><span>To issue: I have checked and completed every item against the body corporate&#x27;s records.</span></label><div class="flex flex-wrap justify-end gap-3"><button class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " type="submit" value="save" name="intent">Save draft</button><button class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-turquoise text-white hover:bg-turquoise/90 focus:ring-turquoise " type="submit" value="issue" name="intent">Save and issue</button></div></form><script>addEventListener("submit",function(a){if(!a.defaultPrevented){var b=a.target,d=a.submitter,c=b.action,e=d;if(d){var f=d.getAttribute("formAction");null!=f&&(c=f,e=null)}"javascript:throw new Error('React form unexpectedly submitted.')"===c&&(a.preventDefault(),a=new FormData(b,e),c=b.ownerDocument||b,(c.$$reactFormReplay=c.$$reactFormReplay||[]).push(b,d,a))}});</script>"`;
+
+exports[`the fee and deadline sentences > NSW 1`] = `
+{
+  "2025-06-30": {
+    "due": null,
+    "fee": "Fee: $109.00, or $94.00 for a further certificate for the lot within 3 months (Strata Schemes Management Regulation 2016 Sch 4 item 3, as consolidated on AustLII (in-force amount not confirmed)).",
+  },
+  "2025-07-01": {
+    "due": null,
+    "fee": "Fee: $109.00, or $94.00 for a further certificate for the lot within 3 months (Strata Schemes Management Regulation 2016 Sch 4 item 3, as consolidated on AustLII (in-force amount not confirmed)).",
+  },
+  "2026-06-30": {
+    "due": null,
+    "fee": "Fee: $109.00, or $94.00 for a further certificate for the lot within 3 months (Strata Schemes Management Regulation 2016 Sch 4 item 3, as consolidated on AustLII (in-force amount not confirmed)).",
+  },
+  "2026-07-01": {
+    "due": null,
+    "fee": "Fee: $109.00, or $94.00 for a further certificate for the lot within 3 months (Strata Schemes Management Regulation 2016 Sch 4 item 3, as consolidated on AustLII (in-force amount not confirmed)).",
+  },
+  "2026-10-23": {
+    "due": null,
+    "fee": "Fee: $109.00, or $94.00 for a further certificate for the lot within 3 months (Strata Schemes Management Regulation 2016 Sch 4 item 3, as consolidated on AustLII (in-force amount not confirmed)).",
+  },
+  "2026-10-24": {
+    "due": null,
+    "fee": "Fee: $109.00, or $94.00 for a further certificate for the lot within 3 months (Strata Schemes Management Regulation 2016 Sch 4 item 3, as consolidated on AustLII (in-force amount not confirmed)).",
+  },
+  "2026-12-24": {
+    "due": null,
+    "fee": "Fee: $109.00, or $94.00 for a further certificate for the lot within 3 months (Strata Schemes Management Regulation 2016 Sch 4 item 3, as consolidated on AustLII (in-force amount not confirmed)).",
+  },
+  "2027-06-30": {
+    "due": null,
+    "fee": "Fee: $109.00, or $94.00 for a further certificate for the lot within 3 months (Strata Schemes Management Regulation 2016 Sch 4 item 3, as consolidated on AustLII (in-force amount not confirmed)).",
+  },
+  "2027-07-01": {
+    "due": null,
+    "fee": "Fee: $109.00, or $94.00 for a further certificate for the lot within 3 months (Strata Schemes Management Regulation 2016 Sch 4 item 3, as consolidated on AustLII (in-force amount not confirmed)).",
+  },
+  "2028-02-28": {
+    "due": null,
+    "fee": "Fee: $109.00, or $94.00 for a further certificate for the lot within 3 months (Strata Schemes Management Regulation 2016 Sch 4 item 3, as consolidated on AustLII (in-force amount not confirmed)).",
+  },
+}
+`;
+
+exports[`the fee and deadline sentences > Queensland 1`] = `
+{
+  "2025-06-30": {
+    "due": "Give it within 5 business days after the written request and fee: by 2025-07-07. This skips weekends but not public holidays, so check.",
+    "fee": "Fee: 76.75 fee units, or 65.24 for a further certificate for the same person and lot within 3 months (Body Corporate and Community Management (Standard Module) Regulation 2020 (Qld) s 233, in fee units. Dollar amounts: Queensland Government, Fees for accessing body corporate records (updated 1 Jul 2026)). StrataVerze does not hold the dollar amounts for this financial year yet, so a certificate cannot be issued until they are added.",
+  },
+  "2025-07-01": {
+    "due": "Give it within 5 business days after the written request and fee: by 2025-07-08. This skips weekends but not public holidays, so check.",
+    "fee": "Fee: 76.75 fee units, or 65.24 for a further certificate for the same person and lot within 3 months (Body Corporate and Community Management (Standard Module) Regulation 2020 (Qld) s 233, in fee units. Dollar amounts: Queensland Government, Fees for accessing body corporate records (updated 1 Jul 2026)). StrataVerze does not hold the dollar amounts for this financial year yet, so a certificate cannot be issued until they are added.",
+  },
+  "2026-06-30": {
+    "due": "Give it within 5 business days after the written request and fee: by 2026-07-07. This skips weekends but not public holidays, so check.",
+    "fee": "Fee: 76.75 fee units, or 65.24 for a further certificate for the same person and lot within 3 months (Body Corporate and Community Management (Standard Module) Regulation 2020 (Qld) s 233, in fee units. Dollar amounts: Queensland Government, Fees for accessing body corporate records (updated 1 Jul 2026)). StrataVerze does not hold the dollar amounts for this financial year yet, so a certificate cannot be issued until they are added.",
+  },
+  "2026-07-01": {
+    "due": "Give it within 5 business days after the written request and fee: by 2026-07-08. This skips weekends but not public holidays, so check.",
+    "fee": "Fee: $86.95 (76.75 fee units), or $73.90 (65.24 fee units) for a further certificate for the same person and lot within 3 months, at the amounts for 2026-27 (Body Corporate and Community Management (Standard Module) Regulation 2020 (Qld) s 233, in fee units. Dollar amounts: Queensland Government, Fees for accessing body corporate records (updated 1 Jul 2026)).",
+  },
+  "2026-10-23": {
+    "due": "Give it within 5 business days after the written request and fee: by 2026-10-30. This skips weekends but not public holidays, so check.",
+    "fee": "Fee: $86.95 (76.75 fee units), or $73.90 (65.24 fee units) for a further certificate for the same person and lot within 3 months, at the amounts for 2026-27 (Body Corporate and Community Management (Standard Module) Regulation 2020 (Qld) s 233, in fee units. Dollar amounts: Queensland Government, Fees for accessing body corporate records (updated 1 Jul 2026)).",
+  },
+  "2026-10-24": {
+    "due": "Give it within 5 business days after the written request and fee: by 2026-10-30. This skips weekends but not public holidays, so check.",
+    "fee": "Fee: $86.95 (76.75 fee units), or $73.90 (65.24 fee units) for a further certificate for the same person and lot within 3 months, at the amounts for 2026-27 (Body Corporate and Community Management (Standard Module) Regulation 2020 (Qld) s 233, in fee units. Dollar amounts: Queensland Government, Fees for accessing body corporate records (updated 1 Jul 2026)).",
+  },
+  "2026-12-24": {
+    "due": "Give it within 5 business days after the written request and fee: by 2026-12-31. This skips weekends but not public holidays, so check.",
+    "fee": "Fee: $86.95 (76.75 fee units), or $73.90 (65.24 fee units) for a further certificate for the same person and lot within 3 months, at the amounts for 2026-27 (Body Corporate and Community Management (Standard Module) Regulation 2020 (Qld) s 233, in fee units. Dollar amounts: Queensland Government, Fees for accessing body corporate records (updated 1 Jul 2026)).",
+  },
+  "2027-06-30": {
+    "due": "Give it within 5 business days after the written request and fee: by 2027-07-07. This skips weekends but not public holidays, so check.",
+    "fee": "Fee: $86.95 (76.75 fee units), or $73.90 (65.24 fee units) for a further certificate for the same person and lot within 3 months, at the amounts for 2026-27 (Body Corporate and Community Management (Standard Module) Regulation 2020 (Qld) s 233, in fee units. Dollar amounts: Queensland Government, Fees for accessing body corporate records (updated 1 Jul 2026)).",
+  },
+  "2027-07-01": {
+    "due": "Give it within 5 business days after the written request and fee: by 2027-07-08. This skips weekends but not public holidays, so check.",
+    "fee": "Fee: 76.75 fee units, or 65.24 for a further certificate for the same person and lot within 3 months (Body Corporate and Community Management (Standard Module) Regulation 2020 (Qld) s 233, in fee units. Dollar amounts: Queensland Government, Fees for accessing body corporate records (updated 1 Jul 2026)). StrataVerze does not hold the dollar amounts for this financial year yet, so a certificate cannot be issued until they are added.",
+  },
+  "2028-02-28": {
+    "due": "Give it within 5 business days after the written request and fee: by 2028-03-06. This skips weekends but not public holidays, so check.",
+    "fee": "Fee: 76.75 fee units, or 65.24 for a further certificate for the same person and lot within 3 months (Body Corporate and Community Management (Standard Module) Regulation 2020 (Qld) s 233, in fee units. Dollar amounts: Queensland Government, Fees for accessing body corporate records (updated 1 Jul 2026)). StrataVerze does not hold the dollar amounts for this financial year yet, so a certificate cannot be issued until they are added.",
+  },
+}
+`;

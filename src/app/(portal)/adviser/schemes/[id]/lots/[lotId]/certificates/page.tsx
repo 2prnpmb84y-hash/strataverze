@@ -9,6 +9,7 @@ import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { createCertificateAction } from "@/lib/actions/records";
 import { requesterFields } from "@/lib/records/requester-fields";
 import { certificateFeeText } from "@/lib/records/certificate-text";
+import { certificateRulesOffered } from "@/lib/records/offered";
 import { formatLotLabel } from "@/lib/format";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -34,7 +35,7 @@ export default async function LotCertificatesPage({ params }: { params: Promise<
     schemeToday(id),
     db.orm.public.SaleCertificate.where((c) => c.lotId.eq(lotId)).orderBy((c) => c.number.desc()).limit(200).all(),
   ]);
-  if (!rules.FEATURES.strataInformationCertificate && !rules.FEATURES.bodyCorporateCertificate) notFound();
+  if (!certificateRulesOffered(rules.FEATURES)) notFound();
   const c = needRule(rules, "CERTIFICATE");
   const base = `/adviser/schemes/${id}/lots/${lotId}/certificates`;
   return (
