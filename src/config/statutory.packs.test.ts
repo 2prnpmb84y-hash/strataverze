@@ -788,6 +788,146 @@ describe("Western Australia pack (pending)", () => {
   });
 });
 
+describe("South Australian pack (pending, stage 1)", () => {
+  const pack = PENDING_RULE_PACKS.SA;
+  const sa = pack.rules;
+  const WITH_VALUE = ["CONFIRMED", "STRATAVERZE"];
+  type Checked = { value: unknown; status: string; source: string; note?: string };
+  const checkedValue = (v: Checked, where: string) => {
+    // A value is held only where it is confirmed or a StrataVerze choice; anything else has none and says why.
+    if (v.value != null) expect(WITH_VALUE, where).toContain(v.status);
+    else {
+      expect(["NOT_CONFIRMED", "GUIDANCE"], where).toContain(v.status);
+      expect(v.note?.length ?? 0, where).toBeGreaterThan(10);
+    }
+    expect(v.source.length, where).toBeGreaterThan(5);
+  };
+
+  it("is a draft at 2026.10.1, not signed off, with no decisions and the points listed for review", () => {
+    expect(pack.code).toBe("AU-SA");
+    expect(pack.state).toBe("SA");
+    expect(pack.version).toBe("2026.10.1");
+    expect(pack.status).toBe("DRAFT");
+    expect(pack.reviewedOn).toBeNull();
+    expect(pack.reviewer).toBe("Matthew Wrigley");
+    expect(sa.DECISIONS).toHaveLength(0);
+    expect(sa.NOT_CONFIRMED.length).toBeGreaterThan(0);
+    expect(new Set(sa.FOR_REVIEW.map((p) => p.key)).size).toBe(sa.FOR_REVIEW.length);
+    for (const p of sa.FOR_REVIEW) expect(p.point.length, p.key).toBeGreaterThan(20);
+    expect(sa.FOR_REVIEW.find((p) => p.key === "COMMUNITY_SCHEMES_SUPPORTED")?.proposedDecision).toMatch(/^Launch with strata schemes only/);
+  });
+
+  it("is covered by the pending pack loop and the shared fund and schedule checks", () => {
+    expect(Object.values(PENDING_RULE_PACKS)).toContain(pack);
+    expect(packs.map(([code]) => code)).toContain("AU-SA");
+  });
+
+  it("supports strata schemes only, holding community schemes apart", () => {
+    expect(sa.SCHEME_TYPE.options.map((o) => [o.value, o.supported])).toEqual([
+      ["STRATA_TITLES", true],
+      ["COMMUNITY_TITLES", false],
+    ]);
+    expect(sa.COMMUNITY_SCHEMES.contributionNotice.minimumNoticeDays).toBe(14);
+    expect(sa.COMMUNITY_SCHEMES.funds.administrativeAndSinkingRequired).toBe(true);
+    expect(sa.COMMUNITY_SCHEMES.voting.debtorsMayVoteOn).toEqual([]);
+  });
+
+  it("holds unit entitlement on each unit, the only schedule, with an aggregate of 10,000", () => {
+    expect(sa.ENTITLEMENT_SCHEDULES.map((s) => [s.key, s.onLot, s.decides])).toEqual([["UNIT_ENTITLEMENT", true, ["CONTRIBUTIONS", "COMMON_PROPERTY_SHARE", "TERMINATION_INTEREST"]]]);
+    expect(sa.UNIT_ENTITLEMENT_RULES.aggregate).toBe(10_000);
+  });
+
+  it("gives every fund by scheme type: the administrative fund as a ledger choice for a strata scheme, the sinking fund optional", () => {
+    expect(sa.FUND_CATALOGUE.every((f) => f.required === false)).toBe(true);
+    const rules = (key: string) => sa.FUND_CATALOGUE.find((f) => f.key === key)?.requiredWhen?.rules.map((r) => [r.need, r.when, r.status]);
+    expect(rules("ADMINISTRATIVE")).toEqual([
+      ["REQUIRED", { selector: "schemeType", in: ["COMMUNITY_TITLES"] }, "CONFIRMED"],
+      ["REQUIRED", { selector: "schemeType", in: ["STRATA_TITLES"] }, "STRATAVERZE"],
+    ]);
+    expect(rules("SINKING")).toEqual([
+      ["REQUIRED", { selector: "schemeType", in: ["COMMUNITY_TITLES"] }, "CONFIRMED"],
+      ["OPTIONAL", { selector: "schemeType", in: ["STRATA_TITLES"] }, "CONFIRMED"],
+    ]);
+  });
+
+  it("checks every notice value, and refuses every notice until the timing is decided", () => {
+    const c = sa.NOTICE_RULES.checked!;
+    for (const [k, v] of Object.entries({ minimumNoticeDays: c.minimumNoticeDays, issueDaysBeforeDue: c.issueDaysBeforeDue, dueDateMayMove: c.dueDateMayMove, ...c.noticeMode })) checkedValue(v as Checked, k);
+    expect(c.maximumNoticeDays).toBeNull();
+    expect(c.requiredContents).toEqual([]);
+    expect(c.form).toBeNull();
+    expect(sa.NOTICE_RULES.hardship).toBeNull();
+    expect(sa.NOTICE_RULES.urgentNoticeDays).toBeNull();
+    // Nothing is decided, so nothing has a value.
+    for (const v of [c.minimumNoticeDays, c.issueDaysBeforeDue, c.dueDateMayMove]) expect(v.value).toBeNull();
+    const points = noticeRuleProblems(sa.NOTICE_RULES, { ledgerFund: "ADMINISTRATIVE" }).map((p) => p.point);
+    expect(points).toEqual(["minimumNoticeDays", "issueDaysBeforeDue", "dueDateMayMove", "noticeMode"]);
+  });
+
+  it("checks every late charge value: no interest by default, up to 15% simple by ordinary resolution, accrual not confirmed", () => {
+    const lc = sa.LATE_CHARGE;
+    expect(lc.method).toBe("ANNUAL_RATE");
+    expect(lc.defaultMode).toBe("NONE");
+    expect(lc.annualRatePercent).toBeNull();
+    const a = lc.annual!;
+    expect(a.statutoryRatePercent).toBeNull();
+    expect(a.waiver).toBeNull();
+    const r = a.resolvedRate!;
+    for (const [k, v] of Object.entries({ resolution: r.resolution, minPercent: r.minPercent, maxPercent: r.maxPercent, ...a.accrual })) checkedValue(v as Checked, k);
+    expect(r.resolution.value).toEqual({ kind: "ORDINARY", words: "an ordinary resolution" });
+    expect(r.maxPercent).toMatchObject({ value: 15, status: "CONFIRMED" });
+    expect(r.maxInclusive).toBe(true);
+    expect(a.accrual.simple).toMatchObject({ value: true, status: "CONFIRMED" });
+    for (const v of [a.accrual.from, a.accrual.graceMonths, a.accrual.daysInYear, r.minPercent]) expect(v.status).toBe("NOT_CONFIRMED");
+  });
+
+  it("has no statutory payment order, and gives none until one is decided", () => {
+    expect(sa.PAYMENT_ALLOCATION.statutoryOrder).toBeNull();
+    expect("PAYMENT_ALLOCATION_ORDER" in sa).toBe(false);
+  });
+
+  it("holds the meeting, resolution and debtor rules of the STA", () => {
+    expect(sa.MEETINGS.noticeDays).toBe(14);
+    expect(sa.MEETINGS.agm).toEqual({ everyCalendarYear: true, maxMonthsAfterLast: 15 });
+    expect(sa.MEETINGS.quorum.fractionOfUnits).toBe(1 / 2);
+    expect(sa.RESOLUTIONS.SPECIAL.againstAtMostPercentOfTotalVotes).toBe(25);
+    expect(sa.RESOLUTIONS.SPECIAL.threeUnits.againstAtMostVotes).toBe(1);
+    expect(sa.VOTING.debtorsMayVoteOn).toEqual(["UNANIMOUS"]);
+    expect(sa.VOTING.proxy.maxMonths).toBe(12);
+    expect(sa.MANAGEMENT_COMMITTEE.required).toBe(false);
+  });
+
+  it("holds the information fees and insurance minimums from the regulations", () => {
+    expect(sa.INFORMATION_ON_APPLICATION.withinBusinessDays).toBe(5);
+    expect(sa.INFORMATION_ON_APPLICATION.feesCents).toEqual({ statement: { owner: 0, other: 5_000 }, copies: { owner: 1_000, other: 5_000, otherWithInsurancePolicies: 7_000 }, inspection: { owner: 0, other: 1_000 } });
+    expect(sa.INSURANCE.publicLiabilityMinCents).toBe(1_000_000_000);
+    expect(sa.AUDIT.corporationAccountsAuditRequired).toBe(false);
+    expect(sa.RECORDS_RETENTION_PERIODS.years.minuteBooks).toBe(30);
+  });
+
+  it("holds the reform Bill as not law, and only in-force values as dated rules", () => {
+    for (const reform of sa.PENDING_REFORMS) expect(reform.inForce).toBe(false);
+    expect(sa.PENDING_REFORMS.find((r) => r.key === "BILL_2024_COMMUNITY_AND_STRATA_TITLES")?.legalStatus).toBe("NOT_LAW");
+    for (const r of Object.values(sa.DATED_RULES)) for (const v of r.versions) expect(v).toMatchObject({ legalStatus: "IN_FORCE", from: "2026-09-01", status: "CONFIRMED" });
+  });
+
+  it("switches every NSW workflow off", () => {
+    expect(Object.keys(sa.FEATURES).sort()).toEqual(Object.keys(RULE_PACKS.NSW.rules.FEATURES).sort());
+    expect(Object.values(sa.FEATURES).every((on) => on === false)).toBe(true);
+  });
+
+  it("gives every shared term", () => {
+    const shared = Object.keys(RULE_PACKS.NSW.rules.TERMINOLOGY).filter((k) => k !== "source");
+    for (const k of shared) expect(sa.TERMINOLOGY, k).toHaveProperty(k);
+    expect(sa.TERMINOLOGY.jurisdictionShort).toBe("SA");
+    expect(sa.TERMINOLOGY.bodyCorporateName).toBe("Strata Corporation No. {plan} Incorporated");
+  });
+
+  it("is the rules recorded for review", () => {
+    expect(sa).toMatchSnapshot();
+  });
+});
+
 describe("the checked notice rules of the pending packs (stage 2, PR 6a)", () => {
   const pending = [PENDING_RULE_PACKS.ACT, PENDING_RULE_PACKS.VIC, PENDING_RULE_PACKS.WA] as const;
   const STATUSES_WITH_VALUE = ["CONFIRMED", "STRATAVERZE"];
