@@ -49,6 +49,14 @@ export const RATE_LIMITS = {
   /** Authenticator code checks for one person. */
   mfaVerify: { limit: 5, windowMs: 15 * MINUTE },
   invitationAccept: { limit: 10, windowMs: 15 * MINUTE },
+  /** Invitations sent by one person (S2a). Each can create an account and sends an email. */
+  invitationSend: { limit: 60, windowMs: 60 * MINUTE },
+  /** Invitations sent to one address for one building (S2a): no flooding someone's inbox. */
+  invitationRecipient: { limit: 5, windowMs: 12 * 60 * MINUTE },
+  /** /join link checks and uses from one address (S2a). */
+  joinLinkAddress: { limit: 30, windowMs: 15 * MINUTE },
+  /** Uses of one /join link (S2a), whatever the address. */
+  joinLinkToken: { limit: 10, windowMs: 15 * MINUTE },
   search: { limit: 60, windowMs: MINUTE },
 } as const satisfies Record<string, { limit: number; windowMs: number }>;
 

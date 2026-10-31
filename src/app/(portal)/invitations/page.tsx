@@ -1,4 +1,6 @@
 import { getCurrentProfile } from "@/lib/queries/profiles";
+import { getCurrentSession } from "@/lib/auth/current-session";
+import { ADDRESS_UNCONFIRMED, invitationAddressOf } from "@/lib/invitations/invitee-address";
 import { getPendingInvitationsForEmail } from "@/lib/queries/invitations";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
@@ -11,7 +13,10 @@ export default async function InvitationsPage() {
   const profile = await getCurrentProfile();
   if (!profile) return null;
 
-  const invitations = await getPendingInvitationsForEmail(profile.email);
+  // Listed by the session's Auth address, and only while the profile's copy
+  // agrees with it (review finding L7; keeping them in step is S2e).
+  const address = invitationAddressOf(await getCurrentSession());
+  const invitations = address ? await getPendingInvitationsForEmail(address) : [];
 
   // Fetch scheme names for each invitation
   const schemeIds = [...new Set(invitations.map((i) => i.schemeId))];
@@ -40,7 +45,15 @@ export default async function InvitationsPage() {
         description="Pending invitations to join schemes."
       />
 
-      {invitations.length === 0 ? (
+      {!address ? (
+        // Signed in, but the profile's copy of the address differs from the
+        // Auth address: nothing is listed, and the person is told why (L-d).
+        <Card>
+          <div className="p-6 text-center" role="alert">
+            <p className="text-sm text-ink">{ADDRESS_UNCONFIRMED}</p>
+          </div>
+        </Card>
+      ) : invitations.length === 0 ? (
         <Card>
           <div className="p-6 text-center">
             <p className="text-sm text-ink-muted">
