@@ -333,6 +333,49 @@ Each stage is one PR, green on lint, type-check, tests and build. Production dat
   - **Alerts.** A failed check shows on the admin page only, until email exists.
   - **Specific events.** Of 212 privileged actions, 97 have no specific event, only the generic "action taken" one.
 
+## Invitations that create the account (stage S2a, built 31 Oct, not deployed)
+
+S2 is shipped in slices. S2a is the first; S2b (supplier sign-up, then closing open sign-up), S2c (change of ownership and 30 days read-only), S2d (committee offices, Adviser invitation) and S2e (lifecycle emails, account disable) follow.
+
+- **Who invites.** The building's Adviser (`members.manage`) or a platform admin, with a fresh authenticator check, for owners (tied to a lot of that building), committee members and accountants. Adviser invitations wait for S2d. Checked in the server action (`src/lib/invitations/authorise.ts`).
+- **The account.** If the address has no account, the server creates one with the Supabase admin API (`auth.admin.createUser`), unconfirmed and with no password. Nobody can sign in to it until the invitee sets a password from the link (`src/lib/invitations/accounts.ts`).
+- **The link.** `/join#<token>`: 32 random bytes, stored only as a SHA-256 (`invitations.token_hash`). The token sits in the URL fragment, so it never reaches server logs. It works once (claimed by a conditional update), lasts 14 days, and sending the invitation again replaces it.
+- **Using it.**
+  - Someone new chooses a password. The server checks that the account is the one it made for that invitation, carries the invited address and has never been set up. It then sets the password (`auth.admin.updateUserById`), accepts and signs them in.
+  - Someone with an account signs in with the invited address and accepts. The Invitations page works as before.
+- **No account enumeration.** The inviter sees the same reply, and the invitee gets the same email, whether or not the address had an account. Account creation is logged without the building, so the Adviser's security log does not show it.
+- **Limits.** These are counted in the database:
+  - 60 invitations an hour per inviter;
+  - 5 per 12 hours per address and building;
+  - 30 link checks per 15 minutes per IP address;
+  - 10 uses per 15 minutes per link.
+- **Database.** These are written but **not applied**:
+  - `20261129_invitation_link_tokens.sql`, applied before deploy;
+  - `20261130_invitation_plain_token_drop.sql`, applied after deploy;
+  - the rolled-back rehearsal in `prisma/rehearsals/`.
+- **Not changed.** Open sign-up stays on until S2b. `owner-assignment` stays until S2c or S2d. The change-of-owner invitation still uses the old email, which needs an account, until S2c routes it through S2a.
+- **Review fixes (31 Oct, before deploy).** An independent review found no critical or high issues. Fixed:
+  - **M1.** An Auth user that already carries the address but was never confirmed or signed in to (one made through open sign-up by someone else, say) is replaced for the invitation (see M-1 of the second review). The link holder then sets the password. Confirmed or signed-in users stay "existing". The lookup reads `auth.users` read-only (`src/lib/invitations/auth-users.ts`), then checks again through the admin API.
+  - **L1.** Security events that carry the building never say whether the invitee's account was new or existing; the detail is in `invitation.link_detail`, which has no building.
+  - **L2.** A password is set one account at a time: every pending invitation for the account is locked (in id order, 5 second lock timeout) while the link is claimed, the password set and the invitation accepted, in one transaction. A revoke waits, then finds the invitation accepted.
+  - **L4.** Part 2 is applied only after a soak period of at least 7 days; its header gives the SQL to re-add `token` before any rollback to a pre-S2a build, and the rehearsal runs it.
+  - **L5.** The `/join` page forgets the stored link on use, on a dead link and on hand-off to sign-in.
+  - **L6.** Only plain ASCII addresses can be invited.
+  - **L7.** `/join` and the Invitations page match the session's Auth address (`getUser`), and refuse if the profile's copy differs. Keeping `profiles.email` in step with Auth is for S2e.
+- **Second review fixes (31 Oct, before deploy).** No critical or high issues. Fixed:
+  - **M-1.** A never-confirmed Auth user found for the invited address is deleted and made again, not adopted as it is, so its sign-up password, `user_metadata`, pending confirmation token, identities and any other tokens all go. This logic **depends on Supabase's "Confirm email" being ON** (checked ON in production on 31 Oct 2026): with it off, a sign-up is confirmed at once and its password works. Never switch it off while open sign-up is on.
+  - **M-2.** Auth admin requests in the invitation code give up after 8 seconds. The set-up transaction sets `lock_timeout` 5s, `statement_timeout` 10s and `idle_in_transaction_session_timeout` 20s. An Auth error when setting the password is treated as ambiguous: the account is read again before the person is told anything. Revoke, resend and decline wait at most 5 seconds for the invitation's lock.
+  - **L-a to L-d.** Building-scoped `invitation.link` events always say "denied"; the real outcome is in the detail event. The lookup also ignores SSO, anonymous, soft-deleted and banned users and counts phone confirmation. When the profile's address differs from the Auth address, `/join` and the Invitations page say so instead of showing nothing.
+  - **Resend** (decided by Matthew Wrigley, 31 Oct 2026) changes only an invitation still in the status it read, so one that becomes accepted while it is being sent again is never reopened. Each resend is a new link and is logged (`invitation.sent`, with `resent` and the previous status). The Adviser may send a declined invitation again: that explicit resend reopens it. An accepted invitation is reopened only when the access it gave has ended.
+  - **Migration 20261129** adds a foreign key that holds a SHARE ROW EXCLUSIVE lock on `auth.users` while it runs: apply it, and run the rehearsal, at low traffic.
+- **Residual risks (S2a).**
+  - If the database commit fails after Auth has set the password (a lost connection), the account has a password and the invitation stays pending with its link unused: the person signs in and accepts from Invitations. A revoke in that window leaves an account with no invitation and no building access.
+  - If acceptance itself fails inside the set-up (it should not for a new profile), the set-up still commits, and a later revoke leaves the account without the invitation.
+  - Until S2b switches off sign-up, someone can make an unconfirmed account for another person's address. If the real owner confirms it from Supabase's own sign-up email before any invitation is sent, the sign-up password works and the account counts as existing. After an invitation is sent, the account has been replaced and that email no longer works. Turning off sign-up closes this.
+  - Replacing a planted account is a delete then a create. If someone signs up with the address in between, the address counts as existing.
+  - If Postgres ends the set-up transaction for being idle (Auth slower than 20 seconds overall), the password may already be set; the person is sent to sign in, and the invitation waits under Invitations.
+  - L3 (timing, and the exact-match search) is left for the branch that narrows the search.
+
 ## Storage design (stage S3, as built 23 Oct)
 
 **Uploads, in three steps** (`src/lib/storage/uploads.ts`):
@@ -428,7 +471,7 @@ CAPTCHA (Attack Protection) is off. See Decisions needed.
 - **Payment policy loosening.** A treasurer (not also an adviser) can loosen the payment policy alone. A second-approver step is a follow-up.
 - **Contractor identity after approval.** An approved contractor can still change its company name, phone and email without re-review.
 - **Owner assignment.** An adviser can assign any existing profile as owner of a lot without an invitation (replaced by the invitation flow in S2).
-- **Who may make someone a lot owner (decided 31 Oct 2026, findings S-01, H-1, L-1).** Assigning an owner directly, and the profile search behind it, is for the scheme's Adviser or a platform admin only (S-01, L-1). A committee member may still record a change of owner, but not to any address on their own account, and it is held (`owner_change_requests`, migration 20261201) until the Adviser, or a platform admin where there is no Adviser, confirms it with a fresh authenticator check: until then the roll, the outgoing owner's access and committee seat are unchanged and no invitation exists (H-1). Removing an owner is Adviser or admin only too (M1). When a change applies, the outgoing owner's access to that lot ends and is never moved to another lot by the roll's text; the Adviser assigns them to any other lot they own (review H1).
+- **Who may make someone a lot owner (decided 31 Oct 2026, findings S-01, H-1, L-1).** Assigning an owner directly, and the profile search behind it, is for the scheme's Adviser or a platform admin only (S-01, L-1). A committee member may still record a change of owner, but not to any address on their own account, and it is held (`owner_change_requests`, migration 20261201) until the Adviser, or a platform admin where there is no Adviser, confirms it with a fresh authenticator check: until then the roll, the outgoing owner's access and committee seat are unchanged and no invitation exists (H-1). Removing an owner is Adviser or admin only too (M1). When a change applies, the outgoing owner's access to that lot ends and is never moved to another lot by the roll's text; the Adviser assigns them to any other lot they own (review H1). The new owner's invitation is an S2a invitation (merge of S2a, 31 Oct 2026): a fresh one-time `/join#<token>` link stored only as its SHA-256, for a new, reused or reopened invitation alike, under S2a's resend rules (declined, and accepted only where the access has ended). The change's transaction writes only the invitation row and its hash; the invitee's account (Auth admin calls), S2a's sending limits and events, and the email follow after the commit (`deliverInvitationLink`), so no Auth call is made while the lot's lock is held. Accepting it restarts an ended owner access through `restartOwnerAccess`, which keeps the earlier lot in `owner_lot_history`.
 - **Password change.** Changing a password does not ask for the current password. It is done from a reset link only. Since S5, any password change signs out every session, including the one that made it.
 - **Notifications.** Nobody is yet told by email when their phone number, authenticators or sessions change, or when an admin resets their MFA. This waits on email (S2).
 - **Durable record of admin actions.** Admin MFA resets and admin sign-outs are only in the short-lived server log until the audit log (S6). The reason typed by the admin is not logged, because it can hold personal details.

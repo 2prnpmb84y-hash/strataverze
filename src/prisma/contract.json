@@ -10754,6 +10754,13 @@
                   "kind": "scalar"
                 }
               },
+              "accountAuthId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
               "createdAt": {
                 "nullable": false,
                 "type": {
@@ -10820,10 +10827,17 @@
                   "kind": "scalar"
                 }
               },
-              "token": {
-                "nullable": false,
+              "tokenHash": {
+                "nullable": true,
                 "type": {
                   "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "tokenUsedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
                   "kind": "scalar"
                 }
               }
@@ -10883,6 +10897,9 @@
                 "acceptedAt": {
                   "column": "accepted_at"
                 },
+                "accountAuthId": {
+                  "column": "account_auth_id"
+                },
                 "createdAt": {
                   "column": "created_at"
                 },
@@ -10910,8 +10927,11 @@
                 "status": {
                   "column": "status"
                 },
-                "token": {
-                  "column": "token"
+                "tokenHash": {
+                  "column": "token_hash"
+                },
+                "tokenUsedAt": {
+                  "column": "token_used_at"
                 }
               },
               "namespaceId": "public",
@@ -45770,6 +45790,11 @@
                   "dataType": "pg/timestamptz",
                   "nullable": true
                 },
+                "account_auth_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
                 "created_at": {
                   "codecId": "pg/timestamptz-string@1",
                   "dataType": "pg/timestamptz",
@@ -45836,14 +45861,15 @@
                   },
                   "nullable": false
                 },
-                "token": {
+                "token_hash": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
-                  "default": {
-                    "expression": "gen_random_uuid()",
-                    "kind": "function"
-                  },
-                  "nullable": false
+                  "nullable": true
+                },
+                "token_used_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
                 }
               },
               "foreignKeys": [
@@ -45917,9 +45943,9 @@
                 },
                 {
                   "columns": [
-                    "token"
+                    "token_hash"
                   ],
-                  "name": "invitations_token_key",
+                  "name": "invitations_token_hash_key",
                   "unique": true
                 }
               ],
@@ -65347,7 +65373,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "60d69dfec58506974e0a152359bbc64c8f91e8dbf0aabac70a0a434aae5cf3e4"
+    "storageHash": "68d400a63ae5216e984f6353b5a9edc0a94fbcb4665f6f0185fcdfb11ca2baf8"
   },
   "execution": {
     "executionHash": "454fa11779756be5e20f2ae540217fc9e337e78af6dbb69e34dc8ddf4d7262fe",

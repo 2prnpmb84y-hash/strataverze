@@ -6,6 +6,7 @@ import { sydneyMonth } from "@/lib/billing/invoice";
 import { accrueComplianceRenewals } from "@/lib/billing/contractor-fees";
 import { strataVerzeGstRegistered } from "@/lib/billing/strataverze-supplier";
 import { removeExpiredUploads } from "@/lib/storage/uploads";
+import { inactiveSchemeIds } from "@/lib/schemes/inactive";
 
 /**
  * Monthly StrataVerze invoicing and yearly contractor compliance renewals,
@@ -15,6 +16,8 @@ import { removeExpiredUploads } from "@/lib/storage/uploads";
  * Runs daily and invoices the current Sydney month for any scheme not yet
  * invoiced, so a missed or repeated cron call does no harm. Switched off
  * unless PLATFORM_INVOICING=on. Vercel sends CRON_SECRET as a bearer token.
+ * A switched off scheme is not invoiced and its uploads are left; it is
+ * listed under skippedSchemes (and, when invoicing, under skipped).
  */
 export const maxDuration = 300;
 
@@ -24,6 +27,7 @@ export async function GET(request: NextRequest) {
   if (!bearerMatches(request.headers.get("authorization"), secret)) {
     return new NextResponse("Unauthorized", { status: 401, headers: NO_STORE });
   }
+  const skippedSchemes = await inactiveSchemeIds();
   // Uploads never used, once their signed link has expired (S3). A failure
   // here must not stop invoicing.
   try {
@@ -38,10 +42,10 @@ export async function GET(request: NextRequest) {
 
   // StrataVerze prices add GST, so nothing is invoiced until it is registered.
   if (process.env.PLATFORM_INVOICING === "on" && !strataVerzeGstRegistered()) {
-    return NextResponse.json({ complianceRenewals: renewals.charged, invoicing: "StrataVerze is not registered for GST (STRATAVERZE_GST_REGISTERED)" }, { headers: NO_STORE });
+    return NextResponse.json({ complianceRenewals: renewals.charged, invoicing: "StrataVerze is not registered for GST (STRATAVERZE_GST_REGISTERED)", skippedSchemes }, { headers: NO_STORE });
   }
   if (process.env.PLATFORM_INVOICING !== "on") {
-    return NextResponse.json({ complianceRenewals: renewals.charged, invoicing: "PLATFORM_INVOICING is not on" }, { headers: NO_STORE });
+    return NextResponse.json({ complianceRenewals: renewals.charged, invoicing: "PLATFORM_INVOICING is not on", skippedSchemes }, { headers: NO_STORE });
   }
 
   const requested = request.nextUrl.searchParams.get("month");
@@ -59,5 +63,6 @@ export async function GET(request: NextRequest) {
     issued: count("ISSUED"),
     alreadyInvoiced: count("ALREADY_INVOICED"),
     skipped: results.filter((r) => r.outcome === "SKIPPED"),
+    skippedSchemes,
   }, { headers: NO_STORE });
 }

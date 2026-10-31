@@ -9,6 +9,8 @@ import {
 } from "@/lib/queries/invitations";
 import { logActivity } from "@/lib/queries/activity-log";
 import { hitRateLimit } from "@/lib/auth/rate-limit-db";
+import { getCurrentSession } from "@/lib/auth/current-session";
+import { ADDRESS_UNCONFIRMED, invitationAddressOf } from "@/lib/invitations/invitee-address";
 
 export async function acceptInvitationAction(invitationId: string) {
   let profile;
@@ -27,10 +29,13 @@ export async function acceptInvitationAction(invitationId: string) {
     const invitation = await getInvitationById(invitationId);
     if (!invitation) return { error: "Invitation not found." };
 
-    // Verify the invitation was sent to this user's email
-    const profileEmail = String(profile.email).toLowerCase();
+    // Verify the invitation was sent to this user's email, as the Auth
+    // server holds it for this session, not the stored profile copy, which
+    // can be stale (review finding L7). If the two differ, refuse.
+    const address = invitationAddressOf(await getCurrentSession());
+    if (!address) return { error: ADDRESS_UNCONFIRMED };
     const invitationEmail = String(invitation.email).toLowerCase();
-    if (profileEmail !== invitationEmail) {
+    if (address !== invitationEmail) {
       return {
         error:
           "This invitation was sent to a different email address. " +
@@ -38,7 +43,7 @@ export async function acceptInvitationAction(invitationId: string) {
       };
     }
 
-    const result = await acceptInvitation(invitationId, profile.id, profileEmail);
+    const result = await acceptInvitation(invitationId, profile.id, address);
     if (result.error) return { error: result.error };
 
     await logActivity({
@@ -70,8 +75,11 @@ export async function declineInvitationAction(invitationId: string) {
     const invitation = await getInvitationById(invitationId);
     if (!invitation) return { error: "Invitation not found." };
 
-    // Only the person the invitation was sent to may decline it.
-    if (String(profile.email).toLowerCase() !== String(invitation.email).toLowerCase()) {
+    // Only the person the invitation was sent to may decline it, by the
+    // session's Auth address (L7).
+    const address = invitationAddressOf(await getCurrentSession());
+    if (!address) return { error: ADDRESS_UNCONFIRMED };
+    if (address !== String(invitation.email).toLowerCase()) {
       return { error: "Invitation not found." };
     }
     if (invitation.status !== "PENDING") {

@@ -22,13 +22,24 @@ vi.mock("@/lib/auth/current-session", () => ({ getCurrentSession: vi.fn(async ()
 vi.mock("@/lib/auth/mfa-enforcement", () => ({ requireRecentMfa: vi.fn(async () => {}) }));
 vi.mock("@/lib/audit/security-audit", () => ({ recordSecurityEvent: vi.fn(async () => {}), recordSecurityEventLater: vi.fn(async () => {}), recordActionInvocation: vi.fn(async () => {}) }));
 vi.mock("@/lib/queries/activity-log", () => ({ logActivity: vi.fn(async () => {}), logActivityTx: vi.fn(async () => {}) }));
-vi.mock("@/lib/notifications", () => ({ notifyInvitation: vi.fn(async () => {}) }));
+// The new owner's invitation (S2a): emailed through Resend, after its account is made in Auth.
+vi.mock("@/lib/email", () => ({ sendEmail: vi.fn(async () => true) }));
+vi.mock("@/lib/auth/rate-limit-db", () => ({ hitRateLimits: vi.fn(async () => true), hitRateLimit: vi.fn(async () => true) }));
+vi.mock("@/lib/invitations/auth-users", () => ({ findAuthUsersByEmail: vi.fn(async () => []) }));
 vi.mock("@/lib/queries/schemes", () => ({ getSchemeNameById: async () => "Riverside" }));
 vi.mock("@/lib/jurisdiction/scheme-time", () => ({ schemeToday: async () => "2026-10-28" }));
 vi.mock("@/lib/vault/capture", () => ({ getTrialVault: async () => null }));
-// The recorder's Auth addresses, read when a held change is confirmed (review L1).
+// The recorder's Auth addresses, read when a held change is confirmed (review L1), and the new
+// owner's account, made for the invitation (S2a).
 vi.mock("@/lib/supabase/admin", () => ({
-  createAdminClient: () => ({ auth: { admin: { getUserById: async () => ({ data: { user: { email: "chair@x.test" } }, error: null }) } } }),
+  createAdminClient: () => ({
+    auth: {
+      admin: {
+        getUserById: async () => ({ data: { user: { email: "chair@x.test" } }, error: null }),
+        createUser: async (a: { email: string }) => ({ data: { user: { id: "00000000-0000-4000-8000-000000000001", email: a.email } }, error: null }),
+      },
+    },
+  }),
 }));
 vi.mock("@/lib/vault/sources", () => ({ captureLibraryDocument: vi.fn(), captureQuietly: vi.fn(async () => null) }));
 

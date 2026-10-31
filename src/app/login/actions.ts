@@ -12,6 +12,7 @@ import { afterSignIn, signInPortals } from "@/lib/auth/post-sign-in";
 import { getAvailablePortals } from "@/lib/queries/profiles";
 import { db } from "@/prisma/db";
 import { CAPTCHA_FAILED_MESSAGE, captchaTokenFrom, isCaptchaFailure } from "@/lib/auth/captcha";
+import { siteUrl } from "@/lib/site-url";
 
 /** The session id in an access token (not verified: it was just issued to us). */
 function sessionIdOf(token: string): string | null {
@@ -129,7 +130,12 @@ export async function signup(formData: FormData) {
   const data = {
     email,
     password: String(formData.get("password")),
-    ...(captchaToken ? { options: { captchaToken } } : {}),
+    options: {
+      // The confirmation link comes back to the code exchange, not the
+      // Site URL (the app root, which would send it on to the public site).
+      emailRedirectTo: `${siteUrl()}/auth/callback`,
+      ...(captchaToken ? { captchaToken } : {}),
+    },
   };
 
   const passwordError = validatePassword(data.password);

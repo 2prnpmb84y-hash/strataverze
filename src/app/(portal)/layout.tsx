@@ -3,6 +3,7 @@ import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile, getAvailablePortals, hasCommitteeRole } from "@/lib/queries/profiles";
 import { getPendingInvitationsForEmail } from "@/lib/queries/invitations";
+import { invitationAddressOf } from "@/lib/invitations/invitee-address";
 import { PortalShell } from "@/components/portal-shell";
 import { levyNavLabel, ownerLevyNavLabel } from "@/lib/owner/levy-nav";
 import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
@@ -31,13 +32,14 @@ export default async function PortalLayout({
   }
 
   const profile = await getCurrentProfile();
+  // Invitations are counted by the Auth address, only while the profile's
+  // copy agrees with it (review finding L7).
+  const inviteeAddress = profile ? invitationAddressOf({ user, profile }) : null;
   const [availablePortals, isCommitteeMember, pendingInvitations, leviesNavLabel] =
     await Promise.all([
       profile ? getAvailablePortals(profile.id) : Promise.resolve([]),
       profile ? hasCommitteeRole(profile.id) : Promise.resolve(false),
-      profile
-        ? getPendingInvitationsForEmail(profile.email)
-        : Promise.resolve([]),
+      inviteeAddress ? getPendingInvitationsForEmail(inviteeAddress) : Promise.resolve([]),
       // The owner portal's "Levies & Finance", in the words of the person's buildings.
       profile ? ownerLevyNavLabel(profile.id) : Promise.resolve(levyNavLabel(rulesForState(DEFAULT_SCHEME_STATE).rules.TERMINOLOGY.levies)),
     ]);

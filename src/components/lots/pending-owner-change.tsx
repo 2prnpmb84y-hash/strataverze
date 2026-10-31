@@ -53,9 +53,10 @@ export function PendingOwnerChange({
   const e = change.effect;
   const invitation = {
     NEW: `Yes: an invitation is sent to ${change.email}.`,
-    REFRESH: `Yes: ${change.email}'s earlier invitation is sent again, for this lot, with a new expiry.`,
+    REFRESH: `Yes: ${change.email}'s earlier invitation is sent again, for this lot, with a new one-time link and expiry.`,
     REOPEN: `Yes: ${change.email}'s earlier, accepted invitation is reopened for this lot (their owner access had ended).`,
     ALREADY: `No new one: ${change.email} already has an invitation waiting.`,
+    NOT_REUSABLE: `No: ${change.email}'s earlier invitation cannot be sent again. Check it on the Members page.`,
     SKIP_ACTIVE: `No: ${change.email} already holds owner access in this building${e.invitationActiveLot ? ` through Lot ${e.invitationActiveLot}` : ""}.`,
     NOT_ASKED: "No (not asked for).",
     NO_EMAIL: "No (no email given).",

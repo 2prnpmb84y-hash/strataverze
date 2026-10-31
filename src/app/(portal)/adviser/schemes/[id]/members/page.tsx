@@ -22,11 +22,16 @@ export default async function SchemeMembersPage({
   const scheme = await getSchemeById(id);
   if (!scheme) notFound();
 
-  // Verify current user is adviser on this scheme
+  // The building's Adviser, or a StrataVerze platform admin (onboarding and
+  // support), as for sending invitations (src/lib/invitations/authorise.ts).
   const isAdviser = scheme.memberships.some(
     (m) => m.profileId === profile.id && m.role === "ADVISER",
   );
-  if (!isAdviser) notFound();
+  if (!isAdviser && !profile.isPlatformAdmin) notFound();
+
+  const lotOptions = [...scheme.lots]
+    .sort((a, b) => a.lotNumber.localeCompare(b.lotNumber, "en-AU", { numeric: true }))
+    .map((l) => ({ value: l.id, label: `Lot ${l.lotNumber}` }));
 
   const invitations = await getInvitationsForScheme(id);
 
@@ -213,9 +218,9 @@ export default async function SchemeMembersPage({
       <Card className="mb-6">
         <CardHeader
           title="Invite Member"
-          description="Send an invitation by email. The recipient will have 30 days to accept."
+          description="Send an invitation by email. The link in it works once and lasts 14 days. Someone new to StrataVerze chooses a password from it; someone with an account signs in."
         />
-        <InviteForm schemeId={id} />
+        <InviteForm schemeId={id} lots={lotOptions} />
       </Card>
 
       {/* Pending Invitations */}

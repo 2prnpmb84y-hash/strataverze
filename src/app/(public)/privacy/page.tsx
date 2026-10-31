@@ -100,10 +100,9 @@ export default function PrivacyPolicyPage() {
           5. Data Storage and Security
         </h2>
         <p>
-          Your data is stored in a PostgreSQL database hosted by Supabase, with
-          infrastructure located in the Asia-Pacific (Sydney) region. Documents
-          and files are stored in Supabase Storage with signed URL access
-          controls.
+          Your data is stored in a PostgreSQL database hosted by Supabase.
+          Documents and files are stored in Supabase Storage with signed URL
+          access controls.
         </p>
         <p>
           We implement industry-standard security measures including encrypted

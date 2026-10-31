@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'60d69dfec58506974e0a152359bbc64c8f91e8dbf0aabac70a0a434aae5cf3e4'>;
+  StorageHashBase<'68d400a63ae5216e984f6353b5a9edc0a94fbcb4665f6f0185fcdfb11ca2baf8'>;
 export type ExecutionHash =
   ExecutionHashBase<'454fa11779756be5e20f2ae540217fc9e337e78af6dbb69e34dc8ddf4d7262fe'>;
 export type ProfileHash =
@@ -1522,6 +1522,7 @@ export namespace Models {
   };
   export type public_Invitation = {
     acceptedAt: FieldOutputTypes['public']['Invitation']['acceptedAt'];
+    accountAuthId: FieldOutputTypes['public']['Invitation']['accountAuthId'];
     createdAt: FieldOutputTypes['public']['Invitation']['createdAt'];
     email: FieldOutputTypes['public']['Invitation']['email'];
     expiresAt: FieldOutputTypes['public']['Invitation']['expiresAt'];
@@ -1531,7 +1532,8 @@ export namespace Models {
     role: FieldOutputTypes['public']['Invitation']['role'];
     schemeId: FieldOutputTypes['public']['Invitation']['schemeId'];
     status: FieldOutputTypes['public']['Invitation']['status'];
-    token: FieldOutputTypes['public']['Invitation']['token'];
+    tokenHash: FieldOutputTypes['public']['Invitation']['tokenHash'];
+    tokenUsedAt: FieldOutputTypes['public']['Invitation']['tokenUsedAt'];
     invitedBy: public_Profile;
     lot: public_Lot | null;
     scheme: public_Scheme;
@@ -11352,6 +11354,12 @@ type ContractBase = Omit<
                   readonly nullable: true;
                   readonly many: false;
                 };
+                readonly account_auth_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly created_at: {
                   readonly dataType: 'pg/timestamptz';
                   readonly codecId: 'pg/timestamptz-string@1';
@@ -11416,14 +11424,16 @@ type ContractBase = Omit<
                   };
                   readonly many: false;
                 };
-                readonly token: {
+                readonly token_hash: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
-                  readonly nullable: false;
-                  readonly default: {
-                    readonly kind: 'function';
-                    readonly expression: 'gen_random_uuid()';
-                  };
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly token_used_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
                   readonly many: false;
                 };
               };
@@ -11436,8 +11446,8 @@ type ContractBase = Omit<
                   readonly unique: true;
                 },
                 {
-                  readonly name: 'invitations_token_key';
-                  readonly columns: readonly ['token'];
+                  readonly name: 'invitations_token_hash_key';
+                  readonly columns: readonly ['token_hash'];
                   readonly unique: true;
                 },
               ];
@@ -35923,6 +35933,10 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/timestamptz-string@1';
                 };
               };
+              readonly accountAuthId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
               readonly createdAt: {
                 readonly nullable: false;
                 readonly type: {
@@ -35969,9 +35983,16 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
-              readonly token: {
-                readonly nullable: false;
+              readonly tokenHash: {
+                readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly tokenUsedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
               };
             };
             readonly relations: {
@@ -36014,6 +36035,7 @@ type ContractBase = Omit<
               readonly namespaceId: 'public';
               readonly fields: {
                 readonly acceptedAt: { readonly column: 'accepted_at' };
+                readonly accountAuthId: { readonly column: 'account_auth_id' };
                 readonly createdAt: { readonly column: 'created_at' };
                 readonly email: { readonly column: 'email' };
                 readonly expiresAt: { readonly column: 'expires_at' };
@@ -36023,7 +36045,8 @@ type ContractBase = Omit<
                 readonly role: { readonly column: 'role' };
                 readonly schemeId: { readonly column: 'scheme_id' };
                 readonly status: { readonly column: 'status' };
-                readonly token: { readonly column: 'token' };
+                readonly tokenHash: { readonly column: 'token_hash' };
+                readonly tokenUsedAt: { readonly column: 'token_used_at' };
               };
             };
           };

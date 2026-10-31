@@ -3,9 +3,8 @@ import { db } from "@/prisma/db";
 import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
 import { recordSecurityEvent } from "@/lib/audit/security-audit";
 import { createDocument } from "@/lib/queries/documents";
-import { getSchemeNameById } from "@/lib/queries/schemes";
 import { logActivityTx } from "@/lib/queries/activity-log";
-import { notifyInvitation } from "@/lib/notifications";
+import { deliverInvitationLink } from "@/lib/invitations/issue";
 import { consumeUpload, type verifyUpload } from "@/lib/storage/uploads";
 import { captureLibraryDocument, captureQuietly } from "@/lib/vault/sources";
 import { getTrialVault } from "@/lib/vault/capture";
@@ -29,7 +28,8 @@ import { OwnerChangeConflict, decideOwnerChange, getPendingOwnerChange, lockLot,
  * activity entries. A failure anywhere rolls all of it back.
  *
  * After the commit nothing can report the change as not made (L1): the
- * notice of transfer, the invitation email, the security events and the page
+ * notice of transfer, the invitation (its account and its /join link email, S2a,
+ * deliverInvitationLink), the security events and the page
  * refresh each run quietly, a failure being logged and noted in the message.
  * The security events stay after the commit: the audit log is written outside
  * transactions by design (src/lib/queries/activity-log.ts, logActivityTx).
@@ -115,6 +115,9 @@ export async function completeChangeOwner(p: {
   const confirmed = p.mode.kind === "confirm" ? { requestId: p.mode.requestId, recordedBy: p.mode.recordedBy } : null;
 
   const { result, invitation, sent, invited } = await db.transaction(async (tx) => {
+    // A lock wait gives up after 5 seconds (S2a, review finding M-2): the /join set-up holds an
+    // invitation's row while it calls Auth, and this transaction holds the lot's row meanwhile.
+    await tx.execute(tx.raw.sql`SET LOCAL lock_timeout = '5s'`.affectedCount().build());
     await lockLot(tx, schemeId, lotId);
     const planned = await planOwnerInvitation(tx.orm, { schemeId, lotId, email: input.email, invite: p.invite });
     if (p.mode.kind === "direct") {
@@ -166,18 +169,28 @@ export async function completeChangeOwner(p: {
   // Committed. From here on nothing undoes the change or reports it as not made.
   const after = new AfterCommit();
   if (p.mode.kind === "direct") await after.run("notice of transfer", p.notice);
+  // The invitee's account (Auth admin calls) and the email, only now that the change has committed
+  // and its locks are released (S2a: no HTTP call while row locks are held). The link is the
+  // one-time /join#<token> link whose hash the transaction stored.
+  let delivered: Awaited<ReturnType<typeof deliverInvitationLink>> | null = null;
   if (sent && input.email) {
-    await after.run("invitation email", async () => {
-      const inviterName = [actor.firstName, actor.lastName].filter(Boolean).join(" ") || "Your strata manager";
-      await notifyInvitation({
-        recipientEmail: input.email!,
-        schemeName: await getSchemeNameById(schemeId),
+    delivered = await after.run("invitation email", () =>
+      deliverInvitationLink({
+        invitationId: sent.id,
+        schemeId,
+        email: input.email!,
         role: "OWNER",
-        inviterName,
+        lotNumber,
+        token: sent.token,
+        hash: sent.hash,
         expiresAt: sent.expiresAt,
-        invitationToken: sent.id,
-      });
-    });
+        inviter: actor,
+        actorRole: p.actorRole,
+        resent: sent.resent,
+        previousStatus: sent.previousStatus,
+        via: "owner_change",
+      }),
+    );
   }
   await after.run("security event", () =>
     recordSecurityEvent({
@@ -228,8 +241,14 @@ export async function completeChangeOwner(p: {
     const lots = k.lotNumbers.map((n) => `Lot ${n}`).join(", ");
     parts.push(`A committee seat continues, as that member holds owner access to ${lots}.`);
   }
-  if (sent) parts.push(`An invitation has been sent to ${input.email}.`);
+  if (sent && delivered?.emailed) parts.push(`An invitation has been sent to ${input.email}.`);
+  if (sent && !delivered?.emailed) {
+    parts.push(`An invitation to ${input.email} is saved, but it could not be emailed just now. Send it again from the Members page.`);
+  }
   if (invitation.kind === "ALREADY") parts.push(`${input.email} already has an invitation waiting.`);
+  if (invitation.kind === "NOT_REUSABLE") {
+    parts.push(`An earlier invitation to ${input.email} could not be reused, so no invitation was sent. Check it on the Members page.`);
+  }
   if (invitation.kind === "SKIP_ACTIVE") {
     parts.push(
       `${input.email} already holds owner access in this building${invitation.activeLotNumber ? ` through Lot ${invitation.activeLotNumber}` : ""}, so no invitation was sent.`,

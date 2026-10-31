@@ -12,7 +12,8 @@ const who = vi.hoisted(() => ({
   user: null as null | { email?: string; new_email?: string; identities?: Array<{ identity_data?: Record<string, unknown> }> },
   stepUpFresh: true,
 }));
-const sent = vi.hoisted(() => ({ invitations: [] as string[] }));
+// Invitation emails as Resend would get them (S2a: a one-time /join#<token> link), and their recipients.
+const sent = vi.hoisted(() => ({ invitations: [] as string[], emails: [] as Array<{ to: string; subject: string; html: string }>, limited: false }));
 // The Auth users the admin API returns, by auth id (the recorder's addresses at confirm, review L1).
 const auth = vi.hoisted(() => ({ users: {} as Record<string, { email?: string; new_email?: string; identities?: Array<{ identity_data?: Record<string, unknown> }> }>, down: false }));
 const files = vi.hoisted(() => ({ documents: [] as Array<Record<string, unknown>> }));
@@ -51,23 +52,43 @@ vi.mock("@/lib/queries/activity-log", () => ({
     await tx.orm.public.ActivityLog.create({ ...a });
   }),
 }));
-vi.mock("@/lib/notifications", () => ({ notifyInvitation: vi.fn(async (p: { recipientEmail: string }) => { sent.invitations.push(p.recipientEmail); }) }));
+vi.mock("@/lib/email", () => ({
+  sendEmail: vi.fn(async (e: { to: string; subject: string; html: string }) => {
+    sent.invitations.push(e.to);
+    sent.emails.push(e);
+    return true;
+  }),
+}));
+vi.mock("@/lib/auth/rate-limit-db", () => ({ hitRateLimits: vi.fn(async () => !sent.limited), hitRateLimit: vi.fn(async () => !sent.limited) }));
+// The invitee's Auth account (S2a), read from the stand-in Auth users.
+vi.mock("@/lib/invitations/auth-users", async () => {
+  const { sharedFakeAuth } = await import("@/test/fake-supabase-admin");
+  return { findAuthUsersByEmail: (email: string) => sharedFakeAuth.findByEmail(email) };
+});
 vi.mock("@/lib/queries/schemes", () => ({ getSchemeNameById: async () => "Opera House" }));
 vi.mock("@/lib/jurisdiction/scheme-time", () => ({ schemeToday: async () => "2026-10-25" }));
 vi.mock("@/lib/jurisdiction/scheme-rules", async () => {
   const { statutoryRulesFor } = await import("@/config/statutory");
   return { rulesForScheme: async () => ({ rules: statutoryRulesFor("NSW"), label: "AU-NSW test" }) };
 });
-vi.mock("@/lib/supabase/admin", () => ({
-  createAdminClient: () => ({
-    auth: {
-      admin: {
-        getUserById: async (id: string) =>
-          auth.down || !auth.users[id] ? { data: { user: null }, error: { message: "unavailable" } } : { data: { user: auth.users[id] }, error: null },
+vi.mock("@/lib/supabase/admin", async () => {
+  // The recorder's addresses (review L1) from `auth.users`; an invitee's account (S2a) from the stand-in Auth API.
+  const { sharedFakeAuth } = await import("@/test/fake-supabase-admin");
+  return {
+    createAdminClient: () => ({
+      auth: {
+        admin: {
+          ...sharedFakeAuth.client.auth.admin,
+          getUserById: async (id: string) => {
+            if (auth.users[id]) return auth.down ? { data: { user: null }, error: { message: "unavailable" } } : { data: { user: auth.users[id] }, error: null };
+            if (id.startsWith("a-")) return { data: { user: null }, error: { message: "unavailable" } };
+            return sharedFakeAuth.client.auth.admin.getUserById(id);
+          },
+        },
       },
-    },
-  }),
-}));
+    }),
+  };
+});
 vi.mock("@/lib/storage/uploads", () => ({
   verifyUpload: vi.fn(async (p: { uploadId: string }) => ({ uploadId: p.uploadId, path: "schemes/S1/library/n.pdf", fileName: "notice.pdf", size: 10, mimeType: "application/pdf" })),
   consumeUpload: vi.fn(async (_id: string, create: () => Promise<unknown>) => create()),
@@ -86,6 +107,9 @@ vi.mock("@/lib/vault/capture", () => ({ getTrialVault: async () => null }));
 vi.mock("@/lib/vault/sources", () => ({ captureLibraryDocument: vi.fn(), captureQuietly: vi.fn(async () => null) }));
 
 const { sharedFake } = await import("@/test/fake-orm");
+const { sharedFakeAuth } = await import("@/test/fake-supabase-admin");
+const { INVITATION_TTL_DAYS } = await import("@/lib/invitations/link-token");
+const OLD_HASH = "a".repeat(64);
 const { changeOwnerAction } = await import("./change-owner");
 const { confirmOwnerChangeAction, rejectOwnerChangeAction } = await import("./change-owner-review");
 const { updateLotDetailAction } = await import("@/app/(portal)/adviser/schemes/[id]/lots/[lotId]/lot-workflow-actions");
@@ -135,6 +159,9 @@ beforeEach(() => {
   as(CHAIR);
   who.stepUpFresh = true;
   sent.invitations = [];
+  sent.emails = [];
+  sent.limited = false;
+  sharedFakeAuth.reset();
   files.documents = [];
   auth.down = false;
   auth.users = { "a-chair": { email: "chair@x.test" } };
@@ -626,14 +653,21 @@ describe("final review (31 Oct 2026)", () => {
     ["EXPIRED", past],
     ["PENDING but expired", past],
   ])("M2: an earlier %s invitation is reused: PENDING again, for this lot, with a fresh expiry", async (status, expiresAt) => {
-    sharedFake.table("Invitation").push({ id: "i-old", schemeId: "S1", email: "new@x.test", role: "OWNER", status: status.split(" ")[0], lotId: "L9", expiresAt, invitedById: "p-x" });
+    sharedFake.table("Invitation").push({ id: "i-old", schemeId: "S1", email: "new@x.test", role: "OWNER", status: status.split(" ")[0], lotId: "L9", expiresAt, invitedById: "p-x", tokenHash: OLD_HASH, tokenUsedAt: "2026-10-01T00:00:00.000Z" });
     sharedFake.setUniqueKeys({ Invitation: [["schemeId", "email", "role"]] });
     as(ADVISER);
     const r = await changeOwnerAction("S1", "L1", {}, form(valid));
     expect(r.done).toContain("An invitation has been sent to new@x.test.");
     expect(sharedFake.table("Invitation")).toHaveLength(1);
     expect(invitation()).toMatchObject({ id: "i-old", status: "PENDING", lotId: "L1", invitedById: ADVISER.id, acceptedAt: null });
-    expect(new Date(String(invitation().expiresAt)).getTime()).toBeGreaterThan(Date.now() + 29 * 86_400_000);
+    // A fresh expiry: S2a's link lifetime (INVITATION_TTL_DAYS, 14 days) from now.
+    const ttl = INVITATION_TTL_DAYS * 86_400_000;
+    expect(new Date(String(invitation().expiresAt)).getTime()).toBeGreaterThan(Date.now() + ttl - 60_000);
+    expect(new Date(String(invitation().expiresAt)).getTime()).toBeLessThanOrEqual(Date.now() + ttl);
+    // A new one-time link replaces the old one, which stops working.
+    expect(invitation().tokenHash).toMatch(/^[0-9a-f]{64}$/);
+    expect(invitation().tokenHash).not.toBe(OLD_HASH);
+    expect(invitation().tokenUsedAt).toBeNull();
     expect(sent.invitations).toEqual(["new@x.test"]);
     expect(cateOwner().isActive).toBe(false);
   });
@@ -685,9 +719,9 @@ describe("final review (31 Oct 2026)", () => {
   });
 
   it("L1: failures after the commit never report the change as not made", async () => {
-    const { notifyInvitation } = await import("@/lib/notifications");
+    const { sendEmail } = await import("@/lib/email");
     const { recordSecurityEvent } = await import("@/lib/audit/security-audit");
-    vi.mocked(notifyInvitation).mockRejectedValueOnce(new Error("mail down"));
+    vi.mocked(sendEmail).mockRejectedValueOnce(new Error("mail down"));
     vi.mocked(recordSecurityEvent).mockRejectedValue(new Error("audit down"));
     const id = await hold();
     as(ADVISER);

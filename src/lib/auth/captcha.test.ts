@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /** CAPTCHA on sign-in, sign-up and password reset (SEC-020). */
 
-const calls = vi.hoisted(() => ({ signIn: [] as unknown[], reset: [] as unknown[], error: null as null | { code?: string; message: string } }));
+const calls = vi.hoisted(() => ({ signIn: [] as unknown[], signUp: [] as unknown[], reset: [] as unknown[], error: null as null | { code?: string; message: string } }));
 const limits = vi.hoisted(() => ({ hits: 0 }));
 vi.mock("next/navigation", () => ({
   redirect: (to: string) => {
@@ -17,6 +17,10 @@ vi.mock("@/lib/supabase/server", () => ({
       signInWithPassword: async (c: unknown) => {
         calls.signIn.push(c);
         return { data: {}, error: calls.error };
+      },
+      signUp: async (c: unknown) => {
+        calls.signUp.push(c);
+        return { data: { user: null }, error: calls.error };
       },
       resetPasswordForEmail: async (email: string, o: unknown) => {
         calls.reset.push([email, o]);
@@ -37,7 +41,7 @@ vi.mock("@/prisma/db", () => ({ db: {} }));
 vi.mock("@/lib/queries/profiles", () => ({ getAvailablePortals: async () => [] }));
 
 const { captchaSiteKey, captchaTokenFrom, isCaptchaFailure } = await import("./captcha");
-const { login } = await import("@/app/login/actions");
+const { login, signup } = await import("@/app/login/actions");
 const { resetPassword } = await import("@/app/forgot-password/actions");
 
 const form = (fields: Record<string, string>) => {
@@ -56,6 +60,7 @@ const redirectOf = async (p: Promise<unknown>) => {
 
 beforeEach(() => {
   calls.signIn = [];
+  calls.signUp = [];
   calls.reset = [];
   calls.error = null;
   limits.hits = 0;
@@ -97,6 +102,22 @@ describe("signing in", () => {
     const to = await redirectOf(login(form({ email: "a@x.test", password: "secret123" })));
     expect(to).toContain("security%20check");
     expect(limits.hits).toBe(0);
+  });
+});
+
+describe("signing up", () => {
+  // The confirmation link must come back to the code exchange, not the
+  // Supabase Site URL: the app root sends signed-out visitors to the public
+  // site (AR-008), which would drop the code.
+  it("passes the token, and sends the confirmation link to /auth/callback", async () => {
+    vi.stubEnv("APP_URL", "https://app.strataverze.com");
+    const to = await redirectOf(signup(form({ email: "a@x.test", password: "Str0ng!Passw0rd", "cf-turnstile-response": "tok" })));
+    await redirectOf(signup(form({ email: "b@x.test", password: "Str0ng!Passw0rd" })));
+    expect(to).toContain("Check+your+email");
+    expect(calls.signUp).toEqual([
+      { email: "a@x.test", password: "Str0ng!Passw0rd", options: { emailRedirectTo: "https://app.strataverze.com/auth/callback", captchaToken: "tok" } },
+      { email: "b@x.test", password: "Str0ng!Passw0rd", options: { emailRedirectTo: "https://app.strataverze.com/auth/callback" } },
+    ]);
   });
 });
 

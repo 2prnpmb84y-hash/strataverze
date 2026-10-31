@@ -17,6 +17,8 @@ const KNOWN = new Set<string>([
   "Check your email to confirm your account",
   "Please enter your email address",
   "If that address has an account, we have emailed a password reset link",
+  // After setting a password from an invitation link (S2a, src/app/join).
+  "Your account is ready. Sign in with your new password.",
   `Password must be at least ${PASSWORD_MIN_LENGTH} characters.`,
   "Password must contain at least one uppercase letter.",
   "Password must contain at least one lowercase letter.",
