@@ -49,7 +49,28 @@ export type IssueInvitationResult =
   | { ok: true; invitationId: string; email: string; role: InvitableRole; expiresAt: Date; emailed: boolean }
   | { ok: false; error?: string; fieldErrors?: Record<string, string> };
 
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+/**
+ * An address the invitation may go to (review finding L6). ASCII only.
+ * The local part is dot-separated runs of letters, digits and _ % + ' -
+ * (no leading, trailing or double dots, no quotes, comments or spaces); the
+ * domain is labels that start and end with a letter or digit, ending in a
+ * letter TLD. Control characters and < > , ; " \ are refused outright, so
+ * nothing can split a header or a list of recipients. Internationalised and
+ * unusual-but-valid RFC 5322 addresses are refused for now; the inviter is
+ * told to enter a valid address.
+ */
+const EMAIL = /^[A-Za-z0-9_%+'-]+(?:\.[A-Za-z0-9_%+'-]+)*@(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,63}$/;
+
+/** Whether an address (already trimmed and lower-cased) may be invited. */
+export function isInvitableEmail(email: string): boolean {
+  if (!email || email.length > 254) return false;
+  // Anything outside printable ASCII (control characters, spaces, non-ASCII
+  // letters) or any of < > , ; " \ : refused before the pattern, which
+  // refuses them too.
+  if (/[^\x21-\x7e]/.test(email) || /[<>,;"\\]/.test(email)) return false;
+  if (email.lastIndexOf("@") > 64) return false;
+  return EMAIL.test(email);
+}
 
 function ts(d: Date): TimestampString<3> {
   return d.toISOString() as unknown as TimestampString<3>;
@@ -64,7 +85,7 @@ export async function issueInvitation(input: IssueInvitationInput): Promise<Issu
   const lotIdRaw = String(input.lotId ?? "").trim();
 
   const fieldErrors: Record<string, string> = {};
-  if (!email || email.length > 254 || !EMAIL.test(email)) fieldErrors.email = "Enter a valid email address.";
+  if (!isInvitableEmail(email)) fieldErrors.email = "Enter a valid email address.";
   if (!(INVITABLE_ROLES as readonly string[]).includes(role)) fieldErrors.role = "Select a valid role.";
   if (role === "OWNER" && !lotIdRaw) fieldErrors.lotId = "Choose the owner's lot.";
   if (Object.keys(fieldErrors).length) return { ok: false, fieldErrors };
@@ -125,7 +146,7 @@ export async function issueInvitation(input: IssueInvitationInput): Promise<Issu
     // Kept apart from the building's events, which the building's Adviser can
     // read: whether an address already had an account is not theirs to know.
     await recordSecurityEventLater({
-      action: "account.created_for_invitation",
+      action: account.adopted ? "account.adopted_for_invitation" : "account.created_for_invitation",
       outcome: "allowed",
       actorProfileId: input.inviter.id,
       actorRole: input.actorRole,

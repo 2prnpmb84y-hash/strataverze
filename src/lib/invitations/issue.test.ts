@@ -35,10 +35,15 @@ vi.mock("@/lib/audit/security-audit", () => ({
   }),
 }));
 vi.mock("@/lib/queries/schemes", () => ({ getSchemeNameById: async () => "SP 99999 Test Towers" }));
+vi.mock("@/lib/invitations/auth-users", async () => {
+  const { sharedFakeAuth } = await import("@/test/fake-supabase-admin");
+  return { findAuthUsersByEmail: (email: string) => sharedFakeAuth.findByEmail(email) };
+});
 
 const { sharedFake } = await import("@/test/fake-orm");
 const { sharedFakeAuth } = await import("@/test/fake-supabase-admin");
-const { issueInvitation } = await import("./issue");
+const { issueInvitation, isInvitableEmail } = await import("./issue");
+const { inviteeSetupState } = await import("./accounts");
 
 const SCHEME = "99999999-0000-4000-8000-000000000001";
 const OTHER_SCHEME = "88888888-0000-4000-8000-000000000002";
@@ -124,10 +129,55 @@ describe("no account enumeration", () => {
     expect(strip(mail.sent[0].html)).toBe(strip(mail.sent[1].html));
   });
 
-  it("treats an Auth account with no profile (signed up, never signed in) as existing", async () => {
-    sharedFakeAuth.addUser({ id: "auth-dormant", email: "dormant@example.test" });
+  it("adopts an Auth user nobody has confirmed or signed in to (planted through open sign-up), so the link sets its password", async () => {
+    // Someone signed up with the invitee's address and a password of their own, and never confirmed it.
+    sharedFakeAuth.addUser({ id: "auth-dormant", email: "dormant@example.test", password: "Planted-Pass-2026!" });
     const r = await issueInvitation({ ...base, email: "dormant@example.test", role: "OWNER", lotId: "lot-1" });
     expect(r.ok).toBe(true);
+    expect(sharedFake.table("Invitation")[0].accountAuthId).toBe("auth-dormant");
+    // No second Auth user, and the adoption is logged away from the building.
+    expect(sharedFakeAuth.users.size).toBe(1);
+    const adopted = audit.events.find((e) => e.action === "account.adopted_for_invitation");
+    expect(adopted).toMatchObject({ outcome: "allowed", resourceId: "auth-dormant" });
+    expect(adopted?.schemeId ?? null).toBeNull();
+    // The building's event is the same as for any other invitation.
+    const sent = audit.events.find((e) => e.action === "invitation.sent");
+    expect(JSON.stringify(sent)).not.toMatch(/adopt|new|created|auth/i);
+    // The link can set it up: the guard still sees it as never set up.
+    expect(await inviteeSetupState("auth-dormant", "dormant@example.test")).toBe("ready");
+  });
+
+  it("treats a confirmed Auth user with no profile as existing", async () => {
+    sharedFakeAuth.addUser({ id: "auth-confirmed", email: "confirmed@example.test", email_confirmed_at: "2026-10-01T00:00:00Z" });
+    expect((await issueInvitation({ ...base, email: "confirmed@example.test", role: "OWNER", lotId: "lot-1" })).ok).toBe(true);
+    expect(sharedFake.table("Invitation")[0].accountAuthId).toBeNull();
+    expect(audit.events.some((e) => String(e.action).startsWith("account."))).toBe(false);
+  });
+
+  it("treats an Auth user that has signed in, with no profile, as existing", async () => {
+    sharedFakeAuth.addUser({ id: "auth-signed-in", email: "signed.in@example.test", last_sign_in_at: "2026-10-01T00:00:00Z" });
+    expect((await issueInvitation({ ...base, email: "signed.in@example.test", role: "OWNER", lotId: "lot-1" })).ok).toBe(true);
+    expect(sharedFake.table("Invitation")[0].accountAuthId).toBeNull();
+  });
+
+  it("checks the account again through the admin API before adopting it (confirmed_at only)", async () => {
+    // The auth.users read sees nothing set; the admin API's confirmed_at says otherwise.
+    sharedFakeAuth.addUser({ id: "auth-phone", email: "phone@example.test", confirmed_at: "2026-10-01T00:00:00Z" });
+    expect((await issueInvitation({ ...base, email: "phone@example.test", role: "OWNER", lotId: "lot-1" })).ok).toBe(true);
+    expect(sharedFake.table("Invitation")[0].accountAuthId).toBeNull();
+  });
+
+  it("does not adopt an Auth user that already has a profile under another address", async () => {
+    sharedFakeAuth.addUser({ id: "auth-moved", email: "moved@example.test" });
+    sharedFake.table("Profile").push({ id: "p-moved", authId: "auth-moved", email: "old.address@example.test" });
+    expect((await issueInvitation({ ...base, email: "moved@example.test", role: "OWNER", lotId: "lot-1" })).ok).toBe(true);
+    expect(sharedFake.table("Invitation")[0].accountAuthId).toBeNull();
+  });
+
+  it("does not pick between two Auth users with the same address", async () => {
+    sharedFakeAuth.addUser({ id: "auth-twin-1", email: "twin@example.test" });
+    sharedFakeAuth.addUser({ id: "auth-twin-2", email: "Twin@Example.test" });
+    expect((await issueInvitation({ ...base, email: "twin@example.test", role: "OWNER", lotId: "lot-1" })).ok).toBe(true);
     expect(sharedFake.table("Invitation")[0].accountAuthId).toBeNull();
   });
 
@@ -149,6 +199,55 @@ describe("checks made on the server", () => {
     expect(await issueInvitation({ ...base, email: "a@example.test", role: "SUPPLIER" })).toMatchObject({ ok: false });
     expect(sharedFakeAuth.calls.createUser).toHaveLength(0);
     expect(sharedFake.table("Invitation")).toHaveLength(0);
+  });
+
+  it("accepts only plain ASCII addresses (L6)", async () => {
+    for (const ok of ["a@example.test", "first.last+tag@sub.example.com", "o'brien@example.com.au", "a_b-c%d@x-y.example.org"]) {
+      expect(isInvitableEmail(ok), ok).toBe(true);
+    }
+    const bad = [
+      "",
+      "plain",
+      "a@b",
+      "a@@example.test",
+      ".a@example.test",
+      "a.@example.test",
+      "a..b@example.test",
+      "a@-example.test",
+      "a@example-.test",
+      "a@example..test",
+      "a@example.t",
+      "a@example.123",
+      "a b@example.test",
+      "a@exa mple.test",
+      "a\n@example.test",
+      "a@example.test\r\nbcc:x@example.test",
+      "a\u0000@example.test",
+      "a\u007f@example.test",
+      "<a@example.test>",
+      "a<b@example.test",
+      "a>b@example.test",
+      "a,b@example.test",
+      "a@example.test,b@example.test",
+      "a;b@example.test",
+      '"a"@example.test',
+      "a\\b@example.test",
+      "jos\u00e9@example.test",
+      "a@ex\u00e4mple.test",
+      "\u0430@example.test", // Cyrillic a
+      `${"a".repeat(65)}@example.test`,
+      `a@${"b".repeat(250)}.test`,
+    ];
+    for (const b of bad) expect(isInvitableEmail(b), JSON.stringify(b)).toBe(false);
+  });
+
+  it("refuses a control character or < > , ; \" \\ inside the address, before anything is made", async () => {
+    for (const email of ["a\u0007b@example.test", "a<b@example.test", "a,b@example.test", "a;b@example.test", 'a"b@example.test', "a\\b@example.test"]) {
+      expect(await issueInvitation({ ...base, email, role: "OWNER", lotId: "lot-1" })).toMatchObject({ ok: false, fieldErrors: { email: expect.any(String) } });
+    }
+    expect(sharedFakeAuth.calls.createUser).toHaveLength(0);
+    expect(sharedFake.table("Invitation")).toHaveLength(0);
+    expect(mail.sent).toHaveLength(0);
   });
 
   it("needs a lot for an owner, and only one of this building's", async () => {

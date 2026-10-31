@@ -1,6 +1,7 @@
 import { and } from "@prisma/orm-postgres/orm-client";
 import { db } from "@/prisma/db";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { findAuthUsersByEmail } from "./auth-users";
 
 /**
  * Accounts for invited people (security stage S2a), with the Supabase Auth
@@ -27,8 +28,12 @@ export class InviteeAccountError extends Error {
   }
 }
 
-/** Whether the address already had an account, or the server made one for this invitation. */
-export type InviteeAccount = { kind: "existing" } | { kind: "new"; authId: string };
+/**
+ * Whether the address already had an account, or the invitation brings a
+ * new one: made by the server, or `adopted` (an Auth user that already
+ * carried the address but was never confirmed or signed in to).
+ */
+export type InviteeAccount = { kind: "existing" } | { kind: "new"; authId: string; adopted?: true };
 
 /** Auth's answer when an account with the address already exists. */
 const EXISTS = new Set(["email_exists", "user_already_exists"]);
@@ -62,15 +67,47 @@ export async function provisionInviteeAccount(email: string): Promise<InviteeAcc
 
   const { data, error } = await admin.auth.admin.createUser({ email: address, email_confirm: false });
   if (error) {
-    if (EXISTS.has(String(error.code))) return { kind: "existing" };
+    if (EXISTS.has(String(error.code))) return adoptOrExisting(address);
     throw new InviteeAccountError(String(error.code ?? error.name ?? "error"));
   }
   if (!data?.user?.id) throw new InviteeAccountError("no_user");
   return { kind: "new", authId: data.user.id };
 }
 
+/**
+ * The address already has an Auth user but no profile (review finding M1).
+ * Open sign-up lets anyone make an unconfirmed Auth user for someone else's
+ * address, with a password of their choosing. Treated as "existing", the
+ * invitee could never set a password from the link, and would be told to
+ * sign in to an account they never made.
+ *
+ * So an Auth user that was never confirmed and never signed in to is
+ * adopted: the invitation is for it, as if the server had made it. The
+ * link holder, who controls the mailbox, then sets the password with
+ * updateUserById, which replaces any password set through sign-up, and
+ * inviteeSetupState still checks the account at that moment.
+ *
+ * Confirmed or signed-in users, an address with more than one Auth user, or
+ * one that already has a profile under another address, stay "existing".
+ */
+async function adoptOrExisting(address: string): Promise<InviteeAccount> {
+  const found = await findAuthUsersByEmail(address);
+  if (found.length !== 1) return { kind: "existing" };
+  const [candidate] = found;
+  if (candidate.confirmed || candidate.signedIn) return { kind: "existing" };
+
+  // Checked again through the admin API, with every field isUnclaimed reads.
+  const { data, error } = await createAdminClient().auth.admin.getUserById(candidate.id);
+  if (error || !data?.user || (data.user.email ?? "").toLowerCase() !== address || !isUnclaimed(data.user)) {
+    return { kind: "existing" };
+  }
+  const profile = await db.orm.public.Profile.where((p) => p.authId.eq(candidate.id)).first();
+  if (profile) return { kind: "existing" };
+  return { kind: "new", authId: data.user.id, adopted: true };
+}
+
 /** An account nobody has set up: never confirmed, never signed in. */
-function isUnclaimed(user: { email_confirmed_at?: string; confirmed_at?: string; last_sign_in_at?: string }): boolean {
+export function isUnclaimed(user: { email_confirmed_at?: string; confirmed_at?: string; last_sign_in_at?: string }): boolean {
   return !user.email_confirmed_at && !user.confirmed_at && !user.last_sign_in_at;
 }
 
