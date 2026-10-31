@@ -129,7 +129,7 @@ describe("createWorksRequest", () => {
   const owner = { id: "owner-a" };
   const raise = (categoryId?: string) =>
     actions.createWorksRequest(
-      {},
+      { error: null },
       form({ schemeId: SCHEME_A, title: "Leaking gutter", description: "Over lot 3", priority: "MEDIUM", ...(categoryId ? { categoryId } : {}) }),
     );
 
@@ -160,7 +160,7 @@ describe("createWorksRequest", () => {
   });
 
   it("an owner of scheme A cannot raise a request in scheme B", async () => {
-    const r = await actions.createWorksRequest({}, form({ schemeId: SCHEME_B, title: "t", description: "d", categoryId: CATEGORY_B }));
+    const r = await actions.createWorksRequest({ error: null }, form({ schemeId: SCHEME_B, title: "t", description: "d", categoryId: CATEGORY_B }));
     expect(r.error).toMatch(/permission/);
     expect(model("WorksRequest").create).not.toHaveBeenCalled();
   });
