@@ -6,10 +6,11 @@
  * gives the path but not the fields, or not the path, the method throws
  * ZaiNotConfirmedError instead of guessing.
  *
- * Refuses to exist while switched off: createZaiClient calls
- * requireZaiConfig, which throws ZaiDisabledError unless ZAI_PAYMENTS=on and
- * every setting is present (./config.ts). Tests pass a config and a mock
- * transport, so no test reaches Zai.
+ * Refuses to exist while switched off: the constructor checks ZAI_PAYMENTS
+ * even when a config is passed in, and otherwise calls requireZaiConfig,
+ * which throws ZaiDisabledError unless every setting is present
+ * (./config.ts). The config is held in a private field. Tests turn the
+ * switch on, pass a config and a mock transport, so no test reaches Zai.
  *
  * Retries and idempotency (Zai documents no idempotency header, so none is
  * sent):
@@ -17,8 +18,9 @@
  *   or 5xx, with exponential backoff. They change nothing at Zai.
  * - Every other request is sent once. A network error or 5xx on it means
  *   the outcome is unknown (ZaiOutcomeUnknownError): the caller finds out
- *   with a GET before doing anything else. A 401 is retried once with a new
- *   token, since Zai refused it before doing anything.
+ *   with a GET before doing anything else. On a 401 a GET is asked again
+ *   once with a new token; a write is never sent twice: a money movement's
+ *   outcome is unknown, and any other write is refused (ZaiApiError 401).
  * - A request that moves money (make_payment, refund, withdraw,
  *   bill_payment) needs an idempotency key and a OnceGuard, which claims the
  *   key durably before the request is sent, so the same key is never sent
@@ -28,7 +30,7 @@
  * - Creates carry the id StrataVerze supplies (users, items), which Zai
  *   requires to be unique.
  */
-import { requireZaiConfig, type ZaiConfig } from "./config";
+import { requireZaiConfig, ZaiDisabledError, zaiSwitchOn, type ZaiConfig } from "./config";
 import { ZaiNotConfirmedError } from "./docs";
 
 // ─── Transport ──────────────────────────────────────────────────────────────
@@ -256,7 +258,8 @@ const parseJson = (body: string): unknown => {
 const retryable = (status: number) => status === 429 || status >= 500;
 
 export class ZaiClient {
-  readonly config: ZaiConfig;
+  // Private: the client secret and webhook secret are not reachable from outside (review L2).
+  readonly #config: ZaiConfig;
   private readonly transport: ZaiTransport;
   private readonly once?: OnceGuard;
   private readonly sleep: (ms: number) => Promise<void>;
@@ -265,7 +268,9 @@ export class ZaiClient {
   private token: { value: string; expiresAt: number } | null = null;
 
   constructor(options: ZaiClientOptions = {}) {
-    this.config = options.config ?? requireZaiConfig();
+    // The switch is checked even when a config is passed in (review L1).
+    if (!zaiSwitchOn()) throw new ZaiDisabledError("ZAI_PAYMENTS is not on");
+    this.#config = options.config ?? requireZaiConfig();
     this.transport = options.transport ?? fetchTransport;
     this.once = options.once;
     this.sleep = options.sleep ?? ((ms) => new Promise((r) => setTimeout(r, ms)));
@@ -289,12 +294,12 @@ export class ZaiClient {
     if (this.token && this.now() < this.token.expiresAt - 60_000) return this.token.value;
     const body = new URLSearchParams({
       grant_type: "client_credentials",
-      client_id: this.config.clientId,
-      client_secret: this.config.clientSecret,
-      scope: this.config.scope,
+      client_id: this.#config.clientId,
+      client_secret: this.#config.clientSecret,
+      scope: this.#config.scope,
     }).toString();
     const res = await this.send(
-      { method: "POST", url: this.config.tokenUrl, headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" }, body },
+      { method: "POST", url: this.#config.tokenUrl, headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" }, body },
       true,
       "/tokens",
     );
@@ -479,7 +484,7 @@ export class ZaiClient {
   }
 
   private write(method: "POST" | "PATCH", path: string, body: object, idempotencyKey: string | null): Promise<ZaiJson> {
-    return this.call(method, path, body, false, idempotencyKey);
+    return this.call(method, path, body, false, idempotencyKey, false);
   }
 
   private async moneyWrite(method: "POST" | "PATCH", path: string, body: object, idempotencyKey: string): Promise<ZaiJson> {
@@ -488,13 +493,13 @@ export class ZaiClient {
     // A token first, so a key is not claimed for a request that could not be sent.
     await this.accessToken();
     if (!(await this.once.claim(idempotencyKey))) throw new ZaiDuplicateRequestError(idempotencyKey);
-    return this.call(method, path, body, false, idempotencyKey);
+    return this.call(method, path, body, false, idempotencyKey, true);
   }
 
-  private async call(method: ZaiHttpRequest["method"], path: string, body: object | undefined, safe: boolean, idempotencyKey: string | null = null): Promise<ZaiJson> {
+  private async call(method: ZaiHttpRequest["method"], path: string, body: object | undefined, safe: boolean, idempotencyKey: string | null = null, money = false): Promise<ZaiJson> {
     const build = async (): Promise<ZaiHttpRequest> => ({
       method,
-      url: `${this.config.apiBaseUrl}${path}`,
+      url: `${this.#config.apiBaseUrl}${path}`,
       headers: {
         // Bearer token in the Authorization header (API overview). JSON bodies (NOT_CONFIRMED NC-CONTENT-TYPE: the reference pages list body fields without the media type).
         Authorization: `Bearer ${await this.accessToken()}`,
@@ -507,12 +512,15 @@ export class ZaiClient {
     try {
       res = await this.send(await build(), safe, path);
       if (res.status === 401) {
-        // Refused before anything was done: a new token, once.
         this.token = null;
-        res = await this.send(await build(), safe, path);
+        // A read is asked again once, with a new token. A write is never sent
+        // twice: a money movement's outcome is unknown (the caller checks it
+        // with a GET), and any other write is refused for the caller to repeat.
+        if (safe) res = await this.send(await build(), safe, path);
+        else if (money) throw new ZaiOutcomeUnknownError(path, idempotencyKey);
       }
     } catch (err) {
-      if (err instanceof ZaiApiError || err instanceof ZaiNotConfirmedError) throw err;
+      if (err instanceof ZaiApiError || err instanceof ZaiNotConfirmedError || err instanceof ZaiOutcomeUnknownError) throw err;
       if (safe) throw err;
       throw new ZaiOutcomeUnknownError(path, idempotencyKey, err);
     }

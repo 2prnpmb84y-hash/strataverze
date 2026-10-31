@@ -2,7 +2,7 @@
  * The Zai client's requests, against the shapes the Zai reference pages
  * document (read 31 Oct 2026), with a mock transport: no test reaches Zai.
  */
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ZaiClient, ZaiApiError, ZaiDuplicateRequestError, ZaiOutcomeUnknownError, ZaiRequestError, createZaiClient, type OnceGuard, type ZaiHttpRequest, type ZaiHttpResponse } from "./client";
 import { ZaiDisabledError } from "./config";
 import { ZaiNotConfirmedError } from "./docs";
@@ -34,13 +34,27 @@ const ok = (body: unknown = {}) => ({ status: 200, body: JSON.stringify(body) })
 const client = (t: ReturnType<typeof mock>, extra: Partial<ConstructorParameters<typeof ZaiClient>[0]> = {}) =>
   new ZaiClient({ config: TEST_CONFIG, transport: t.transport, sleep: async () => undefined, ...extra });
 
+// The client checks the switch even when a config is passed in (review L1).
+beforeEach(() => vi.stubEnv("ZAI_PAYMENTS", "on"));
+afterEach(() => vi.unstubAllEnvs());
+
 describe("switched off", () => {
   it("refuses to make a client while ZAI_PAYMENTS is off or a setting is missing", () => {
     vi.stubEnv("ZAI_PAYMENTS", "");
     expect(() => createZaiClient()).toThrow(ZaiDisabledError);
     vi.stubEnv("ZAI_PAYMENTS", "on");
     expect(() => createZaiClient()).toThrow(/ZAI_ENVIRONMENT/);
-    vi.unstubAllEnvs();
+  });
+
+  it("refuses while off even when a complete config is passed in, and keeps the config private", () => {
+    vi.stubEnv("ZAI_PAYMENTS", "off");
+    const t = mock();
+    expect(() => new ZaiClient({ config: TEST_CONFIG, transport: t.transport })).toThrow(ZaiDisabledError);
+    vi.stubEnv("ZAI_PAYMENTS", "on");
+    const c = new ZaiClient({ config: TEST_CONFIG, transport: t.transport });
+    expect(JSON.stringify(c)).not.toContain(TEST_CONFIG.clientSecret);
+    expect((c as unknown as Record<string, unknown>).config).toBeUndefined();
+    expect(Object.values(c).some((v) => v === TEST_CONFIG)).toBe(false);
   });
 });
 
@@ -220,10 +234,27 @@ describe("retries", () => {
     expect(failing.api()).toHaveLength(4);
   });
 
-  it("asks for a new token once on a 401, for any request", async () => {
+  it("asks a GET again once with a new token on a 401", async () => {
     const t = mock({ status: 401, body: "" }, ok());
-    await client(t, { once: memoryGuard() }).makePayment("i1", { account_id: "a" }, "k-401");
+    await client(t).getUser("u1");
     expect(t.requests.filter((r) => r.url === TEST_CONFIG.tokenUrl)).toHaveLength(2);
     expect(t.api()).toHaveLength(2);
+  });
+
+  it("never resends a money movement on a 401: its outcome is unknown, and the next call gets a new token (review M1)", async () => {
+    const t = mock({ status: 401, body: "" }, ok());
+    const c = client(t, { once: memoryGuard() });
+    await expect(c.makePayment("i1", { account_id: "a" }, "k-401")).rejects.toBeInstanceOf(ZaiOutcomeUnknownError);
+    expect(t.api()).toHaveLength(1);
+    await c.getUser("u1");
+    expect(t.requests.filter((r) => r.url === TEST_CONFIG.tokenUrl)).toHaveLength(2);
+  });
+
+  it("never resends any other write on a 401 either", async () => {
+    const t = mock({ status: 401, body: "" });
+    const err = await client(t).createFee({ name: "f", fee_type_id: 1, amount: 1 }).catch((e) => e);
+    expect(err).toBeInstanceOf(ZaiApiError);
+    expect(err.status).toBe(401);
+    expect(t.api()).toHaveLength(1);
   });
 });
