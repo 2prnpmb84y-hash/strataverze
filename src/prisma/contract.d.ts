@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'85a2c32c32c8636962eb7099a2cec8f3adb8bfb106139c2b28d752dcbac2ce07'>;
+  StorageHashBase<'60d69dfec58506974e0a152359bbc64c8f91e8dbf0aabac70a0a434aae5cf3e4'>;
 export type ExecutionHash =
   ExecutionHashBase<'454fa11779756be5e20f2ae540217fc9e337e78af6dbb69e34dc8ddf4d7262fe'>;
 export type ProfileHash =
@@ -1757,6 +1757,7 @@ export namespace Models {
     lotDetail: public_LotDetail | null;
     memberships: public_SchemeMembership[];
     ownerChangeRequests: public_OwnerChangeRequest[];
+    ownerLotHistory: public_OwnerLotHistory[];
     paymentPlanRequests: public_PaymentPlanRequest[];
     powersOfAttorney: public_LotPowerOfAttorney[];
     proceedingsDeadlineReminders: public_ProceedingsDeadlineReminder[];
@@ -1778,6 +1779,7 @@ export namespace Models {
       | 'lotDetail'
       | 'memberships'
       | 'ownerChangeRequests'
+      | 'ownerLotHistory'
       | 'paymentPlanRequests'
       | 'powersOfAttorney'
       | 'proceedingsDeadlineReminders'
@@ -2217,6 +2219,19 @@ export namespace Models {
     schemeId: FieldOutputTypes['public']['OwnerCreditTransaction']['schemeId'];
     type: FieldOutputTypes['public']['OwnerCreditTransaction']['type'];
     readonly [RelationKeys]?: never;
+  };
+  export type public_OwnerLotHistory = {
+    endedAt: FieldOutputTypes['public']['OwnerLotHistory']['endedAt'];
+    id: FieldOutputTypes['public']['OwnerLotHistory']['id'];
+    lotId: FieldOutputTypes['public']['OwnerLotHistory']['lotId'];
+    membershipId: FieldOutputTypes['public']['OwnerLotHistory']['membershipId'];
+    profileId: FieldOutputTypes['public']['OwnerLotHistory']['profileId'];
+    recordedAt: FieldOutputTypes['public']['OwnerLotHistory']['recordedAt'];
+    schemeId: FieldOutputTypes['public']['OwnerLotHistory']['schemeId'];
+    startedAt: FieldOutputTypes['public']['OwnerLotHistory']['startedAt'];
+    lot: public_Lot;
+    scheme: public_Scheme;
+    readonly [RelationKeys]?: 'lot' | 'scheme';
   };
   export type public_PaymentAuthorisation = {
     approvedAt: FieldOutputTypes['public']['PaymentAuthorisation']['approvedAt'];
@@ -2829,6 +2844,7 @@ export namespace Models {
     motions: public_Motion[];
     organisation: public_Organisation | null;
     ownerChangeRequests: public_OwnerChangeRequest[];
+    ownerLotHistory: public_OwnerLotHistory[];
     paymentPlanRequests: public_PaymentPlanRequest[];
     pendingResolutions: public_PendingResolution[];
     proceedingsDeadlineReminders: public_ProceedingsDeadlineReminder[];
@@ -2893,6 +2909,7 @@ export namespace Models {
       | 'motions'
       | 'organisation'
       | 'ownerChangeRequests'
+      | 'ownerLotHistory'
       | 'paymentPlanRequests'
       | 'pendingResolutions'
       | 'proceedingsDeadlineReminders'
@@ -4509,6 +4526,7 @@ export declare const models: {
     OwnerCreditBalance: Models.public_OwnerCreditBalance;
     OwnerCreditRefund: Models.public_OwnerCreditRefund;
     OwnerCreditTransaction: Models.public_OwnerCreditTransaction;
+    OwnerLotHistory: Models.public_OwnerLotHistory;
     PaymentAuthorisation: Models.public_PaymentAuthorisation;
     PaymentPlan: Models.public_PaymentPlan;
     PaymentPlanInstalment: Models.public_PaymentPlanInstalment;
@@ -15669,6 +15687,98 @@ type ContractBase = Omit<
                 },
               ];
               foreignKeys: readonly [];
+            };
+            readonly owner_lot_history: {
+              columns: {
+                readonly ended_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly lot_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly membership_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly profile_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly recorded_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly scheme_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly started_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'owner_lot_history_scheme_id_lot_id_idx';
+                  readonly columns: readonly ['scheme_id', 'lot_id'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'owner_lot_history';
+                    readonly columns: readonly ['scheme_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'schemes';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'owner_lot_history';
+                    readonly columns: readonly ['lot_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'lots';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
             };
             readonly payment_authorisations: {
               columns: {
@@ -29056,6 +29166,10 @@ type ContractBase = Omit<
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'OwnerCreditTransaction';
     };
+    readonly owner_lot_history: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'OwnerLotHistory';
+    };
     readonly payment_authorisations: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'PaymentAuthorisation';
@@ -37323,6 +37437,17 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['lotId'];
                 };
               };
+              readonly ownerLotHistory: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'OwnerLotHistory';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['lotId'];
+                };
+              };
               readonly paymentPlanRequests: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -39927,6 +40052,88 @@ type ContractBase = Omit<
                 readonly refundId: { readonly column: 'refund_id' };
                 readonly schemeId: { readonly column: 'scheme_id' };
                 readonly type: { readonly column: 'type' };
+              };
+            };
+          };
+          readonly OwnerLotHistory: {
+            readonly fields: {
+              readonly endedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly lotId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly membershipId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly profileId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly recordedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly schemeId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly startedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+            };
+            readonly relations: {
+              readonly lot: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'Lot' };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['lotId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly scheme: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Scheme';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['schemeId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'owner_lot_history';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly endedAt: { readonly column: 'ended_at' };
+                readonly id: { readonly column: 'id' };
+                readonly lotId: { readonly column: 'lot_id' };
+                readonly membershipId: { readonly column: 'membership_id' };
+                readonly profileId: { readonly column: 'profile_id' };
+                readonly recordedAt: { readonly column: 'recorded_at' };
+                readonly schemeId: { readonly column: 'scheme_id' };
+                readonly startedAt: { readonly column: 'started_at' };
               };
             };
           };
@@ -43578,6 +43785,17 @@ type ContractBase = Omit<
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
                   readonly model: 'OwnerChangeRequest';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['schemeId'];
+                };
+              };
+              readonly ownerLotHistory: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'OwnerLotHistory';
                 };
                 readonly cardinality: '1:N';
                 readonly on: {

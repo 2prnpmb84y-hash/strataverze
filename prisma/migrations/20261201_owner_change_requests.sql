@@ -12,7 +12,9 @@
 -- When to apply: BEFORE the H-1 code deploys. The new code reads this table on
 -- the Adviser's and the committee's lot pages and on /admin/owner-changes, and
 -- writes it whenever a change of owner is recorded, confirmed or rejected; it
--- fails against a database without it. The code deployed now never reads it.
+-- writes owner_lot_history when an ended owner access is started again and
+-- reads it in the payment plan own-lot check. It fails against a database
+-- without them. The code deployed now never reads either.
 --
 -- Why: the committee holds roll.manage and could record a change of owner to
 -- its own address, ending the real owner's access and receiving the OWNER
@@ -39,14 +41,17 @@
 --
 -- A trigger refuses any change to what was recorded, and any change to a
 -- decided row, except clearing notice_document_id (the document key's
--- ON DELETE SET NULL) and setting it once, from NULL, while the row waits.
+-- ON DELETE SET NULL) and setting it once, from NULL, while the row waits;
+-- and a notice key that is not a document of the same building.
 -- The app holds the lot's row (SELECT ... FOR NO KEY UPDATE on lots) while it
 -- checks for a waiting change and writes, and decides and applies a change in
 -- one transaction. Rows are not deleted by the app; they go with the lot
 -- or the building (ON DELETE CASCADE).
 --
--- Every existing row passes, by construction (not by reading the data): the
--- table is new and starts empty, and no existing table gains a column, a
+-- owner_lot_history: see its comment below (review L3).
+--
+-- Every existing row passes, by construction (not by reading the data): both
+-- tables are new and start empty, and no existing table gains a column, a
 -- check or a trigger.
 --
 -- The index names are the ones the emitted contract (src/prisma/contract.json)
@@ -102,12 +107,23 @@ REVOKE ALL ON public.owner_change_requests FROM anon, authenticated;
 -- its notice key when that document is deleted). The one change allowed to a
 -- waiting row: its notice key set once, from NULL (the app files the notice
 -- only after the hold commits, so a hold that loses a race files nothing).
+-- A notice key, whenever it is set (on insert too), must be a document of the
+-- same building (review L5): documents has no (id, scheme_id) key to refer to.
 CREATE OR REPLACE FUNCTION public.owner_change_requests_guard()
 RETURNS trigger
 LANGUAGE plpgsql
 SET search_path = public, pg_temp
 AS $$
 BEGIN
+  IF NEW.notice_document_id IS NOT NULL
+     AND (TG_OP = 'INSERT' OR NEW.notice_document_id IS DISTINCT FROM OLD.notice_document_id)
+     AND NOT EXISTS (SELECT 1 FROM public.documents d WHERE d.id = NEW.notice_document_id AND d.scheme_id = NEW.scheme_id) THEN
+    RAISE EXCEPTION 'StrataVerze: change of owner request %: the notice of transfer must be a document of the same building', NEW.id
+      USING ERRCODE = '23514';
+  END IF;
+  IF TG_OP = 'INSERT' THEN
+    RETURN NEW;
+  END IF;
   IF (NEW.id, NEW.scheme_id, NEW.lot_id, NEW.owner_name, NEW.owner_email, NEW.owner_mobile, NEW.owner_phone,
       NEW.owner_address, NEW.settlement_date, NEW.invite, NEW.recorded_by, NEW.recorded_at)
      IS DISTINCT FROM
@@ -126,7 +142,45 @@ END;
 $$;
 REVOKE EXECUTE ON FUNCTION public.owner_change_requests_guard() FROM PUBLIC, anon, authenticated, service_role;
 DROP TRIGGER IF EXISTS owner_change_requests_guard ON public.owner_change_requests;
-CREATE TRIGGER owner_change_requests_guard BEFORE UPDATE ON public.owner_change_requests
+CREATE TRIGGER owner_change_requests_guard BEFORE INSERT OR UPDATE ON public.owner_change_requests
   FOR EACH ROW EXECUTE FUNCTION public.owner_change_requests_guard();
+
+-- owner_lot_history (review L3): the lot and dates an ended OWNER membership
+-- held, kept when the app starts that membership again on a lot (one OWNER
+-- membership per person per building is scheme_memberships' key, so it is
+-- reused rather than a new row made). lotOwnerProfileIds reads it, so a
+-- former owner still counts as an owner of the old lot for 30 days after
+-- their ownership ended. Append only.
+CREATE TABLE IF NOT EXISTS public.owner_lot_history (
+  id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  scheme_id     uuid NOT NULL,
+  lot_id        uuid NOT NULL,
+  profile_id    uuid NOT NULL,
+  membership_id uuid NOT NULL,
+  started_at    timestamptz NOT NULL,
+  ended_at      timestamptz NOT NULL,
+  recorded_at   timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT owner_lot_history_scheme_id_fkey FOREIGN KEY (scheme_id) REFERENCES public.schemes(id) ON DELETE CASCADE,
+  CONSTRAINT owner_lot_history_lot_id_fkey FOREIGN KEY (lot_id) REFERENCES public.lots(id) ON DELETE CASCADE,
+  CONSTRAINT owner_lot_history_membership_id_fkey FOREIGN KEY (membership_id) REFERENCES public.scheme_memberships(id) ON DELETE CASCADE,
+  CONSTRAINT owner_lot_history_dates_check CHECK (ended_at >= started_at)
+);
+CREATE INDEX IF NOT EXISTS owner_lot_history_scheme_id_lot_id_idx ON public.owner_lot_history (scheme_id, lot_id);
+ALTER TABLE public.owner_lot_history ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.owner_lot_history FROM anon, authenticated;
+
+CREATE OR REPLACE FUNCTION public.owner_lot_history_append_only()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  RAISE EXCEPTION 'StrataVerze: owner_lot_history rows are not updated' USING ERRCODE = '23514';
+END;
+$$;
+REVOKE EXECUTE ON FUNCTION public.owner_lot_history_append_only() FROM PUBLIC, anon, authenticated, service_role;
+DROP TRIGGER IF EXISTS owner_lot_history_append_only ON public.owner_lot_history;
+CREATE TRIGGER owner_lot_history_append_only BEFORE UPDATE ON public.owner_lot_history
+  FOR EACH ROW EXECUTE FUNCTION public.owner_lot_history_append_only();
 
 COMMIT;

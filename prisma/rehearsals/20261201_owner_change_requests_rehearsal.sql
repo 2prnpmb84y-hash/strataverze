@@ -5,7 +5,11 @@
 -- the outer BEGIN ... ROLLBACK is a second guard.
 --
 -- Status: NOT RUN against Supabase. Run it in the Supabase SQL editor only
--- with Matthew Wrigley's approval, before applying the migration.
+-- with Matthew Wrigley's approval, OFF-PEAK (it takes row locks on the lots,
+-- schemes and documents it touches and a short lock on scheme_memberships for
+-- the new key), and ONLY BEFORE the migration is applied: it is the proof that
+-- the migration is safe to apply, not a check of an applied database.
+-- Every statement is limited to 30 seconds and every lock wait to 5.
 --
 -- Expected result: an error whose message starts "PROOF ok:" and lists what
 -- was checked. Any other error (including "PROOF incomplete" or one starting
@@ -15,11 +19,15 @@
 -- run twice, to show they are idempotent. Keep them in step with the
 -- migration: any change to one is made to the other.
 --
--- It needs one existing lot (with its building) and one existing profile. For
--- the cascade checks it makes a test building and test lots by copying an
--- existing building's and lot's row with a new id, plan number and lot
--- number; they are rolled back with everything else. The test rows use
--- made-up names and addresses at example.invalid.
+-- It needs one existing lot (with its building), one existing profile and one
+-- existing membership. For the cascade and same-building checks it makes a
+-- test building and test lots by copying an existing building's and lot's
+-- row with a new id, plan number and lot number; they are rolled back with
+-- everything else. Before anything else it stops ("PROOF incomplete") if
+-- schemes, lots or documents has a trigger StrataVerze's migrations did not
+-- make (none of ours is on them as of 20261201), as copying or deleting rows
+-- there would then run code this rehearsal has not been checked against. The
+-- test rows use made-up names and addresses at example.invalid.
 
 BEGIN;
 
@@ -36,11 +44,28 @@ DECLARE
   v_tlot uuid := gen_random_uuid();
   v_tlot2 uuid := gen_random_uuid();
   v_tdoc uuid;
+  v_otherdoc uuid;
+  v_member uuid;
+  v_hist uuid;
+  -- Triggers StrataVerze's own migrations put on schemes, lots or documents: none as of 20261201.
+  v_ours text[] := ARRAY[]::text[];
   v_checks text[] := ARRAY[]::text[];
   v_n int;
   i int;
 BEGIN
   PERFORM set_config('lock_timeout', '5s', true);
+  PERFORM set_config('statement_timeout', '30s', true);
+
+  -- 0. Nothing unknown runs when rows of schemes, lots or documents are copied or deleted below.
+  SELECT count(*) INTO v_n FROM pg_trigger
+   WHERE tgrelid IN ('public.schemes'::regclass, 'public.lots'::regclass, 'public.documents'::regclass)
+     AND NOT tgisinternal AND NOT (tgname = ANY (v_ours));
+  IF v_n <> 0 THEN
+    RAISE EXCEPTION 'PROOF incomplete: schemes, lots or documents has % trigger(s) this rehearsal does not know: %', v_n,
+      (SELECT string_agg(tgrelid::regclass || '.' || tgname, ', ') FROM pg_trigger
+        WHERE tgrelid IN ('public.schemes'::regclass, 'public.lots'::regclass, 'public.documents'::regclass)
+          AND NOT tgisinternal AND NOT (tgname = ANY (v_ours)));
+  END IF;
 
   -- ── The migration, exactly as in 20261201_owner_change_requests.sql, run twice (idempotent) ──
   FOR i IN 1..2 LOOP
@@ -87,6 +112,15 @@ BEGIN
     SET search_path = public, pg_temp
     AS $$
     BEGIN
+      IF NEW.notice_document_id IS NOT NULL
+         AND (TG_OP = 'INSERT' OR NEW.notice_document_id IS DISTINCT FROM OLD.notice_document_id)
+         AND NOT EXISTS (SELECT 1 FROM public.documents d WHERE d.id = NEW.notice_document_id AND d.scheme_id = NEW.scheme_id) THEN
+        RAISE EXCEPTION 'StrataVerze: change of owner request %: the notice of transfer must be a document of the same building', NEW.id
+          USING ERRCODE = '23514';
+      END IF;
+      IF TG_OP = 'INSERT' THEN
+        RETURN NEW;
+      END IF;
       IF (NEW.id, NEW.scheme_id, NEW.lot_id, NEW.owner_name, NEW.owner_email, NEW.owner_mobile, NEW.owner_phone,
           NEW.owner_address, NEW.settlement_date, NEW.invite, NEW.recorded_by, NEW.recorded_at)
          IS DISTINCT FROM
@@ -105,8 +139,40 @@ BEGIN
     $$;
     REVOKE EXECUTE ON FUNCTION public.owner_change_requests_guard() FROM PUBLIC, anon, authenticated, service_role;
     DROP TRIGGER IF EXISTS owner_change_requests_guard ON public.owner_change_requests;
-    CREATE TRIGGER owner_change_requests_guard BEFORE UPDATE ON public.owner_change_requests
+    CREATE TRIGGER owner_change_requests_guard BEFORE INSERT OR UPDATE ON public.owner_change_requests
       FOR EACH ROW EXECUTE FUNCTION public.owner_change_requests_guard();
+
+    CREATE TABLE IF NOT EXISTS public.owner_lot_history (
+      id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      scheme_id     uuid NOT NULL,
+      lot_id        uuid NOT NULL,
+      profile_id    uuid NOT NULL,
+      membership_id uuid NOT NULL,
+      started_at    timestamptz NOT NULL,
+      ended_at      timestamptz NOT NULL,
+      recorded_at   timestamptz NOT NULL DEFAULT now(),
+      CONSTRAINT owner_lot_history_scheme_id_fkey FOREIGN KEY (scheme_id) REFERENCES public.schemes(id) ON DELETE CASCADE,
+      CONSTRAINT owner_lot_history_lot_id_fkey FOREIGN KEY (lot_id) REFERENCES public.lots(id) ON DELETE CASCADE,
+      CONSTRAINT owner_lot_history_membership_id_fkey FOREIGN KEY (membership_id) REFERENCES public.scheme_memberships(id) ON DELETE CASCADE,
+      CONSTRAINT owner_lot_history_dates_check CHECK (ended_at >= started_at)
+    );
+    CREATE INDEX IF NOT EXISTS owner_lot_history_scheme_id_lot_id_idx ON public.owner_lot_history (scheme_id, lot_id);
+    ALTER TABLE public.owner_lot_history ENABLE ROW LEVEL SECURITY;
+    REVOKE ALL ON public.owner_lot_history FROM anon, authenticated;
+
+    CREATE OR REPLACE FUNCTION public.owner_lot_history_append_only()
+    RETURNS trigger
+    LANGUAGE plpgsql
+    SET search_path = public, pg_temp
+    AS $$
+    BEGIN
+      RAISE EXCEPTION 'StrataVerze: owner_lot_history rows are not updated' USING ERRCODE = '23514';
+    END;
+    $$;
+    REVOKE EXECUTE ON FUNCTION public.owner_lot_history_append_only() FROM PUBLIC, anon, authenticated, service_role;
+    DROP TRIGGER IF EXISTS owner_lot_history_append_only ON public.owner_lot_history;
+    CREATE TRIGGER owner_lot_history_append_only BEFORE UPDATE ON public.owner_lot_history
+      FOR EACH ROW EXECUTE FUNCTION public.owner_lot_history_append_only();
 
   END LOOP;
   v_checks := array_append(v_checks, 'migration runs twice');
@@ -116,9 +182,28 @@ BEGIN
    WHERE NOT EXISTS (SELECT 1 FROM public.owner_change_requests r WHERE r.lot_id = l.id AND r.status = 'PENDING')
    ORDER BY l.id LIMIT 1;
   SELECT id INTO v_profile FROM public.profiles ORDER BY created_at LIMIT 1;
-  IF v_lot IS NULL OR v_profile IS NULL THEN
-    RAISE EXCEPTION 'PROOF incomplete: needs one lot and one profile to test against';
+  SELECT id INTO v_member FROM public.scheme_memberships ORDER BY id LIMIT 1;
+  IF v_lot IS NULL OR v_profile IS NULL OR v_member IS NULL THEN
+    RAISE EXCEPTION 'PROOF incomplete: needs one lot, one profile and one membership to test against';
   END IF;
+  -- A second, test building with two lots and a document, copied from existing rows (cascades and same-building checks).
+  BEGIN
+    INSERT INTO public.schemes
+    SELECT (jsonb_populate_record(NULL::public.schemes,
+             to_jsonb(s) || jsonb_build_object('id', v_tscheme, 'plan_number', 'REHEARSAL-' || left(v_tscheme::text, 8), 'name', 'Rehearsal building'))).*
+      FROM public.schemes s WHERE s.id = v_scheme;
+    INSERT INTO public.lots
+    SELECT (jsonb_populate_record(NULL::public.lots, to_jsonb(l) || jsonb_build_object('id', v_tlot, 'scheme_id', v_tscheme, 'lot_number', 'R1'))).*
+      FROM public.lots l WHERE l.id = v_lot;
+    INSERT INTO public.lots
+    SELECT (jsonb_populate_record(NULL::public.lots, to_jsonb(l) || jsonb_build_object('id', v_tlot2, 'scheme_id', v_tscheme, 'lot_number', 'R2'))).*
+      FROM public.lots l WHERE l.id = v_lot;
+    INSERT INTO public.documents (scheme_id, title, category, file_url, file_name, uploaded_by, visibility)
+    VALUES (v_tscheme, 'Rehearsal other building notice', 'OTHER', 'rehearsal/other.pdf', 'other.pdf', v_profile, 'MANAGEMENT')
+    RETURNING id INTO v_otherdoc;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE EXCEPTION 'PROOF incomplete: could not make a test building, lots and document: %', SQLERRM;
+  END;
 
   -- 1. The table, its 16 columns, RLS on, and no browser access.
   SELECT count(*) INTO v_n FROM information_schema.columns
@@ -148,15 +233,52 @@ BEGIN
   SELECT count(*) INTO v_n FROM pg_indexes WHERE schemaname = 'public' AND tablename = 'owner_change_requests'
      AND indexname IN ('owner_change_requests_scheme_id_status_idx', 'owner_change_requests_lot_id_idx', 'owner_change_requests_one_pending_per_lot_idx');
   IF v_n <> 3 THEN RAISE EXCEPTION 'STOP: expected 3 indexes, found %', v_n; END IF;
-  -- tgtype: 1 = row, 2 = before, 16 = update; tgenabled O = enabled.
+  -- tgtype: 1 = row, 2 = before, 4 = insert, 8 = delete, 16 = update; tgenabled O = enabled.
   SELECT count(*) INTO v_n FROM pg_trigger
    WHERE tgrelid = 'public.owner_change_requests'::regclass AND tgname = 'owner_change_requests_guard' AND NOT tgisinternal
-     AND tgenabled = 'O' AND (tgtype & 1) = 1 AND (tgtype & 2) = 2 AND (tgtype & 16) = 16 AND (tgtype & 4) = 0 AND (tgtype & 8) = 0
+     AND tgenabled = 'O' AND (tgtype & 1) = 1 AND (tgtype & 2) = 2 AND (tgtype & 4) = 4 AND (tgtype & 16) = 16 AND (tgtype & 8) = 0
      AND tgfoid = 'public.owner_change_requests_guard()'::regprocedure;
-  IF v_n <> 1 THEN RAISE EXCEPTION 'STOP: the guard trigger is missing or not BEFORE UPDATE FOR EACH ROW'; END IF;
+  IF v_n <> 1 THEN RAISE EXCEPTION 'STOP: the guard trigger is missing or not BEFORE INSERT OR UPDATE FOR EACH ROW'; END IF;
   SELECT count(*) INTO v_n FROM pg_trigger WHERE tgrelid = 'public.owner_change_requests'::regclass AND NOT tgisinternal;
   IF v_n <> 1 THEN RAISE EXCEPTION 'STOP: expected exactly one trigger, found %', v_n; END IF;
   v_checks := array_append(v_checks, 'keys, indexes, trigger');
+
+  -- 2b. owner_lot_history: 8 columns, RLS, no browser access, its keys (all CASCADE), its index, the append-only trigger.
+  SELECT count(*) INTO v_n FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'owner_lot_history';
+  IF v_n <> 8 THEN RAISE EXCEPTION 'STOP: expected 8 owner_lot_history columns, found %', v_n; END IF;
+  SELECT count(*) INTO v_n FROM pg_class WHERE oid = 'public.owner_lot_history'::regclass AND relrowsecurity;
+  IF v_n <> 1 THEN RAISE EXCEPTION 'STOP: RLS is not enabled on owner_lot_history'; END IF;
+  IF has_table_privilege('anon', 'public.owner_lot_history', 'SELECT') OR has_table_privilege('authenticated', 'public.owner_lot_history', 'SELECT') THEN
+    RAISE EXCEPTION 'STOP: a browser role can read owner_lot_history';
+  END IF;
+  SELECT count(*) INTO v_n FROM pg_constraint
+   WHERE conrelid = 'public.owner_lot_history'::regclass AND contype = 'f' AND confdeltype = 'c'
+     AND ((conname = 'owner_lot_history_scheme_id_fkey' AND confrelid = 'public.schemes'::regclass)
+       OR (conname = 'owner_lot_history_lot_id_fkey' AND confrelid = 'public.lots'::regclass)
+       OR (conname = 'owner_lot_history_membership_id_fkey' AND confrelid = 'public.scheme_memberships'::regclass));
+  IF v_n <> 3 THEN RAISE EXCEPTION 'STOP: expected 3 owner_lot_history keys ON DELETE CASCADE, found %', v_n; END IF;
+  SELECT count(*) INTO v_n FROM pg_indexes WHERE schemaname = 'public' AND indexname = 'owner_lot_history_scheme_id_lot_id_idx';
+  IF v_n <> 1 THEN RAISE EXCEPTION 'STOP: the owner_lot_history index is missing'; END IF;
+  SELECT count(*) INTO v_n FROM pg_trigger
+   WHERE tgrelid = 'public.owner_lot_history'::regclass AND tgname = 'owner_lot_history_append_only' AND NOT tgisinternal
+     AND tgenabled = 'O' AND (tgtype & 1) = 1 AND (tgtype & 2) = 2 AND (tgtype & 16) = 16
+     AND tgfoid = 'public.owner_lot_history_append_only()'::regprocedure;
+  IF v_n <> 1 THEN RAISE EXCEPTION 'STOP: the owner_lot_history append-only trigger is missing'; END IF;
+  INSERT INTO public.owner_lot_history (scheme_id, lot_id, profile_id, membership_id, started_at, ended_at)
+  VALUES (v_tscheme, v_tlot, v_profile, v_member, now() - interval '1 year', now() - interval '1 day')
+  RETURNING id INTO v_hist;
+  BEGIN
+    UPDATE public.owner_lot_history SET ended_at = now() WHERE id = v_hist;
+    RAISE EXCEPTION 'STOP: an owner_lot_history row was updated';
+  EXCEPTION WHEN check_violation THEN NULL;
+  END;
+  BEGIN
+    INSERT INTO public.owner_lot_history (scheme_id, lot_id, profile_id, membership_id, started_at, ended_at)
+    VALUES (v_tscheme, v_tlot, v_profile, v_member, now(), now() - interval '1 day');
+    RAISE EXCEPTION 'STOP: an owner_lot_history row ending before it started was accepted';
+  EXCEPTION WHEN check_violation THEN NULL;
+  END;
+  v_checks := array_append(v_checks, 'owner_lot_history');
 
   -- 3. A change held as the app records it: PENDING, not decided, no notice yet.
   INSERT INTO public.owner_change_requests (scheme_id, lot_id, status, owner_name, owner_email, settlement_date, invite, notice_document_id, recorded_by)
@@ -224,6 +346,18 @@ BEGIN
   INSERT INTO public.documents (scheme_id, title, category, file_url, file_name, uploaded_by, visibility)
   VALUES (v_scheme, 'Rehearsal notice 2', 'OTHER', 'rehearsal/notice2.pdf', 'notice2.pdf', v_profile, 'MANAGEMENT')
   RETURNING id INTO v_doc2;
+  -- A document of another building is refused, on update and on insert (review L5).
+  BEGIN
+    UPDATE public.owner_change_requests SET notice_document_id = v_otherdoc WHERE id = v_req;
+    RAISE EXCEPTION 'STOP: a notice from another building was attached';
+  EXCEPTION WHEN check_violation THEN NULL;
+  END;
+  BEGIN
+    INSERT INTO public.owner_change_requests (scheme_id, lot_id, owner_name, settlement_date, recorded_by, notice_document_id, status, decided_by, decided_at)
+    VALUES (v_scheme, v_lot, 'Rehearsal Other Notice', current_date - 1, v_profile, v_otherdoc, 'REJECTED', v_profile, now());
+    RAISE EXCEPTION 'STOP: a request with a notice from another building was inserted';
+  EXCEPTION WHEN check_violation THEN NULL;
+  END;
   UPDATE public.owner_change_requests SET notice_document_id = v_doc
    WHERE id = v_req AND scheme_id = v_scheme AND status = 'PENDING' AND notice_document_id IS NULL;
   GET DIAGNOSTICS v_n = ROW_COUNT;
@@ -233,7 +367,7 @@ BEGIN
     RAISE EXCEPTION 'STOP: the notice was replaced by another document';
   EXCEPTION WHEN check_violation THEN NULL;
   END;
-  v_checks := array_append(v_checks, 'notice attached once');
+  v_checks := array_append(v_checks, 'notice attached once, same building only');
 
   -- 8. The app's claim: succeeds once, then matches nothing.
   UPDATE public.owner_change_requests SET status = 'CONFIRMED', decided_by = v_profile, decided_at = now()
@@ -278,26 +412,16 @@ BEGIN
   IF v_n <> 1 THEN RAISE EXCEPTION 'STOP: deleting the notice did not clear the key on the decided row'; END IF;
   v_checks := array_append(v_checks, 'notice key SET NULL');
 
-  -- 12. ON DELETE CASCADE from lots and from schemes, on a test building and lots copied from existing rows.
-  BEGIN
-    INSERT INTO public.schemes
-    SELECT (jsonb_populate_record(NULL::public.schemes,
-             to_jsonb(s) || jsonb_build_object('id', v_tscheme, 'plan_number', 'REHEARSAL-' || left(v_tscheme::text, 8), 'name', 'Rehearsal building'))).*
-      FROM public.schemes s WHERE s.id = v_scheme;
-    INSERT INTO public.lots
-    SELECT (jsonb_populate_record(NULL::public.lots, to_jsonb(l) || jsonb_build_object('id', v_tlot, 'scheme_id', v_tscheme, 'lot_number', 'R1'))).*
-      FROM public.lots l WHERE l.id = v_lot;
-    INSERT INTO public.lots
-    SELECT (jsonb_populate_record(NULL::public.lots, to_jsonb(l) || jsonb_build_object('id', v_tlot2, 'scheme_id', v_tscheme, 'lot_number', 'R2'))).*
-      FROM public.lots l WHERE l.id = v_lot;
-  EXCEPTION WHEN OTHERS THEN
-    RAISE EXCEPTION 'PROOF incomplete: could not make a test building and lots to check the cascades: %', SQLERRM;
-  END;
+  -- 12. ON DELETE CASCADE from lots and from schemes, on the test building and lots.
   INSERT INTO public.owner_change_requests (scheme_id, lot_id, owner_name, settlement_date, recorded_by)
   VALUES (v_tscheme, v_tlot, 'Rehearsal Cascade Lot', current_date - 1, v_profile);
   DELETE FROM public.lots WHERE id = v_tlot;
   SELECT count(*) INTO v_n FROM public.owner_change_requests WHERE lot_id = v_tlot;
   IF v_n <> 0 THEN RAISE EXCEPTION 'STOP: deleting a lot left % of its requests', v_n; END IF;
+  SELECT count(*) INTO v_n FROM public.owner_lot_history WHERE lot_id = v_tlot;
+  IF v_n <> 0 THEN RAISE EXCEPTION 'STOP: deleting a lot left % of its history rows', v_n; END IF;
+  INSERT INTO public.owner_lot_history (scheme_id, lot_id, profile_id, membership_id, started_at, ended_at)
+  VALUES (v_tscheme, v_tlot2, v_profile, v_member, now() - interval '1 year', now() - interval '1 day');
   INSERT INTO public.documents (scheme_id, title, category, file_url, file_name, uploaded_by, visibility)
   VALUES (v_tscheme, 'Rehearsal notice 3', 'OTHER', 'rehearsal/notice3.pdf', 'notice3.pdf', v_profile, 'MANAGEMENT')
   RETURNING id INTO v_tdoc;
@@ -308,6 +432,8 @@ BEGIN
   DELETE FROM public.schemes WHERE id = v_tscheme;
   SELECT count(*) INTO v_n FROM public.owner_change_requests WHERE scheme_id = v_tscheme;
   IF v_n <> 0 THEN RAISE EXCEPTION 'STOP: deleting a building left % of its requests', v_n; END IF;
+  SELECT count(*) INTO v_n FROM public.owner_lot_history WHERE scheme_id = v_tscheme;
+  IF v_n <> 0 THEN RAISE EXCEPTION 'STOP: deleting a building left % of its history rows', v_n; END IF;
   v_checks := array_append(v_checks, 'cascades from lots and schemes');
 
   RAISE EXCEPTION 'PROOF ok: % (all rolled back)', array_to_string(v_checks, ', ');
