@@ -5,6 +5,7 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { BylawsCard } from "../_sections/bylaws-card";
 import { requireAdviserScheme } from "../_sections/require-adviser-scheme";
 import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { accessOffered } from "@/lib/records/offered";
 
 /** Governance pill: the by-laws register and scheme membership. */
 export default async function GovernanceSectionPage({
@@ -37,7 +38,7 @@ export default async function GovernanceSectionPage({
           />
         </Card>
       )}
-      {features.recordsInspections && (
+      {accessOffered(features) && (
         <Card className="mb-6">
           <CardHeader
             title="Records inspections"
