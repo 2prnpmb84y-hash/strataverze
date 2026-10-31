@@ -4530,6 +4530,10 @@ model SaleCertificate {
   feeRepeat          Boolean   @default(false) @map("fee_repeat")
   feePaidOn          DateTime? @db.Date @map("fee_paid_on") // the fee is collected outside StrataVerze
   rulePack           String?   @map("rule_pack") @db.VarChar(40)
+  /// What the certificate's PDF reads, kept when it is issued (migration 20261126): the wording, the
+  /// building's details, the items and the dates, so a later pack change never alters an issued
+  /// certificate. Null for a draft, a cancelled draft and a certificate issued before the migration.
+  issuedContent      Json?     @map("issued_content")
   createdBy          String    @map("created_by") @db.Uuid
   issuedBy           String?   @map("issued_by") @db.Uuid
   createdAt          DateTime  @default(now()) @db.Timestamptz @map("created_at")

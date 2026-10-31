@@ -4,6 +4,7 @@
  * StrataVerze's records, completed by the adviser, then issued: from then on
  * its items and date are fixed and its fee (from the rule pack) is recorded.
  * Fees are collected outside StrataVerze; the date paid is recorded here.
+ * An issued certificate also keeps what its PDF reads (issued_content).
  * Who may ask, the fees and the deadlines come from the building's pack
  * (`rules.CERTIFICATE`, `rules.INSPECTIONS`, stage 2, step 9).
  */
@@ -13,6 +14,7 @@ import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
 import { schemeTimeZone, schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { localToInstant } from "@/lib/jurisdiction/time-zone";
 import { certificateDrafting, draftCertificateItems, type CertificateItem } from "./certificate-draft";
+import { certificateDocument, issuedCertificateContent } from "./issued-certificate";
 import { accessFee, certificateFeeFor, inspectionDeadlines, inspectionFee, type CertificateRule, type InspectionRule, type InspectorType } from "./fees";
 import { needRule, type StatutoryRules } from "@/config/statutory";
 
@@ -151,11 +153,21 @@ export async function refreshCertificateFigures(input: { schemeId: string; certi
   if (n !== 1) throw new RecordsError("Only a draft can be refreshed.");
 }
 
+/** Refuse items that still ask the adviser to check and complete them. */
+function mustBeChecked(items: unknown) {
+  const unchecked = (items as CertificateItem[]).filter((i) => /check and complete/i.test(i.text));
+  if (unchecked.length) {
+    throw new RecordsError(`Items ${unchecked.map((i) => i.no).join(", ")} still say “check and complete”. Complete them first.`);
+  }
+}
+
 /**
  * Issue a draft: its date is today, its items are fixed, and its fee is
  * recorded (the repeat fee when another certificate for the lot was issued
  * within the repeat period). The figures must have been taken today, so
- * they are as at the certificate's date.
+ * they are as at the certificate's date. What its PDF reads (the pack's
+ * wording, the building's details, the items and the date) is kept with it
+ * in the same transaction (issued_content), so it reads the same ever after.
  */
 export async function issueCertificate(input: { schemeId: string; certificateId: string; actorId: string; checkedAll: boolean }) {
   if (!input.checkedAll) throw new RecordsError("Confirm you have checked every item.", { checkedAll: "Confirm you have checked and completed every item." });
@@ -165,21 +177,25 @@ export async function issueCertificate(input: { schemeId: string; certificateId:
   if (day(c.draftedOn) < today) {
     throw new RecordsError(`The figures were taken from the records on ${day(c.draftedOn)}. Refresh them from the records, check them, then issue.`);
   }
-  const unchecked = (c.items as unknown as CertificateItem[]).filter((i) => /check and complete/i.test(i.text));
-  if (unchecked.length) {
-    throw new RecordsError(`Items ${unchecked.map((i) => i.no).join(", ")} still say “check and complete”. Complete them first.`);
-  }
+  mustBeChecked(c.items);
   let fee = { cents: 0, repeat: false };
   await db.transaction(async (tx) => {
     // Hold the lot's row until this commits, so two certificates for the lot issued at once see each other (repeat fee).
     const lot = await tx.orm.public.Lot.where((l) => l.id.eq(c.lotId)).first();
     if (!lot) throw new RecordsError("Lot not found.");
     await tx.orm.public.Lot.where((l) => l.id.eq(c.lotId)).update({ lotNumber: lot.lotNumber });
+    // Hold the certificate too, so the items kept below are the ones issued: a save of the draft waits, then finds it issued.
+    const held = await tx.orm.public.SaleCertificate.where((x) => x.id.eq(c.id)).forNoKeyUpdate().first();
+    if (!held || held.status !== "DRAFT") throw new RecordsError("This certificate has just been issued or cancelled. Reload the page.");
+    mustBeChecked(held.items);
     const earlier = await tx.orm.public.SaleCertificate.where((x) => and(x.lotId.eq(c.lotId), x.status.eq("ISSUED"))).limit(500).all();
     // The dollar amounts are those for the year the written request was received (Queensland; NSW fees are fixed).
     const due = certificateFeeFor(certificate.fee, today, earlier.map((x) => ({ issuedOn: day(x.certificateDate), requesterName: String(x.requesterName ?? "") })), String(c.requesterName ?? ""), day(c.requestedOn));
     if (!due) throw new RecordsError(`StrataVerze does not hold the fee for a request received on ${day(c.requestedOn)} yet. Ask StrataVerze to add that financial year's fees, then issue.`);
     fee = due;
+    // What the certificate reads today (the pack's wording, the building's details, its items and date), kept with it.
+    const scheme = await tx.orm.public.Scheme.where((s) => s.id.eq(input.schemeId)).first();
+    const issuedContent = issuedCertificateContent(certificateDocument({ cert: { ...held, status: "ISSUED", certificateDate: today }, rules, scheme, lot, today }), { source: "ISSUE", rulePack: label });
     const n = await tx.orm.public.SaleCertificate.where((x) => and(x.id.eq(c.id), x.status.eq("DRAFT"))).updateAndCount({
       status: "ISSUED",
       certificateDate: today,
@@ -187,6 +203,7 @@ export async function issueCertificate(input: { schemeId: string; certificateId:
       feeRepeat: fee.repeat,
       rulePack: label,
       issuedBy: input.actorId,
+      issuedContent: issuedContent as unknown as never,
     });
     if (n !== 1) throw new RecordsError("This certificate has just been issued or cancelled. Reload the page.");
   });

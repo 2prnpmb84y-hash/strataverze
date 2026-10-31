@@ -9,6 +9,7 @@ import { cancelCertificateAction, recordFeePaidAction, refreshCertificateAction,
 import { requesterFields } from "@/lib/records/requester-fields";
 import { certificateDrafting, type CertificateItem } from "@/lib/records/certificate-draft";
 import { certificateDueText } from "@/lib/records/certificate-text";
+import { keptDocument } from "@/lib/records/issued-certificate";
 import { formatLotLabel } from "@/lib/format";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -35,10 +36,13 @@ export default async function CertificatePage({ params }: { params: Promise<{ id
   const items = cert.items as unknown as CertificateItem[];
   const toComplete = items.filter((i) => /check and complete/i.test(i.text)).map((i) => i.no);
   const pdf = `/api/records/certificate/${cert.id}?schemeId=${id}`;
+  // An issued certificate's words are those it kept when it was issued; none kept: issued before migration 20261126.
+  const kept = cert.status === "ISSUED" ? keptDocument(cert.issuedContent) : null;
+  const words = kept ?? c;
   return (
     <div className="space-y-6 max-w-4xl">
       <PageHeader
-        title={`${c.title} ${cert.number}: ${formatLotLabel(String(lot?.lotNumber ?? ""))}`}
+        title={`${words.title} ${cert.number}: ${formatLotLabel(String(lot?.lotNumber ?? ""))}`}
         description={`Requested by ${cert.requesterName}, received ${day(cert.requestedOn)}.`}
         backHref={`/adviser/schemes/${id}/lots/${lotId}/certificates`}
         backLabel="Certificates"
@@ -100,7 +104,12 @@ export default async function CertificatePage({ params }: { params: Promise<{ id
                 Fee: ${((cert.feeCents ?? 0) / 100).toFixed(2)}
                 {cert.feeRepeat ? " (a further certificate within the repeat period)" : ""}. {cert.feePaidOn ? `Paid ${day(cert.feePaidOn)}.` : "Not yet recorded as paid (collected outside StrataVerze)."}
               </p>
-              <p className="text-xs text-ink-muted">{c.execution}. {c.conclusiveNote}</p>
+              {!kept && (
+                <p className="text-xs text-amber-700">
+                  Issued before StrataVerze kept each certificate as issued: its PDF is laid out again from the current wording and the building&apos;s current details. Check it against the certificate given.
+                </p>
+              )}
+              <p className="text-xs text-ink-muted">{words.execution}. {words.conclusiveNote}</p>
               {!cert.feePaidOn && (
                 <RecordsForm action={recordFeePaidAction.bind(null, id, "certificate", cert.id)} submitLabel="Record payment" fields={[{ name: "paidOn", label: "Date the fee was paid", type: "date", max: today, defaultValue: today }]} />
               )}
