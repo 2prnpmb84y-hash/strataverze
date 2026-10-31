@@ -270,11 +270,14 @@ export async function deleteLotAction(schemeId: string, lotId: string) {
 }
 
 /**
- * Search for profiles to assign as owners.
+ * Search for profiles to assign as owners. Only for assigning an owner
+ * directly, so the same people as assignOwnerAction: the building's Adviser
+ * or StrataVerze (finding L-1, 31 Oct 2026). With roll.manage the committee
+ * could look up any account on the platform by its exact email.
  */
 export async function searchProfilesAction(query: string, schemeId: string) {
   try {
-    await requireSchemeAccess(schemeId, "roll.manage");
+    await requireRolesOrAdmin(schemeId, ["ADVISER"]);
     return searchProfiles(query, schemeId);
   } catch {
     return [];

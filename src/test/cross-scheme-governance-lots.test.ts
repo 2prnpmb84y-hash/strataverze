@@ -325,6 +325,32 @@ describe("lots (C1)", () => {
     expect(lots.assignOwnerToLot).not.toHaveBeenCalled();
   });
 
+  // L-1 (31 Oct 2026): the owner search is for assigning an owner directly, so the same people as S-01.
+  it("searchProfilesAction refuses a committee member, without querying profiles", async () => {
+    callerRoles = { [SCHEME_A]: ["COMMITTEE", "OWNER"] };
+    model("Profile");
+    expect(await lotActions.searchProfilesAction("someone@example.com", SCHEME_A)).toEqual([]);
+    expect(terminals.Profile.all).not.toHaveBeenCalled();
+    expect(terminals.Profile.first).not.toHaveBeenCalled();
+  });
+
+  it("searchProfilesAction lets the scheme's Adviser and a StrataVerze admin search, but not an Adviser of another scheme", async () => {
+    model("Profile");
+    const row = { id: "p1", firstName: "Pat", lastName: "Lee", email: "pat@example.com" };
+    terminals.Profile.all.mockResolvedValue([row]);
+    expect(await lotActions.searchProfilesAction("pat@example.com", SCHEME_A)).toEqual([row]);
+
+    callerRoles = {};
+    caller.isPlatformAdmin = true;
+    expect(await lotActions.searchProfilesAction("pat@example.com", SCHEME_A)).toEqual([row]);
+
+    caller.isPlatformAdmin = false;
+    callerRoles = { [SCHEME_B]: ["ADVISER"] };
+    terminals.Profile.all.mockClear();
+    expect(await lotActions.searchProfilesAction("pat@example.com", SCHEME_A)).toEqual([]);
+    expect(terminals.Profile.all).not.toHaveBeenCalled();
+  });
+
   it("the committee keeps the other roll actions: removeOwnerAction is still open to it", async () => {
     callerRoles = { [SCHEME_A]: ["COMMITTEE"] };
     const r = await lotActions.removeOwnerAction(SCHEME_A, LOT_A.id, "membership-x");
