@@ -174,12 +174,15 @@ describe("the sign-in pages", () => {
     expect(inputProblems(container)).toEqual([]);
     expect(passwordPlaceholders(container)).toEqual([]);
     const signIn = screen.getByRole("button", { name: "Sign in" });
-    expect(signIn.className).toContain("bg-turquoise");
-    expect(signIn.className).toContain("text-ink");
+    // Exact classes, not substrings: "hover:bg-turquoise" contains "bg-turquoise".
+    // Founder direction: outlined with turquoise-deep words at rest, filled when selected.
+    const signInClasses = signIn.className.split(/\s+/);
+    expect(signInClasses).toEqual(expect.arrayContaining(["border-turquoise", "bg-white", "text-turquoise-deep", "hover:bg-turquoise"]));
+    expect(signInClasses).not.toContain("bg-turquoise");
     expect(signIn.getAttribute("type")).toBe("submit");
     const create = screen.getByRole("button", { name: "Create account" });
     expect(create.getAttribute("type")).toBe("button");
-    expect(create.className).not.toContain("bg-turquoise");
+    expect(create.className.split(/\s+/).filter((c) => c.endsWith("bg-turquoise"))).toEqual([]);
     // Create account comes after Sign in.
     expect(signIn.compareDocumentPosition(create) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
