@@ -5,9 +5,14 @@
 -- migrations, and ONLY with Matthew Wrigley's approval. Rehearse it first in
 -- a transaction that is rolled back.
 --
--- Status: NOT APPLIED. The first version (the column and the check only)
--- was rehearsed in a rolled-back run on 31 Oct 2026, cleanly; this version
--- adds the trigger below and must be rehearsed again.
+-- Status: APPLIED to production on 31 Oct 2026, approved by Matthew Wrigley.
+-- This version (with the trigger) was rehearsed first in a rolled-back run,
+-- which also exercised the trigger on a temporary table (issue, fee paid and
+-- backfill from null allowed; changing kept content and leaving ISSUED
+-- refused). Verified read-only afterwards: the column (jsonb, nullable), the
+-- check, the trigger enabled, the function not executable by anon,
+-- authenticated or service_role, and the one existing row (CANCELLED)
+-- unchanged.
 --
 -- When to apply: BEFORE the code that needs it deploys. The app's ORM lists
 -- every column of its contract in each query of sale_certificates, so the
