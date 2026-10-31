@@ -21,6 +21,7 @@ import {
 import { schemeStateProblem, SUPPORTED_SCHEME_STATES } from "./jurisdictions";
 import { fundConditionSelectors } from "@/lib/jurisdiction/funds";
 import { noticeRuleProblems, noticeTimingFor } from "@/lib/levies/notice-rule-check";
+import { annualLateChargeMissing, annualLateChargeRate, annualRateProblem, effectiveLateChargeMode, lateChargeWaiverProblem } from "@/lib/finance/statutory-interest";
 import type { BuildingSelector, EntitlementScheduleDefinition, FundDefinition, RuleStatus, SelectorCondition } from "./statutory/types";
 
 const STATUSES: RuleStatus[] = ["CONFIRMED", "GUIDANCE", "STRATAVERZE", "NOT_CONFIRMED"];
@@ -846,7 +847,11 @@ describe("Northern Territory pack (pending)", () => {
     expect(nt.RESOLUTIONS.SPECIAL.againstNotMoreThanFractionOfAllContributionEntitlements).toBe(0.25);
     expect(nt.RESOLUTIONS.MAJORITY.moreThanFractionOfAllUnits).toBe(0.5);
     expect(nt.RESOLUTIONS.ORDINARY.modulesApplyEntitlementCount).toBe(false);
-    expect(nt.DEBT_RECOVERY.debtorMayVoteOnlyOn).toEqual(["UNANIMOUS", "WITHOUT_DISSENT"]);
+    // s 79(10): only a motion the Act requires to be passed that way, not every motion put that way.
+    expect(nt.DEBT_RECOVERY.debtorMayVoteOnlyOnMotionsRequiredByActToBe).toEqual(["UNANIMOUS", "WITHOUT_DISSENT"]);
+    expect(nt.DEBT_RECOVERY.debtorExceptionIncludesModulesStatus).toBe("NOT_CONFIRMED");
+    expect("debtorMayVoteOnlyOn" in nt.DEBT_RECOVERY).toBe(false);
+    expect(nt.NOT_CONFIRMED.some((p) => p.includes("\"required by this Act\""))).toBe(true);
   });
 
   it("counts meeting notice in working days: 14, or 21 for without dissent, unanimous or termination resolutions", () => {
@@ -862,6 +867,9 @@ describe("Northern Territory pack (pending)", () => {
   it("charges no interest: optional in law, and every value the engine needs is not confirmed", () => {
     const lc = nt.LATE_CHARGE;
     expect(lc.defaultMode).toBe("NONE");
+    // STATUTORY is left out until the Supreme Court Act s 85 rate is confirmed, so it cannot be saved.
+    expect(lc.modes).toEqual(["NONE", "RESOLVED_ANNUAL_RATE"]);
+    expect(lc.resolutionRequiredFor).toEqual(["RESOLVED_ANNUAL_RATE"]);
     expect(lc.annualRatePercent).toBeNull();
     expect(lc.maxMonthlyRatePercent).toBeNull();
     const a = lc.annual!;
@@ -873,12 +881,59 @@ describe("Northern Territory pack (pending)", () => {
     }
     expect(nt.INTEREST_ON_LATE_PAYMENT.mayCharge).toBe(true);
     expect(nt.INTEREST_ON_LATE_PAYMENT.section85RatePercent).toBeNull();
+    expect(nt.FOR_REVIEW.some((p) => p.includes("left out of LATE_CHARGE.modes"))).toBe(true);
   });
 
-  it("gives no notice rule problem, its timing being StrataVerze proposals", () => {
-    expect(noticeRuleProblems(nt.NOTICE_RULES, { ledgerFund: "ADMINISTRATIVE" })).toEqual([]);
-    expect(noticeRuleProblems(nt.NOTICE_RULES, { ledgerFund: "CAPITAL_WORKS" })).toEqual([]);
-    expect(noticeTimingFor(nt.NOTICE_RULES)).toMatchObject({ minimumDays: 14, leadDays: 35, maximumDays: null, dueDateMayMove: false, minimumIsStatutory: false });
+  it("is refused by the engine: no rate, no resolved rate, no waiver, no forum, no meeting rules, no notice", () => {
+    const lc = nt.LATE_CHARGE;
+    const t = { lateCharge: nt.TERMINOLOGY.lateCharge, ownersCorporation: nt.TERMINOLOGY.ownersCorporation };
+    // STATUTORY is not one of the pack's modes, so a stored STATUTORY is read as the default (NONE): no rate, nothing charged.
+    expect(effectiveLateChargeMode(lc, "STATUTORY")).toBe("NONE");
+    expect(annualLateChargeRate(lc, { mode: "STATUTORY" })).toBeNull();
+    // The resolved rate has no rate, and says what is missing.
+    expect(annualLateChargeRate(lc, { mode: "RESOLVED_ANNUAL_RATE", annualRatePercent: 5 })).toBeNull();
+    expect(annualLateChargeMissing(lc, { mode: "RESOLVED_ANNUAL_RATE", annualRatePercent: 5 })).toEqual(
+      expect.arrayContaining(["resolvedRate.resolution", "resolvedRate.minPercent", "resolvedRate.maxPercent", "accrual.from", "accrual.graceMonths", "accrual.simple", "accrual.daysInYear"]),
+    );
+    expect(annualRateProblem(lc.annual, 5, t)).toMatch(/not confirmed/);
+    const resolution = { resolutionMeetingId: "m", resolutionMotionId: "x" };
+    expect(lateChargeWaiverProblem({ kind: "WHOLE", reasons: "Hardship", ...resolution }, lc, t)).toMatch(/not confirmed/);
+    expect(nt.DEBT_RECOVERY.forum).toBeNull();
+    expect("MEETING_RULES" in nt).toBe(false);
+    // Every notice is refused while the timing values have no value.
+    for (const ledgerFund of ["ADMINISTRATIVE", "CAPITAL_WORKS"] as const) {
+      const points = noticeRuleProblems(nt.NOTICE_RULES, { ledgerFund }).map((p) => p.point);
+      expect(points, ledgerFund).toEqual(["minimumNoticeDays", "issueDaysBeforeDue", "dueDateMayMove", "noticeMode"]);
+    }
+  });
+
+  it("holds the notice timing with no value, the proposal kept in FOR_REVIEW only", () => {
+    const c = nt.NOTICE_RULES.checked!;
+    for (const v of [c.minimumNoticeDays, c.issueDaysBeforeDue, c.dueDateMayMove, ...Object.values(c.noticeMode)]) {
+      expect(v!.value).toBeNull();
+      expect(v!.status).toBe("NOT_CONFIRMED");
+      expect(v!.note!.length).toBeGreaterThan(10);
+    }
+    expect(c.maximumNoticeDays).toBeNull();
+    expect(nt.NOTICE_RULES.urgentNoticeDays).toBeNull();
+    expect(nt.NOTICE_RULES.hardship).toBeNull();
+    const proposal = nt.FOR_REVIEW.find((p) => p.startsWith("Proposed decision (notice timing)"));
+    for (const words of ["14 days", "35 days", "never moved", "one notice per instalment"]) expect(proposal, words).toContain(words);
+    expect(nt.FOR_REVIEW.some((p) => p.startsWith("Proposed decision (payment allocation order)"))).toBe(true);
+    expect("PAYMENT_ALLOCATION_ORDER" in nt).toBe(false);
+  });
+
+  it("holds STRATAVERZE status only on names and labels, never on a rule the engine applies", () => {
+    // Every STRATAVERZE value in the pack, by where it is: the ledger fund names, the name template and the time zone.
+    const found: string[] = [];
+    const walk = (v: unknown, path: string): void => {
+      if (Array.isArray(v)) v.forEach((x, i) => walk(x, `${path}[${i}]`));
+      else if (v && typeof v === "object") for (const [k, x] of Object.entries(v)) walk(x, path ? `${path}.${k}` : k);
+      else if (v === "STRATAVERZE") found.push(path);
+    };
+    walk(nt, "");
+    expect(found.sort()).toEqual(["FUND_CATALOGUE[0].status", "FUND_CATALOGUE[1].status", "TERMINOLOGY.bodyCorporateNameStatus", "TIME_ZONE.status"]);
+    expect(nt.FOR_REVIEW.some((p) => p.includes("\"may\" specify a body corporate name"))).toBe(true);
   });
 
   it("uses the Darwin time zone, with no daylight saving", () => {
@@ -891,7 +946,8 @@ describe("Northern Territory pack (pending)", () => {
 });
 
 describe("the checked notice rules of the pending packs (stage 2, PR 6a)", () => {
-  const pending = [PENDING_RULE_PACKS.ACT, PENDING_RULE_PACKS.VIC, PENDING_RULE_PACKS.WA, PENDING_RULE_PACKS.NT] as const;
+  // The Northern Territory holds no timing value yet (every notice refused), so its own block checks it.
+  const pending = [PENDING_RULE_PACKS.ACT, PENDING_RULE_PACKS.VIC, PENDING_RULE_PACKS.WA] as const;
   const STATUSES_WITH_VALUE = ["CONFIRMED", "STRATAVERZE"];
 
   it.each(pending.map((p) => [p.code, p.rules.NOTICE_RULES] as const))("%s: every value is checked, and the checked values fit together", (_code, rule) => {

@@ -7,7 +7,8 @@
  * applied to any building: `rulePackFor` returns active packs only, and the
  * Northern Territory is not in SUPPORTED_SCHEME_STATES or the database's state
  * check. Every value below comes from the research notes of 31 Oct 2026
- * (scratchpad nt-research.md) and keeps their status (see RuleStatus in
+ * prepared for Matthew Wrigley ("Northern Territory: unit title research
+ * notes for the NT rule pack") and keeps their status (see RuleStatus in
  * ./types); nothing has been decided yet (DECISIONS is empty), and the points
  * to decide, including the product choices this draft had to propose, are in
  * FOR_REVIEW.
@@ -279,9 +280,11 @@ export const INTEREST_ON_LATE_PAYMENT = {
 export const LATE_CHARGE: LateChargeRules = {
   method: "ANNUAL_RATE",
   // Interest is charged only if the body corporate decides to ("may charge"), so a new building starts with none.
-  modes: ["NONE", "STATUTORY", "RESOLVED_ANNUAL_RATE"],
+  // STATUTORY (the Supreme Court Act s 85 rate where no rate is decided, MM cl 52(2)(b)) is left out until that rate is
+  // confirmed, so it cannot be saved as a building's setting (FOR_REVIEW).
+  modes: ["NONE", "RESOLVED_ANNUAL_RATE"],
   defaultMode: "NONE",
-  resolutionRequiredFor: ["STATUTORY", "RESOLVED_ANNUAL_RATE"],
+  resolutionRequiredFor: ["RESOLVED_ANNUAL_RATE"],
   annualRatePercent: null,
   maxMonthlyRatePercent: null,
   graceMonths: 0,
@@ -325,11 +328,15 @@ export const LATE_CHARGE: LateChargeRules = {
 /**
  * The contribution notice rules. The UTSA and modules set no notice content,
  * least or most notice, or form: the body corporate decides how contributions
- * are paid (MM cl 48(b)). The timing values are StrataVerze proposals, the
- * same as the decided WA values, so the shape holds safe numbers; none is
- * decided (FOR_REVIEW).
+ * are paid (MM cl 48(b)). Every timing value is held with no value
+ * (NOT_CONFIRMED), so every notice is refused until Matthew Wrigley decides
+ * them: the proposed figures are in FOR_REVIEW ("Proposed decision (notice
+ * timing)"), not here.
  */
+const NOTICE_NOT_DECIDED = "No rule of law sets it (MM cl 48(b) leaves how contributions are paid to the body corporate), and StrataVerze has not decided a value for the Northern Territory. The proposal is in FOR_REVIEW.";
+
 export const NOTICE_RULES: NoticeRules = {
+  // Not relied on: `checked` decides, and refuses every notice while its values are missing.
   minimumNoticeDays: 14,
   issueDaysBeforeDue: 35,
   urgentNoticeDays: null,
@@ -337,39 +344,14 @@ export const NOTICE_RULES: NoticeRules = {
   contents: [],
   source: `${MM} cl 48; ${MM3} cl 39`,
   checked: {
-    minimumNoticeDays: {
-      value: 14,
-      status: "STRATAVERZE",
-      source: PROPOSED,
-      note: "The UTSA and modules set no least notice for a contribution (MM cl 48(b)). 14 days is a proposed StrataVerze floor, as decided for WA, not a rule of law.",
-    },
+    minimumNoticeDays: { value: null, status: "NOT_CONFIRMED", source: `${MM} cl 48(b)`, note: NOTICE_NOT_DECIDED },
     // No most notice in the UTSA or modules (CONFIRMED absent; supervisor-approved module changes not checked).
     maximumNoticeDays: null,
-    issueDaysBeforeDue: {
-      value: 35,
-      status: "STRATAVERZE",
-      source: PROPOSED,
-      note: "Each notice would go out 35 days before it falls due, as NSW, Queensland and WA notices do. A proposal, not a rule of law.",
-    },
-    dueDateMayMove: {
-      value: false,
-      status: "STRATAVERZE",
-      source: `${PROPOSED}; ${MM} cl 48(b)`,
-      note: "The body corporate's decision says how contributions are paid (cl 48(b)), so StrataVerze would never move a due date. A proposed reading.",
-    },
+    issueDaysBeforeDue: { value: null, status: "NOT_CONFIRMED", source: `${MM} cl 48(b)`, note: NOTICE_NOT_DECIDED },
+    dueDateMayMove: { value: null, status: "NOT_CONFIRMED", source: `${MM} cl 48(b)`, note: NOTICE_NOT_DECIDED },
     noticeMode: {
-      ADMINISTRATIVE: {
-        value: "PER_INSTALMENT",
-        status: "STRATAVERZE",
-        source: `${PROPOSED}; ${MM} cl 48`,
-        note: "One notice for each instalment as it falls due, as NSW. A proposal, since the module sets no notice rule.",
-      },
-      CAPITAL_WORKS: {
-        value: "PER_INSTALMENT",
-        status: "STRATAVERZE",
-        source: `${PROPOSED}; ${MM} cll 50, 51`,
-        note: "One notice for each instalment of a special levy as it falls due. A proposal, since the module sets no notice rule.",
-      },
+      ADMINISTRATIVE: { value: null, status: "NOT_CONFIRMED", source: `${MM} cl 48`, note: NOTICE_NOT_DECIDED },
+      CAPITAL_WORKS: { value: null, status: "NOT_CONFIRMED", source: `${MM} cll 50, 51`, note: NOTICE_NOT_DECIDED },
     },
     requiredContents: [],
     form: null,
@@ -392,8 +374,16 @@ export const DEBT_RECOVERY = {
   statutoryCharge: false,
   statutoryPreActionNotice: false,
   costsRecoverableStatus: "NOT_CONFIRMED" as RuleStatus,
-  /** An owner who has not paid contributions or levies by the due date may not vote while it is outstanding, except on unanimous and without dissent motions (s 79(9), (10)). */
-  debtorMayVoteOnlyOn: ["UNANIMOUS", "WITHOUT_DISSENT"],
+  /**
+   * An owner who has not paid annual contributions or levies by the due date
+   * may not vote on a motion while it is outstanding (s 79(9)), except on a
+   * motion "required by this Act" to be passed by a unanimous resolution or a
+   * resolution without dissent (s 79(10)). A motion the owners merely choose
+   * to put as unanimous or without dissent is not excepted. Whether "this
+   * Act" includes the management modules is NOT_CONFIRMED.
+   */
+  debtorMayVoteOnlyOnMotionsRequiredByActToBe: ["UNANIMOUS", "WITHOUT_DISSENT"],
+  debtorExceptionIncludesModulesStatus: "NOT_CONFIRMED" as RuleStatus,
   source: `${UTSA} ss 28(2)(g), 30, 79(9), (10), 84 to 86; ${MM} cl 53; ${MM3} cl 44`,
   status: "CONFIRMED" as RuleStatus,
 } as const;
@@ -657,6 +647,7 @@ export const NOT_CONFIRMED = [
   "Exact subsection and subclause numbers: the official Word text was read without its automatic numbering, so numbers are taken from the order and cross-references.",
   "Whether any amending Bill is before the Legislative Assembly (the NT Bills list was not browsed).",
   "Whether a further general meeting that is held but does not confirm an interim resolution ends it (MM cl 34(3) does not say so expressly).",
+  "Whether \"required by this Act\" in UTSA s 79(10) includes a motion the management module requires to be passed by a unanimous resolution or a resolution without dissent (for example a mortgage of a body corporate asset, MM cl 54, or a recurring levy, MM cl 51). The Interpretation Act 1978 was not read.",
 ] as const;
 
 /** StrataVerze's decisions: none yet. The pack has not been reviewed. */
@@ -671,15 +662,16 @@ export const DECISIONS = [] as const;
 export const FOR_REVIEW = [
   "Proposed decision (scope): support UTSA schemes first, standard schemes on management module 2 (the default) and module 1 (which reads the same), and hold small schemes (module 3), supervisor-varied modules and UTA schemes as not supported (SCHEME_ACT, MANAGEMENT_MODULE). UTA schemes are probably the larger part of the NT market (older units plans), so the UTA and its own management modules should be the next research, not dropped.",
   "Proposed decision (funds): the UTSA and modules require and name no fund. FUND_CATALOGUE holds an \"administrative fund\" and a \"sinking fund\" as StrataVerze ledger names only, neither required. Confirm the names NT bodies corporate use, and whether a new building should be given either.",
-  "Proposed decision (notice timing): NOTICE_RULES.checked holds the WA values as proposals (14 days least, 35 days lead, the due date never moved, one notice per instalment). None is law: the module leaves how contributions are paid to the body corporate (MM cl 48(b)).",
-  "Interest (LATE_CHARGE): interest is charged only if the body corporate decides to (\"may charge\", MM cl 52), so a new building starts with none (NONE). The rate cap and default is the Supreme Court Act s 85 rate, not read, and who decides and how interest accrues are not confirmed, so no interest can be charged until a pack version records them. Confirm the s 85 rate source and whether it should be a dated rule.",
+  "Proposed decision (notice timing): the WA values are proposed: 14 days least notice, each notice going out 35 days before it falls due, the due date never moved (MM cl 48(b): the body corporate's decision says how contributions are paid), and one notice per instalment for both funds. None is law, and none is decided, so NOTICE_RULES.checked holds every timing value with no value (NOT_CONFIRMED) and every notice is refused until a pack version records the decision.",
+  "Proposed decision (payment allocation order): no statutory order for applying a payment to contributions, interest and recovery costs was found in the UTSA or the modules (research notes, section F), so the pack has no PAYMENT_ALLOCATION_ORDER. Proposed: contributions, then interest, then recovery costs, as decided for NSW, the ACT, Victoria and WA. Not decided.",
+  "Interest (LATE_CHARGE): interest is charged only if the body corporate decides to (\"may charge\", MM cl 52), so a new building starts with none (NONE). The rate cap and default is the Supreme Court Act s 85 rate, not read, and who decides and how interest accrues are not confirmed, so no interest can be charged until a pack version records them. The STATUTORY setting (the s 85 rate, used where no rate is decided) is left out of LATE_CHARGE.modes until that rate is confirmed, so it cannot be saved for a building. Confirm the s 85 rate source and whether it should be a dated rule.",
   "Entitlements: two schedules. Contribution entitlement (held on each unit) decides contributions and the special resolution's 25% against test (s 79(8)(b)); interest entitlement decides the share of common property and assets, and the quorum (50% of interest entitlements) and opposition and meeting-call thresholds. The quorum is not listed in `decides`, as no EntitlementUse fits a first quorum test. Confirm.",
-  "Resolutions: the special resolution is two-thirds of votes cast plus an entitlement test against all contribution entitlements; the majority resolution is more than 50% of all units; an ordinary resolution counts heads (no module applies s 79(7)(a)). Debtors may vote only on unanimous and without dissent motions (s 79(9), (10)). Confirm before MEETING_RULES is built.",
+  "Resolutions: the special resolution is two-thirds of votes cast plus an entitlement test against all contribution entitlements; the majority resolution is more than 50% of all units; an ordinary resolution counts heads (no module applies s 79(7)(a)). Debtors may vote only on a motion the Act requires to be passed by a unanimous resolution or a resolution without dissent (s 79(9), (10)), not on every motion put in that form; whether a motion the management module requires in that form counts (\"required by this Act\") is not confirmed. Confirm before MEETING_RULES is built.",
   "Working days: almost every NT period is in working days (UTSA s 5). StrataVerze counts calendar days, so meeting and committee notices, interim resolution periods, record access (10 working days) and owner notices (28 working days) cannot be checked until a public holiday source is decided.",
   "Debt recovery: the forum and who decides to sue are not confirmed, there is no statutory charge or pre-action notice, and the owner's debt is a debt due (MM cl 53). FEATURES.debtRecoverySteps stays off. Confirm the forum (NTCAT or a court) before any step is drafted.",
   "Records inspection: within 10 working days (s 81(3)), with a $30 fee or a waiver application (MM cl 58); module 3 states no fee. FEATURES.recordsInspections stays off until working days are counted.",
   "Sale: the UTSA has no resale certificate; buyers use s 81 records access. FEATURES.strataInformationCertificate and bodyCorporateCertificate stay off. Confirm what NT conveyancers expect (REINT contract) before anything is offered.",
-  "Name format: TERMINOLOGY.bodyCorporateName (\"Body Corporate of {name} (registration number {plan})\") is a StrataVerze template: the law has no format (ss 18(2)(b), 25(1)). Confirm the wording NT schemes use.",
+  "Name format: TERMINOLOGY.bodyCorporateName (\"Body Corporate of {name} (registration number {plan})\") is a StrataVerze template: the law has no format. Checked on 31 Oct 2026: UTSA s 18(2)(b) says the scheme statement \"may\" specify a body corporate name, so a name is optional, and without one the body corporate is identified by its registration number (s 25(1)). Where a scheme statement does specify a name, that registered name should be used. Confirm the wording NT schemes use, and whether StrataVerze should hold the registered body corporate name separately.",
   "Time zone: Australia/Darwin, UTC+9:30 all year (no daylight saving). Postcodes are held in src/config/jurisdictions.ts, which has no NT range yet; the 08xx range is not confirmed from an official source.",
   "Subsection numbers: read from text without automatic numbering. Check the citations against the PDF before any reach owner-facing text.",
 ] as const;
