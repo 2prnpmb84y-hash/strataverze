@@ -25,7 +25,8 @@
  * isolation). Unique keys are checked only where a test sets them
  * (`setUniqueKeys`), and a duplicate throws with code 23505. Includes are
  * ignored, except a has-many relation a test sets (`setRelations`), which
- * `include(name)` fills from the child table.
+ * `include(name)` fills from the child table. jsonb columns a test sets
+ * (`setJsonColumns`) are stored by value, as a JSON round trip.
  *
  * A transaction's `raw` and `execute` record each raw statement in
  * `statements`; `SET LOCAL lock_timeout` makes that transaction's lock waits
@@ -154,6 +155,20 @@ export function createFakeDb(seed: Record<string, Row[]> = {}) {
   /** Has-many relations a test has set, by table: relation name to the child table and its key. */
   const relations: Record<string, Record<string, { table: string; foreignKey: string }>> = {};
   const setRelations = (rels: Record<string, Record<string, { table: string; foreignKey: string }>>) => Object.assign(relations, rels);
+  /**
+   * jsonb columns a test has set, by table: stored by value (a JSON round
+   * trip on every write and read), as Postgres stores them, so a test sees
+   * what a real round trip gives back rather than the object it wrote.
+   */
+  const jsonColumns: Record<string, string[]> = {};
+  const setJsonColumns = (cols: Record<string, string[]>) => Object.assign(jsonColumns, cols);
+  const byValue = (name: string, data: Row): Row => {
+    const cols = jsonColumns[name];
+    if (!cols) return data;
+    const copy = { ...data };
+    for (const c of cols) if (copy[c] !== undefined && copy[c] !== null) copy[c] = JSON.parse(JSON.stringify(copy[c]));
+    return copy;
+  };
   /** Replace every table with copies of the seed rows. */
   const reset = (rows: Record<string, Row[]> = {}) => {
     for (const name of Object.keys(tables)) delete tables[name];
@@ -165,6 +180,7 @@ export function createFakeDb(seed: Record<string, Row[]> = {}) {
     held.clear();
     for (const k of Object.keys(uniqueKeys)) delete uniqueKeys[k];
     for (const k of Object.keys(relations)) delete relations[k];
+    for (const k of Object.keys(jsonColumns)) delete jsonColumns[k];
   };
   const checkUnique = (name: string, row: Row) => {
     for (const fields of uniqueKeys[name] ?? []) {
@@ -178,7 +194,7 @@ export function createFakeDb(seed: Record<string, Row[]> = {}) {
   function collection(name: string, preds: Predicate[] = [], limit?: number, offset = 0, tx?: TxState, lock = false, includes: string[] = []) {
     /** A copy of a row, with any set relation it includes. */
     const out = (row: Row): Row => {
-      const copy = { ...row };
+      const copy = byValue(name, { ...row });
       for (const rel of includes) {
         const r = relations[name]?.[rel];
         if (r && copy[rel] === undefined) copy[rel] = table(r.table).filter((c) => c[r.foreignKey] === row.id).map((c) => ({ ...c }));
@@ -248,7 +264,7 @@ export function createFakeDb(seed: Record<string, Row[]> = {}) {
         const row = matching()[0];
         if (!row) return null;
         remember(row);
-        Object.assign(row, data);
+        Object.assign(row, byValue(name, data));
         checkUnique(name, row);
         return { ...row };
       },
@@ -267,7 +283,7 @@ export function createFakeDb(seed: Record<string, Row[]> = {}) {
         const rows = matching();
         for (const row of rows) {
           remember(row);
-          Object.assign(row, data);
+          Object.assign(row, byValue(name, data));
           checkUnique(name, row);
         }
         return rows.length;
@@ -280,7 +296,7 @@ export function createFakeDb(seed: Record<string, Row[]> = {}) {
         return rows.size;
       },
       create: async (data: Row) => {
-        const row = { id: `fake-${name}-${nextId++}`, ...data };
+        const row = { id: `fake-${name}-${nextId++}`, ...byValue(name, data) };
         checkUnique(name, row);
         table(name).push(row);
         tx?.undo.push(() => {
@@ -334,7 +350,7 @@ export function createFakeDb(seed: Record<string, Row[]> = {}) {
       }
     },
   };
-  return { db, tables, table, reset, locks, setUniqueKeys, setRelations, globalCallsUnderLock, statements, setLockTimeoutMs };
+  return { db, tables, table, reset, locks, setUniqueKeys, setRelations, setJsonColumns, globalCallsUnderLock, statements, setLockTimeoutMs };
 }
 
 /**

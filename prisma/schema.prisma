@@ -4531,8 +4531,10 @@ model SaleCertificate {
   feePaidOn          DateTime? @db.Date @map("fee_paid_on") // the fee is collected outside StrataVerze
   rulePack           String?   @map("rule_pack") @db.VarChar(40)
   /// What the certificate's PDF reads, kept when it is issued (migration 20261126): the wording, the
-  /// building's details, the items and the dates, so a later pack change never alters an issued
-  /// certificate. Null for a draft, a cancelled draft and a certificate issued before the migration.
+  /// building's details, the items and the dates, with the layout, the file name and the SHA-256 of
+  /// the PDF, so a later change never alters an issued certificate. Never changed once set, and an
+  /// issued certificate stays issued (trigger sale_certificates_issued_guard). Null for a draft, a
+  /// cancelled draft and a certificate issued before the migration.
   issuedContent      Json?     @map("issued_content")
   createdBy          String    @map("created_by") @db.Uuid
   issuedBy           String?   @map("issued_by") @db.Uuid

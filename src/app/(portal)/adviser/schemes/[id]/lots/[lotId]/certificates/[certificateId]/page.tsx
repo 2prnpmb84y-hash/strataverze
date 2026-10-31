@@ -9,7 +9,7 @@ import { cancelCertificateAction, recordFeePaidAction, refreshCertificateAction,
 import { requesterFields } from "@/lib/records/requester-fields";
 import { certificateDrafting, type CertificateItem } from "@/lib/records/certificate-draft";
 import { certificateDueText } from "@/lib/records/certificate-text";
-import { keptDocument } from "@/lib/records/issued-certificate";
+import { checkKeptCertificate, keptContent } from "@/lib/records/issued-certificate";
 import { formatLotLabel } from "@/lib/format";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -29,25 +29,32 @@ export default async function CertificatePage({ params }: { params: Promise<{ id
   if (!scheme.memberships.some((m) => m.profileId === profile.id && m.role === "ADVISER")) notFound();
   const cert = await db.orm.public.SaleCertificate.where((c) => c.id.eq(certificateId)).first();
   if (!cert || cert.schemeId !== id || cert.lotId !== lotId) notFound();
-  const [lot, { rules }, today] = await Promise.all([db.orm.public.Lot.where((l) => l.id.eq(lotId)).first(), rulesForScheme(id), schemeToday(id)]);
-  if (!rules.FEATURES.strataInformationCertificate && !rules.FEATURES.bodyCorporateCertificate) notFound();
-  const c = needRule(rules, "CERTIFICATE");
-  const due = certificateDueText(c, day(cert.requestedOn));
+  // An issued certificate's words are those it kept when it was issued, so it opens whatever the building's pack is now.
+  // None kept: issued before migration 20261126, and read with the current pack.
+  const kept = cert.status === "ISSUED" ? keptContent(cert.issuedContent) : null;
+  const [lot, current, today, pdfCheck] = await Promise.all([
+    db.orm.public.Lot.where((l) => l.id.eq(lotId)).first(),
+    kept ? null : rulesForScheme(id),
+    schemeToday(id),
+    kept ? checkKeptCertificate(kept) : null,
+  ]);
+  const rules = current?.rules ?? null;
+  if (rules && !rules.FEATURES.strataInformationCertificate && !rules.FEATURES.bodyCorporateCertificate) notFound();
+  const c = rules ? needRule(rules, "CERTIFICATE") : null;
+  const words = kept?.document ?? c!;
+  const due = c ? certificateDueText(c, day(cert.requestedOn)) : null;
   const items = cert.items as unknown as CertificateItem[];
   const toComplete = items.filter((i) => /check and complete/i.test(i.text)).map((i) => i.no);
   const pdf = `/api/records/certificate/${cert.id}?schemeId=${id}`;
-  // An issued certificate's words are those it kept when it was issued; none kept: issued before migration 20261126.
-  const kept = cert.status === "ISSUED" ? keptDocument(cert.issuedContent) : null;
-  const words = kept ?? c;
   return (
     <div className="space-y-6 max-w-4xl">
       <PageHeader
-        title={`${words.title} ${cert.number}: ${formatLotLabel(String(lot?.lotNumber ?? ""))}`}
+        title={`${words.title} ${cert.number}: ${kept ? kept.document.lotNumber : formatLotLabel(String(lot?.lotNumber ?? ""))}`}
         description={`Requested by ${cert.requesterName}, received ${day(cert.requestedOn)}.`}
         backHref={`/adviser/schemes/${id}/lots/${lotId}/certificates`}
         backLabel="Certificates"
       />
-      {cert.status === "DRAFT" && (
+      {cert.status === "DRAFT" && c && rules && (
         <>
           <Card>
             <CardHeader
@@ -109,6 +116,13 @@ export default async function CertificatePage({ params }: { params: Promise<{ id
                   Issued before StrataVerze kept each certificate as issued: its PDF is laid out again from the current wording and the building&apos;s current details. Check it against the certificate given.
                 </p>
               )}
+              {kept?.source === "BACKFILL" && (
+                <p className="text-xs text-amber-700">
+                  Reconstructed on {kept.keptOn} under {kept.keptUnder}; issued under {kept.rulePack ?? "no recorded rule pack"}. It was not kept when it was issued, so check it against the certificate given.
+                </p>
+              )}
+              {pdfCheck === "MISMATCH" && <p className="text-xs text-red-700">This PDF no longer matches the one issued. It is still drawn from what was kept at issue; tell StrataVerze before giving it again.</p>}
+              {pdfCheck === "FONTS_UNAVAILABLE" && <p className="text-xs text-red-700">The PDF cannot be produced now: the fonts it was issued in are not available. Nothing about the certificate has changed. Try again later.</p>}
               <p className="text-xs text-ink-muted">{words.execution}. {words.conclusiveNote}</p>
               {!cert.feePaidOn && (
                 <RecordsForm action={recordFeePaidAction.bind(null, id, "certificate", cert.id)} submitLabel="Record payment" fields={[{ name: "paidOn", label: "Date the fee was paid", type: "date", max: today, defaultValue: today }]} />
