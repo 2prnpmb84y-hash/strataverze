@@ -164,52 +164,46 @@ export const isSuccessful = (t: Pick<ZaiTransactionPayload, "state">) => t.state
 
 // ─── What is stored ─────────────────────────────────────────────────────────
 
-/**
- * Payer and bank fields removed wherever they appear: debtor_* in
- * payin_details, payee_name (the NPP example gives the payer's name there),
- * and bank_* in disbursements.
- */
-const PAYER_FIELDS = new Set([
-  "payee_name",
-  "debtor_name",
-  "debtor_legal_name",
-  "debtor_bsb",
-  "debtor_account",
-  "bank_account_name",
-  "bank_account_number",
-  "bank_routing_number",
-  "account_number",
-  "routing_number",
-]);
+/** The transactions fields processing reads (readZaiTransaction, isWalletPayin), and nothing else. */
+const STORED_TRANSACTION_FIELDS = ["id", "created_at", "updated_at", "type", "type_method", "state", "account_id", "account_type", "amount", "currency", "debit_credit"] as const;
+/** For every other object: enough to say what it was. */
+const STORED_OTHER_FIELDS = ["id", "updated_at", "state"] as const;
 
-const redactValue = (v: unknown): unknown => {
-  if (Array.isArray(v)) return v.map(redactValue);
-  if (!isObject(v)) return v;
+const pick = (o: Record<string, unknown>, fields: readonly string[]) => {
   const out: Record<string, unknown> = {};
-  for (const [k, x] of Object.entries(v)) {
-    if (PAYER_FIELDS.has(k)) continue;
-    // payin_details keeps only the PayID the payment was sent to (StrataVerze's own, registered for the lot), which matching reads.
-    if (k === "payin_details") {
-      out[k] = isObject(x) && typeof x.pay_id === "string" ? { pay_id: x.pay_id } : null;
-      continue;
-    }
-    out[k] = redactValue(x);
-  }
+  for (const f of fields) if (f in o) out[f] = o[f];
   return out;
 };
 
 /**
- * The copy of a webhook body that is stored (review M6, decision D7): payer
- * names, BSBs and account numbers removed, and payin_details cut down to the
- * PayID. The dedupe key is still the SHA-256 of the body as received. A body
- * that is not JSON is not stored at all, only its length.
+ * The copy of a webhook body that is stored (decision D7). An allowlist
+ * (second review, LOW-3): for a transactions object only the fields
+ * processing reads, with payin_details cut down to the PayID the payment was
+ * sent to (StrataVerze's own, registered for the lot); for any other object
+ * type, known, ignored or not, only its type, id, updated_at and state. So no
+ * payer name or bank details, and none of a user's name, email, mobile, KYC
+ * fields, account names or PayTo details, are kept. The test payload keeps
+ * its message; a body that is not one wrapped object keeps only its length.
+ * The dedupe key is still the SHA-256 of the body as received.
  */
 export function bodyToStore(rawBody: string): string {
+  const unrecognised = () => JSON.stringify({ unrecognised_body_bytes: Buffer.byteLength(rawBody, "utf8") });
   let json: unknown;
   try {
     json = JSON.parse(rawBody);
   } catch {
-    return JSON.stringify({ unrecognised_body_bytes: Buffer.byteLength(rawBody, "utf8") });
+    return unrecognised();
   }
-  return JSON.stringify(redactValue(json));
+  if (!isObject(json)) return unrecognised();
+  const keys = Object.keys(json);
+  if (keys.length !== 1) return unrecognised();
+  const [type] = keys;
+  const inner = json[type];
+  if (type === "message" && typeof inner === "string") return JSON.stringify({ message: inner.slice(0, 100) });
+  if (!isObject(inner) || type.length > 40) return unrecognised();
+  if (type === "transactions") {
+    const details = isObject(inner.payin_details) && typeof inner.payin_details.pay_id === "string" ? { payin_details: { pay_id: inner.payin_details.pay_id } } : {};
+    return JSON.stringify({ transactions: { ...pick(inner, STORED_TRANSACTION_FIELDS), ...details } });
+  }
+  return JSON.stringify({ [type]: pick(inner, STORED_OTHER_FIELDS) });
 }

@@ -79,19 +79,38 @@ describe("storing", () => {
     expect(rows("ZaiWebhookEvent")[0]).toMatchObject({ objectType: "transactions", objectId: NPP_PAYIN_EXAMPLE.transactions.id, status: "RECEIVED" });
   });
 
-  it("stores the body without the payer's name and bank details, keyed by the body as received (review M6)", async () => {
+  it("stores only the allowed fields, without the payer's name and bank details, keyed by the body as received (review M6, second review LOW-3)", async () => {
     const raw = body(NPP_PAYIN_EXAMPLE);
     await storeWebhookEvent(orm, { rawBody: raw, parsed: parseZaiWebhook(raw), signedAt: new Date() });
     const stored = rows("ZaiWebhookEvent")[0];
     expect(stored.dedupeKey).toBe(webhookDedupeKey(raw));
     for (const secret of ["ASSEMBLY TEST", "098765", "09876512345678", "100014014111111", "debtor_"]) expect(String(stored.storedBody)).not.toContain(secret);
     expect(JSON.parse(String(stored.storedBody)).transactions.payin_details).toEqual({ pay_id: "lot7.payid@example.com" });
+    // An allowlist (second review, LOW-3): only the fields processing reads.
+    expect(JSON.parse(String(stored.storedBody))).toEqual({
+      transactions: {
+        id: NPP_PAYIN_EXAMPLE.transactions.id,
+        created_at: "2019-12-16T07:19:14.966Z",
+        updated_at: "2019-12-16T07:19:14.968Z",
+        type: "deposit",
+        type_method: "npp_payin",
+        state: "successful",
+        account_id: WALLET,
+        account_type: "wallet_account",
+        amount: 10000000,
+        currency: "AUD",
+        debit_credit: "credit",
+        payin_details: { pay_id: "lot7.payid@example.com" },
+      },
+    });
     const disbursement = body(DISBURSEMENT_EXAMPLE);
     await storeWebhookEvent(orm, { rawBody: disbursement, parsed: parseZaiWebhook(disbursement), signedAt: new Date() });
-    expect(String(rows("ZaiWebhookEvent")[1].storedBody)).not.toMatch(/bank_account_name|bank_account_number|bank_routing_number|XXX975/);
+    expect(JSON.parse(String(rows("ZaiWebhookEvent")[1].storedBody))).toEqual({ disbursements: { id: DISBURSEMENT_EXAMPLE.disbursements.id, updated_at: "2019-12-16T04:06:50.181Z", state: "bank_processing" } });
     // A body that is not JSON is not kept at all.
     await storeWebhookEvent(orm, { rawBody: "not json", parsed: parseZaiWebhook("not json"), signedAt: new Date() });
     expect(rows("ZaiWebhookEvent")[2].storedBody).toBe(JSON.stringify({ unrecognised_body_bytes: 8 }));
+    // Every stored body still processes: the stored transaction is read as before.
+    expect(parseZaiWebhook(String(stored.storedBody))).toMatchObject({ kind: "OBJECT", objectType: "transactions" });
   });
 
   it("stores transaction_failure_advice as a known type, ignored (review L5)", async () => {

@@ -1,6 +1,6 @@
 /** Reading Zai's own example payloads (webhooks guide, read 31 Oct 2026). */
 import { describe, expect, it } from "vitest";
-import { isNewerThanApplied, isSuccessful, isWalletPayin, parseZaiWebhook, readZaiTransaction, webhookDedupeKey } from "./webhook-payload";
+import { bodyToStore, isNewerThanApplied, isSuccessful, isWalletPayin, parseZaiWebhook, readZaiTransaction, webhookDedupeKey } from "./webhook-payload";
 import { BATCH_TRANSACTION_EXAMPLE, BPAY_PAYIN_EXAMPLE, DISBURSEMENT_EXAMPLE, NPP_PAYIN_EXAMPLE, WEBHOOK_TEST_EXAMPLE } from "./__fixtures__/zai-doc-examples";
 
 const raw = (o: unknown) => JSON.stringify(o);
@@ -84,5 +84,22 @@ describe("ordering and duplicates", () => {
     expect(webhookDedupeKey(raw(NPP_PAYIN_EXAMPLE))).toMatch(/^[0-9a-f]{64}$/);
     expect(webhookDedupeKey(raw(NPP_PAYIN_EXAMPLE))).toBe(webhookDedupeKey(raw(NPP_PAYIN_EXAMPLE)));
     expect(webhookDedupeKey(raw(NPP_PAYIN_EXAMPLE))).not.toBe(webhookDedupeKey(raw(BPAY_PAYIN_EXAMPLE)));
+  });
+});
+
+describe("bodyToStore (second review, LOW-3)", () => {
+  it("keeps only type, id, updated_at and state of any object but a transaction", () => {
+    const user = { users: { id: "u1", updated_at: "2026-10-31T00:00:00.000Z", state: "approved", first_name: "A", last_name: "B", email: "a@example.com", mobile: "+61400000000", dob: "01/01/1980", government_number: "123", verification_state: "approved" } };
+    expect(JSON.parse(bodyToStore(raw(user)))).toEqual({ users: { id: "u1", updated_at: "2026-10-31T00:00:00.000Z", state: "approved" } });
+    expect(JSON.parse(bodyToStore(raw(BATCH_TRANSACTION_EXAMPLE)))).toEqual({ batch_transactions: { id: 31622, updated_at: "2020-07-27T22:52:41.014Z", state: "bank_processing" } });
+    const account = { accounts: { id: "a1", account_name: "Supplier Pty Ltd", bank: { account_number: "123" } } };
+    expect(JSON.parse(bodyToStore(raw(account)))).toEqual({ accounts: { id: "a1" } });
+    expect(JSON.parse(bodyToStore(raw({ transaction_failure_advice: { id: "t", debtor_name: "X", account_name: "Y" } })))).toEqual({ transaction_failure_advice: { id: "t" } });
+  });
+
+  it("keeps nothing of a body that is not one wrapped object, such as a PayTo or PayID event", () => {
+    const payto = { event_type: "agreement.updated", id: "p1", data: { debtor: { name: "X" } }, message: "m" };
+    expect(JSON.parse(bodyToStore(raw(payto)))).toEqual({ unrecognised_body_bytes: Buffer.byteLength(raw(payto)) });
+    expect(JSON.parse(bodyToStore(raw(WEBHOOK_TEST_EXAMPLE)))).toEqual({ message: "Zai callback test" });
   });
 });

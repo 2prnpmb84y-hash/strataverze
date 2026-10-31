@@ -56,6 +56,16 @@ describe("switched off", () => {
     expect((c as unknown as Record<string, unknown>).config).toBeUndefined();
     expect(Object.values(c).some((v) => v === TEST_CONFIG)).toBe(false);
   });
+
+  it("keeps the access token private: JSON.stringify of a client in use never shows it", async () => {
+    const t = mock(ok());
+    const c = client(t);
+    await c.getUser("u1");
+    expect(t.api()[0].headers.Authorization).toBe("Bearer tok-1");
+    expect(JSON.stringify(c)).not.toContain("tok-1");
+    expect((c as unknown as Record<string, unknown>).token).toBeUndefined();
+    expect(Object.values(c).some((v) => String(JSON.stringify(v ?? null)).includes("tok-1"))).toBe(false);
+  });
 });
 
 describe("the token (token reference, API overview)", () => {

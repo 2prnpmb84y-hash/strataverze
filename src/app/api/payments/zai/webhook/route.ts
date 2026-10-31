@@ -20,8 +20,10 @@ import { ledgerProcessorDeps } from "@/lib/payments/zai/receipt-in-ledger";
  * 31 Oct 2026; ./webhook-signature.ts), which is the real gate, and, as
  * defence in depth, it comes from an address Zai sends webhooks from (best
  * practices for webhooks, read 31 Oct 2026). The body is read up to 256 KB
- * and the read stops there, whatever Content-Length says. Then the raw body is stored once
- * (a repeated delivery is the same row) and processed in an order-safe way
+ * and the read stops there, whatever Content-Length says. Then the event is
+ * stored once, keyed by the SHA-256 of the raw body (a repeated delivery is
+ * the same row); what is stored is not the raw body but its allowlisted copy,
+ * without payer details (bodyToStore). It is processed in an order-safe way
  * (src/lib/payments/zai/webhook-processor.ts). 200 tells Zai it is done; a
  * failure answers 500 so Zai retries (for up to 24 hours, webhooks guide), and
  * the retry processes the stored event again.

@@ -265,7 +265,8 @@ export class ZaiClient {
   private readonly sleep: (ms: number) => Promise<void>;
   private readonly now: () => number;
   private readonly maxRetries: number;
-  private token: { value: string; expiresAt: number } | null = null;
+  // Private, like the config: the access token is not reachable from outside, nor by JSON.stringify.
+  #token: { value: string; expiresAt: number } | null = null;
 
   constructor(options: ZaiClientOptions = {}) {
     // The switch is checked even when a config is passed in (review L1).
@@ -291,7 +292,7 @@ export class ZaiClient {
    * name but do not show (NOT_CONFIRMED NC-AUTH-BODY, NC-AUTH-RESPONSE).
    */
   async accessToken(): Promise<string> {
-    if (this.token && this.now() < this.token.expiresAt - 60_000) return this.token.value;
+    if (this.#token && this.now() < this.#token.expiresAt - 60_000) return this.#token.value;
     const body = new URLSearchParams({
       grant_type: "client_credentials",
       client_id: this.#config.clientId,
@@ -310,8 +311,8 @@ export class ZaiClient {
     }
     // 60 minutes when the lifetime is not given (API overview).
     const seconds = typeof json.expires_in === "number" && json.expires_in > 0 ? json.expires_in : 3600;
-    this.token = { value: json.access_token, expiresAt: this.now() + seconds * 1000 };
-    return this.token.value;
+    this.#token = { value: json.access_token, expiresAt: this.now() + seconds * 1000 };
+    return this.#token.value;
   }
 
   // ── Users and wallets ──
@@ -512,7 +513,7 @@ export class ZaiClient {
     try {
       res = await this.send(await build(), safe, path);
       if (res.status === 401) {
-        this.token = null;
+        this.#token = null;
         // A read is asked again once, with a new token. A write is never sent
         // twice: a money movement's outcome is unknown (the caller checks it
         // with a GET), and any other write is refused for the caller to repeat.
