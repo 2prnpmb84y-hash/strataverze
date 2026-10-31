@@ -20,6 +20,7 @@
  */
 import * as ACT from "./statutory/act";
 import * as NSW from "./statutory/nsw";
+import * as NT from "./statutory/nt";
 import * as QLD from "./statutory/qld";
 import * as VIC from "./statutory/vic";
 import * as WA from "./statutory/wa";
@@ -810,6 +811,20 @@ export const PENDING_RULE_PACKS = {
     reviewedOn: null,
     rules: WA,
   } satisfies PendingRulePack<typeof WA>,
+  NT: {
+    code: "AU-NT",
+    state: "NT",
+    name: "Northern Territory",
+    // 2026.10.1 (31 Oct 2026): unit title schemes, researched from the in-force UTSA (REPU012, as in force at 27 Nov 2023)
+    // and the Management Modules Regulations (REPU012R1, as in force at 12 May 2023), with the Unit Titles Act 1975 at
+    // headline level only, as a draft for Matthew Wrigley to review; not signed off, no decisions yet. Every workflow is
+    // off, and the late charge has no value, so no interest can be charged.
+    version: "2026.10.1",
+    status: "DRAFT",
+    reviewer: "Matthew Wrigley",
+    reviewedOn: null,
+    rules: NT,
+  } satisfies PendingRulePack<typeof NT>,
 } as const;
 
 /** How a pack is recorded on a notice, charge or case, for example "AU-NSW 2026.10.1". */
