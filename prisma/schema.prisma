@@ -4577,7 +4577,8 @@ model RecordsInspection {
   feeCents         Int?      @map("fee_cents")
   feePaidOn        DateTime? @db.Date @map("fee_paid_on")
   notes            String?
-  /// The rule pack it was recorded under (migration 20261127). Null for NSW and Queensland requests recorded before it.
+  /// The rule pack a VIC, ACT or WA records access request was recorded under (migration 20261127; written by the
+  /// kinds store, 10b). NSW and Queensland code never writes it, so it is null for their requests.
   rulePack         String?   @map("rule_pack") @db.VarChar(40)
   /// The kind of records access under a VIC, ACT or WA pack's RECORDS_ACCESS: RECORDS, REGISTER, EXECUTIVE_MEMBERS,
   /// INSURANCE or CONTACT. Null for NSW and Queensland (check records_inspections_access_kind_check).

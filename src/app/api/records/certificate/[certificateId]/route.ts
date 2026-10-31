@@ -11,7 +11,7 @@ import { renderCertificatePdf } from "@/lib/pdf/certificate";
 import { PdfFontsUnavailableError } from "@/lib/pdf/document";
 import { NO_STORE } from "@/lib/http/no-store";
 import { certificateDocument, certificateFileStem, keptContent, renderKeptCertificate } from "@/lib/records/issued-certificate";
-import { certificateOffered } from "@/lib/records/offered";
+import { certificateRulesOffered } from "@/lib/records/offered";
 import { notFound, pdfResponse, signIn, UUID } from "@/lib/pdf/response";
 
 /**
@@ -57,7 +57,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     db.orm.public.Lot.where((l) => l.id.eq(cert.lotId)).first(),
     schemeToday(schemeId),
   ]);
-  if (!certificateOffered(rules.FEATURES)) return notFound();
+  if (!certificateRulesOffered(rules.FEATURES)) return notFound();
   const bytes = await renderCertificatePdf(certificateDocument({ cert, rules, scheme, lot, today }));
   await audit();
   return pdfResponse({ bytes, fileName: `${certificateFileStem(rules)}-${cert.number}${cert.status === "ISSUED" ? "" : "-draft"}.pdf` });
