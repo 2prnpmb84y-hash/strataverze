@@ -4673,3 +4673,134 @@ model PendingResolutionLot {
   @@unique([pendingResolutionId, lotId, entry])
   @@map("pending_resolution_lots")
 }
+
+// ─── Hello Zai payments (switched off) ─────────────────────────────
+// Migration 20261128_zai_integration.sql, NOT APPLIED: it is applied only with
+// Matthew Wrigley's approval, and only before ZAI_PAYMENTS is switched on.
+// Nothing reads or writes these tables while ZAI_PAYMENTS is off
+// (src/lib/payments/zai/config.ts). Design: the Zai integration design (31 Oct 2026).
+// The scheme, lot, fund and supplier keys are foreign keys in the database,
+// not declared here, so no existing model changes. Also database only: the
+// partial unique indexes (one owners corporation user per building, one main
+// wallet per user, one sub-wallet per fund) and the composite keys tying a
+// wallet to its user's scheme and a payment reference to its wallet's scheme. Zai field names and values
+// are the ones the Zai docs give (read 31 Oct 2026), cited in the code.
+
+/// A Zai user StrataVerze created (POST /users, platform-supplied id): one
+/// for each owners corporation (assessment option B), and one for each
+/// supplier paid out through an Item.
+model ZaiUser {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId          String    @map("scheme_id") @db.Uuid
+  role              String    @db.VarChar(30) // OWNERS_CORPORATION, SUPPLIER
+  supplierId        String?   @map("supplier_id") @db.Uuid // SUPPLIER only
+  zaiUserId         String    @unique @map("zai_user_id") @db.VarChar(100) // the id StrataVerze sent to POST /users
+  zaiCompanyId      String?   @map("zai_company_id") @db.VarChar(100) // the company Zai created for the user (KYB), once known
+  verificationState String    @default("pending") @map("verification_state") @db.VarChar(40) // Zai: pending, pending_check, approved_kyc_check, approved
+  zaiUpdatedAt      DateTime? @db.Timestamptz @map("zai_updated_at") // updated_at of the newest users payload applied
+  createdBy         String    @map("created_by") @db.Uuid
+  createdAt         DateTime  @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt         DateTime  @updatedAt @db.Timestamptz @map("updated_at")
+
+  @@index([schemeId, role])
+  @@map("zai_users")
+}
+
+/// A Zai wallet account of a Zai user: the main wallet, or a sub-wallet
+/// kept for one fund (Administrative or Capital Works). Sub-wallets need
+/// Zai's approval for stored value and further integration (not confirmed).
+model ZaiWalletAccount {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId           String    @map("scheme_id") @db.Uuid
+  zaiUserRowId       String    @map("zai_user_row_id") @db.Uuid // zai_users.id
+  kind               String    @db.VarChar(30) // MAIN, SUB_WALLET
+  fundId             String?   @map("fund_id") @db.Uuid // SUB_WALLET only: the fund it holds
+  zaiAccountId       String    @unique @map("zai_account_id") @db.VarChar(100) // the wallet account (or sub-wallet) id Zai gave
+  active             Boolean   @default(true)
+  zaiUpdatedAt       DateTime? @db.Timestamptz @map("zai_updated_at")
+  createdAt          DateTime  @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt          DateTime  @updatedAt @db.Timestamptz @map("updated_at")
+
+  @@index([schemeId])
+  @@index([zaiUserRowId])
+  @@map("zai_wallet_accounts")
+}
+
+/// A payment reference Zai issued that identifies a lot's payments: a PayID
+/// registered on the owners corporation's virtual account, a virtual account,
+/// or a BPAY CRN. StrataVerze never makes one up: the value is the one Zai
+/// returned. A payment whose reference is not here goes to the unmatched queue.
+model ZaiPaymentReference {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId           String    @map("scheme_id") @db.Uuid
+  lotId              String    @map("lot_id") @db.Uuid
+  method             String    @db.VarChar(30) // PAYID, VIRTUAL_ACCOUNT, BPAY_CRN
+  value              String    @db.VarChar(200) // as Zai issued it
+  zaiWalletAccountId String    @map("zai_wallet_account_id") @db.VarChar(100) // the wallet the payments arrive in
+  status             String    @default("pending_activation") @db.VarChar(40) // Zai: pending_activation, active, activation_failed; DEREGISTERED
+  createdBy          String    @map("created_by") @db.Uuid
+  createdAt          DateTime  @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt          DateTime  @updatedAt @db.Timestamptz @map("updated_at")
+
+  @@unique([method, value])
+  @@index([schemeId, lotId])
+  @@map("zai_payment_references")
+}
+
+/// Money moving through Zai, as StrataVerze knows it: a payment received into
+/// a wallet (IN) or a payout StrataVerze asked for (OUT). The ledger
+/// (JournalEntry and JournalLine) stays the system of record; this row links
+/// the Zai object to the receipt or payment journal. An IN row with no lot is
+/// the unmatched queue.
+model ZaiTransaction {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId         String?   @map("scheme_id") @db.Uuid // null until the wallet is known
+  direction        String    @db.VarChar(3) // IN, OUT
+  zaiObjectType    String    @map("zai_object_type") @db.VarChar(40) // Zai webhook object type: transactions, batch_transactions, items, disbursements
+  zaiObjectId      String    @map("zai_object_id") @db.VarChar(100)
+  zaiState         String    @map("zai_state") @db.VarChar(40) // Zai's state, as last applied
+  zaiUpdatedAt     DateTime  @db.Timestamptz @map("zai_updated_at") // updated_at of the newest payload applied (out of order: older ones are not applied)
+  zaiType          String?   @map("zai_type") @db.VarChar(40) // Zai type, e.g. deposit
+  zaiTypeMethod    String?   @map("zai_type_method") @db.VarChar(40) // Zai type_method, e.g. npp_payin, bpay
+  zaiAccountId     String?   @map("zai_account_id") @db.VarChar(100) // the wallet account the money moved in or out of
+  amount           Decimal   @db.Decimal(14, 2) // dollars (Zai sends cents)
+  currency         String    @db.VarChar(3)
+  referenceValue   String?   @map("reference_value") @db.VarChar(200) // the payer's reference as Zai sent it, if any
+  lotId            String?   @map("lot_id") @db.Uuid
+  matchStatus      String    @map("match_status") @db.VarChar(30) // IN: UNMATCHED, NEEDS_REVIEW, RECEIPTED, REVERSAL_REVIEW (an IN row has a journal exactly when RECEIPTED or REVERSAL_REVIEW); OUT: AWAITING_RELEASE, RELEASED, SENT, FAILED, OUTCOME_UNKNOWN
+  matchReason      String?   @map("match_reason") @db.VarChar(200)
+  journalEntryId   String?   @map("journal_entry_id") @db.Uuid // the receipt or payment journal; an IN row's never changes once set (trigger zai_transactions_journal_guard)
+  supplierInvoiceId String?  @map("supplier_invoice_id") @db.Uuid // OUT only
+  idempotencyKey   String?   @unique @map("idempotency_key") @db.VarChar(100) // OUT only: sent as Zai's reference_id, or the Item id
+  initiatedBy      String?   @map("initiated_by") @db.Uuid // OUT only: who asked for the payout
+  releasedBy       String?   @map("released_by") @db.Uuid // OUT only: the second person, never the first
+  releasedAt       DateTime? @db.Timestamptz @map("released_at")
+  createdAt        DateTime  @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt        DateTime  @updatedAt @db.Timestamptz @map("updated_at")
+
+  @@unique([zaiObjectType, zaiObjectId])
+  @@index([schemeId, matchStatus])
+  @@map("zai_transactions")
+}
+
+/// A webhook Zai sent, stored once its signature verified, so a repeated
+/// delivery is stored once (dedupe_key: the SHA-256 of the body as received)
+/// and every event can be processed again or audited. stored_body is the
+/// body with the payer's name and bank details removed (decision D7).
+model ZaiWebhookEvent {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  dedupeKey          String    @unique @map("dedupe_key") @db.VarChar(64)
+  objectType         String    @map("object_type") @db.VarChar(40) // the payload's top-level key
+  objectId           String?   @map("object_id") @db.VarChar(100)
+  objectUpdatedAt    DateTime? @db.Timestamptz @map("object_updated_at")
+  signedAt           DateTime  @db.Timestamptz @map("signed_at") // the t value of the Webhooks-signature header
+  storedBody         String    @map("stored_body") // the body without payer details (bodyToStore)
+  status             String    @default("RECEIVED") @db.VarChar(20) // RECEIVED, PROCESSED, STALE, IGNORED, FAILED
+  error              String?   @db.VarChar(500)
+  receivedAt         DateTime  @default(now()) @db.Timestamptz @map("received_at")
+  processedAt        DateTime? @db.Timestamptz @map("processed_at")
+
+  @@index([objectType, objectId])
+  @@index([status])
+  @@map("zai_webhook_events")
+}
