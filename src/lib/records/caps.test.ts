@@ -1,7 +1,7 @@
 /**
  * The fee cap engine for certificate kinds and records access (VIC, ACT and
  * WA stage 2, PR 10a), on fixtures in the pack shapes, not on pack values
- * (no draft pack holds CERTIFICATE_KINDS or RECORDS_ACCESS yet).
+ * (no draft pack holds CERTIFICATE_KINDS or RECORDS_ACCESS_KINDS yet).
  */
 import { describe, expect, it } from "vitest";
 import type { AccessKindRule, CertificateKindRule, CheckedValue, DatedCap, FeeUnitCap } from "@/config/statutory";

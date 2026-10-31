@@ -87,7 +87,7 @@ describe("the packs (10a: shapes only)", () => {
       expect(p.rules.FEATURES.certificateKinds, p.code).not.toBe(true);
       expect(p.rules.FEATURES.recordsAccess, p.code).not.toBe(true);
       expect(p.rules.CERTIFICATE_KINDS, p.code).toBeUndefined();
-      expect(p.rules.RECORDS_ACCESS, p.code).toBeUndefined();
+      expect(p.rules.RECORDS_ACCESS_KINDS, p.code).toBeUndefined();
     }
   });
 
@@ -104,7 +104,7 @@ describe("the packs (10a: shapes only)", () => {
       for (const k of p.rules.CERTIFICATE_KINDS?.kinds ?? []) {
         if (k.fee.basis === "DATED_CENTS") problems.push(...capListProblems(k.fee.caps, k.fee.refuseFromNextYear).map((x) => `${p.code} ${k.key}: ${x}`));
       }
-      for (const k of p.rules.RECORDS_ACCESS?.kinds ?? []) {
+      for (const k of p.rules.RECORDS_ACCESS_KINDS?.kinds ?? []) {
         if (k.inspection === "FREE") {
           if (k.refuseFromNextYear !== undefined) problems.push(...capListProblems([], k.refuseFromNextYear).map((x) => `${p.code} ${k.key}: ${x}`));
           continue;

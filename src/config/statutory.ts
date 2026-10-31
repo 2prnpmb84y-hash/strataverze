@@ -148,8 +148,10 @@ export interface SharedRules {
    * Records access of several kinds, each with its own period and capped
    * fees (VIC, ACT and WA stage 2, PR 10), with FEATURES.recordsAccess. A
    * pack without the key has none (NSW and Queensland keep INSPECTIONS).
+   * Not RECORDS_ACCESS, the design's name: the Tasmanian and New Zealand
+   * draft packs export their own RECORDS_ACCESS in another shape.
    */
-  RECORDS_ACCESS?: RecordsAccessRules;
+  RECORDS_ACCESS_KINDS?: RecordsAccessRules;
   /** How long the document library shows each record must be kept. */
   DOCUMENT_RETENTION?: DocumentRetentionRules;
   /** When works need more than one quote. */

@@ -476,7 +476,7 @@ export interface PackFeatures {
    */
   certificateKinds?: boolean;
   /**
-   * Records access of the kinds in RECORDS_ACCESS (VIC, ACT and WA stage 2,
+   * Records access of the kinds in RECORDS_ACCESS_KINDS (VIC, ACT and WA stage 2,
    * PR 10). A pack without the key does not have it, as for
    * certificateKinds.
    */

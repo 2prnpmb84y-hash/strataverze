@@ -127,7 +127,7 @@ describe("migration 20261127", () => {
           checked++;
         }
       }
-      for (const r of [rules.INSPECTIONS, rules.RECORDS_ACCESS]) {
+      for (const r of [rules.INSPECTIONS, rules.RECORDS_ACCESS_KINDS]) {
         if (!r) continue;
         for (const t of Object.keys(r.requesterTypes)) {
           expect(inspectorTypes.has(t), `${pack} access requester ${t}`).toBe(true);

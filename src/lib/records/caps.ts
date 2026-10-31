@@ -2,7 +2,7 @@
  * Fee caps, deadlines and refusals for certificate kinds and records access
  * (pure, VIC, ACT and WA stage 2, PR 10a, 31 Oct 2026; Matthew Wrigley's
  * decisions D1 to D21 of 31 Oct 2026). Reads only the shapes in
- * CERTIFICATE_KINDS and RECORDS_ACCESS; imports no pack. Nothing here
+ * CERTIFICATE_KINDS and RECORDS_ACCESS_KINDS; imports no pack. Nothing here
  * writes: the store (10b) asks first and writes nothing on a refusal.
  *
  * Every cap is a ceiling on the fee the body sets itself. The fee is the one

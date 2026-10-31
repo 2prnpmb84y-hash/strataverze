@@ -4558,7 +4558,7 @@ model SaleCertificate {
   @@map("sale_certificates")
 }
 
-/// A request to inspect the records or get copies (NSW s 182, Queensland Act s 205; the draft packs' RECORDS_ACCESS kinds, migration 20261127).
+/// A request to inspect the records or get copies (NSW s 182, Queensland Act s 205; the draft packs' records access kinds in RECORDS_ACCESS_KINDS, migration 20261127).
 model RecordsInspection {
   id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   schemeId         String    @map("scheme_id") @db.Uuid
@@ -4580,7 +4580,7 @@ model RecordsInspection {
   /// The rule pack a VIC, ACT or WA records access request was recorded under (migration 20261127; written by the
   /// kinds store, 10b). NSW and Queensland code never writes it, so it is null for their requests.
   rulePack         String?   @map("rule_pack") @db.VarChar(40)
-  /// The kind of records access under a VIC, ACT or WA pack's RECORDS_ACCESS: RECORDS, REGISTER, EXECUTIVE_MEMBERS,
+  /// The kind of records access under a VIC, ACT or WA pack's RECORDS_ACCESS_KINDS: RECORDS, REGISTER, EXECUTIVE_MEMBERS,
   /// INSURANCE or CONTACT. Null for NSW and Queensland (check records_inspections_access_kind_check).
   accessKind       String?   @map("access_kind")
   /// What copies were given (access kind rows only): PHOTOCOPY, ELECTRONIC or STORAGE_DEVICE, how many records, and the
