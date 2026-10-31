@@ -5,7 +5,7 @@ import { getCurrentProfile } from "@/lib/queries/profiles";
 import { loadGeneratedPdf } from "@/lib/pdf/store";
 import { canReadFinancialDocument } from "@/lib/finance/finance-access";
 import { resolveDocumentUrl } from "@/lib/queries/document-url";
-import { forbidden } from "@/lib/finance/access-denied";
+import { refuseAsNotFound } from "@/lib/finance/access-denied";
 import { notFound, pdfResponse, signIn, UUID } from "@/lib/pdf/response";
 
 /**
@@ -21,7 +21,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   const stored = await loadGeneratedPdf(documentId);
   if (stored) {
     if (!(await canReadFinancialDocument(profile, stored.doc))) {
-      return forbidden({ schemeId: stored.doc.schemeId, actorId: profile.id, entityType: "FinancialDocument", entityId: stored.doc.id, what: String(stored.doc.documentType) });
+      return refuseAsNotFound({ schemeId: stored.doc.schemeId, actorId: profile.id, entityType: "FinancialDocument", entityId: stored.doc.id, what: String(stored.doc.documentType) });
     }
     await recordSecurityEventLater({
       action: "document.download",
@@ -37,7 +37,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   const doc = await db.orm.public.FinancialDocument.where((d) => d.id.eq(documentId)).first();
   if (!doc) return notFound();
   if (!(await canReadFinancialDocument(profile, doc))) {
-    return forbidden({ schemeId: doc.schemeId, actorId: profile.id, entityType: "FinancialDocument", entityId: doc.id, what: String(doc.documentType) });
+    return refuseAsNotFound({ schemeId: doc.schemeId, actorId: profile.id, entityType: "FinancialDocument", entityId: doc.id, what: String(doc.documentType) });
   }
   const fileUrl = String(doc.fileUrl ?? "");
   // A generated document's own route, with its stored copy missing.

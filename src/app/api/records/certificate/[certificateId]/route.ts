@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { db } from "@/prisma/db";
-import { forbidden } from "@/lib/finance/access-denied";
+import { refuseAsNotFound } from "@/lib/finance/access-denied";
 import { recordSecurityEventLater } from "@/lib/audit/security-audit";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const cert = await db.orm.public.SaleCertificate.where((c) => c.id.eq(certificateId)).first();
   if (!cert || cert.schemeId !== schemeId || cert.status === "CANCELLED") return notFound();
   const adviser = await db.orm.public.SchemeMembership.where((m) => and(m.schemeId.eq(schemeId), m.profileId.eq(profile.id), m.role.eq("ADVISER"), m.isActive.eq(true))).first();
-  if (!adviser) return forbidden({ schemeId, actorId: profile.id, entityType: "Lot", entityId: cert.lotId, what: "Information certificate PDF" });
+  if (!adviser) return refuseAsNotFound({ schemeId, actorId: profile.id, entityType: "Lot", entityId: cert.lotId, what: "Information certificate PDF" });
   const audit = () => recordSecurityEventLater({ action: "export.pdf", outcome: "allowed", actorProfileId: profile.id, schemeId, resourceType: "Lot", resourceId: cert.lotId, metadata: { kind: "information_certificate" } });
 
   const kept = cert.status === "ISSUED" ? keptContent(cert.issuedContent) : null;

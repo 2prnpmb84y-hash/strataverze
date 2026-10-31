@@ -247,14 +247,14 @@ Each step names the screen to use. "Finance" is `/adviser/schemes/<id>/finance` 
 3. Sign in as owner A (lot 3) and open `/api/finance/documents/<that id>`.
 
 **Expected**
-- Forbidden (403).
+- Not found (404), the same answer as for an id that does not exist (S-04, 31 Oct 2026: a refusal must not show that the record exists).
 - The attempt is logged.
 
 **Checks**
-- The response is 403 Forbidden.
-- The activity log has `FINANCIAL_DOCUMENT_ACCESS_DENIED` with owner A and the document.
-- An id that does not exist is still 404.
-- The levy notice, owner statement, remittance, committee pack and statutory statements PDFs answer and log the same way.
+- The response is 404 Not Found, with the same body as for an id that does not exist.
+- The building's security log has an `access.denied` event with owner A and the document.
+- Owner A is a member of the building, so its activity log also has `FINANCIAL_DOCUMENT_ACCESS_DENIED` with owner A and the document. A refusal is never written to the activity log of a building the caller does not belong to.
+- The levy notice, owner statement, remittance, committee pack, statutory statements, payment plan reply and information certificate PDFs answer and log the same way (automated: `src/test/finance-routes-not-found.test.ts`).
 - Storage serves files only to members of the scheme.
 
 ---
