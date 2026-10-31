@@ -117,7 +117,7 @@ export const SCHEME_TYPE: RecordedBuildingSelector = {
       value: "COMMUNITY_TITLES",
       label: "Community scheme (Community Titles Act 1996)",
       supported: false,
-      note: "A community corporation, which may be a primary, secondary or tertiary corporation (CTA ss 7, 71). Its rules are held in COMMUNITY_SCHEMES, not in the shared shapes.",
+      note: "Community schemes are not supported yet. Their rules come from the Community Titles Act 1996.",
     },
   ],
   source: `${STA} s 3(1); ${CTA} ss 3(1), 7, 71`,
@@ -132,12 +132,18 @@ const schemeTypeIn = (...values: string[]): SelectorCondition => ({ selector: SC
  * The two ledger funds. The STA requires neither: a strata corporation "may
  * raise such funds (including reserve funds for future expenditure of a
  * capital nature) as it thinks necessary" (s 27(1)), and STR r 14(2)(b)
- * speaks of corporations "with no administrative or sinking funds". The CTA
- * requires both (s 116(1)).
+ * speaks of corporations "with no administrative or sinking funds". (The CTA
+ * requires both, s 116(1): held in COMMUNITY_SCHEMES.funds, not here, so a
+ * community scheme is never given a ledger by these rules.)
  *
- * The administrative fund is given to every strata corporation as StrataVerze's
- * ledger fund (STRATAVERZE, proposed in FOR_REVIEW FUNDS), so every building
- * has a chart of accounts. The sinking fund is optional for a strata scheme.
+ * The administrative fund for a strata scheme is a product choice that has
+ * not been made (FOR_REVIEW FUNDS proposes giving it to every strata
+ * corporation as StrataVerze's ledger fund). Its proposed rule is recorded
+ * but never holds, so the fund is undecided for every building and
+ * `noRuleFits` says why. The sinking fund is optional for a strata scheme
+ * (CONFIRMED) and undecided for a community scheme. So no South Australian
+ * building is given a ledger, and every one is refused at onboarding: the
+ * intended behaviour of a stage 1 pack.
  */
 export const FUND_CATALOGUE: readonly FundDefinition[] = [
   {
@@ -151,23 +157,19 @@ export const FUND_CATALOGUE: readonly FundDefinition[] = [
     requiredWhen: {
       rules: [
         {
+          // The proposal in FOR_REVIEW FUNDS, not decided. `any: []` never holds, so this rule
+          // never decides: once decided, a pack version changes it to schemeTypeIn("STRATA_TITLES").
           need: "REQUIRED",
-          when: schemeTypeIn("COMMUNITY_TITLES"),
-          reason: "Required for a community corporation, which must establish an administrative fund.",
-          provision: `${CTA} s 116(1)`,
-          status: "CONFIRMED",
-        },
-        {
-          need: "REQUIRED",
-          when: schemeTypeIn("STRATA_TITLES"),
+          when: { any: [] },
           reason: "Kept for every strata corporation as the StrataVerze ledger fund. The Strata Titles Act requires no named fund.",
           provision: `${STA} s 27(1); ${STR} r 14(2)(b)`,
           status: "STRATAVERZE",
         },
       ],
-      noRuleFits: "Whether an administrative fund is required could not be worked out from the scheme type recorded.",
+      noRuleFits:
+        "The administrative fund rule for a South Australian strata scheme awaits Matthew Wrigley's decision, as the Strata Titles Act requires no named fund. Community schemes are not supported yet.",
     },
-    source: `${STA} s 27(1); ${STR} r 14(2)(b); ${CTA} s 116`,
+    source: `${STA} s 27(1); ${STR} r 14(2)(b)`,
     status: "STRATAVERZE",
   },
   {
@@ -181,13 +183,6 @@ export const FUND_CATALOGUE: readonly FundDefinition[] = [
     requiredWhen: {
       rules: [
         {
-          need: "REQUIRED",
-          when: schemeTypeIn("COMMUNITY_TITLES"),
-          reason: "Required for a community corporation, which must establish a sinking fund for non-recurrent expenditure.",
-          provision: `${CTA} s 116(1), (2)`,
-          status: "CONFIRMED",
-        },
-        {
           need: "OPTIONAL",
           when: schemeTypeIn("STRATA_TITLES"),
           reason: "Not required of a strata corporation, which may raise reserve funds for future capital expenditure.",
@@ -195,9 +190,9 @@ export const FUND_CATALOGUE: readonly FundDefinition[] = [
           status: "CONFIRMED",
         },
       ],
-      noRuleFits: "Whether a sinking fund is required could not be worked out from the scheme type recorded.",
+      noRuleFits: "Community schemes are not supported yet, so whether a sinking fund is required is not worked out for one.",
     },
-    source: `${STA} s 27(1); ${STR} r 14(2)(b); ${CTA} s 116`,
+    source: `${STA} s 27(1); ${STR} r 14(2)(b)`,
     status: "CONFIRMED",
   },
 ];
@@ -296,11 +291,13 @@ export const CONTRIBUTIONS = {
  * The statement each AGM must be given (STA s 33A; STR r 16): proposed
  * non-recurrent expenditure for the prescribed period, the current year's
  * recurrent and non-recurrent estimates, future expenditure to raise now and
- * hold in reserve, and the contributions to be raised. The period is 3 years
- * for 7 to 20 units and 5 years above 20, prepared again each period.
- * Excluded: 6 or fewer units, or common property buildings insured for not
- * more than $200,000. r 16(3) was amended on 1 Sep 2026; the value before
- * then was not read.
+ * hold in reserve, and the contributions to be raised. The multi-year
+ * projection (s 33A(1)(a), prepared again under s 33A(2)) covers 3 years for
+ * 7 to 20 units and 5 years above 20. Only that projection is excluded for 6
+ * or fewer units, or where the common property buildings are insured for not
+ * more than $200,000 (r 16(3); $100,000 before 1 Sep 2026): every strata
+ * corporation still presents the current year's estimates, the reserve
+ * estimate and the contributions (s 33A(1)(b) to (d)) at each AGM.
  */
 export const EXPENDITURE_STATEMENT = {
   contents: [
@@ -313,7 +310,10 @@ export const EXPENDITURE_STATEMENT = {
     { unitsFrom: 7, unitsTo: 20, years: 3, preparedEveryYears: 3 },
     { unitsFrom: 21, unitsTo: null, years: 5, preparedEveryYears: 5 },
   ],
-  excluded: { unitsAtMost: 6, commonPropertyInsuredAtMostCents: 20_000_000 },
+  /** Excluded from s 33A(1)(a) and (2) only, not from s 33A(1)(b) to (d) (r 16(3)). */
+  multiYearProjectionExcluded: { unitsAtMost: 6, commonPropertyInsuredAtMostCents: 20_000_000 },
+  /** Presented at every AGM by every strata corporation (s 33A(1)(b) to (d)). */
+  alwaysPresented: ["the current year's recurrent and non-recurrent estimates", "the reserve estimate", "the contributions to be raised"],
   formsPartOfMinutes: true,
   source: `${STA} s 33A; ${STR} r 16`,
   status: "CONFIRMED" as RuleStatus,
@@ -660,7 +660,7 @@ export const ARTICLES_PENALTY = {
 /**
  * Information on application (STA s 41; STR r 31): the statement a buyer or
  * mortgagee relies on, and copies and inspection. Within 5 business days.
- * Fees as amended on 1 Sep 2026 (the earlier values were not read); the
+ * Fees as amended on 1 Sep 2026 (the earlier ones are in DATED_RULES); the
  * corporation may reduce or waive them. FEATURES for the NSW certificate and
  * inspections stay off: this shape is not the NSW one.
  */
@@ -990,8 +990,9 @@ export const PENDING_REFORMS = [
 ] as const;
 
 /**
- * Rules whose current value starts on a date. Only the current values were
- * read (those in force from 1 Sep 2026), so a day before then has no value.
+ * Rules whose value changed on 1 Sep 2026 (variation 76/2026). Both the
+ * historical version (1.9.2018 to 31.8.2026) and the current one were read,
+ * so a day before 1 Sep 2018 has no value.
  */
 export const DATED_RULES = {
   INFORMATION_FEES: {
@@ -999,40 +1000,65 @@ export const DATED_RULES = {
     versions: [
       {
         legalStatus: "IN_FORCE",
+        from: "2018-09-01",
+        value: { statement: { owner: 0, other: 4_000 }, copies: { owner: 800, other: 4_000, otherWithInsurancePolicies: 5_600 }, inspection: { owner: 0, other: 800 } },
+        source: `${STR} r 31(2), version 1.9.2018 to 31.8.2026`,
+        status: "CONFIRMED",
+        note: "Read in the historical version 1.9.2018 to 31.8.2026: $40 (others' statement), $8 and $40 plus $16 (copies), $8 (others' inspection). In force until 31 Aug 2026.",
+      },
+      {
+        legalStatus: "IN_FORCE",
         from: "2026-09-01",
         value: INFORMATION_ON_APPLICATION.feesCents,
         source: `${STR} r 31(2), as amended by 76/2026`,
         status: "CONFIRMED",
-        note: "The values before 1 Sep 2026 were not read.",
       },
     ],
-  } satisfies DatedRule<typeof INFORMATION_ON_APPLICATION.feesCents>,
+  } satisfies DatedRule<{
+    statement: { owner: number; other: number };
+    copies: { owner: number; other: number; otherWithInsurancePolicies: number };
+    inspection: { owner: number; other: number };
+  }>,
   DELEGATE_COPY_FEE: {
     title: "The most a delegate may charge a page for copies of records (STR r 13(3))",
     versions: [
+      {
+        legalStatus: "IN_FORCE",
+        from: "2018-09-01",
+        value: 140,
+        source: `${STR} r 13(3), version 1.9.2018 to 31.8.2026`,
+        status: "CONFIRMED",
+        note: "Read in the historical version 1.9.2018 to 31.8.2026: $1.40 per page. In force until 31 Aug 2026.",
+      },
       {
         legalStatus: "IN_FORCE",
         from: "2026-09-01",
         value: INFORMATION_ON_APPLICATION.delegateRecords.copyPerPageMaxCents,
         source: `${STR} r 13(3), as amended by 76/2026`,
         status: "CONFIRMED",
-        note: "The value before 1 Sep 2026 was not read.",
       },
     ],
   } satisfies DatedRule<number>,
   EXPENDITURE_STATEMENT_EXCLUSION: {
-    title: "Strata corporations excluded from the multi-year expenditure statement (STR r 16(3))",
+    title: "Strata corporations excluded from the multi-year expenditure projection, s 33A(1)(a) and (2) (STR r 16(3))",
     versions: [
       {
         legalStatus: "IN_FORCE",
+        from: "2018-09-01",
+        value: { unitsAtMost: 6, commonPropertyInsuredAtMostCents: 10_000_000 },
+        source: `${STR} r 16(3), version 1.9.2018 to 31.8.2026`,
+        status: "CONFIRMED",
+        note: "Read in the historical version 1.9.2018 to 31.8.2026: 6 or fewer units, or common property buildings insured for not more than $100,000. In force until 31 Aug 2026.",
+      },
+      {
+        legalStatus: "IN_FORCE",
         from: "2026-09-01",
-        value: EXPENDITURE_STATEMENT.excluded,
+        value: EXPENDITURE_STATEMENT.multiYearProjectionExcluded,
         source: `${STR} r 16(3), as amended by 76/2026`,
         status: "CONFIRMED",
-        note: "The value before 1 Sep 2026 was not read.",
       },
     ],
-  } satisfies DatedRule<typeof EXPENDITURE_STATEMENT.excluded>,
+  } satisfies DatedRule<{ unitsAtMost: number; commonPropertyInsuredAtMostCents: number }>,
 } as const;
 
 /**
@@ -1077,7 +1103,7 @@ export const NOT_CONFIRMED = [
   "Which court hears a plain contribution debt claim, and its limits (the Magistrates Court Act 1991 was not read). The Part 3A route to the Magistrates Court is confirmed.",
   "From which day interest runs, any grace period, and how a day's share of the yearly rate is worked out: the law leaves these to the resolution.",
   "Whether legal and collection costs are recoverable from the owner beyond court costs orders (STA s 41A(9)(g)).",
-  "The values before 1 Sep 2026 of STR rr 13(3), 16(3) and 31(2), and of the community regulations (the 2011 regulations were not read).",
+  "The community regulations before 1 Sep 2026 (the Community Titles Regulations 2011 were not read).",
   "CTA ss 13, 14, 16 to 19, 21 to 70, 78A to 78D, 100 to 102, 110 to 112, 120 to 134, 142A to 154, 155A, 155B, 156 and the Schedule (including converting a strata scheme to the CTA, Sch cl 2).",
   "Whether new strata plans can still be deposited under the STA: Part 2 Division 2 was deleted from 1 Jun 2009, and what it held was not read.",
   "Disclosure to a buyer on sale (SA vendor statement law, outside the two Acts, not researched).",
@@ -1117,7 +1143,7 @@ export const FOR_REVIEW: readonly { key: string; kind: "LEGAL" | "PRODUCT"; poin
     key: "FUNDS",
     kind: "PRODUCT",
     point:
-      "The STA requires no named fund (s 27(1); STR r 14(2)(b)). Every strata corporation is given the administrative fund as StrataVerze's ledger fund (STRATAVERZE), and the sinking fund is optional (CONFIRMED). The fund label \"sinking fund\" for a strata scheme comes from STR r 14(2)(b); the STA says \"reserve funds\".",
+      "The STA requires no named fund (s 27(1); STR r 14(2)(b)). Giving every strata corporation the administrative fund as StrataVerze's ledger fund is not decided: its rule is recorded but never holds, so the fund is undecided and every SA building is refused at onboarding (no ledger) until this is decided. The sinking fund is optional for a strata scheme (CONFIRMED). A community scheme gets no fund from these rules (CTA s 116 is held in COMMUNITY_SCHEMES.funds). The fund label \"sinking fund\" for a strata scheme comes from STR r 14(2)(b); the STA says \"reserve funds\".",
     proposedDecision: "Give every strata corporation the administrative fund and offer the sinking fund as optional, labelled \"Sinking Fund\".",
   },
   {
@@ -1151,6 +1177,12 @@ export const FOR_REVIEW: readonly { key: string; kind: "LEGAL" | "PRODUCT"; poin
     kind: "LEGAL",
     point:
       "An STA special resolution is measured by the votes against (not more than 25% of the total votes that could be cast if all unit holders were present and entitled), not by votes for, so abstentions and absentees do not stop it. With only 3 units, 1 vote each: no vote, or only 1 vote, against. The notice states the terms and the reasons (STR r 3(2)). Confirm.",
+  },
+  {
+    key: "SPECIAL_RESOLUTION_ARREARS",
+    kind: "LEGAL",
+    point:
+      "STA s 34(7) bars a unit in arrears from voting except on a unanimous resolution. Does the special resolution's 25% count, of the \"total number of votes that could be cast at a meeting at which all unit holders are present and entitled to vote\" (s 3(1)), still include the units in arrears? The pack assumes it does (RESOLUTIONS.SPECIAL.countsTotalForAllUnits true), which makes a special resolution easier to pass when units are in arrears. Confirm.",
   },
   {
     key: "QUORUM",

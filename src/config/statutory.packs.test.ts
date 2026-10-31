@@ -21,6 +21,8 @@ import {
 import { schemeStateProblem, SUPPORTED_SCHEME_STATES } from "./jurisdictions";
 import { fundConditionSelectors } from "@/lib/jurisdiction/funds";
 import { noticeRuleProblems, noticeTimingFor } from "@/lib/levies/notice-rule-check";
+import { defaultFunds, noLedgerProblem, requiredFunds } from "@/lib/jurisdiction/funds";
+import { lateCharge, lateChargeApplies } from "@/lib/finance/statutory-interest";
 import type { BuildingSelector, EntitlementScheduleDefinition, FundDefinition, RuleStatus, SelectorCondition } from "./statutory/types";
 
 const STATUSES: RuleStatus[] = ["CONFIRMED", "GUIDANCE", "STRATAVERZE", "NOT_CONFIRMED"];
@@ -815,6 +817,8 @@ describe("South Australian pack (pending, stage 1)", () => {
     expect(new Set(sa.FOR_REVIEW.map((p) => p.key)).size).toBe(sa.FOR_REVIEW.length);
     for (const p of sa.FOR_REVIEW) expect(p.point.length, p.key).toBeGreaterThan(20);
     expect(sa.FOR_REVIEW.find((p) => p.key === "COMMUNITY_SCHEMES_SUPPORTED")?.proposedDecision).toMatch(/^Launch with strata schemes only/);
+    expect(sa.FOR_REVIEW.find((p) => p.key === "FUNDS")?.proposedDecision).toMatch(/^Give every strata corporation the administrative fund/);
+    expect(sa.FOR_REVIEW.find((p) => p.key === "SPECIAL_RESOLUTION_ARREARS")?.point).toContain("countsTotalForAllUnits");
   });
 
   it("is covered by the pending pack loop and the shared fund and schedule checks", () => {
@@ -823,6 +827,8 @@ describe("South Australian pack (pending, stage 1)", () => {
   });
 
   it("supports strata schemes only, holding community schemes apart", () => {
+    // Plain words for advisers: no code names in the option notes.
+    for (const o of sa.SCHEME_TYPE.options) expect(o.note ?? "").not.toMatch(/[A-Z]{2,}_[A-Z]/);
     expect(sa.SCHEME_TYPE.options.map((o) => [o.value, o.supported])).toEqual([
       ["STRATA_TITLES", true],
       ["COMMUNITY_TITLES", false],
@@ -837,17 +843,36 @@ describe("South Australian pack (pending, stage 1)", () => {
     expect(sa.UNIT_ENTITLEMENT_RULES.aggregate).toBe(10_000);
   });
 
-  it("gives every fund by scheme type: the administrative fund as a ledger choice for a strata scheme, the sinking fund optional", () => {
+  it("holds the administrative fund as a proposal that never decides, the sinking fund optional for a strata scheme, and no community rule", () => {
     expect(sa.FUND_CATALOGUE.every((f) => f.required === false)).toBe(true);
     const rules = (key: string) => sa.FUND_CATALOGUE.find((f) => f.key === key)?.requiredWhen?.rules.map((r) => [r.need, r.when, r.status]);
-    expect(rules("ADMINISTRATIVE")).toEqual([
-      ["REQUIRED", { selector: "schemeType", in: ["COMMUNITY_TITLES"] }, "CONFIRMED"],
-      ["REQUIRED", { selector: "schemeType", in: ["STRATA_TITLES"] }, "STRATAVERZE"],
-    ]);
-    expect(rules("SINKING")).toEqual([
-      ["REQUIRED", { selector: "schemeType", in: ["COMMUNITY_TITLES"] }, "CONFIRMED"],
-      ["OPTIONAL", { selector: "schemeType", in: ["STRATA_TITLES"] }, "CONFIRMED"],
-    ]);
+    expect(rules("ADMINISTRATIVE")).toEqual([["REQUIRED", { any: [] }, "STRATAVERZE"]]);
+    expect(rules("SINKING")).toEqual([["OPTIONAL", { selector: "schemeType", in: ["STRATA_TITLES"] }, "CONFIRMED"]]);
+    // No fund rule reads the community type: CTA s 116 is held apart.
+    expect(JSON.stringify(sa.FUND_CATALOGUE)).not.toContain("COMMUNITY_TITLES");
+    expect(sa.FUND_CATALOGUE.find((f) => f.key === "ADMINISTRATIVE")?.requiredWhen?.noRuleFits).toContain("awaits Matthew Wrigley's decision");
+  });
+
+  it("gives no building a ledger, so every building is refused: no scheme type, a strata scheme or a community scheme", () => {
+    const building = (schemeType?: string) => ({ scheme: { totalLots: 4 }, lots: [], recorded: schemeType ? { schemeType } : {} });
+    for (const type of [undefined, "STRATA_TITLES", "COMMUNITY_TITLES"]) {
+      const b = building(type);
+      expect(defaultFunds(sa, b), String(type)).toEqual([]);
+      expect(requiredFunds(sa, b).required, String(type)).toEqual([]);
+      expect(noLedgerProblem(sa, b), String(type)).not.toBeNull();
+    }
+    const need = (type: string | undefined, key: string) => requiredFunds(sa, building(type)).each.find((r) => r.fund.key === key);
+    // No scheme type: the sinking fund asks for it; the administrative fund is undecided by its proposal.
+    expect(need(undefined, "SINKING")).toMatchObject({ need: null, missing: ["selector:schemeType"] });
+    expect(need(undefined, "ADMINISTRATIVE")?.need).toBeNull();
+    // A strata scheme: the sinking fund is optional, the administrative fund awaits the decision.
+    expect(need("STRATA_TITLES", "SINKING")?.need).toBe("OPTIONAL");
+    expect(need("STRATA_TITLES", "ADMINISTRATIVE")).toMatchObject({ need: null, missing: [] });
+    expect(need("STRATA_TITLES", "ADMINISTRATIVE")?.problem).toContain("awaits Matthew Wrigley's decision");
+    // A community scheme: both undecided, never given the community ledger.
+    expect(need("COMMUNITY_TITLES", "ADMINISTRATIVE")?.need).toBeNull();
+    expect(need("COMMUNITY_TITLES", "SINKING")?.need).toBeNull();
+    expect(need("COMMUNITY_TITLES", "SINKING")?.problem).toContain("Community schemes are not supported yet");
   });
 
   it("checks every notice value, and refuses every notice until the timing is decided", () => {
@@ -881,6 +906,20 @@ describe("South Australian pack (pending, stage 1)", () => {
     for (const v of [a.accrual.from, a.accrual.graceMonths, a.accrual.daysInYear, r.minPercent]) expect(v.status).toBe("NOT_CONFIRMED");
   });
 
+  it("charges no interest: none by default, and a resolved 10% rate is refused for the values not confirmed", () => {
+    const lc = sa.LATE_CHARGE;
+    const order = ["LEVY", "INTEREST", "RECOVERY_COSTS"] as const;
+    expect(lateChargeApplies(lc, { mode: "NONE" })).toBe(false);
+    expect(lateChargeApplies(lc, { mode: "RESOLVED_ANNUAL_RATE", annualRatePercent: 10 }, order)).toBe(false);
+    const input = { levyCents: 100_000, dueDate: "2026-01-31", payments: [], asAt: "2026-03-02" };
+    expect(lateCharge(input, lc, { mode: "NONE" })).toMatchObject({ interestCents: 0, reason: "NO_INTEREST_RESOLUTION" });
+    expect(lateCharge(input, lc, { mode: "RESOLVED_ANNUAL_RATE", annualRatePercent: 10 }, { order })).toMatchObject({
+      interestCents: 0,
+      reason: "RULE_NOT_CONFIRMED",
+      missing: ["resolvedRate.minPercent", "accrual.from", "accrual.graceMonths", "accrual.daysInYear"],
+    });
+  });
+
   it("has no statutory payment order, and gives none until one is decided", () => {
     expect(sa.PAYMENT_ALLOCATION.statutoryOrder).toBeNull();
     expect("PAYMENT_ALLOCATION_ORDER" in sa).toBe(false);
@@ -903,12 +942,23 @@ describe("South Australian pack (pending, stage 1)", () => {
     expect(sa.INSURANCE.publicLiabilityMinCents).toBe(1_000_000_000);
     expect(sa.AUDIT.corporationAccountsAuditRequired).toBe(false);
     expect(sa.RECORDS_RETENTION_PERIODS.years.minuteBooks).toBe(30);
+    // r 16(3) excludes small schemes from the multi-year projection only, not from the AGM statement.
+    expect(sa.EXPENDITURE_STATEMENT.multiYearProjectionExcluded).toEqual({ unitsAtMost: 6, commonPropertyInsuredAtMostCents: 20_000_000 });
+    expect(sa.EXPENDITURE_STATEMENT.alwaysPresented).toHaveLength(3);
   });
 
   it("holds the reform Bill as not law, and only in-force values as dated rules", () => {
     for (const reform of sa.PENDING_REFORMS) expect(reform.inForce).toBe(false);
     expect(sa.PENDING_REFORMS.find((r) => r.key === "BILL_2024_COMMUNITY_AND_STRATA_TITLES")?.legalStatus).toBe("NOT_LAW");
-    for (const r of Object.values(sa.DATED_RULES)) for (const v of r.versions) expect(v).toMatchObject({ legalStatus: "IN_FORCE", from: "2026-09-01", status: "CONFIRMED" });
+    // The historical version (1.9.2018 to 31.8.2026) and the current one, both read.
+    for (const r of Object.values(sa.DATED_RULES)) expect(r.versions.map((v) => [v.legalStatus, v.from, v.status])).toEqual([
+      ["IN_FORCE", "2018-09-01", "CONFIRMED"],
+      ["IN_FORCE", "2026-09-01", "CONFIRMED"],
+    ]);
+    expect(sa.DATED_RULES.DELEGATE_COPY_FEE.versions.map((v) => v.value)).toEqual([140, 175]);
+    expect(sa.DATED_RULES.EXPENDITURE_STATEMENT_EXCLUSION.versions.map((v) => v.value.commonPropertyInsuredAtMostCents)).toEqual([10_000_000, 20_000_000]);
+    expect(sa.DATED_RULES.INFORMATION_FEES.versions[0].value).toEqual({ statement: { owner: 0, other: 4_000 }, copies: { owner: 800, other: 4_000, otherWithInsurancePolicies: 5_600 }, inspection: { owner: 0, other: 800 } });
+    expect(sa.DATED_RULES.INFORMATION_FEES.versions[1].value).toEqual(sa.INFORMATION_ON_APPLICATION.feesCents);
   });
 
   it("switches every NSW workflow off", () => {

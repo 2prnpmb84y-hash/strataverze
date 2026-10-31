@@ -4093,7 +4093,7 @@ exports[`South Australian pack (pending, stage 1) > is the rules recorded for re
         },
         {
           "label": "Community scheme (Community Titles Act 1996)",
-          "note": "A community corporation, which may be a primary, secondary or tertiary corporation (CTA ss 7, 71). Its rules are held in COMMUNITY_SCHEMES, not in the shared shapes.",
+          "note": "Community schemes are not supported yet. Their rules come from the Community Titles Act 1996.",
           "supported": false,
           "value": "COMMUNITY_TITLES",
         },
@@ -4340,9 +4340,16 @@ exports[`South Australian pack (pending, stage 1) > is the rules recorded for re
       "title": "The most a delegate may charge a page for copies of records (STR r 13(3))",
       "versions": [
         {
+          "from": "2018-09-01",
+          "legalStatus": "IN_FORCE",
+          "note": "Read in the historical version 1.9.2018 to 31.8.2026: $1.40 per page. In force until 31 Aug 2026.",
+          "source": "Strata Titles Regulations 2018 (SA) r 13(3), version 1.9.2018 to 31.8.2026",
+          "status": "CONFIRMED",
+          "value": 140,
+        },
+        {
           "from": "2026-09-01",
           "legalStatus": "IN_FORCE",
-          "note": "The value before 1 Sep 2026 was not read.",
           "source": "Strata Titles Regulations 2018 (SA) r 13(3), as amended by 76/2026",
           "status": "CONFIRMED",
           "value": 175,
@@ -4350,12 +4357,22 @@ exports[`South Australian pack (pending, stage 1) > is the rules recorded for re
       ],
     },
     "EXPENDITURE_STATEMENT_EXCLUSION": {
-      "title": "Strata corporations excluded from the multi-year expenditure statement (STR r 16(3))",
+      "title": "Strata corporations excluded from the multi-year expenditure projection, s 33A(1)(a) and (2) (STR r 16(3))",
       "versions": [
+        {
+          "from": "2018-09-01",
+          "legalStatus": "IN_FORCE",
+          "note": "Read in the historical version 1.9.2018 to 31.8.2026: 6 or fewer units, or common property buildings insured for not more than $100,000. In force until 31 Aug 2026.",
+          "source": "Strata Titles Regulations 2018 (SA) r 16(3), version 1.9.2018 to 31.8.2026",
+          "status": "CONFIRMED",
+          "value": {
+            "commonPropertyInsuredAtMostCents": 10000000,
+            "unitsAtMost": 6,
+          },
+        },
         {
           "from": "2026-09-01",
           "legalStatus": "IN_FORCE",
-          "note": "The value before 1 Sep 2026 was not read.",
           "source": "Strata Titles Regulations 2018 (SA) r 16(3), as amended by 76/2026",
           "status": "CONFIRMED",
           "value": {
@@ -4369,9 +4386,30 @@ exports[`South Australian pack (pending, stage 1) > is the rules recorded for re
       "title": "The STA s 41 information fees (STR r 31(2))",
       "versions": [
         {
+          "from": "2018-09-01",
+          "legalStatus": "IN_FORCE",
+          "note": "Read in the historical version 1.9.2018 to 31.8.2026: $40 (others' statement), $8 and $40 plus $16 (copies), $8 (others' inspection). In force until 31 Aug 2026.",
+          "source": "Strata Titles Regulations 2018 (SA) r 31(2), version 1.9.2018 to 31.8.2026",
+          "status": "CONFIRMED",
+          "value": {
+            "copies": {
+              "other": 4000,
+              "otherWithInsurancePolicies": 5600,
+              "owner": 800,
+            },
+            "inspection": {
+              "other": 800,
+              "owner": 0,
+            },
+            "statement": {
+              "other": 4000,
+              "owner": 0,
+            },
+          },
+        },
+        {
           "from": "2026-09-01",
           "legalStatus": "IN_FORCE",
-          "note": "The values before 1 Sep 2026 were not read.",
           "source": "Strata Titles Regulations 2018 (SA) r 31(2), as amended by 76/2026",
           "status": "CONFIRMED",
           "value": {
@@ -4444,17 +4482,22 @@ exports[`South Australian pack (pending, stage 1) > is the rules recorded for re
     },
   ],
   "EXPENDITURE_STATEMENT": {
+    "alwaysPresented": [
+      "the current year's recurrent and non-recurrent estimates",
+      "the reserve estimate",
+      "the contributions to be raised",
+    ],
     "contents": [
       "proposed expenditure (other than recurrent expenditure) for the prescribed period",
       "estimated recurrent and non-recurrent expenditure for the current financial year",
       "estimated future expenditure for which funds should be raised now and held in reserve",
       "the amount to be raised by contributions to cover the current and reserve expenditure",
     ],
-    "excluded": {
+    "formsPartOfMinutes": true,
+    "multiYearProjectionExcluded": {
       "commonPropertyInsuredAtMostCents": 20000000,
       "unitsAtMost": 6,
     },
-    "formsPartOfMinutes": true,
     "periodYears": [
       {
         "preparedEveryYears": 3,
@@ -4498,7 +4541,7 @@ exports[`South Australian pack (pending, stage 1) > is the rules recorded for re
     {
       "key": "FUNDS",
       "kind": "PRODUCT",
-      "point": "The STA requires no named fund (s 27(1); STR r 14(2)(b)). Every strata corporation is given the administrative fund as StrataVerze's ledger fund (STRATAVERZE), and the sinking fund is optional (CONFIRMED). The fund label "sinking fund" for a strata scheme comes from STR r 14(2)(b); the STA says "reserve funds".",
+      "point": "The STA requires no named fund (s 27(1); STR r 14(2)(b)). Giving every strata corporation the administrative fund as StrataVerze's ledger fund is not decided: its rule is recorded but never holds, so the fund is undecided and every SA building is refused at onboarding (no ledger) until this is decided. The sinking fund is optional for a strata scheme (CONFIRMED). A community scheme gets no fund from these rules (CTA s 116 is held in COMMUNITY_SCHEMES.funds). The fund label "sinking fund" for a strata scheme comes from STR r 14(2)(b); the STA says "reserve funds".",
       "proposedDecision": "Give every strata corporation the administrative fund and offer the sinking fund as optional, labelled "Sinking Fund".",
     },
     {
@@ -4528,6 +4571,11 @@ exports[`South Australian pack (pending, stage 1) > is the rules recorded for re
       "key": "SPECIAL_RESOLUTION",
       "kind": "LEGAL",
       "point": "An STA special resolution is measured by the votes against (not more than 25% of the total votes that could be cast if all unit holders were present and entitled), not by votes for, so abstentions and absentees do not stop it. With only 3 units, 1 vote each: no vote, or only 1 vote, against. The notice states the terms and the reasons (STR r 3(2)). Confirm.",
+    },
+    {
+      "key": "SPECIAL_RESOLUTION_ARREARS",
+      "kind": "LEGAL",
+      "point": "STA s 34(7) bars a unit in arrears from voting except on a unanimous resolution. Does the special resolution's 25% count, of the "total number of votes that could be cast at a meeting at which all unit holders are present and entitled to vote" (s 3(1)), still include the units in arrears? The pack assumes it does (RESOLUTIONS.SPECIAL.countsTotalForAllUnits true), which makes a special resolution easier to pass when units are in arrears. Confirm.",
     },
     {
       "key": "QUORUM",
@@ -4588,36 +4636,21 @@ exports[`South Australian pack (pending, stage 1) > is the rules recorded for re
       "purpose": "Recurrent expenditure: the administration and maintenance of the common property and the corporation's other costs that are not non-recurrent.",
       "required": false,
       "requiredWhen": {
-        "noRuleFits": "Whether an administrative fund is required could not be worked out from the scheme type recorded.",
+        "noRuleFits": "The administrative fund rule for a South Australian strata scheme awaits Matthew Wrigley's decision, as the Strata Titles Act requires no named fund. Community schemes are not supported yet.",
         "rules": [
-          {
-            "need": "REQUIRED",
-            "provision": "Community Titles Act 1996 (SA) s 116(1)",
-            "reason": "Required for a community corporation, which must establish an administrative fund.",
-            "status": "CONFIRMED",
-            "when": {
-              "in": [
-                "COMMUNITY_TITLES",
-              ],
-              "selector": "schemeType",
-            },
-          },
           {
             "need": "REQUIRED",
             "provision": "Strata Titles Act 1988 (SA) s 27(1); Strata Titles Regulations 2018 (SA) r 14(2)(b)",
             "reason": "Kept for every strata corporation as the StrataVerze ledger fund. The Strata Titles Act requires no named fund.",
             "status": "STRATAVERZE",
             "when": {
-              "in": [
-                "STRATA_TITLES",
-              ],
-              "selector": "schemeType",
+              "any": [],
             },
           },
         ],
       },
       "shortLabel": "Admin",
-      "source": "Strata Titles Act 1988 (SA) s 27(1); Strata Titles Regulations 2018 (SA) r 14(2)(b); Community Titles Act 1996 (SA) s 116",
+      "source": "Strata Titles Act 1988 (SA) s 27(1); Strata Titles Regulations 2018 (SA) r 14(2)(b)",
       "status": "STRATAVERZE",
     },
     {
@@ -4628,20 +4661,8 @@ exports[`South Australian pack (pending, stage 1) > is the rules recorded for re
       "purpose": "Non-recurrent expenditure and future expenditure of a capital nature held in reserve.",
       "required": false,
       "requiredWhen": {
-        "noRuleFits": "Whether a sinking fund is required could not be worked out from the scheme type recorded.",
+        "noRuleFits": "Community schemes are not supported yet, so whether a sinking fund is required is not worked out for one.",
         "rules": [
-          {
-            "need": "REQUIRED",
-            "provision": "Community Titles Act 1996 (SA) s 116(1), (2)",
-            "reason": "Required for a community corporation, which must establish a sinking fund for non-recurrent expenditure.",
-            "status": "CONFIRMED",
-            "when": {
-              "in": [
-                "COMMUNITY_TITLES",
-              ],
-              "selector": "schemeType",
-            },
-          },
           {
             "need": "OPTIONAL",
             "provision": "Strata Titles Act 1988 (SA) s 27(1); Strata Titles Regulations 2018 (SA) r 14(2)(b)",
@@ -4657,7 +4678,7 @@ exports[`South Australian pack (pending, stage 1) > is the rules recorded for re
         ],
       },
       "shortLabel": "Sinking",
-      "source": "Strata Titles Act 1988 (SA) s 27(1); Strata Titles Regulations 2018 (SA) r 14(2)(b); Community Titles Act 1996 (SA) s 116",
+      "source": "Strata Titles Act 1988 (SA) s 27(1); Strata Titles Regulations 2018 (SA) r 14(2)(b)",
       "status": "CONFIRMED",
     },
   ],
@@ -4945,7 +4966,7 @@ exports[`South Australian pack (pending, stage 1) > is the rules recorded for re
     "Which court hears a plain contribution debt claim, and its limits (the Magistrates Court Act 1991 was not read). The Part 3A route to the Magistrates Court is confirmed.",
     "From which day interest runs, any grace period, and how a day's share of the yearly rate is worked out: the law leaves these to the resolution.",
     "Whether legal and collection costs are recoverable from the owner beyond court costs orders (STA s 41A(9)(g)).",
-    "The values before 1 Sep 2026 of STR rr 13(3), 16(3) and 31(2), and of the community regulations (the 2011 regulations were not read).",
+    "The community regulations before 1 Sep 2026 (the Community Titles Regulations 2011 were not read).",
     "CTA ss 13, 14, 16 to 19, 21 to 70, 78A to 78D, 100 to 102, 110 to 112, 120 to 134, 142A to 154, 155A, 155B, 156 and the Schedule (including converting a strata scheme to the CTA, Sch cl 2).",
     "Whether new strata plans can still be deposited under the STA: Part 2 Division 2 was deleted from 1 Jun 2009, and what it held was not read.",
     "Disclosure to a buyer on sale (SA vendor statement law, outside the two Acts, not researched).",
@@ -5109,7 +5130,7 @@ exports[`South Australian pack (pending, stage 1) > is the rules recorded for re
       },
       {
         "label": "Community scheme (Community Titles Act 1996)",
-        "note": "A community corporation, which may be a primary, secondary or tertiary corporation (CTA ss 7, 71). Its rules are held in COMMUNITY_SCHEMES, not in the shared shapes.",
+        "note": "Community schemes are not supported yet. Their rules come from the Community Titles Act 1996.",
         "supported": false,
         "value": "COMMUNITY_TITLES",
       },
