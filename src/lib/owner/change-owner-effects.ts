@@ -1,18 +1,17 @@
 import { revalidatePath } from "next/cache";
-import { and } from "@prisma/orm-postgres/orm-client";
 import { db } from "@/prisma/db";
 import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
 import { recordSecurityEvent } from "@/lib/audit/security-audit";
 import { createDocument } from "@/lib/queries/documents";
-import { createInvitation } from "@/lib/queries/invitations";
 import { getSchemeNameById } from "@/lib/queries/schemes";
-import { logActivity } from "@/lib/queries/activity-log";
+import { logActivityTx } from "@/lib/queries/activity-log";
 import { notifyInvitation } from "@/lib/notifications";
 import { consumeUpload, type verifyUpload } from "@/lib/storage/uploads";
 import { captureLibraryDocument, captureQuietly } from "@/lib/vault/sources";
 import { getTrialVault } from "@/lib/vault/capture";
-import { applyChangeOwner, type ChangeOwnerInput } from "./change-owner";
-import { decideOwnerChange, getPendingOwnerChange } from "./owner-change-requests";
+import { applyChangeOwner, previewChangeOwner, type ChangeOwnerInput } from "./change-owner";
+import { applyOwnerInvitation, planOwnerInvitation } from "./owner-invitation";
+import { OwnerChangeConflict, decideOwnerChange, getPendingOwnerChange, lockLot, planFingerprint } from "./owner-change-requests";
 
 /**
  * What a change of owner does once it is decided (25 Oct 2026), shared by the
@@ -21,34 +20,23 @@ import { decideOwnerChange, getPendingOwnerChange } from "./owner-change-request
  * confirmed change applies exactly what an Adviser's change applies. Callers
  * authorise, check the step-up and check the lot is the scheme's first.
  *
- * Atomic (review L2, L3): one transaction holds the lot's row, then checks
- * nothing is waiting (direct) or claims the waiting change (confirm), applies
- * the roll, access, committee and delivery changes and creates the invitation
- * row. Everything else happens only after it commits: the notice of transfer,
- * the invitation email, the activity entries and the security events.
+ * One transaction (reviews L2, L3) holds the lot's row, then checks nothing is
+ * waiting (direct) or, for a confirmation, checks the plan is the one the
+ * reviewer saw (L6) and claims the waiting change; applies the roll, access,
+ * committee and delivery changes; makes the invitation (a new one, or an
+ * earlier one reused) and withdraws the lot's other pending owner invitations
+ * (M2, M3); and writes the OWNER_CHANGED (and OWNER_CHANGE_CONFIRMED)
+ * activity entries. A failure anywhere rolls all of it back.
+ *
+ * After the commit nothing can report the change as not made (L1): the
+ * notice of transfer, the invitation email, the security events and the page
+ * refresh each run quietly, a failure being logged and noted in the message.
+ * The security events stay after the commit: the audit log is written outside
+ * transactions by design (src/lib/queries/activity-log.ts, logActivityTx).
  */
 
 type Actor = { id: string; firstName?: string | null; lastName?: string | null };
-type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 export type VerifiedUpload = Awaited<ReturnType<typeof verifyUpload>>;
-
-/** The change could not go ahead as asked; nothing was changed (the transaction rolled back). */
-export class OwnerChangeConflict extends Error {
-  constructor(readonly kind: "PENDING" | "NOT_WAITING" | "LOT") {
-    super(`change of owner: ${kind}`);
-    this.name = "OwnerChangeConflict";
-  }
-}
-
-/**
- * Hold the lot's row until the transaction ends, so every change of owner on
- * a lot (recorded, held or confirmed) runs one at a time (review L3).
- */
-export async function lockLot(tx: Tx, schemeId: string, lotId: string) {
-  const lot = await tx.orm.public.Lot.where((l) => and(l.id.eq(lotId), l.schemeId.eq(schemeId))).forNoKeyUpdate().first();
-  if (!lot) throw new OwnerChangeConflict("LOT");
-  return lot;
-}
 
 /** File the notice of transfer in the document library (managers only) and the building's vault. */
 export async function fileNoticeOfTransfer(p: { schemeId: string; lotNumber: string; settlementDate: string; upload: VerifiedUpload; uploadedBy: string }) {
@@ -78,12 +66,30 @@ export async function fileNoticeOfTransfer(p: { schemeId: string; lotNumber: str
   return doc.id;
 }
 
+/** Steps after a commit: each runs, a failure is logged and remembered, nothing is thrown (review L1). */
+export class AfterCommit {
+  readonly failed: string[] = [];
+  async run<T>(what: string, fn: () => Promise<T> | T): Promise<T | null> {
+    try {
+      return await fn();
+    } catch (err) {
+      this.failed.push(what);
+      console.error(`[change-owner] after commit, ${what} failed:`, err instanceof Error ? err.message : "error");
+      return null;
+    }
+  }
+  /** A note for the person, when something after the commit failed. */
+  note(): string | null {
+    return this.failed.length ? "The change itself is saved. Some follow-up steps could not be completed and have been logged for StrataVerze." : null;
+  }
+}
+
 /**
  * Apply the change and tell people. `mode` is the Adviser's or StrataVerze's
  * own change (refused while a change is waiting for the lot) or the
- * confirmation of a waiting one (refused unless this call claims it).
- * Throws OwnerChangeConflict, with nothing changed, if it cannot go ahead.
- * Returns the message for the person who applied it.
+ * confirmation of a waiting one (refused unless the plan is the one the
+ * reviewer saw and this call claims it). Throws OwnerChangeConflict, with
+ * nothing changed, if it cannot go ahead. Returns the message.
  */
 export async function completeChangeOwner(p: {
   schemeId: string;
@@ -95,7 +101,9 @@ export async function completeChangeOwner(p: {
   actorRole: "ADVISER" | "platform_admin";
   /** Run after the change commits: files the notice of transfer, if any (direct path). */
   notice: () => Promise<string | null>;
-  mode: { kind: "direct" } | { kind: "confirm"; requestId: string; recordedBy: string; noticeDocumentId: string | null };
+  mode:
+    | { kind: "direct" }
+    | { kind: "confirm"; requestId: string; recordedBy: string; noticeDocumentId: string | null; fingerprint: string; ownerName: string };
 }) {
   const { schemeId, lotId, lotNumber, input, actor } = p;
   // Looked up before the change is saved, so nothing after the write can fail on it.
@@ -104,51 +112,34 @@ export async function completeChangeOwner(p: {
   // has none: whether a seat ends on sale there is not confirmed (FOR_REVIEW), so no citation is given.
   const seatCitation = rules.CITATIONS?.committeeSeatEndsOnSale ?? null;
   const committee = rules.TERMINOLOGY.committee;
+  const confirmed = p.mode.kind === "confirm" ? { requestId: p.mode.requestId, recordedBy: p.mode.recordedBy } : null;
 
-  const { result, invitation } = await db.transaction(async (tx) => {
+  const { result, invitation, sent, invited } = await db.transaction(async (tx) => {
     await lockLot(tx, schemeId, lotId);
+    const planned = await planOwnerInvitation(tx.orm, { schemeId, lotId, email: input.email, invite: p.invite });
     if (p.mode.kind === "direct") {
       if (await getPendingOwnerChange(schemeId, lotId, tx.orm)) throw new OwnerChangeConflict("PENDING");
-    } else if (!(await decideOwnerChange(tx.orm, schemeId, p.mode.requestId, "CONFIRMED", actor.id))) {
+    } else {
+      // What the reviewer saw is what is applied (review L6).
+      const now = planFingerprint(p.mode.requestId, await previewChangeOwner(tx.orm, schemeId, lotId), planned);
+      if (now !== p.mode.fingerprint) throw new OwnerChangeConflict("PLAN_CHANGED");
       // Decided by someone else since it was read: of two decisions, one wins.
-      throw new OwnerChangeConflict("NOT_WAITING");
+      if (!(await decideOwnerChange(tx.orm, schemeId, p.mode.requestId, "CONFIRMED", actor.id))) throw new OwnerChangeConflict("NOT_WAITING");
     }
     const applied = await applyChangeOwner(tx.orm, schemeId, lotId, input);
-    let made: { kind: "sent"; id: string; expiresAt: Date } | { kind: "already" } | null = null;
-    if (p.invite && input.email) {
-      const waiting = await tx.orm.public.Invitation
-        .where((i) => and(i.schemeId.eq(schemeId), i.email.eq(input.email!), i.role.eq("OWNER"), i.status.eq("PENDING")))
-        .first();
-      if (waiting) made = { kind: "already" };
-      else {
-        const expiresAt = new Date();
-        expiresAt.setDate(expiresAt.getDate() + 30);
-        const row = await createInvitation({ schemeId, email: input.email, role: "OWNER", lotId, invitedById: actor.id, expiresAt: expiresAt.toISOString() }, tx.orm);
-        made = { kind: "sent", id: row.id, expiresAt };
-      }
+    const toSend = await applyOwnerInvitation(tx.orm, planned, { schemeId, lotId, email: input.email, invitedById: actor.id });
+    const invited = toSend ? "sent" : planned.kind === "ALREADY" ? "already" : planned.kind === "SKIP_ACTIVE" ? "skipped_active" : "no";
+    if (p.mode.kind === "confirm") {
+      await logActivityTx(tx, {
+        schemeId,
+        actorId: actor.id,
+        action: "OWNER_CHANGE_CONFIRMED",
+        entityType: "Lot",
+        entityId: lotId,
+        metadata: { lotNumber, requestId: p.mode.requestId, newOwnerName: p.mode.ownerName, recordedBy: p.mode.recordedBy },
+      });
     }
-    return { result: applied, invitation: made };
-  });
-
-  // Committed. From here on nothing undoes the change.
-  const filed = p.mode.kind === "confirm" ? p.mode.noticeDocumentId : await quietly("notice", p.notice);
-  const noticeFailed = filed === QUIET_FAILURE;
-  const noticeDocumentId = noticeFailed ? null : filed;
-  const invited = invitation?.kind ?? null;
-  if (invitation?.kind === "sent" && input.email) {
-    const inviterName = [actor.firstName, actor.lastName].filter(Boolean).join(" ") || "Your strata manager";
-    notifyInvitation({
-      recipientEmail: input.email,
-      schemeName: await getSchemeNameById(schemeId),
-      role: "OWNER",
-      inviterName,
-      expiresAt: invitation.expiresAt,
-      invitationToken: invitation.id,
-    }).catch(() => {});
-  }
-  const confirmed = p.mode.kind === "confirm" ? { requestId: p.mode.requestId, recordedBy: p.mode.recordedBy } : null;
-  await quietly("activity", () =>
-    logActivity({
+    await logActivityTx(tx, {
       schemeId,
       actorId: actor.id,
       action: "OWNER_CHANGED",
@@ -156,19 +147,39 @@ export async function completeChangeOwner(p: {
       entityId: lotId,
       metadata: {
         lotNumber,
-        previousOwnerName: result.previousOwnerName,
+        previousOwnerName: applied.previousOwnerName,
         newOwnerName: input.ownerName,
         settlementDate: input.settlementDate,
-        noticeDocumentId,
-        invited: invited ?? "no",
-        endedAccess: result.endedMemberships,
-        committeeSeatsEnded: result.endedCommitteeSeats.length,
-        committeeSeatsKept: result.keptCommitteeSeats.map((k) => ({ profileId: k.profileId, otherLots: k.lotNumbers })),
+        // A direct change's notice is filed after the commit; a held change's was filed when it was held.
+        noticeDocumentId: p.mode.kind === "confirm" ? p.mode.noticeDocumentId : null,
+        invited,
+        invitationsWithdrawn: planned.withdrawn.length,
+        endedAccess: applied.endedMemberships,
+        committeeSeatsEnded: applied.endedCommitteeSeats.length,
+        committeeSeatsKept: applied.keptCommitteeSeats.map((k) => ({ profileId: k.profileId, otherLots: k.lotNumbers })),
         ...(confirmed ?? {}),
       },
-    }),
-  );
-  await quietly("audit", () =>
+    });
+    return { result: applied, invitation: planned, sent: toSend, invited };
+  });
+
+  // Committed. From here on nothing undoes the change or reports it as not made.
+  const after = new AfterCommit();
+  if (p.mode.kind === "direct") await after.run("notice of transfer", p.notice);
+  if (sent && input.email) {
+    await after.run("invitation email", async () => {
+      const inviterName = [actor.firstName, actor.lastName].filter(Boolean).join(" ") || "Your strata manager";
+      await notifyInvitation({
+        recipientEmail: input.email!,
+        schemeName: await getSchemeNameById(schemeId),
+        role: "OWNER",
+        inviterName,
+        expiresAt: sent.expiresAt,
+        invitationToken: sent.id,
+      });
+    });
+  }
+  await after.run("security event", () =>
     recordSecurityEvent({
       action: "lot.owner_changed",
       outcome: "allowed",
@@ -180,13 +191,28 @@ export async function completeChangeOwner(p: {
       metadata: {
         endedMemberships: result.endedMemberships.length,
         endedCommitteeSeats: result.endedCommitteeSeats.length,
-        invited: invited ?? "no",
+        invited,
+        invitationsWithdrawn: invitation.withdrawn.length,
         ...(confirmed ? { requestId: confirmed.requestId } : {}),
       },
     }),
   );
+  if (confirmed) {
+    await after.run("security event", () =>
+      recordSecurityEvent({
+        action: "lot.owner_change_confirmed",
+        outcome: "allowed",
+        actorProfileId: actor.id,
+        actorRole: p.actorRole,
+        schemeId,
+        resourceType: "Lot",
+        resourceId: lotId,
+        metadata: confirmed,
+      }),
+    );
+  }
+  await after.run("page refresh", () => revalidateChangeOwner(schemeId));
 
-  revalidateChangeOwner(schemeId);
   const parts = [`${input.ownerName} is now the owner of Lot ${lotNumber} on the strata roll, settled ${input.settlementDate.split("-").reverse().join("/")}.`];
   if (result.endedMemberships.length) {
     parts.push(
@@ -202,25 +228,21 @@ export async function completeChangeOwner(p: {
     const lots = k.lotNumbers.map((n) => `Lot ${n}`).join(", ");
     parts.push(`A committee seat continues, as that member holds owner access to ${lots}.`);
   }
-  if (invited === "sent") parts.push(`An invitation has been sent to ${input.email}.`);
-  if (invited === "already") parts.push(`${input.email} already has an invitation waiting.`);
+  if (sent) parts.push(`An invitation has been sent to ${input.email}.`);
+  if (invitation.kind === "ALREADY") parts.push(`${input.email} already has an invitation waiting.`);
+  if (invitation.kind === "SKIP_ACTIVE") {
+    parts.push(
+      `${input.email} already holds owner access in this building${invitation.activeLotNumber ? ` through Lot ${invitation.activeLotNumber}` : ""}, so no invitation was sent.`,
+    );
+  }
   if (!input.email) parts.push("No email was given, so no invitation was sent.");
-  if (noticeFailed) {
-    parts.push("The notice of transfer could not be filed. Please add it to the document library.");
+  if (invitation.withdrawn.length) {
+    parts.push(`${invitation.withdrawn.length === 1 ? "An earlier invitation" : `${invitation.withdrawn.length} earlier invitations`} to this lot ${invitation.withdrawn.length === 1 ? "was" : "were"} withdrawn.`);
   }
+  if (after.failed.includes("notice of transfer")) parts.push("The notice of transfer could not be filed. Please add it to the document library.");
+  const note = after.note();
+  if (note) parts.push(note);
   return parts.join(" ");
-}
-
-const QUIET_FAILURE = "__failed__";
-
-/** After the commit: a failure is logged, never reported as the change failing (it has been made). */
-async function quietly<T>(what: string, fn: () => Promise<T>): Promise<T | typeof QUIET_FAILURE> {
-  try {
-    return await fn();
-  } catch (err) {
-    console.error(`[change-owner] ${what} after commit failed:`, err instanceof Error ? err.message : "error");
-    return QUIET_FAILURE;
-  }
 }
 
 /** The pages that show a lot's owner or a change waiting for review. */

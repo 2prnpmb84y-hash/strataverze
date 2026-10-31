@@ -7,15 +7,17 @@ import { requireRecentMfa } from "@/lib/auth/mfa-enforcement";
 import { assertInScheme } from "@/lib/auth/scheme-scope";
 import { recordSecurityEvent } from "@/lib/audit/security-audit";
 import { getLotInScheme } from "@/lib/queries/lots";
-import { logActivity } from "@/lib/queries/activity-log";
-import { OwnerChangeConflict, completeChangeOwner, lockLot, revalidateChangeOwner } from "@/lib/owner/change-owner-effects";
-import { decideOwnerChange, getOwnerChangeRequest, heldInput, type OwnerChangeDecision } from "@/lib/owner/owner-change-requests";
+import { logActivityTx } from "@/lib/queries/activity-log";
+import { AfterCommit, completeChangeOwner, revalidateChangeOwner } from "@/lib/owner/change-owner-effects";
+import { OwnerChangeConflict, decideOwnerChange, getOwnerChangeRequest, heldInput, lockLot } from "@/lib/owner/owner-change-requests";
 import { isOwnAddress } from "@/lib/owner/own-address";
 import { currentAddressesOf } from "@/lib/owner/recorder-addresses";
 
 export type OwnerChangeReviewState = { error?: string; done?: string };
 
 const NOT_WAITING = "This change of owner is no longer waiting for review. Refresh the page to see where it stands.";
+const PLAN_CHANGED =
+  "What confirming would do has changed since this page was opened (the lot's owners, committee seats or invitations). Nothing changed. Reload the page, check it again, then confirm.";
 
 /**
  * Confirm a change of owner a committee member recorded (finding H-1, founder
@@ -27,9 +29,11 @@ const NOT_WAITING = "This change of owner is no longer waiting for review. Refre
  * applies, in one transaction with the decision (review L2): the strata roll,
  * the outgoing owner's access to the lot, committee seats, delivery
  * preferences and, if asked for, the new owner's invitation (sent by the
- * person confirming, by email after the commit).
+ * person confirming, by email after the commit). `fingerprint` is the plan the
+ * reviewer was shown (PendingOwnerChangeView.fingerprint): confirming refuses
+ * if what it would do has changed since (review L6).
  */
-export async function confirmOwnerChangeAction(schemeId: string, requestId: string): Promise<OwnerChangeReviewState> {
+export async function confirmOwnerChangeAction(schemeId: string, requestId: string, fingerprint: string): Promise<OwnerChangeReviewState> {
   try {
     const { profile, isAdmin } = await requireRolesOrAdmin(schemeId, ["ADVISER"]);
     await requireRecentMfa();
@@ -65,6 +69,7 @@ export async function confirmOwnerChangeAction(schemeId: string, requestId: stri
       }
     }
 
+    if (typeof fingerprint !== "string" || !/^[0-9a-f]{64}$/.test(fingerprint)) return { error: PLAN_CHANGED };
     let done: string;
     try {
       done = await completeChangeOwner({
@@ -77,13 +82,20 @@ export async function confirmOwnerChangeAction(schemeId: string, requestId: stri
         actorRole,
         notice: async () => null,
         // The decision is made in the same transaction as the change (one decision wins).
-        mode: { kind: "confirm", requestId: request.id, recordedBy: request.recordedBy, noticeDocumentId: request.noticeDocumentId ?? null },
+        mode: {
+          kind: "confirm",
+          requestId: request.id,
+          recordedBy: request.recordedBy,
+          noticeDocumentId: request.noticeDocumentId ?? null,
+          fingerprint,
+          ownerName: request.ownerName,
+        },
       });
     } catch (err) {
-      if (err instanceof OwnerChangeConflict) return { error: NOT_WAITING };
+      if (err instanceof OwnerChangeConflict) return { error: err.kind === "PLAN_CHANGED" ? PLAN_CHANGED : NOT_WAITING };
       throw err;
     }
-    await recordDecision(schemeId, request, lotNumber, "CONFIRMED", profile.id, actorRole);
+    // The decision's activity entry and security event are written by completeChangeOwner (the entry in its transaction).
     return { done: `Confirmed. ${done}` };
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
@@ -104,15 +116,47 @@ export async function rejectOwnerChangeAction(schemeId: string, requestId: strin
     const found = await waitingRequest(schemeId, requestId);
     if ("error" in found) return found;
     const { request, lotNumber } = found;
-    const decided = await db.transaction(async (tx) => {
-      await lockLot(tx, schemeId, request.lotId);
-      return decideOwnerChange(tx.orm, schemeId, request.id, "REJECTED", profile.id);
-    });
+    const actorRole = isAdmin ? "platform_admin" : "ADVISER";
+    let decided = false;
+    try {
+      decided = await db.transaction(async (tx) => {
+        await lockLot(tx, schemeId, request.lotId);
+        if (!(await decideOwnerChange(tx.orm, schemeId, request.id, "REJECTED", profile.id))) return false;
+        // In the transaction, so the decision and its entry are saved together (review L1).
+        await logActivityTx(tx, {
+          schemeId,
+          actorId: profile.id,
+          action: "OWNER_CHANGE_REJECTED",
+          entityType: "Lot",
+          entityId: request.lotId,
+          metadata: { lotNumber, requestId: request.id, newOwnerName: request.ownerName, recordedBy: request.recordedBy },
+        });
+        return true;
+      });
+    } catch (err) {
+      if (err instanceof OwnerChangeConflict) return { error: NOT_WAITING };
+      throw err;
+    }
     if (!decided) return { error: NOT_WAITING };
-    await recordDecision(schemeId, request, lotNumber, "REJECTED", profile.id, isAdmin ? "platform_admin" : "ADVISER");
-    revalidateChangeOwner(schemeId);
+    // Committed: nothing below can report the rejection as not made.
+    const after = new AfterCommit();
+    await after.run("security event", () =>
+      recordSecurityEvent({
+        action: "lot.owner_change_rejected",
+        outcome: "allowed",
+        actorProfileId: profile.id,
+        actorRole,
+        schemeId,
+        resourceType: "Lot",
+        resourceId: request.lotId,
+        metadata: { requestId: request.id, recordedBy: request.recordedBy },
+      }),
+    );
+    await after.run("page refresh", () => revalidateChangeOwner(schemeId));
     const parts = [`The change of owner of Lot ${lotNumber} to ${request.ownerName} was rejected. Nothing on the strata roll changed and no invitation was sent.`];
     if (request.noticeDocumentId) parts.push("The notice of transfer filed with it stays in the document library; delete it there if it is wrong.");
+    const note = after.note();
+    if (note) parts.push(note);
     return { done: parts.join(" ") };
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
@@ -128,32 +172,4 @@ async function waitingRequest(schemeId: string, requestId: string) {
   const lot = await getLotInScheme(schemeId, request.lotId);
   assertInScheme(lot, schemeId, "Lot");
   return { request, lotNumber: String(lot!.lotNumber) };
-}
-
-type RequestRow = NonNullable<Awaited<ReturnType<typeof getOwnerChangeRequest>>>;
-
-/** After the decision commits: the activity entry and the security event. A failure here is logged only. */
-async function recordDecision(schemeId: string, request: RequestRow, lotNumber: string, decision: OwnerChangeDecision, actorId: string, actorRole: string) {
-  try {
-    await logActivity({
-      schemeId,
-      actorId,
-      action: decision === "CONFIRMED" ? "OWNER_CHANGE_CONFIRMED" : "OWNER_CHANGE_REJECTED",
-      entityType: "Lot",
-      entityId: request.lotId,
-      metadata: { lotNumber, requestId: request.id, newOwnerName: request.ownerName, recordedBy: request.recordedBy },
-    });
-    await recordSecurityEvent({
-      action: decision === "CONFIRMED" ? "lot.owner_change_confirmed" : "lot.owner_change_rejected",
-      outcome: "allowed",
-      actorProfileId: actorId,
-      actorRole,
-      schemeId,
-      resourceType: "Lot",
-      resourceId: request.lotId,
-      metadata: { requestId: request.id, recordedBy: request.recordedBy },
-    });
-  } catch (err) {
-    console.error("[change-owner-review] recording the decision failed:", err instanceof Error ? err.message : "error");
-  }
 }

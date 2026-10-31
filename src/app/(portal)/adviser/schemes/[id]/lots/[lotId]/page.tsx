@@ -138,7 +138,7 @@ export default async function LotDetailPage({
         )}
       </div>
 
-      {pendingChange && <PendingOwnerChange schemeId={id} lotLabel={lotLabel} change={pendingChange} canDecide />}
+      {pendingChange && <PendingOwnerChange schemeId={id} lotLabel={lotLabel} change={pendingChange} />}
 
       <BuildingDataNotice problems={lotDataProblem ? [lotDataProblem] : []} />
 

@@ -66,7 +66,7 @@ function model(name: string) {
   }
   const t = terminals[name];
   const chain: Record<string, unknown> = {};
-  for (const m of ["where", "include", "orderBy", "limit", "select"]) chain[m] = () => chain;
+  for (const m of ["where", "include", "orderBy", "limit", "select", "forNoKeyUpdate", "forUpdate"]) chain[m] = () => chain;
   for (const op of Object.keys(t) as Terminal[]) chain[op] = (...a: unknown[]) => t[op](...a);
   return chain;
 }
@@ -88,7 +88,7 @@ const lots = {
   createLot: vi.fn(),
   updateLot: vi.fn(),
   deleteLot: vi.fn(),
-  assignOwnerToLot: vi.fn(),
+  assignOwnerToLot: vi.fn(async () => ({ restartedFrom: null })),
   removeOwnerFromLot: vi.fn(),
 };
 vi.mock("@/lib/queries/lots", () => lots);
@@ -260,6 +260,9 @@ beforeEach(() => {
     t.first.mockResolvedValue(null);
     t.all.mockResolvedValue([]);
   }
+  // The lot's row lock (H-1 review L2) finds scheme A's lot; a foreign lot is refused before it.
+  model("Lot");
+  terminals.Lot.first.mockResolvedValue(LOT_A);
 });
 
 describe("lots (C1)", () => {
@@ -307,7 +310,7 @@ describe("lots (C1)", () => {
     const r = await lotActions.assignOwnerAction(SCHEME_A, LOT_A.id, "new-owner");
     expect(r.error).toBeUndefined();
     expect(stepUp.requireRecentMfa).toHaveBeenCalled();
-    expect(lots.assignOwnerToLot).toHaveBeenCalledWith({ schemeId: SCHEME_A, lotId: LOT_A.id, profileId: "new-owner" });
+    expect(lots.assignOwnerToLot).toHaveBeenCalledWith({ schemeId: SCHEME_A, lotId: LOT_A.id, profileId: "new-owner" }, expect.anything());
   });
 
   it("assignOwnerAction lets a StrataVerze admin assign an owner without a role on the scheme", async () => {
@@ -315,7 +318,7 @@ describe("lots (C1)", () => {
     caller.isPlatformAdmin = true;
     const r = await lotActions.assignOwnerAction(SCHEME_A, LOT_A.id, "new-owner");
     expect(r.error).toBeUndefined();
-    expect(lots.assignOwnerToLot).toHaveBeenCalledWith({ schemeId: SCHEME_A, lotId: LOT_A.id, profileId: "new-owner" });
+    expect(lots.assignOwnerToLot).toHaveBeenCalledWith({ schemeId: SCHEME_A, lotId: LOT_A.id, profileId: "new-owner" }, expect.anything());
   });
 
   it("assignOwnerAction refuses an Adviser of another scheme acting through scheme A's id", async () => {

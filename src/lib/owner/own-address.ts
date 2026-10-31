@@ -1,8 +1,9 @@
 /**
  * A committee member cannot record a change of owner to themselves (finding
- * H-1, founder decision 31 Oct 2026; review L1). An address is compared
- * trimmed, in lower case and without a plus tag, so local+tag@domain matches
- * local@domain.
+ * H-1, founder decision 31 Oct 2026; review L1, L4). An address is compared
+ * trimmed, in lower case, without a plus tag (local+tag@domain matches
+ * local@domain) and without a trailing dot on the domain; Gmail addresses
+ * also without dots in the name, with googlemail.com read as gmail.com.
  */
 
 export function normaliseAddress(v: unknown): string | null {
@@ -10,8 +11,13 @@ export function normaliseAddress(v: unknown): string | null {
   const a = v.trim().toLowerCase();
   const at = a.lastIndexOf("@");
   if (at <= 0 || at === a.length - 1) return a || null;
-  const local = a.slice(0, at).split("+")[0];
-  return `${local || a.slice(0, at)}@${a.slice(at + 1)}`;
+  let local = a.slice(0, at).split("+")[0] || a.slice(0, at);
+  // A trailing dot on the domain is the same domain (review L4).
+  let domain = a.slice(at + 1).replace(/\.+$/, "");
+  // Gmail ignores dots in the name, and googlemail.com is gmail.com.
+  if (domain === "googlemail.com") domain = "gmail.com";
+  if (domain === "gmail.com") local = local.replace(/\./g, "") || local;
+  return `${local}@${domain}`;
 }
 
 type AuthUserLike = {
@@ -50,17 +56,22 @@ const PUBLIC_DOMAINS = new Set([
 ]);
 
 /**
- * For the reviewer: whether the new owner's email looks like the recorder's,
- * sharing its part before the @ (plus tags ignored) or a domain that is not a
- * public mail provider. Null when it does not.
+ * For the reviewer: whether the new owner's email looks like one of the
+ * recorder's addresses (all of their sign-in addresses, normalised), sharing
+ * the part before the @ or a domain that is not a public mail provider. Null
+ * when it does not.
  */
-export function addressResemblance(newOwnerEmail: string | null | undefined, recorderEmail: string | null | undefined): "local" | "domain" | null {
+export function addressResemblance(newOwnerEmail: string | null | undefined, recorderAddresses: Iterable<string | null | undefined>): "local" | "domain" | null {
   const a = normaliseAddress(newOwnerEmail);
-  const b = normaliseAddress(recorderEmail);
-  if (!a || !b || !a.includes("@") || !b.includes("@")) return null;
+  if (!a || !a.includes("@")) return null;
   const [al, ad] = [a.slice(0, a.lastIndexOf("@")), a.slice(a.lastIndexOf("@") + 1)];
-  const [bl, bd] = [b.slice(0, b.lastIndexOf("@")), b.slice(b.lastIndexOf("@") + 1)];
-  if (al === bl) return "local";
-  if (ad === bd && !PUBLIC_DOMAINS.has(ad)) return "domain";
-  return null;
+  let found: "local" | "domain" | null = null;
+  for (const raw of recorderAddresses) {
+    const b = normaliseAddress(raw);
+    if (!b || !b.includes("@")) continue;
+    const [bl, bd] = [b.slice(0, b.lastIndexOf("@")), b.slice(b.lastIndexOf("@") + 1)];
+    if (al === bl) return "local";
+    if (ad === bd && !PUBLIC_DOMAINS.has(ad)) found = "domain";
+  }
+  return found;
 }

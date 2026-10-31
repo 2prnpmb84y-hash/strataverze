@@ -12,8 +12,8 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { FinancialStatusChip } from "@/components/lots/financial-status";
 import { ChangeOwnerButton } from "@/components/lots/change-owner-button";
-import { PendingOwnerChange } from "@/components/lots/pending-owner-change";
-import { pendingOwnerChangeView } from "@/lib/owner/owner-change-requests";
+import { PendingOwnerChangeNotice } from "@/components/lots/pending-owner-change-notice";
+import { committeePendingOwnerChangeView } from "@/lib/owner/owner-change-requests";
 import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { lotWordsFor } from "@/lib/jurisdiction/screen-words";
 import { separateEntitlement } from "@/lib/jurisdiction/building-data";
@@ -36,8 +36,9 @@ export default async function CommitteeLotPage({ params }: { params: Promise<{ l
     getSchemeById(schemeId),
     getLotDetailExtended(lotId),
     getStrataRollData(schemeId),
-    // A change of owner the committee recorded, waiting for the Adviser (H-1).
-    pendingOwnerChangeView(schemeId, lotId),
+    // A change of owner the committee recorded, waiting for the Adviser (H-1). The committee's
+    // reduced view: no owners' or recorder's addresses, seats or invitation state (review M1).
+    committeePendingOwnerChangeView(schemeId, lotId),
   ]);
   // The lot was found in the building, so the building is there.
   if (!scheme) notFound();
@@ -81,7 +82,7 @@ export default async function CommitteeLotPage({ params }: { params: Promise<{ l
         )}
         {row && <FinancialStatusChip financial={row.financial} overdueCents={row.overdueCents} oldestOverdue={row.oldestOverdue} />}
       </div>
-      {pendingChange && <PendingOwnerChange schemeId={schemeId} lotLabel={lotLabel} change={pendingChange} canDecide={false} />}
+      {pendingChange && <PendingOwnerChangeNotice lotLabel={lotLabel} change={pendingChange} />}
       <Card>
         <CardHeader title="Owner" description="As recorded on the strata roll." />
         <dl className="grid grid-cols-1 gap-x-6 gap-y-3 text-sm sm:grid-cols-2">

@@ -46,6 +46,10 @@ vi.mock("@/lib/queries/activity-log", () => ({
   logActivity: vi.fn(async (a: Record<string, unknown>) => {
     audit.activity.push(a);
   }),
+  // Written through the transaction: a rolled-back entry is taken out again (the fake undoes the row).
+  logActivityTx: vi.fn(async (tx: { orm: { public: { ActivityLog: { create: (r: Record<string, unknown>) => Promise<unknown> } } } }, a: Record<string, unknown>) => {
+    await tx.orm.public.ActivityLog.create({ ...a });
+  }),
 }));
 vi.mock("@/lib/notifications", () => ({ notifyInvitation: vi.fn(async (p: { recipientEmail: string }) => { sent.invitations.push(p.recipientEmail); }) }));
 vi.mock("@/lib/queries/schemes", () => ({ getSchemeNameById: async () => "Opera House" }));
@@ -73,6 +77,7 @@ vi.mock("@/lib/queries/documents", () => ({
   createDocument: vi.fn(async (d: Record<string, unknown>) => {
     const row = { id: `9b2f4c3e-0000-4000-8000-00000000000${files.documents.length + 1}`, ...d };
     files.documents.push(row);
+    (await import("@/test/fake-orm")).sharedFake.table("Document").push({ ...row });
     return row;
   }),
 }));
@@ -103,6 +108,16 @@ const as = (p: typeof CHAIR, user?: typeof who.user) => {
   who.user = user ?? null;
 };
 const requests = () => sharedFake.table("OwnerChangeRequest");
+/** Activity entries: those written outside a transaction and those committed with one. */
+const activity = () => [...audit.activity, ...sharedFake.table("ActivityLog")];
+const { pendingOwnerChangeView } = await import("@/lib/owner/owner-change-requests");
+/** The fingerprint of what confirming would do, as the reviewer's card carries it (review L6). */
+async function fingerprintOf(id: string) {
+  const row = requests().find((r) => r.id === id);
+  const v = row ? await pendingOwnerChangeView(String(row.schemeId), String(row.lotId)) : null;
+  return v?.fingerprint ?? "0".repeat(64);
+}
+const confirm = async (schemeId: string, id: string) => confirmOwnerChangeAction(schemeId, id, await fingerprintOf(id));
 const cateOwner = () => sharedFake.table("SchemeMembership").find((m) => m.id === "m1")!;
 const roll = () => sharedFake.table("LotDetail").find((d) => d.lotId === "L1")!;
 
@@ -113,7 +128,7 @@ function expectUnchanged() {
   expect(roll().ownerEmail).toBe("cate@x.test");
   expect(sharedFake.table("Invitation")).toHaveLength(0);
   expect(sent.invitations).toEqual([]);
-  expect(audit.activity.filter((a) => a.action === "OWNER_CHANGED")).toEqual([]);
+  expect(activity().filter((a) => a.action === "OWNER_CHANGED")).toEqual([]);
 }
 
 beforeEach(() => {
@@ -139,6 +154,7 @@ beforeEach(() => {
     LotDeliveryPreference: [],
     Invitation: [],
     OwnerChangeRequest: [],
+    ActivityLog: [],
   });
 });
 
@@ -165,7 +181,7 @@ describe("the Adviser's own change of owner applies straight away, as before", (
 
   it("does not send a second invitation when one is waiting", async () => {
     as(ADVISER);
-    sharedFake.table("Invitation").push({ id: "i1", schemeId: "S1", email: "new@x.test", role: "OWNER", status: "PENDING" });
+    sharedFake.table("Invitation").push({ id: "i1", schemeId: "S1", email: "new@x.test", role: "OWNER", status: "PENDING", expiresAt: "2999-01-01T00:00:00.000Z" });
     const r = await changeOwnerAction("S1", "L1", {}, form(valid));
     expect(r.done).toContain("already has an invitation waiting");
     expect(sent.invitations).toEqual([]);
@@ -248,7 +264,7 @@ describe("a committee member's change is held for the Adviser (H-1)", () => {
       invite: true,
       recordedBy: CHAIR.id,
     });
-    expect(audit.activity).toContainEqual(expect.objectContaining({ action: "OWNER_CHANGE_HELD", actorId: CHAIR.id, entityId: "L1" }));
+    expect(activity()).toContainEqual(expect.objectContaining({ action: "OWNER_CHANGE_HELD", actorId: CHAIR.id, entityId: "L1" }));
     expect(audit.events).toContainEqual(expect.objectContaining({ action: "lot.owner_change_held", outcome: "allowed", actorRole: "COMMITTEE" }));
   });
 
@@ -281,7 +297,7 @@ describe("confirming or rejecting a held change (H-1)", () => {
   it("the Adviser confirms: it applies exactly as the Adviser's own change does", async () => {
     const id = await hold();
     as(ADVISER);
-    const r = await confirmOwnerChangeAction("S1", id);
+    const r = await confirm("S1", id);
     expect(r.error).toBeUndefined();
     expect(r.done).toContain("Mr New Owner is now the owner of Lot 1 on the strata roll, settled 24/10/2026.");
     expect(r.done).toContain("The outgoing owner's portal access to Lot 1 has ended. If they own another lot in this building, the Adviser assigns them to it");
@@ -293,8 +309,8 @@ describe("confirming or rejecting a held change (H-1)", () => {
     expect(sent.invitations).toEqual(["new@x.test"]);
     expect(requests()[0]).toMatchObject({ status: "CONFIRMED", decidedBy: ADVISER.id });
     expect(requests()[0].decidedAt).toBeTruthy();
-    expect(audit.activity).toContainEqual(expect.objectContaining({ action: "OWNER_CHANGE_CONFIRMED", actorId: ADVISER.id, entityId: "L1" }));
-    expect(audit.activity).toContainEqual(expect.objectContaining({ action: "OWNER_CHANGED", actorId: ADVISER.id }));
+    expect(activity()).toContainEqual(expect.objectContaining({ action: "OWNER_CHANGE_CONFIRMED", actorId: ADVISER.id, entityId: "L1" }));
+    expect(activity()).toContainEqual(expect.objectContaining({ action: "OWNER_CHANGED", actorId: ADVISER.id }));
     expect(audit.events).toContainEqual(expect.objectContaining({ action: "lot.owner_change_confirmed", outcome: "allowed", actorRole: "ADVISER", resourceId: "L1" }));
     expect(audit.events).toContainEqual(expect.objectContaining({ action: "lot.owner_changed", actorRole: "ADVISER" }));
   });
@@ -306,10 +322,10 @@ describe("confirming or rejecting a held change (H-1)", () => {
     expect(r.done).toContain("was rejected. Nothing on the strata roll changed");
     expectUnchanged();
     expect(requests()[0]).toMatchObject({ status: "REJECTED", decidedBy: ADVISER.id });
-    expect(audit.activity).toContainEqual(expect.objectContaining({ action: "OWNER_CHANGE_REJECTED", actorId: ADVISER.id }));
+    expect(activity()).toContainEqual(expect.objectContaining({ action: "OWNER_CHANGE_REJECTED", actorId: ADVISER.id }));
     expect(audit.events).toContainEqual(expect.objectContaining({ action: "lot.owner_change_rejected", outcome: "allowed", actorRole: "ADVISER" }));
     // A decided change cannot then be confirmed.
-    expect((await confirmOwnerChangeAction("S1", id)).error).toContain("no longer waiting");
+    expect((await confirm("S1", id)).error).toContain("no longer waiting");
     expectUnchanged();
   });
 
@@ -317,7 +333,7 @@ describe("confirming or rejecting a held change (H-1)", () => {
     sharedFake.table("SchemeMembership").find((m) => m.id === "m-adviser")!.isActive = false;
     const id = await hold();
     as(ADMIN);
-    const r = await confirmOwnerChangeAction("S1", id);
+    const r = await confirm("S1", id);
     expect(r.done).toContain("Mr New Owner is now the owner of Lot 1");
     expect(cateOwner().isActive).toBe(false);
     expect(requests()[0]).toMatchObject({ status: "CONFIRMED", decidedBy: ADMIN.id });
@@ -333,10 +349,7 @@ describe("confirming or rejecting a held change (H-1)", () => {
 
   it("the committee cannot confirm or reject, its own change included", async () => {
     const id = await hold();
-    for (const action of [confirmOwnerChangeAction, rejectOwnerChangeAction]) {
-      const r = await action("S1", id);
-      expect(r.error).toContain("permission");
-    }
+    for (const r of [await confirm("S1", id), await rejectOwnerChangeAction("S1", id)]) expect(r.error).toContain("permission");
     expect(requests()[0].status).toBe("PENDING");
     expectUnchanged();
   });
@@ -344,8 +357,8 @@ describe("confirming or rejecting a held change (H-1)", () => {
   it("an Adviser of another building cannot decide it, through either building's id", async () => {
     const id = await hold();
     as(OTHER_ADVISER);
-    expect((await confirmOwnerChangeAction("S1", id)).error).toContain("permission");
-    expect((await confirmOwnerChangeAction("S2", id)).error).toContain("no longer waiting");
+    expect((await confirm("S1", id)).error).toContain("permission");
+    expect((await confirm("S2", id)).error).toContain("no longer waiting");
     expect((await rejectOwnerChangeAction("S2", id)).error).toContain("no longer waiting");
     expect(requests()[0].status).toBe("PENDING");
     expectUnchanged();
@@ -355,7 +368,7 @@ describe("confirming or rejecting a held change (H-1)", () => {
     const id = await hold();
     as(ADVISER);
     who.stepUpFresh = false;
-    expect((await confirmOwnerChangeAction("S1", id)).error).toContain("confirm it is you");
+    expect((await confirm("S1", id)).error).toContain("confirm it is you");
     expect((await rejectOwnerChangeAction("S1", id)).error).toContain("confirm it is you");
     expect(requests()[0].status).toBe("PENDING");
     expectUnchanged();
@@ -364,8 +377,8 @@ describe("confirming or rejecting a held change (H-1)", () => {
   it("is applied once: a second confirmation finds nothing waiting", async () => {
     const id = await hold();
     as(ADVISER);
-    await confirmOwnerChangeAction("S1", id);
-    const again = await confirmOwnerChangeAction("S1", id);
+    await confirm("S1", id);
+    const again = await confirm("S1", id);
     expect(again.error).toContain("no longer waiting");
     expect(sharedFake.table("Invitation")).toHaveLength(1);
     expect(sent.invitations).toEqual(["new@x.test"]);
@@ -374,7 +387,7 @@ describe("confirming or rejecting a held change (H-1)", () => {
   it("a malformed id is simply not found", async () => {
     await hold();
     as(ADVISER);
-    expect((await confirmOwnerChangeAction("S1", "not-a-uuid")).error).toContain("no longer waiting");
+    expect((await confirm("S1", "not-a-uuid")).error).toContain("no longer waiting");
     expectUnchanged();
   });
 
@@ -423,7 +436,7 @@ describe("review findings (31 Oct 2026)", () => {
     e.set("ownerEmail", "chair@x.test");
     expect(await updateLotDetailAction("S1", "L7", e)).toEqual({});
     as(ADVISER);
-    const r = await confirmOwnerChangeAction("S1", String(requests()[0].id));
+    const r = await confirm("S1", String(requests()[0].id));
     expect(r.done).toContain("The outgoing owner's portal access to Lot 5 has ended.");
     const m = sharedFake.table("SchemeMembership");
     expect(m.find((x) => x.id === "m-chair-owner")).toMatchObject({ lotId: "L5", isActive: false });
@@ -447,7 +460,7 @@ describe("review findings (31 Oct 2026)", () => {
     // Added to the recorder's account after the change was recorded (a linked sign-in, with a plus tag).
     auth.users["a-chair"] = { email: "chair@x.test", identities: [{ identity_data: { email: "New+lot@x.test" } }] };
     as(ADVISER);
-    const r = await confirmOwnerChangeAction("S1", id);
+    const r = await confirm("S1", id);
     expect(r.error).toContain("one of the addresses of the committee member who recorded this change");
     expect(requests()[0].status).toBe("PENDING");
     expectUnchanged();
@@ -455,7 +468,7 @@ describe("review findings (31 Oct 2026)", () => {
     // The recorder's profile email changed to it: refused too.
     auth.users["a-chair"] = { email: "chair@x.test" };
     sharedFake.table("Profile").find((p) => p.id === CHAIR.id)!.email = "NEW@x.test";
-    expect((await confirmOwnerChangeAction("S1", id)).error).toContain("cannot be confirmed");
+    expect((await confirm("S1", id)).error).toContain("cannot be confirmed");
     expectUnchanged();
   });
 
@@ -463,31 +476,44 @@ describe("review findings (31 Oct 2026)", () => {
     const id = await hold();
     auth.down = true;
     as(ADVISER);
-    expect((await confirmOwnerChangeAction("S1", id)).error).toContain("could not be checked");
+    expect((await confirm("S1", id)).error).toContain("could not be checked");
     expect(requests()[0].status).toBe("PENDING");
     expectUnchanged();
   });
 
   it("L2: a failure part way through confirming rolls the decision back with the change", async () => {
     const id = await hold();
-    // An earlier, accepted owner invitation to the same address: the invitations key (scheme, email, role) refuses a new one.
-    sharedFake.table("Invitation").push({ id: "i-old", schemeId: "S1", email: "new@x.test", role: "OWNER", status: "ACCEPTED" });
-    sharedFake.setUniqueKeys({ Invitation: [["schemeId", "email", "role"]] });
     as(ADVISER);
-    const r = await confirmOwnerChangeAction("S1", id);
+    const fingerprint = await fingerprintOf(id);
+    // The invitation insert fails inside the transaction, after the claim and the roll, access and seat writes.
+    const real = sharedFake.db.transaction;
+    const spy = vi.spyOn(sharedFake.db, "transaction").mockImplementationOnce(async (fn) =>
+      real(async (tx) => {
+        const publicTables = new Proxy(tx.orm.public, {
+          get: (t, name: string) => {
+            const c = (t as Record<string, Record<string, unknown>>)[name];
+            return name === "Invitation" ? { ...c, create: async () => { throw new Error("injected failure"); } } : c;
+          },
+        });
+        return fn({ ...tx, orm: { ...tx.orm, public: publicTables } } as never);
+      }),
+    );
+    const r = await confirmOwnerChangeAction("S1", id, fingerprint);
+    spy.mockRestore();
     expect(r.error).toContain("could not be confirmed. Nothing changed.");
     expect(requests()[0]).toMatchObject({ status: "PENDING" });
     expect(requests()[0].decidedBy ?? null).toBeNull();
     expect(cateOwner().isActive).toBe(true);
     expect(roll().rollOwnerName).toBe("Ms Cate Blanchett");
+    expect(sharedFake.table("Invitation")).toEqual([]);
     expect(sent.invitations).toEqual([]);
-    expect(audit.activity.filter((a) => String(a.action).startsWith("OWNER_CHANGE"))).toEqual([expect.objectContaining({ action: "OWNER_CHANGE_HELD" })]);
+    expect(activity().map((a) => a.action)).toEqual(["OWNER_CHANGE_HELD"]);
   });
 
   it("L2, L3: everything under the lot's lock goes through the transaction, and the lot's row is locked", async () => {
     const id = await hold();
     as(ADVISER);
-    await confirmOwnerChangeAction("S1", id);
+    await confirm("S1", id);
     as(ADVISER);
     await changeOwnerAction("S1", "L1", {}, form({ ...valid, ownerName: "Third Owner", email: "third@x.test" }));
     expect(sharedFake.globalCallsUnderLock).toEqual([]);
@@ -503,12 +529,12 @@ describe("review findings (31 Oct 2026)", () => {
       Object.assign(requests()[0], { status: "REJECTED", decidedBy: "p-someone", decidedAt: "2026-10-25T00:00:00.000Z" });
       return real(fn);
     });
-    const r = await confirmOwnerChangeAction("S1", id);
+    const r = await confirm("S1", id);
     spy.mockRestore();
     expect(r.error).toContain("no longer waiting");
     expect(requests()[0]).toMatchObject({ status: "REJECTED", decidedBy: "p-someone" });
     expectUnchanged();
-    expect(audit.activity.find((a) => a.action === "OWNER_CHANGE_CONFIRMED")).toBeUndefined();
+    expect(activity().find((a) => a.action === "OWNER_CHANGE_CONFIRMED")).toBeUndefined();
   });
 
   it("L5: the same race when rejecting changes nothing either", async () => {
@@ -522,7 +548,7 @@ describe("review findings (31 Oct 2026)", () => {
     const r = await rejectOwnerChangeAction("S1", id);
     spy.mockRestore();
     expect(r.error).toContain("no longer waiting");
-    expect(audit.activity.find((a) => a.action === "OWNER_CHANGE_REJECTED")).toBeUndefined();
+    expect(activity().find((a) => a.action === "OWNER_CHANGE_REJECTED")).toBeUndefined();
   });
 
   it("L5, L3: a hold that loses the race to another (23505 on insert) is refused and files no notice", async () => {
@@ -554,7 +580,9 @@ describe("review findings (31 Oct 2026)", () => {
       accessEnding: [{ name: "Cate Blanchett", email: "cate@x.test" }],
       seatsEnding: ["Cate Blanchett"],
       seatsKept: [],
-      invitation: "SEND",
+      invitation: "NEW",
+      invitationActiveLot: null,
+      withdrawnInvitations: [],
     });
     // Not the recorder's address, but the same domain (not a public provider): flagged for the reviewer.
     expect(v?.resemblance).toBe("domain");
@@ -578,5 +606,166 @@ describe("removing an owner (review M1)", () => {
     as(ADVISER);
     expect((await removeOwnerAction("S1", "L1", "m1")).error).toContain("waiting for review");
     expect(cateOwner().isActive).toBe(true);
+  });
+});
+
+describe("final review (31 Oct 2026)", () => {
+  async function hold(fields: Record<string, string> = valid) {
+    as(CHAIR);
+    const r = await changeOwnerAction("S1", "L1", {}, form(fields));
+    expect(r.done).toContain("waiting for the Adviser");
+    return String(requests()[0].id);
+  }
+  const future = "2999-01-01T00:00:00.000Z";
+  const past = "2020-01-01T00:00:00.000Z";
+  const invitation = () => sharedFake.table("Invitation").find((i) => i.email === "new@x.test")!;
+
+  // M2: an earlier invitation to the address no longer blocks the change.
+  it.each([
+    ["DECLINED", future],
+    ["EXPIRED", past],
+    ["PENDING but expired", past],
+  ])("M2: an earlier %s invitation is reused: PENDING again, for this lot, with a fresh expiry", async (status, expiresAt) => {
+    sharedFake.table("Invitation").push({ id: "i-old", schemeId: "S1", email: "new@x.test", role: "OWNER", status: status.split(" ")[0], lotId: "L9", expiresAt, invitedById: "p-x" });
+    sharedFake.setUniqueKeys({ Invitation: [["schemeId", "email", "role"]] });
+    as(ADVISER);
+    const r = await changeOwnerAction("S1", "L1", {}, form(valid));
+    expect(r.done).toContain("An invitation has been sent to new@x.test.");
+    expect(sharedFake.table("Invitation")).toHaveLength(1);
+    expect(invitation()).toMatchObject({ id: "i-old", status: "PENDING", lotId: "L1", invitedById: ADVISER.id, acceptedAt: null });
+    expect(new Date(String(invitation().expiresAt)).getTime()).toBeGreaterThan(Date.now() + 29 * 86_400_000);
+    expect(sent.invitations).toEqual(["new@x.test"]);
+    expect(cateOwner().isActive).toBe(false);
+  });
+
+  it("M2: an ACCEPTED invitation whose owner access is still active is never reopened; the change applies and says so", async () => {
+    sharedFake.table("Profile").push({ id: "p-new", email: "new@x.test", firstName: "Nia", lastName: "New" });
+    sharedFake.table("SchemeMembership").push({ id: "m-new", schemeId: "S1", lotId: "L2", role: "OWNER", isActive: true, profileId: "p-new" });
+    sharedFake.table("Invitation").push({ id: "i-acc", schemeId: "S1", email: "new@x.test", role: "OWNER", status: "ACCEPTED", lotId: "L2", expiresAt: past });
+    as(ADVISER);
+    const r = await changeOwnerAction("S1", "L1", {}, form(valid));
+    expect(r.done).toContain("is now the owner of Lot 1");
+    expect(r.done).toContain("new@x.test already holds owner access in this building through Lot 2, so no invitation was sent.");
+    expect(invitation()).toMatchObject({ status: "ACCEPTED", lotId: "L2" });
+    expect(sent.invitations).toEqual([]);
+  });
+
+  it("M2: an ACCEPTED invitation whose access has ended is reopened, and accepting it restarts the access on this lot with its history kept", async () => {
+    sharedFake.table("Profile").push({ id: "p-new", email: "new@x.test", firstName: "Nia", lastName: "New" });
+    sharedFake.table("SchemeMembership").push({ id: "m-new", schemeId: "S1", lotId: "L2", role: "OWNER", isActive: false, profileId: "p-new", startDate: "2025-01-01T00:00:00.000Z", endDate: "2026-10-20T00:00:00.000Z" });
+    sharedFake.table("Invitation").push({ id: "i-acc", schemeId: "S1", email: "new@x.test", role: "OWNER", status: "ACCEPTED", lotId: "L2", expiresAt: past, acceptedAt: "2025-01-01T00:00:00.000Z" });
+    as(ADVISER);
+    const r = await changeOwnerAction("S1", "L1", {}, form(valid));
+    expect(r.done).toContain("An invitation has been sent to new@x.test.");
+    expect(invitation()).toMatchObject({ status: "PENDING", lotId: "L1", acceptedAt: null });
+    const { acceptInvitation } = await import("@/lib/queries/invitations");
+    expect(await acceptInvitation("i-acc", "p-new", "new@x.test")).toEqual({ success: true });
+    expect(sharedFake.table("SchemeMembership").filter((m) => m.profileId === "p-new")).toEqual([
+      expect.objectContaining({ id: "m-new", lotId: "L1", isActive: true, endDate: null }),
+    ]);
+    expect(sharedFake.table("OwnerLotHistory")).toEqual([expect.objectContaining({ lotId: "L2", profileId: "p-new", membershipId: "m-new", endedAt: "2026-10-20T00:00:00.000Z" })]);
+  });
+
+  it("M3: other pending owner invitations to the lot are withdrawn, listed in the preview first", async () => {
+    sharedFake.table("Invitation").push(
+      { id: "i-stale", schemeId: "S1", email: "old-buyer@x.test", role: "OWNER", status: "PENDING", lotId: "L1", expiresAt: future },
+      { id: "i-other-lot", schemeId: "S1", email: "else@x.test", role: "OWNER", status: "PENDING", lotId: "L2", expiresAt: future },
+      { id: "i-committee", schemeId: "S1", email: "c@x.test", role: "COMMITTEE", status: "PENDING", lotId: "L1", expiresAt: future },
+    );
+    const id = await hold();
+    expect((await pendingOwnerChangeView("S1", "L1"))?.effect.withdrawnInvitations).toEqual(["old-buyer@x.test"]);
+    as(ADVISER);
+    const r = await confirm("S1", id);
+    expect(r.done).toContain("An earlier invitation to this lot was withdrawn.");
+    const status = Object.fromEntries(sharedFake.table("Invitation").map((i) => [i.id, i.status]));
+    expect(status).toMatchObject({ "i-stale": "EXPIRED", "i-other-lot": "PENDING", "i-committee": "PENDING" });
+    // The new invitation is untouched (the in-memory ORM applies no column default, so its status is unset; PENDING in Postgres).
+    expect(invitation()).toMatchObject({ lotId: "L1" });
+    expect(invitation().status ?? "PENDING").toBe("PENDING");
+  });
+
+  it("L1: failures after the commit never report the change as not made", async () => {
+    const { notifyInvitation } = await import("@/lib/notifications");
+    const { recordSecurityEvent } = await import("@/lib/audit/security-audit");
+    vi.mocked(notifyInvitation).mockRejectedValueOnce(new Error("mail down"));
+    vi.mocked(recordSecurityEvent).mockRejectedValue(new Error("audit down"));
+    const id = await hold();
+    as(ADVISER);
+    const r = await confirm("S1", id);
+    vi.mocked(recordSecurityEvent).mockReset();
+    vi.mocked(recordSecurityEvent).mockImplementation(async (e) => {
+      audit.events.push(e as never);
+    });
+    expect(r.error).toBeUndefined();
+    expect(r.done).toContain("Confirmed. Mr New Owner is now the owner of Lot 1");
+    expect(r.done).toContain("Some follow-up steps could not be completed");
+    expect(requests()[0].status).toBe("CONFIRMED");
+    expect(cateOwner().isActive).toBe(false);
+    // The activity entries were committed with the change.
+    expect(sharedFake.table("ActivityLog").map((a) => a.action)).toEqual(["OWNER_CHANGE_HELD", "OWNER_CHANGE_CONFIRMED", "OWNER_CHANGED"]);
+  });
+
+  it("L2: assigning an owner takes the lot's lock and is refused while a change waits", async () => {
+    await hold();
+    as(ADVISER);
+    expect((await assignOwnerAction("S1", "L1", "p-cate")).error).toContain("waiting for review");
+    expect(sharedFake.locks.some((l) => l.table === "Lot")).toBe(true);
+    expect(sharedFake.globalCallsUnderLock).toEqual([]);
+  });
+
+  it("L3: a restart keeps the old lot in owner_lot_history, which the 30-day own-lot check reads, and the event says so", async () => {
+    as(ADVISER);
+    await changeOwnerAction("S1", "L1", {}, form(valid));
+    expect(await assignOwnerAction("S1", "L2", "p-cate")).toEqual({});
+    expect(sharedFake.table("OwnerLotHistory")).toEqual([
+      expect.objectContaining({ schemeId: "S1", lotId: "L1", profileId: "p-cate", membershipId: "m1", endedAt: "2026-10-24T00:00:00.000Z" }),
+    ]);
+    expect(audit.events).toContainEqual(
+      expect.objectContaining({ action: "membership.owner_assigned", metadata: expect.objectContaining({ profileId: "p-cate", restart: true, previousLotId: "L1" }) }),
+    );
+    const { lotOwnerProfileIds } = await import("@/lib/debt-recovery/payment-plan-requests");
+    vi.useFakeTimers({ now: new Date("2026-11-10T00:00:00.000Z"), toFake: ["Date"] });
+    expect(await lotOwnerProfileIds("S1", "L1")).toContain("p-cate");
+    vi.setSystemTime(new Date("2026-12-01T00:00:00.000Z"));
+    expect(await lotOwnerProfileIds("S1", "L1")).not.toContain("p-cate");
+    vi.useRealTimers();
+  });
+
+  it("L4: the own-address check folds Gmail dots, googlemail.com and a trailing dot, over every sign-in identity", async () => {
+    as(CHAIR, { email: "chair@x.test", identities: [{ identity_data: { email: "chris.chair@gmail.com" } }] });
+    for (const email of ["ChrisChair@googlemail.com", "c.h.r.i.s.chair+lot@gmail.com", "chair@x.test."]) {
+      const r = await changeOwnerAction("S1", "L1", {}, form({ ...valid, email }));
+      expect(r.fieldErrors?.email).toContain("You cannot record yourself");
+    }
+    expect(requests()).toHaveLength(0);
+  });
+
+  it("L4: the card flags a resemblance to any of the recorder's sign-in addresses", async () => {
+    auth.users["a-chair"] = { email: "chair@x.test", identities: [{ identity_data: { email: "chris@chairco.com.au" } }] };
+    await hold({ ...valid, email: "buyer@chairco.com.au" });
+    expect((await pendingOwnerChangeView("S1", "L1"))?.resemblance).toBe("domain");
+  });
+
+  it("L5: a notice of another building is never linked", async () => {
+    const id = await hold();
+    sharedFake.table("Document").push({ id: "9b2f4c3e-0000-4000-8000-0000000000dd", schemeId: "S2" });
+    const { attachNotice } = await import("@/lib/owner/owner-change-requests");
+    expect(await attachNotice("S1", id, "9b2f4c3e-0000-4000-8000-0000000000dd")).toBe(false);
+    expect(requests()[0].noticeDocumentId ?? null).toBeNull();
+  });
+
+  it("L6: confirming is refused when what it would do changed since the card was shown, and with no fingerprint", async () => {
+    const id = await hold();
+    as(ADVISER);
+    const seen = await fingerprintOf(id);
+    // Since then, Cate joined the committee: confirming would now also end her seat.
+    sharedFake.table("SchemeMembership").push({ id: "m-cate-seat", schemeId: "S1", lotId: null, role: "COMMITTEE", isActive: true, profileId: "p-cate" });
+    const r = await confirmOwnerChangeAction("S1", id, seen);
+    expect(r.error).toContain("What confirming would do has changed");
+    expect(requests()[0].status).toBe("PENDING");
+    expectUnchanged();
+    expect((await confirmOwnerChangeAction("S1", id, "")).error).toContain("has changed");
+    // With the current plan it goes ahead.
+    expect((await confirm("S1", id)).done).toContain("Confirmed.");
   });
 });

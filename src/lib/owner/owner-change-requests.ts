@@ -1,9 +1,11 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { db } from "@/prisma/db";
 import { dayIn, PLATFORM_TIME_ZONE } from "@/lib/jurisdiction/time-zone";
-import { previewChangeOwner, type ChangeOwnerInput } from "./change-owner";
+import { previewChangeOwner, type ChangeOwnerInput, type ChangeOwnerPreview } from "./change-owner";
 import { addressResemblance } from "./own-address";
+import { invitationPlanFacts, planOwnerInvitation, type OwnerInvitationPlan } from "./owner-invitation";
+import { currentAddressesOf } from "./recorder-addresses";
 
 /**
  * A change of owner held for review (finding H-1, founder decision 31 Oct
@@ -18,16 +20,36 @@ import { addressResemblance } from "./own-address";
  * Table owner_change_requests, migration 20261201 (one PENDING row per lot;
  * what was recorded, and a decided row, never change). Callers authorise
  * first; every read and write here is scoped to the scheme. Writes take the
- * ORM of the caller's transaction, which holds the lot's row (review L2, L3).
+ * ORM of the caller's transaction, which holds the lot's row (lockLot).
  */
 
 export type OwnerChangeDecision = "CONFIRMED" | "REJECTED";
 type Orm = typeof db.orm;
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** yyyy-mm-dd from a date column (the ORM returns a date string). */
 const day = (v: unknown): string => (v instanceof Date ? v.toISOString() : String(v ?? "")).slice(0, 10);
+
+/** A change of owner (or an owner assignment or removal) could not go ahead; nothing was changed. */
+export class OwnerChangeConflict extends Error {
+  constructor(readonly kind: "PENDING" | "NOT_WAITING" | "LOT" | "PLAN_CHANGED") {
+    super(`change of owner: ${kind}`);
+    this.name = "OwnerChangeConflict";
+  }
+}
+
+/**
+ * Hold the lot's row until the transaction ends, so a change of owner (recorded,
+ * held, confirmed or rejected) and an owner assignment or removal on a lot run
+ * one at a time, each seeing what the one before did (review L3, L2).
+ */
+export async function lockLot(tx: Tx, schemeId: string, lotId: string) {
+  const lot = await tx.orm.public.Lot.where((l) => and(l.id.eq(lotId), l.schemeId.eq(schemeId))).forNoKeyUpdate().first();
+  if (!lot) throw new OwnerChangeConflict("LOT");
+  return lot;
+}
 
 /** The change waiting for review on this lot, if any. */
 export async function getPendingOwnerChange(schemeId: string, lotId: string, orm: Orm = db.orm) {
@@ -68,8 +90,13 @@ export async function holdOwnerChange(
   });
 }
 
-/** Link the notice filed for a waiting change (once; the database allows only this change to what was recorded). */
+/**
+ * Link the notice filed for a waiting change, once. The document must be of
+ * the same building (review L5; the database's guard checks it too).
+ */
 export async function attachNotice(schemeId: string, requestId: string, documentId: string) {
+  const doc = await db.orm.public.Document.where((d) => and(d.id.eq(documentId), d.schemeId.eq(schemeId))).first();
+  if (!doc) return false;
   const n = await db.orm.public.OwnerChangeRequest
     .where((r) => and(r.id.eq(requestId), r.schemeId.eq(schemeId), r.status.eq("PENDING"), r.noticeDocumentId.isNull()))
     .updateAndCount({ noticeDocumentId: documentId });
@@ -109,7 +136,25 @@ export async function schemeHasAdviser(schemeId: string) {
   return !!adviser;
 }
 
-/** What the lot pages show of a waiting change. Serialisable, for a client component. */
+/**
+ * A fingerprint of what confirming would do (review L6): the request, the
+ * access and committee seats that end or continue, the roll owner, and the
+ * invitation plan. The reviewer's form carries the one they saw; confirming
+ * recomputes it under the lot's lock and refuses if it differs.
+ */
+export function planFingerprint(requestId: string, preview: ChangeOwnerPreview, invitation: OwnerInvitationPlan): string {
+  const facts = {
+    requestId,
+    rollOwnerName: preview.rollOwnerName,
+    accessEnding: preview.accessEnding.map((a) => a.membershipId).sort(),
+    seatsEnding: preview.seatsEnding.map((s) => s.membershipId).sort(),
+    seatsKept: preview.seatsKept.map((s) => `${s.membershipId}:${s.lotNumbers.join(",")}`).sort(),
+    invitation: invitationPlanFacts(invitation),
+  };
+  return createHash("sha256").update(JSON.stringify(facts)).digest("hex");
+}
+
+/** What the Adviser's and StrataVerze's card shows of a waiting change. Serialisable, for a client component. */
 export type PendingOwnerChangeView = {
   id: string;
   ownerName: string;
@@ -125,17 +170,35 @@ export type PendingOwnerChangeView = {
   recordedOn: string;
   /** Who confirms it: "the Adviser", or StrataVerze where the building has none. */
   reviewer: string;
-  /** What confirming would do, read now (review M2). */
+  /** What confirming would do, read now (review M2, M3). */
   effect: {
     rollOwnerName: string | null;
     accessEnding: Array<{ name: string; email: string | null }>;
     seatsEnding: string[];
     seatsKept: Array<{ name: string; lotNumbers: string[] }>;
-    /** SEND: an invitation is sent; ALREADY: one is already waiting for that address; NOT_ASKED; NO_EMAIL. */
-    invitation: "SEND" | "ALREADY" | "NOT_ASKED" | "NO_EMAIL";
+    invitation: OwnerInvitationPlan["kind"];
+    /** SKIP_ACTIVE: the lot the new owner already holds owner access through. */
+    invitationActiveLot: string | null;
+    /** Invitations that will be withdrawn: other pending owner invitations to this lot. */
+    withdrawnInvitations: string[];
   };
-  /** The new owner's email shares the recorder's part before the @, or a private domain (review L1). */
+  /** Sent back with Confirm: confirming refuses if what it would do has changed (review L6). */
+  fingerprint: string;
+  /** The new owner's email shares the recorder's part before the @, or a private domain (review L1, L4). */
   resemblance: "local" | "domain" | null;
+};
+
+/**
+ * What the committee sees of a waiting change (review M1): what was recorded
+ * and who reviews it, without the outgoing owners' addresses, the committee
+ * seats, the invitation state or anything about the recorder's addresses.
+ */
+export type CommitteePendingOwnerChangeView = {
+  ownerName: string;
+  settlementDate: string;
+  recordedByName: string;
+  recordedOn: string;
+  reviewer: string;
 };
 
 export async function pendingOwnerChangeView(schemeId: string, lotId: string): Promise<PendingOwnerChangeView | null> {
@@ -144,17 +207,35 @@ export async function pendingOwnerChangeView(schemeId: string, lotId: string): P
   return toView(row, await schemeHasAdviser(schemeId));
 }
 
+export async function committeePendingOwnerChangeView(schemeId: string, lotId: string): Promise<CommitteePendingOwnerChangeView | null> {
+  const row = await getPendingOwnerChange(schemeId, lotId);
+  if (!row) return null;
+  const by = await db.orm.public.Profile.where((p) => p.id.eq(row.recordedBy)).first();
+  return {
+    ownerName: row.ownerName,
+    settlementDate: day(row.settlementDate),
+    recordedByName: recorderName(by),
+    recordedOn: recordedOn(row),
+    reviewer: (await schemeHasAdviser(schemeId)) ? "the Adviser" : "StrataVerze",
+  };
+}
+
+const recorderName = (by: { firstName?: string | null; lastName?: string | null } | null | undefined) =>
+  [by?.firstName, by?.lastName].filter(Boolean).join(" ") || "A committee member";
+// The day it was recorded, in StrataVerze's time zone (the lot pages do not load the building's).
+const recordedOn = (row: RequestRow) => (row.recordedAt ? dayIn(PLATFORM_TIME_ZONE, String(row.recordedAt)) : "");
+
 async function toView(row: RequestRow, hasAdviser: boolean): Promise<PendingOwnerChangeView> {
   const by = await db.orm.public.Profile.where((p) => p.id.eq(row.recordedBy)).first();
   const input = heldInput(row);
   const plan = await previewChangeOwner(db.orm, row.schemeId, row.lotId);
-  let invitation: PendingOwnerChangeView["effect"]["invitation"] = "NOT_ASKED";
-  if (!input.email) invitation = "NO_EMAIL";
-  else if (row.invite) {
-    const waiting = await db.orm.public.Invitation
-      .where((i) => and(i.schemeId.eq(row.schemeId), i.email.eq(input.email!), i.role.eq("OWNER"), i.status.eq("PENDING")))
-      .first();
-    invitation = waiting ? "ALREADY" : "SEND";
+  const invitation = await planOwnerInvitation(db.orm, { schemeId: row.schemeId, lotId: row.lotId, email: input.email, invite: !!row.invite });
+  // Every address on the recorder's account (review L4); their profile email alone if the Auth user cannot be read.
+  let recorderAddresses: Iterable<string | null | undefined> = [by?.email];
+  try {
+    recorderAddresses = await currentAddressesOf(row.recordedBy);
+  } catch {
+    // Shown as far as the profile allows; confirming checks every address again and fails closed.
   }
   return {
     id: row.id,
@@ -166,19 +247,21 @@ async function toView(row: RequestRow, hasAdviser: boolean): Promise<PendingOwne
     settlementDate: input.settlementDate,
     invite: !!row.invite,
     hasNotice: !!row.noticeDocumentId,
-    recordedByName: [by?.firstName, by?.lastName].filter(Boolean).join(" ") || "A committee member",
+    recordedByName: recorderName(by),
     recordedByEmail: by?.email ?? null,
-    // The day it was recorded, in StrataVerze's time zone (the lot pages do not load the building's).
-    recordedOn: row.recordedAt ? dayIn(PLATFORM_TIME_ZONE, String(row.recordedAt)) : "",
+    recordedOn: recordedOn(row),
     reviewer: hasAdviser ? "the Adviser" : "StrataVerze",
     effect: {
       rollOwnerName: plan.rollOwnerName,
       accessEnding: plan.accessEnding.map((a) => ({ name: a.name, email: a.email })),
       seatsEnding: plan.seatsEnding.map((s) => s.name),
       seatsKept: plan.seatsKept.map((k) => ({ name: k.name, lotNumbers: k.lotNumbers })),
-      invitation,
+      invitation: invitation.kind,
+      invitationActiveLot: invitation.activeLotNumber,
+      withdrawnInvitations: invitation.withdrawn.map((w) => w.email),
     },
-    resemblance: addressResemblance(input.email, by?.email),
+    fingerprint: planFingerprint(row.id, plan, invitation),
+    resemblance: addressResemblance(input.email, recorderAddresses),
   };
 }
 

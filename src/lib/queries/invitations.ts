@@ -3,6 +3,7 @@ import { captureUsageFee, quoteUsageFee } from "@/lib/billing/capture";
 import type { Disclosure } from "@/lib/billing/fee-ledger";
 import { and } from "@prisma/orm-postgres/orm-client";
 import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
+import { restartOwnerAccess } from "@/lib/queries/owner-access";
 
 /** Cast an ISO string to the Prisma 8 TimestampString branded type. */
 function toTimestamp(value: string): TimestampString<3> {
@@ -119,7 +120,13 @@ export async function acceptInvitation(
     )
     .first();
 
-  if (existing) {
+  // An owner invited back after their owner access ended (they sold and bought again; a change of
+  // owner reopens their earlier invitation, H-1 review M2) has that membership started again on
+  // the invited lot, as one membership per role is allowed. Its earlier lot is kept in
+  // owner_lot_history (restartOwnerAccess). Other roles keep the refusal. remediation/s2a restarts
+  // ended memberships of every role here; on merging, keep the owner_lot_history step for OWNER.
+  const restartOwner = !!existing && !existing.isActive && invitation.role === "OWNER";
+  if (existing && !restartOwner) {
     return { error: "You already have this role on this scheme." };
   }
 
@@ -137,13 +144,16 @@ export async function acceptInvitation(
         acceptedAt: toTimestamp(new Date().toISOString()),
       });
 
-    const membership = await tx.orm.public.SchemeMembership.create({
-      schemeId: invitation.schemeId,
-      profileId,
-      role: invitation.role,
-      lotId: invitation.lotId ?? null,
-      isActive: true,
-    });
+    if (restartOwner) await restartOwnerAccess(tx.orm, existing!, invitation.lotId ?? null);
+    const membership = restartOwner
+      ? existing!
+      : await tx.orm.public.SchemeMembership.create({
+          schemeId: invitation.schemeId,
+          profileId,
+          role: invitation.role,
+          lotId: invitation.lotId ?? null,
+          isActive: true,
+        });
 
     // An external accountant or auditor seat is a StrataVerze charge per seat
     // per month; the first month is recorded when the seat becomes active.

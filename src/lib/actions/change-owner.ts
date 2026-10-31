@@ -9,19 +9,19 @@ import { requireRecentMfa } from "@/lib/auth/mfa-enforcement";
 import { assertInScheme } from "@/lib/auth/scheme-scope";
 import { recordSecurityEvent } from "@/lib/audit/security-audit";
 import { getLotInScheme } from "@/lib/queries/lots";
-import { logActivity } from "@/lib/queries/activity-log";
+import { logActivityTx } from "@/lib/queries/activity-log";
 import { uploadErrorMessage, verifyUpload } from "@/lib/storage/uploads";
 import { checkChangeOwner, type ChangeOwnerInput } from "@/lib/owner/change-owner";
 import { accountAddresses, isOwnAddress } from "@/lib/owner/own-address";
+import { AfterCommit, completeChangeOwner, fileNoticeOfTransfer, revalidateChangeOwner, type VerifiedUpload } from "@/lib/owner/change-owner-effects";
 import {
   OwnerChangeConflict,
-  completeChangeOwner,
-  fileNoticeOfTransfer,
+  attachNotice,
+  getPendingOwnerChange,
+  holdOwnerChange,
   lockLot,
-  revalidateChangeOwner,
-  type VerifiedUpload,
-} from "@/lib/owner/change-owner-effects";
-import { attachNotice, getPendingOwnerChange, holdOwnerChange, schemeHasAdviser } from "@/lib/owner/owner-change-requests";
+  schemeHasAdviser,
+} from "@/lib/owner/owner-change-requests";
 
 export type ChangeOwnerState = { error?: string; fieldErrors?: Record<string, string>; done?: string };
 
@@ -143,7 +143,17 @@ async function holdForReview(p: {
     request = await db.transaction(async (tx) => {
       await lockLot(tx, schemeId, lotId);
       if (await getPendingOwnerChange(schemeId, lotId, tx.orm)) throw new OwnerChangeConflict("PENDING");
-      return holdOwnerChange(tx.orm, { schemeId, lotId, input, invite: p.invite, recordedBy: p.actorId });
+      const held = await holdOwnerChange(tx.orm, { schemeId, lotId, input, invite: p.invite, recordedBy: p.actorId });
+      // In the transaction, so the hold and its entry are saved together (review L1).
+      await logActivityTx(tx, {
+        schemeId,
+        actorId: p.actorId,
+        action: "OWNER_CHANGE_HELD",
+        entityType: "Lot",
+        entityId: lotId,
+        metadata: { lotNumber, requestId: held.id, newOwnerName: input.ownerName, settlementDate: input.settlementDate, invite: p.invite },
+      });
+      return held;
     });
   } catch (err) {
     // Another change for this lot was recorded first (one waiting per lot). Nothing was saved or filed.
@@ -153,27 +163,14 @@ async function holdForReview(p: {
     throw err;
   }
 
-  // Saved. The notice is filed only now, so a hold that lost a race leaves nothing behind.
-  let noticeDocumentId: string | null = null;
-  let noticeProblem = false;
-  try {
-    noticeDocumentId = await p.notice();
-    if (noticeDocumentId && !(await attachNotice(schemeId, request.id, noticeDocumentId))) noticeProblem = true;
-  } catch (err) {
-    console.error("[change-owner] notice after hold failed:", err instanceof Error ? err.message : "error");
-    noticeProblem = true;
-  }
-
-  try {
-    await logActivity({
-      schemeId,
-      actorId: p.actorId,
-      action: "OWNER_CHANGE_HELD",
-      entityType: "Lot",
-      entityId: lotId,
-      metadata: { lotNumber, requestId: request.id, newOwnerName: input.ownerName, settlementDate: input.settlementDate, noticeDocumentId, invite: p.invite },
-    });
-    await recordSecurityEvent({
+  // Saved. Nothing from here on can report the hold as not saved (review L1). The notice is filed
+  // only now, so a hold that lost a race leaves nothing behind.
+  const after = new AfterCommit();
+  const noticeDocumentId = await after.run("notice of transfer", p.notice);
+  const linked = noticeDocumentId ? await after.run("notice link", () => attachNotice(schemeId, request.id, noticeDocumentId)) : null;
+  const noticeProblem = after.failed.includes("notice of transfer") || (!!noticeDocumentId && linked !== true);
+  await after.run("security event", () =>
+    recordSecurityEvent({
       action: "lot.owner_change_held",
       outcome: "allowed",
       actorProfileId: p.actorId,
@@ -181,19 +178,19 @@ async function holdForReview(p: {
       schemeId,
       resourceType: "Lot",
       resourceId: lotId,
-      metadata: { requestId: request.id, invite: p.invite, notice: !!noticeDocumentId },
-    });
-  } catch (err) {
-    console.error("[change-owner] logging the hold failed:", err instanceof Error ? err.message : "error");
-  }
-  revalidateChangeOwner(schemeId);
-  const reviewer = (await schemeHasAdviser(schemeId)) ? "the Adviser" : "StrataVerze";
+      metadata: { requestId: request.id, invite: p.invite, notice: !!noticeDocumentId && linked === true },
+    }),
+  );
+  await after.run("page refresh", () => revalidateChangeOwner(schemeId));
+  const reviewer = (await after.run("reviewer", () => schemeHasAdviser(schemeId))) === false ? "StrataVerze" : "the Adviser";
   const parts = [
     `The change of owner of Lot ${lotNumber} to ${input.ownerName} is waiting for ${reviewer} to confirm it.`,
     `Until then nothing changes: the strata roll still shows the current owner, who keeps their portal access, and no invitation has been sent.`,
   ];
   if (noticeDocumentId && !noticeProblem) parts.push("The notice of transfer has been filed in the document library, visible to the managers only.");
   if (noticeProblem) parts.push("The notice of transfer could not be attached to the change. Please give it to the Adviser.");
+  const others = after.failed.filter((f) => f !== "notice of transfer" && f !== "notice link");
+  if (others.length) parts.push("Some follow-up steps could not be completed and have been logged for StrataVerze.");
   return { done: parts.join(" ") };
 }
 

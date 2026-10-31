@@ -33,7 +33,7 @@ export default async function AdminOwnerChangesPage() {
                 {p.schemeName}
                 {p.view.reviewer === "StrataVerze" ? " · no Adviser: StrataVerze reviews" : " · the Adviser can also review it"}
               </p>
-              <PendingOwnerChange schemeId={p.schemeId} lotLabel={formatLotLabel(p.lotNumber)} change={p.view} canDecide />
+              <PendingOwnerChange schemeId={p.schemeId} lotLabel={formatLotLabel(p.lotNumber)} change={p.view} />
             </div>
           ))
         )}

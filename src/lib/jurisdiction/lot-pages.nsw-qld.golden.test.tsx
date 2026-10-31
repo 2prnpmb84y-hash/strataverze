@@ -232,4 +232,31 @@ describe("a change of owner waiting for review", () => {
     expect(html).not.toContain("If you confirm");
     expect(html).not.toContain("Change owner<");
   });
+
+  // Review M1: the committee's page data, not only its HTML, carries none of the reviewer's details.
+  it("the committee's lot page passes only the reduced view: no owners' or recorder's addresses, seats, invitation state or fingerprint", async () => {
+    state.profile = { id: "owner-1" };
+    const { PendingOwnerChangeNotice } = await import("@/components/lots/pending-owner-change-notice");
+    const { PendingOwnerChange } = await import("@/components/lots/pending-owner-change");
+    const tree = await CommitteeLotPage({ params: Promise.resolve({ lotId: "l1" }) });
+    // Every element in the page's tree, with its props (client components are not rendered here, so their props are what the browser would get).
+    const found: Array<{ type: unknown; props: Record<string, unknown> }> = [];
+    const walk = (node: unknown) => {
+      if (Array.isArray(node)) return node.forEach(walk);
+      if (!node || typeof node !== "object" || !("props" in node)) return;
+      const el = node as { type: unknown; props: Record<string, unknown> };
+      found.push(el);
+      walk(el.props.children);
+    };
+    walk(tree);
+    expect(found.some((e) => e.type === PendingOwnerChange)).toBe(false);
+    const notice = found.find((e) => e.type === PendingOwnerChangeNotice);
+    expect(notice).toBeDefined();
+    const change = notice!.props.change as Record<string, unknown>;
+    expect(Object.keys(change).sort()).toEqual(["ownerName", "recordedByName", "recordedOn", "reviewer", "settlementDate"]);
+    const data = JSON.stringify(found.map((e) => e.props), (k, v) => (k === "children" || typeof v === "function" ? undefined : v));
+    for (const secret of ["olive@example.org", "chair@example.com", "new@example.com", "fingerprint", "effect", "resemblance", "recordedByEmail"]) {
+      expect(data).not.toContain(secret);
+    }
+  });
 });

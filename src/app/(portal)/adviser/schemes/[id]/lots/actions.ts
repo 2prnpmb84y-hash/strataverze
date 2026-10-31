@@ -24,10 +24,9 @@ import {
   removeOwnerFromLot,
 } from "@/lib/queries/lots";
 import { logActivity } from "@/lib/queries/activity-log";
-import { getPendingOwnerChange } from "@/lib/owner/owner-change-requests";
+import { OwnerChangeConflict, getPendingOwnerChange, lockLot } from "@/lib/owner/owner-change-requests";
 import { recordSecurityEvent } from "@/lib/audit/security-audit";
 import { revokeAllSessions } from "@/lib/auth/session-register";
-import { db } from "@/prisma/db";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { rulesForScheme, rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { UnsupportedJurisdictionError } from "@/config/statutory";
@@ -305,7 +304,13 @@ export async function assignOwnerAction(
     const lot = await getLotInScheme(schemeId, lotId);
     assertInScheme(lot, schemeId, "Lot");
 
-    await assignOwnerToLot({ schemeId, lotId, profileId });
+    // Under the lot's lock, as a change of owner runs, and refused while one waits for review
+    // (H-1 review L2): the check and the write see the same state.
+    const assigned = await schemeDb.transaction(async (tx) => {
+      await lockLot(tx, schemeId, lotId);
+      if (await getPendingOwnerChange(schemeId, lotId, tx.orm)) throw new OwnerChangeConflict("PENDING");
+      return assignOwnerToLot({ schemeId, lotId, profileId }, tx.orm);
+    });
     await recordSecurityEvent({
       action: "membership.owner_assigned",
       outcome: "allowed",
@@ -314,16 +319,22 @@ export async function assignOwnerAction(
       schemeId,
       resourceType: "Lot",
       resourceId: lotId,
-      metadata: { profileId },
+      // A restart of the person's ended owner access (review L3): which lot it was on before, and when it ended.
+      metadata: assigned.restartedFrom
+        ? { profileId, restart: true, previousLotId: assigned.restartedFrom.lotId, previousEndDate: assigned.restartedFrom.endDate }
+        : { profileId, restart: false },
     });
     revalidatePath(`/adviser/schemes/${schemeId}/lots/${lotId}`);
     revalidatePath(`/adviser/schemes/${schemeId}`);
     return {};
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
+    if (err instanceof OwnerChangeConflict && err.kind === "PENDING") return { error: PENDING_CHANGE };
     return { error: "Failed to assign owner. They may already be assigned to this scheme." };
   }
 }
+
+const PENDING_CHANGE = "A change of owner of this lot is waiting for review. Confirm or reject it first.";
 
 /**
  * Remove an owner from a lot. The building's Adviser or StrataVerze only, as
@@ -343,26 +354,28 @@ export async function removeOwnerAction(
     // A sensitive operation: needs an authenticator check in the last 15 minutes.
     await requireRecentMfa();
 
-    // Verify the membership is an owner access of this lot of this scheme before removing
-    const target = await db.orm.public.SchemeMembership
-      .where((m) =>
-        and(
-          m.id.eq(membershipId),
-          m.schemeId.eq(schemeId),
-          m.lotId.eq(lotId),
-          m.role.eq("OWNER"),
-        ),
-      )
-      .first();
+    // Under the lot's lock, refused while a change of owner waits (H-1 review L2), and only an
+    // owner access of this lot of this scheme.
+    const target = await schemeDb.transaction(async (tx) => {
+      await lockLot(tx, schemeId, lotId);
+      if (await getPendingOwnerChange(schemeId, lotId, tx.orm)) throw new OwnerChangeConflict("PENDING");
+      const found = await tx.orm.public.SchemeMembership
+        .where((m) =>
+          and(
+            m.id.eq(membershipId),
+            m.schemeId.eq(schemeId),
+            m.lotId.eq(lotId),
+            m.role.eq("OWNER"),
+          ),
+        )
+        .first();
+      if (found) await removeOwnerFromLot(membershipId, tx.orm);
+      return found;
+    });
 
     if (!target) {
       return { error: "Membership not found on this scheme." };
     }
-    if (await getPendingOwnerChange(schemeId, lotId)) {
-      return { error: "A change of owner of this lot is waiting for review. Confirm or reject it before removing an owner." };
-    }
-
-    await removeOwnerFromLot(membershipId);
     await recordSecurityEvent({
       action: "membership.owner_removed",
       outcome: "allowed",
@@ -383,6 +396,7 @@ export async function removeOwnerAction(
     return {};
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
+    if (err instanceof OwnerChangeConflict && err.kind === "PENDING") return { error: PENDING_CHANGE };
     return { error: "Failed to remove owner." };
   }
 }

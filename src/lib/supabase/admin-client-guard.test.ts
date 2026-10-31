@@ -12,8 +12,9 @@ const ALLOWED_USERS = new Set([
   "src/app/(portal)/admin/security/page.tsx",
   // The documents bucket (S3): every caller authorises first.
   "src/lib/storage/server-storage.ts",
-  // Reads a held change of owner's recorder's current Auth addresses (H-1, L1): called only by
-  // confirmOwnerChangeAction, after requireRolesOrAdmin(["ADVISER"]) and the step-up check.
+  // Reads a held change of owner's recorder's current Auth addresses (H-1, L1, L4): for
+  // confirmOwnerChangeAction (after requireRolesOrAdmin(["ADVISER"]) and the step-up check) and the
+  // review card on the Adviser's lot page and /admin/owner-changes (each checked first).
   "src/lib/owner/recorder-addresses.ts",
 ]);
 

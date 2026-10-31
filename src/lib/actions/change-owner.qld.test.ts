@@ -21,7 +21,7 @@ vi.mock("@/lib/queries/profiles", () => ({ getCurrentProfile: vi.fn(async () => 
 vi.mock("@/lib/auth/current-session", () => ({ getCurrentSession: vi.fn(async () => ({ profile: who.profile, user: { email: who.profile.email } })) }));
 vi.mock("@/lib/auth/mfa-enforcement", () => ({ requireRecentMfa: vi.fn(async () => {}) }));
 vi.mock("@/lib/audit/security-audit", () => ({ recordSecurityEvent: vi.fn(async () => {}), recordSecurityEventLater: vi.fn(async () => {}), recordActionInvocation: vi.fn(async () => {}) }));
-vi.mock("@/lib/queries/activity-log", () => ({ logActivity: vi.fn(async () => {}) }));
+vi.mock("@/lib/queries/activity-log", () => ({ logActivity: vi.fn(async () => {}), logActivityTx: vi.fn(async () => {}) }));
 vi.mock("@/lib/notifications", () => ({ notifyInvitation: vi.fn(async () => {}) }));
 vi.mock("@/lib/queries/schemes", () => ({ getSchemeNameById: async () => "Riverside" }));
 vi.mock("@/lib/jurisdiction/scheme-time", () => ({ schemeToday: async () => "2026-10-28" }));
@@ -35,6 +35,7 @@ vi.mock("@/lib/vault/sources", () => ({ captureLibraryDocument: vi.fn(), capture
 const { sharedFake } = await import("@/test/fake-orm");
 const { changeOwnerAction } = await import("./change-owner");
 const { confirmOwnerChangeAction } = await import("./change-owner-review");
+const { pendingOwnerChangeView } = await import("@/lib/owner/owner-change-requests");
 
 const ADVISER = who.profile;
 const CHAIR = { id: "p-chair", authId: "a-chair", email: "chair@x.test", firstName: "Chris", lastName: "Chair", isPlatformAdmin: false };
@@ -73,7 +74,8 @@ async function record(recorder: typeof CHAIR) {
     expect(r.done).toContain("waiting for the Adviser to confirm it");
     who.profile = ADVISER;
     const id = String(sharedFake.table("OwnerChangeRequest")[0].id);
-    return confirmOwnerChangeAction("S1", id);
+    // With the plan the Adviser was shown (review L6).
+    return confirmOwnerChangeAction("S1", id, (await pendingOwnerChangeView("S1", "L1"))!.fingerprint);
   }
   return r;
 }

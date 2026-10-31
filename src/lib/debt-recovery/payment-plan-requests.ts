@@ -52,12 +52,19 @@ const NOT_AVAILABLE = "This is not available for this building.";
 /**
  * Profiles holding an OWNER membership on the lot, active or ended in the
  * last 30 days. Nobody acts on their own lot's payment plan as adviser
- * (security finding SEC-003).
+ * (security finding SEC-003). An ended membership started again on another
+ * lot keeps its earlier lot and end date in owner_lot_history (H-1 review
+ * L3), which is read too.
  */
 export async function lotOwnerProfileIds(schemeId: string, lotId: string): Promise<string[]> {
   const rows = await db.orm.public.SchemeMembership.where((m) => and(m.schemeId.eq(schemeId), m.lotId.eq(lotId), m.role.eq("OWNER"))).limit(50).all();
   const cutoff = Date.now() - OWNER_CONFLICT_DAYS * 86_400_000;
-  return rows.filter((m) => m.isActive || (m.endDate != null && new Date(String(m.endDate)).getTime() >= cutoff)).map((m) => m.profileId);
+  const history = await db.orm.public.OwnerLotHistory.where((h) => and(h.schemeId.eq(schemeId), h.lotId.eq(lotId))).limit(200).all();
+  const ids = [
+    ...rows.filter((m) => m.isActive || (m.endDate != null && new Date(String(m.endDate)).getTime() >= cutoff)).map((m) => m.profileId),
+    ...history.filter((h) => new Date(String(h.endedAt)).getTime() >= cutoff).map((h) => h.profileId),
+  ];
+  return [...new Set(ids)];
 }
 
 /** The lot a request or plan belongs to, for the own-lot check. */
